@@ -1,0 +1,296 @@
+/* ============================================================
+   大纲正文块级样式（仅大纲页）
+   ------------------------------------------------------------------
+   作用域：`.ep-view[data-view='outline'] .doc-body .ProseMirror`
+   —— 全库仅此选择器命中大纲条目正文；章节页 / 笔记等视图的 `.doc-body`
+   不受影响（章节正文为「每段一个 paragraph」纯段落口径，无块级节点）。
+
+   存在理由：`writer-editor-doc.css` 只为 `.doc-body p` 定义了样式（含
+   `text-indent: 2em` 首行缩进）。大纲启用 heading / 列表 / 引用 / 代码块 /
+   分隔线 / 表格后，若不补样式会以浏览器默认渲染（h1 巨字号、table 无边框、
+   ul 默认 padding），且列表 / 引用 / 表格单元格内的 `p` 会带着 2em 缩进与
+   负外边距，排版错乱。故此处统一给出与正文同源的块级视觉。
+
+   颜色一律取 theme.css 令牌 / color-mix 派生，四主题（light / dark / sage /
+   honey）自适应；不硬编码品牌色，不使用 html.sage / html.honey。
+   ============================================================ */
+
+/* 说明：正文段落的 `text-indent: 2em` 只由 `writer-editor-doc.css` 的 `.doc-body p`
+   规则提供（非 p 块级节点默认即 0），故此处**不再**用通配选择器清零首行缩进——
+   那会以更高特异性覆盖并连带取消正文段落（`p`）本身的缩进。仅在下方对
+   「列表 / 引用 / 表格单元格内的 `p`」逐容器复位（见 `.ProseMirror li p` 等）。 */
+
+/* ---------- 标题 H1–H6 ----------
+   层级用字号 / 字重 / 上间距表达；不自动编号（正文里的标题是内容的一部分，
+   与章节页「第X章」由外层逻辑计算的编号无关）。标题紧贴其引导内容，故上间距
+   大于下间距；行高略紧以强化层级。 */
+.ep-view[data-view='outline'] .doc-body .ProseMirror h1,
+.ep-view[data-view='outline'] .doc-body .ProseMirror h2,
+.ep-view[data-view='outline'] .doc-body .ProseMirror h3,
+.ep-view[data-view='outline'] .doc-body .ProseMirror h4,
+.ep-view[data-view='outline'] .doc-body .ProseMirror h5,
+.ep-view[data-view='outline'] .doc-body .ProseMirror h6 {
+  position: relative;
+  margin: 1.4em 0 0.5em;
+  padding: 2px 8px;
+  margin-left: -8px;
+  margin-right: -8px;
+  border-radius: var(--r-xs);
+  color: var(--text);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror > h1:first-child,
+.ep-view[data-view='outline'] .doc-body .ProseMirror > h2:first-child,
+.ep-view[data-view='outline'] .doc-body .ProseMirror > h3:first-child,
+.ep-view[data-view='outline'] .doc-body .ProseMirror > h4:first-child,
+.ep-view[data-view='outline'] .doc-body .ProseMirror > h5:first-child,
+.ep-view[data-view='outline'] .doc-body .ProseMirror > h6:first-child {
+  margin-top: 0;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror h1 {
+  font-size: 1.7em;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror h2 {
+  font-size: 1.45em;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror h3 {
+  font-size: 1.25em;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror h4 {
+  font-size: 1.12em;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror h5 {
+  font-size: 1em;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror h6 {
+  font-size: 0.92em;
+  color: var(--text-dim);
+}
+
+/* 标题 hover / focus 反馈沿用段落口径（轻底），不位移 / 不缩放（§8）。 */
+.ep-view[data-view='outline'] .doc-body .ProseMirror h1:hover,
+.ep-view[data-view='outline'] .doc-body .ProseMirror h2:hover,
+.ep-view[data-view='outline'] .doc-body .ProseMirror h3:hover,
+.ep-view[data-view='outline'] .doc-body .ProseMirror h4:hover,
+.ep-view[data-view='outline'] .doc-body .ProseMirror h5:hover,
+.ep-view[data-view='outline'] .doc-body .ProseMirror h6:hover {
+  background: var(--soft-hover-solid);
+}
+
+/* ---------- 列表 ---------- */
+.ep-view[data-view='outline'] .doc-body .ProseMirror ul,
+.ep-view[data-view='outline'] .doc-body .ProseMirror ol {
+  margin: 0 0 1.05em;
+  padding-left: 1.8em;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror li {
+  margin: 0.15em 0;
+}
+
+/* 列表项 / 引用 / 表格单元格内的 `p`：复位正文段落的 2em 首行缩进与负外边距
+   （这些容器内的 `p` 只承担换行，不应再有正文的版心留白与缩进）。 */
+.ep-view[data-view='outline'] .doc-body .ProseMirror li p,
+.ep-view[data-view='outline'] .doc-body .ProseMirror blockquote p,
+.ep-view[data-view='outline'] .doc-body .ProseMirror th p,
+.ep-view[data-view='outline'] .doc-body .ProseMirror td p {
+  margin: 0;
+  margin-left: 0;
+  margin-right: 0;
+  padding: 0;
+  text-indent: 0;
+  border-radius: 0;
+}
+
+/* 嵌套列表：逐级收窄左缩进，避免过深。 */
+.ep-view[data-view='outline'] .doc-body .ProseMirror li > ul,
+.ep-view[data-view='outline'] .doc-body .ProseMirror li > ol {
+  margin-bottom: 0.2em;
+}
+
+/* ---------- 引用块 ---------- */
+.ep-view[data-view='outline'] .doc-body .ProseMirror blockquote {
+  margin: 0 0 1.05em;
+  padding: 2px 0 2px 14px;
+  border-left: 3px solid color-mix(in srgb, var(--brand) 45%, transparent);
+  color: var(--text-dim);
+}
+
+/* ---------- 代码块（pre + code） ---------- */
+.ep-view[data-view='outline'] .doc-body .ProseMirror pre {
+  margin: 0 0 1.05em;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xs);
+  background: var(--soft-solid);
+  font-family: var(--mono);
+  font-size: 0.9em;
+  line-height: 1.6;
+  color: var(--text);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror pre code {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* 行内代码：覆盖 global.css 中硬编码的浅底，改走主题令牌。 */
+.ep-view[data-view='outline'] .doc-body .ProseMirror :not(pre) > code {
+  padding: 0.1em 0.35em;
+  border-radius: var(--r-xs);
+  background: var(--soft-solid);
+  font-family: var(--mono);
+  font-size: 0.92em;
+  color: color-mix(in srgb, var(--brand) 70%, var(--text));
+}
+
+/* 高亮 mark（多色背景）的底色 / 正文色随主题适配：固定浅色板 + 暗色主题压深，
+   见 writer-editor-doc.css 的 `[data-theme='dark'] .doc-body .ProseMirror mark`。
+   本文件不再单独覆盖 mark 的 color（亮色系主题正文继承 --doc-text 深色即可读）。 */
+
+/* ---------- 分隔线 ---------- */
+.ep-view[data-view='outline'] .doc-body .ProseMirror hr {
+  height: 0;
+  margin: 1.4em 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+/* 选中节点（ProseMirror 给 NodeSelection 的 `hr` 加 `.ProseMirror-selectednode`）。 */
+.ep-view[data-view='outline'] .doc-body .ProseMirror hr.ProseMirror-selectednode {
+  border-top-color: var(--brand);
+}
+
+/* ---------- 表格 ---------- */
+.ep-view[data-view='outline'] .doc-body .ProseMirror .tableWrapper {
+  margin: 0 0 1.05em;
+  overflow-x: auto;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 0;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror th,
+.ep-view[data-view='outline'] .doc-body .ProseMirror td {
+  position: relative;
+  min-width: 2em;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  vertical-align: top;
+  text-align: left;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror th {
+  background: var(--soft-solid);
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* 单元格选择（Tiptap 在选中的 cell 上挂 `.selectedCell`，用 ::after 覆盖底色）。 */
+.ep-view[data-view='outline'] .doc-body .ProseMirror .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+}
+
+/* 列宽拖拽手柄（Tiptap / prosemirror-tables 注入的 `.column-resize-handle`）。
+   仅在 `TableKit.configure({ table: { resizable: true } })` 且编辑器可编辑时，
+   `Table.addProseMirrorPlugins` 才会注入 `columnResizing` 插件，
+   其在鼠标悬停列边界时以 Decoration.widget 生成本手柄。 */
+.ep-view[data-view='outline'] .doc-body .ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  z-index: 3;
+  background: var(--brand);
+  pointer-events: none;
+}
+
+/* 悬停列边界：整张表切换为 col-resize 光标（插件加在 .ProseMirror 上的类）。 */
+.ep-view[data-view='outline'] .doc-body .ProseMirror.resize-cursor {
+  cursor: col-resize;
+}
+
+/* 拖拽中：高亮被拖列的所有单元格（插件加在单元格上的类）。 */
+.ep-view[data-view='outline'] .doc-body .ProseMirror .column-resize-dragging {
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+
+/* 说明（B4 单元格对齐）：`align` 属性由 TableKit 渲染为单元格上的 inline
+   `text-align`（见 createAlignAttribute），inline 优先于本文件 th / td 的
+   `text-align: left`；单元格内 `p` 无自身的 text-align 规则，故对齐视觉
+   经继承自然生效，无需额外选择器。 */
+
+/* ---------- 链接 ---------- */
+.ep-view[data-view='outline'] .doc-body .ProseMirror a {
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* ---------- 正文内嵌图片（行内节点，ReactNodeView 渲染，R10c） ----------
+   节点为 `inline: true`，外层 `span[data-node-view-wrapper]` 亦为行内——`inline-block`
+   让图片随文字流排布且可限宽；`line-height: 0` 消除行内基线的额外行高。无 transform（§8）。 */
+.ep-view[data-view='outline'] .doc-body .ProseMirror .wf-editor-image-node {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: bottom;
+  line-height: 0;
+}
+
+/* 选中（NodeSelection 时 ReactNodeView 传 `selected` → `.is-selected`）。 */
+.ep-view[data-view='outline'] .doc-body .ProseMirror .wf-editor-image-node.is-selected {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror .wf-editor-image-node .wf-editor-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--r-xs);
+}
+
+/* 缺图占位（悬空 id / 图片已删 / 拉取失败）：虚线框 + 提示，不破版、不报错。 */
+.ep-view[data-view='outline'] .doc-body .ProseMirror .wf-editor-image-missing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-mute);
+  background: var(--soft-solid);
+  user-select: none;
+}
+
+.ep-view[data-view='outline'] .doc-body .ProseMirror .wf-editor-image-missing__glyph {
+  font-size: 13px;
+}

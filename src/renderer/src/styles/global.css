@@ -1,0 +1,25 @@
+/* 主题令牌已归并至 styles/theme.css（--bg/--fg/--accent/--border 等）；
+   本文件仅保留既有组件 / 布局样式。 */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+code {
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 6%);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}

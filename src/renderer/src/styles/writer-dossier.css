@@ -1,0 +1,356 @@
+/* ============================================================
+   设定档案五域（世界观 / 角色 / 势力 / 境界体系 / 物品功法）— 中栏卡片网格 + 右栏详情。
+   与书籍卡 / 剧情卡同范式：常态中性描边，仅 hover / active 显品牌边缘光晕，
+   全程无位移 / 缩放（§8 卡片约束），transition 只过渡颜色 / 描边 / 阴影。
+   颜色取自 theme.css 令牌，半透明底用 color-mix 派生，四主题通用。
+   ============================================================ */
+
+/* ---------- 中栏标题栏计数 ---------- */
+.dossier-hint {
+  font-size: 11px;
+  color: var(--text-mute);
+}
+
+/* ---------- 卡片网格 ---------- */
+/* 定值轨道 + 整块居中，与书籍卡 `.book-grid` / 剧情卡同范式（`repeat(auto-fit, 200px)`
+   + `justify-content: center`）：卡宽恒为 250px，拖动右栏时只有列数增减，卡宽本身
+   不再随剩余空间连续变化——原 `minmax(…, 1fr)` 会让每列吃满剩余空间，容器变宽时
+   列宽连续变大，直到容纳下一列 → 列数 +1、每列瞬间跌回 250px（2↔3 列约 ±131px、
+   3↔4 列约 ±87px）。
+   窄容器兜底：`min(250px, 100%)` 作 min。容器 ≥250px 时 min 解析为 250px，
+   即 `minmax(250px, 250px)` 定值轨道；容器 <250px（中栏最窄，≈224px 内容宽，
+   算上 `scrollbar-gutter: stable` 约 212px）时 min 收至 100%，轨道宽度 = 容器宽，
+   不溢出、不出现横向滚动。
+   必须用 `auto-fit`（不可用 `auto-fill`）：空轨道被折叠后，`justify-content: center`
+   才能让未排满的整块居中留白；`auto-fill` 会保留空轨道把整块撑宽、卡片左偏。 */
+.dossier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 250px));
+  gap: 12px;
+  justify-content: center;
+}
+
+/* ---------- 世界观子类分组 ---------- */
+.dossier-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dossier-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dossier-group__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+/* ---------- 设定卡 ---------- */
+.dossier-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 120px;
+  max-height: 240px;
+  padding: 14px 16px;
+  background: var(--soft-solid);
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  box-shadow: var(--sh-xs);
+  /* 只过渡投影 / 描边（hover / active 光晕）；底色仅随主题变化，不加过渡
+     （主题切换整体瞬变，见 theme.css「主题切换不做过渡」）。 */
+  transition:
+    box-shadow 0.22s var(--ease),
+    border-color 0.22s var(--ease);
+}
+
+/* 进场：卡片挂载（切模块 / 新建档案 / 子类分组重排后新增项）时淡入 + 8px 上浮，
+   取 motion.css 的 `wf-enter-up`。**只加 animation，不动上面的 transition**（§8：
+   transform 不得进入 hover 过渡）。
+   fill-mode 取 backwards：动画结束即交还常态声明，不残留 transform / opacity，
+   因此 `.is-active` 等状态类与减动效兜底都按常态求值。
+   重排不重播：`DossierView` 的 map 用 `key={row.id}`，仅重新排序不会重挂载。 */
+.dossier-card {
+  animation: wf-enter-up var(--dur-base) var(--ease-out) backwards;
+}
+
+/* hover / active 与通用光晕（`.wf-card--halo`）逐字同值，避免样式加载次序影响观感。 */
+.dossier-card:hover {
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+.dossier-card.is-active {
+  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--brand) 30%, transparent),
+    0 0 26px -8px color-mix(in srgb, var(--brand) 55%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+.dossier-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.dossier-card__name {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dossier-card__type {
+  flex: none;
+  margin-left: auto;
+}
+
+/* 卡片编辑 / 删除按钮：22x22 透明底 icon 按钮，hover 仅颜色 / 底色 / 透明度
+   （与时间线 SceneCard 对齐，无位移 / 缩放，§8）。 */
+.dossier-card__edit {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-xs);
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-mute);
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.6;
+  transition:
+    color 0.15s var(--ease),
+    background 0.15s var(--ease),
+    opacity 0.15s var(--ease);
+}
+
+.dossier-card__edit svg {
+  display: block;
+  width: 13px;
+  height: 13px;
+}
+
+.dossier-card__edit:hover {
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  opacity: 1;
+}
+
+/* 卡片操作组（编辑 / 关联关系 / 删除并排，紧跟子类型标签，无位移 / 缩放，§8）。 */
+.dossier-card__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  margin-left: 4px;
+}
+
+/* 卡片删除按钮：复用编辑按钮盒模型，hover 呈危险色（仅颜色 / 底色 / 透明度，§8）。 */
+.dossier-card__delete:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--pane));
+  opacity: 1;
+}
+
+/* 正文容器：承载 4 行截断（多段 `<p>` 子元素下 `-webkit-box` 跨元素计行不可靠，
+   故用行高倍数 `max-height` 硬裁：第 5 行整行落在裁切线之外，恰好 4 行；
+   `line-clamp` 仅在浏览器支持块级裁切时补省略号，不支持即降级为无省略号硬裁）。 */
+.dossier-card__desc {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  display: block;
+  line-clamp: 4;
+  max-height: calc(4 * 1.6em);
+  overflow: hidden;
+}
+
+/* 正文单段：段首缩进两字，无段间距（仅靠缩进区分段落）。 */
+.dossier-card__para {
+  margin: 0;
+  text-indent: 2em;
+  overflow-wrap: anywhere;
+}
+
+/* 空态文案：不是 `__para`，天然不带缩进。 */
+.dossier-card__desc.is-empty {
+  color: var(--text-mute);
+}
+
+/* ---------- 新建 / 编辑弹窗 ---------- */
+.dossier-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---------- 世界观子类选择器 ---------- */
+.dossier-subtype {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+/* 两行包装仅作语义分组，不参与布局：下拉 / 输入直归左列（1fr），
+   删除 / 新增按钮直归右列（auto 取两者最大内容宽），跨行天然对齐。 */
+.dossier-subtype__select-row,
+.dossier-subtype__add {
+  display: contents;
+}
+
+.dossier-subtype__select-row .wf-select,
+.dossier-subtype__add > input,
+.dossier-subtype__add .ui-input,
+.dossier-subtype__add .wf-input {
+  min-width: 0;
+}
+
+.dossier-subtype__select-row .wf-btn,
+.dossier-subtype__select-row button,
+.dossier-subtype__add .wf-btn,
+.dossier-subtype__add button {
+  align-self: stretch;
+  justify-self: stretch;
+}
+
+/* ---------- 右栏详情 ---------- */
+.dossier-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 2px 6px 10px;
+}
+
+.dossier-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dossier-detail__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.dossier-detail__empty {
+  font-size: 12px;
+  color: var(--text-mute);
+}
+
+.dossier-detail__footer {
+  margin-top: 2px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.dossier-rel-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 四行表单：第一行「模块 + 类别」等分；其余控件各自占满整行。
+   「添加关系」按钮在弹窗 footer 右侧，表单内不再渲染按钮行。 */
+.dossier-rel-add__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 8px;
+}
+
+/* 备注多行文本高约 96px（约三个下拉控件高），可手动纵向拉伸。 */
+.wf-textarea.dossier-rel-add__note {
+  min-height: 96px;
+}
+
+/* 角色 → 物品的自动反向提示（只读说明，不参与布局居中）。 */
+.dossier-rel-add__hint {
+  color: var(--text-mute);
+  font-size: 11px;
+}
+
+/* ---------- 自定义子类键值字段编辑器（第 5 批） ---------- */
+.dossier-kv-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.dossier-kv-hint {
+  font-size: 11px;
+  color: var(--text-mute);
+}
+
+.dossier-kv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dossier-kv-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--r-xs);
+  background: var(--soft-solid);
+}
+
+.dossier-kv-key {
+  flex: 0 0 34%;
+  min-width: 0;
+}
+
+.dossier-kv-value {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dossier-kv-add {
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* 自定义子类键值行：默认以 --soft-solid 作行底，与所在卡片的底色同值（行本身不可辨，
+   分界交由行内输入框承担）；在挂了 `.on-soft` 的卡片内改为透明——输入框已改用
+   --control-on-soft 令牌，再叠一层同色行底会重新糊成一片（见 form.css）。 */
+.on-soft .dossier-kv-item {
+  background: transparent;
+}
+
+/* 键值编辑器嵌在关系行内时（第 7 批复用）：不再叠加区块间距 */
+.dossier-kv-embed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

@@ -1,0 +1,230 @@
+/* ============================================================
+   写作视图 · 左栏 — 卷行结构与行内 hover 操作
+   ------------------------------------------------------------------
+   自 `writer-side.css` 原样搬移（保持单文件 ≤500 行，§3）。
+   卷头 / 卷名 / 计数 / 内联重命名，以及卷章共用的行内操作组（显隐与让位口径）。
+   半透明底统一改不透明：--soft-solid / color-mix(in srgb, var(--brand) N%, var(--pane))。
+   ============================================================ */
+
+/* ---------- 卷 / 章树（grid-template-rows 折叠） ----------
+   卷头样式对齐章行基准 `.chapter`（display / gap 10 / radius / cursor /
+   transition / hover 背景一致）；行距统一 **上下 9px**、字号 **13.5px**、
+   显式 `line-height: 1.5`（多行省略与草稿徽标基线稳定）。
+   字体：不设 `font-family`，继承应用默认字体栈（与侧栏其它文字一致）。 */
+.vol-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 5px;
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  transition: background 0.1s var(--ease);
+}
+
+.vol-head:hover {
+  background: var(--soft-hover-solid);
+}
+
+.vol-arrow {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  color: var(--text-mute);
+  transition: transform 0.2s var(--ease);
+}
+
+.vol.is-open .vol-arrow {
+  transform: rotate(90deg);
+}
+
+/* 卷行前缀段「卷X」：默认字体、不斜体（与章行「第X章」同口径）。 */
+.vol-prefix {
+  flex: none;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.vol-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  /* 名段溢出用右缘渐隐遮罩（而非 ellipsis 硬截断）：mask 常驻，未溢出时
+     末 14px 是行尾空白，无视觉副作用；溢出时名字末尾自然淡出指示截断。
+     前缀段（.vol-prefix）不渐隐，保持完整可读。 */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+}
+
+/* 卷行分隔点「●」（v2）：编号段「卷X」与自定义名段之间，纯装饰；
+   与章行 `.chapter-sep` 同口径（小号、降透明度、不参与文本流）。
+   两侧 margin -3px 收紧：行容器 gap 10px 对圆点而言视觉偏松，收紧后圆点与
+   两段文字的有效间距 ≈ 7px（调小 3px，落在 2–4px 区间），更贴合「前缀 ● 名」。 */
+.vol-sep {
+  flex: none;
+  font-size: 6px;
+  line-height: 1;
+  color: var(--text-mute);
+  opacity: 0.7;
+  margin: 0 -3px;
+}
+
+/* 特殊卷（自定义名、置顶、不参与编号）：整名走 .vol-name（默认字体、不斜），
+   仅字色略深与普通卷区分。 */
+.vol.is-special .vol-name {
+  color: var(--text);
+}
+
+.vol-count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-mute);
+}
+
+/* 卷内联重命名输入：口径**同** .vol-name（flex:1 / 13.5px / 600 / --text-dim / 默认字体），
+   无边框、品牌浅底、随主题着色。替换卷名两段 span 出现在 .vol-head 的同一位置。 */
+.vol-rename {
+  flex: 1;
+  min-width: 0;
+  padding: 0 4px;
+  border-radius: var(--r-xs);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-dim);
+  background: color-mix(in srgb, var(--brand) 8%, var(--pane));
+  caret-color: var(--caret);
+}
+
+/* ---------- 卷 / 章行内 hover 操作 ----------
+   卷头 hover 显示「新建章」（所有卷）+「设为特殊卷 / 重命名 / 删除」（仅实体卷，
+   已特殊卷该项变为「取消特殊」）；章行 hover 显示「删除」（特殊章另有置顶 / 置底）。
+   默认隐藏、hover 时浮现。
+   - 卷操作绝对定位覆盖在右侧（hover 时隐藏计数 + 卷名 margin 让位），避免 4 个
+     按钮常驻占位压缩卷名；
+   - 章操作与拖拽把手同样绝对定位悬浮（同卷行模式）：非 hover 时章名与草稿徽标
+     占满整行（徽标贴行右缘），hover 时按钮浮现、草稿徽标隐藏（互斥防重叠），
+     章名 margin 让位避免被按钮覆盖。
+   重命名输入聚焦期间（.vol-head:focus-within）保持卷操作可见。
+   显隐过渡：visibility 即时切换（移出无残留）；opacity 0.1s 淡入与行 hover
+   背景（background 0.1s）同步——否则按钮的不透明悬浮底色会在行背景渐入完成
+   前突现成「亮块」（移入闪烁感）。移出方向不加渐隐：即时 visibility:hidden
+   才能让草稿徽标 / 计数无重叠帧地立即恢复。 */
+.vol-head {
+  position: relative;
+}
+
+.vol-actions,
+.chapter-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  flex: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.1s var(--ease);
+}
+
+.vol-actions {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.vol-head:hover .vol-actions,
+.vol-head:focus-within .vol-actions,
+.chapter:hover .chapter-actions {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* hover 时隐藏计数，把右侧空间让给操作按钮（避免重叠）。 */
+.vol-head:hover .vol-count,
+.vol-head:focus-within .vol-count {
+  visibility: hidden;
+}
+
+/* hover / 聚焦时卷名右缘让位 = 操作组实际宽度 + 固定小间距（渐隐紧贴图标）：
+   3 按钮组（3×22 + 2×1 gap = 68px，right:2 定位 + 4px 呼吸）→ 72px，口径同
+   大纲分组行 .nonvol-group-head 的 72px 让位；章节页普通卷多一枚「新建特殊章」
+   按钮（4×22 + 3×1 gap = 91px + 4px 呼吸）→ 95px（.vol.is-plain 标记，见
+   ChaptersPanel）。用 margin（非 padding）让位——padding 会把名段 mask 渐隐区
+   推到留白处导致硬切；mask 渐隐相对名段自身右缘，让位后自然贴合图标组左缘。 */
+.vol-head:hover .vol-name,
+.vol-head:focus-within .vol-name {
+  margin-right: 72px;
+}
+
+.vol.is-plain .vol-head:hover .vol-name,
+.vol.is-plain .vol-head:focus-within .vol-name {
+  margin-right: 95px;
+}
+
+/* 重命名输入聚焦期间输入框同样让位（flex:1 占满行，不缩会被右缘悬浮的
+   操作按钮盖住长卷名文字）；普通卷 4 按钮口径同上。 */
+.vol-head:focus-within .vol-rename {
+  margin-right: 72px;
+}
+
+.vol.is-plain .vol-head:focus-within .vol-rename {
+  margin-right: 95px;
+}
+
+/* hover 时章名让位（章操作 + 把手均悬浮于右缘）：普通章 1 按钮（组宽 22，
+   right:22 → 按钮组左缘距右缘 44px）取 48px 贴合并留缝；特殊章 2 按钮
+   （组宽 45 → 左缘距右缘 67px）取 71px，条件化口径同卷行 is-plain / is-special。 */
+.chapter:hover .chapter-name {
+  margin-right: 48px;
+}
+
+.chapter.is-special:hover .chapter-name {
+  margin-right: 71px;
+}
+
+/* 行内小图标按钮：22×22，紧贴行内容（在 .wf-iconbtn--sm 基础上再收一档）。 */
+.row-act {
+  width: 22px;
+  height: 22px;
+}
+
+.row-act > svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* 章行 hover 操作改为绝对定位悬浮（同卷行 .vol-actions 模式）：
+   非 hover 时不占流内空间（章名 / 草稿徽标不再被压缩），hover 时浮现在行右缘；
+   章行容器 position:relative 供其定位。拖拽把手同样悬浮（right:4px），
+   操作按钮组排在把手左侧（right:22px = 把手 18px + 间隙），二者不重叠。 */
+.chapter {
+  position: relative;
+}
+
+.chapter-actions {
+  position: absolute;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  /* 悬浮底色 = 行 hover 底（按钮仅在行 hover 时可见），遮住下方文字 / 徽标残影。 */
+  background: var(--soft-hover-solid);
+  border-radius: var(--r-xs);
+}
+
+/* 选中章行的按钮底色同选中背景，保持视觉连续。 */
+.chapter.is-active .chapter-actions {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+/* 选中章 hover：按钮底色同行 hover 底（:hover 规则在源序其后，hover 时覆盖），
+   保持按钮组与所在行底色一致。 */
+.chapter.is-active:hover .chapter-actions {
+  background: var(--soft-hover-solid);
+}

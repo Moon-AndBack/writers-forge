@@ -1,0 +1,117 @@
+/* ============================================================
+   胶囊（chip / pill）配色令牌：全局可复用方案
+   ------------------------------------------------------------------
+   配色优先级：**数据库注入的实色优先**——渲染层读取 `chip_colors` 表后，把
+   `.chip-p-*` / `.chip-m-*` { --chip-bg / --chip-fg } 规则注入 head 末尾，胶囊
+   基类以 `var(--chip-bg, …)` 取用，注入成功即为实色底 + 配对文字色。
+   本文件的 `.chip-m-*` 静态值为**首帧副本**：直接写数据库 `scope='module'`
+   五行的日本传统色实色（`--chip-bg` / `--chip-fg`），使首帧即与注入结果一致，
+   避免启动时的颜色跳变；仅在完全未挂任何模块类时，才回落到 `:root` 的
+   `--chip-base` 混 `--chip-mix` 比例的 `--pane` 浅混合底，前景 / 描边由基色派生。
+   规则：五个设定档案模块各占一种兜底实色（与数据库同值，不再引用实体基色）；
+   预设子类的独立配色由 `chip-preset-colors.css` 的 `.chip-p-*` 承担。
+   挂载方式：标签 / 容器挂 `.chip-m-<module>` 选模块色系（命中预设时再挂
+   `.chip-p-<presetKey>` 覆盖基色）；视觉规则由 `chip-pill.css` 的基类消费本文件的派生变量。
+   本文件只定义令牌、模块类与存量灰度档类，不含布局或外观声明。
+   ============================================================ */
+
+:root {
+  /* 胶囊圆角：真胶囊（半高以上，两端视觉为半圆） */
+  --chip-pill-radius: 999px;
+
+  /* 默认兜底：未挂模块类时仍保持有色可辨（取世界观色系与中档混色比例） */
+  --chip-base: var(--entity-worldview);
+  --chip-mix: 14%;
+
+  /* 高亮态（.is-active）的填充比例 */
+  --chip-mix-hi: 34%;
+
+  /* 派生比例：前景向正文色收敛保证可读，描边取低浓度同色。
+     注意：自定义属性在**声明处**完成 var() 替换后随继承下传，因此
+     `:root` 的 --chip-fg / --chip-border 会固化在默认基色上；胶囊元素在
+     `chip-pill.css` 里以同一比例就地重算，才能跟随 `.chip-m-*` 的基色。
+     这里保留比例令牌作为唯一数值来源，主题只改比例即可整体调校。 */
+  --chip-fg-ratio: 58%;
+  --chip-border-ratio: 28%;
+
+  --chip-fg: color-mix(in srgb, var(--chip-base) 58%, var(--text));
+  --chip-border: color-mix(in srgb, var(--chip-base) 28%, transparent);
+}
+
+/* ---------- 模块色系：数据库 `scope='module'` 五行的日本传统色首帧副本 ----------
+   色值与 `chip_colors` 表逐字一致（技能边界：`--entity-*` 基色变量保持原样，
+   正文高亮 `entity-highlight.css` 仍在引用它们，此处只是胶囊自身的兜底实色）。 */
+.chip-m-worldview {
+  --chip-bg: #7e9aa0;
+  --chip-fg: #1a1a1a;
+  --chip-base: #7e9aa0;
+}
+
+.chip-m-item {
+  --chip-bg: #94849b;
+  --chip-fg: #1a1a1a;
+  --chip-base: #94849b;
+}
+
+.chip-m-faction {
+  --chip-bg: #a5956c;
+  --chip-fg: #1a1a1a;
+  --chip-base: #a5956c;
+}
+
+.chip-m-character {
+  --chip-bg: #a89494;
+  --chip-fg: #1a1a1a;
+  --chip-base: #a89494;
+}
+
+.chip-m-power_system {
+  --chip-bg: #94adc7;
+  --chip-fg: #1a1a1a;
+  --chip-base: #94adc7;
+}
+
+/* ---------- 灰度档（存量用途）：同一色系的深浅档（10% → 30%，步长 4%） ----------
+   这 6 档**不再用于分类配色**（分类配色已由 `chip-preset-colors.css` 的 `.chip-p-*`
+   按 23 个预设子类各给一色）；保留定义仅因 `CategoryTreePicker` 仍在中性胶囊
+   （`.chip-pill--neutral`）上用 `.chip-s2` / `.chip-s0` 表达父 / 子分类的灰度层次。 */
+.chip-s0 {
+  --chip-mix: 10%;
+}
+
+.chip-s1 {
+  --chip-mix: 14%;
+}
+
+.chip-s2 {
+  --chip-mix: 18%;
+}
+
+.chip-s3 {
+  --chip-mix: 22%;
+}
+
+.chip-s4 {
+  --chip-mix: 26%;
+}
+
+.chip-s5 {
+  --chip-mix: 30%;
+}
+
+/* ---------- 暗色适配 ----------
+   暗底上基色向白字混合会发灰、描边也偏弱：前景降低基色占比、描边提高占比。 */
+[data-theme='dark'] {
+  --chip-fg-ratio: 48%;
+  --chip-border-ratio: 34%;
+
+  --chip-fg: color-mix(in srgb, var(--chip-base) 48%, var(--text));
+  --chip-border: color-mix(in srgb, var(--chip-base) 34%, transparent);
+}
+
+/* ---------- 历史：浅黄主题的人物色系避让（已删除） ----------
+   曾有 `:where([data-theme='honey']) .chip-m-character { --chip-base: oklch(0.6 0.13 15); }`
+   一条规则：honey 的 `--brand` 为金黄（约 85° 色相）与势力橙赭（60°）撞色，而彼时
+   `.chip-m-character` 引用 `--entity-character`（即 `--brand`），故本主题内人物模块
+   色改用暖红避让。现在 `.chip-m-character` 已是数据库固定的日本传统色 #a89494，
+   与势力色不再撞色，该主题避让不再需要，规则已移除。 */

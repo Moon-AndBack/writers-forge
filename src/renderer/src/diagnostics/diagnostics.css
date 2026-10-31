@@ -1,0 +1,72 @@
+/* ============================================================
+   数据健康自检弹窗（DiagnosticsDialog）
+   复用通用 Modal（.wf-window*）外框，本文件只承载问题清单的排布。
+   颜色一律取 theme.css 令牌，四主题通用；前缀 diagnostics__*。
+   ============================================================ */
+
+.diagnostics {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.diagnostics__summary {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.diagnostics__meta {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+.diagnostics__hint {
+  margin: 0 0 4px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--text-dim);
+}
+
+/* ---------- 问题清单 ---------- */
+.diagnostics__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.diagnostics__item {
+  padding: 10px 12px;
+  border-radius: var(--r-xs);
+  background: var(--soft-solid);
+  border-left: 3px solid var(--warn);
+}
+
+.diagnostics__item-title {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.diagnostics__item-detail {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: var(--text-dim);
+  word-break: break-word;
+}
+
+/* 底部按钮靠右：占位撑开左侧（对齐 BookFormDialog 的 .bf-footer-spacer 惯例）。 */
+.diagnostics__footer-spacer {
+  flex: 1;
+  min-width: 0;
+}

@@ -1,0 +1,66 @@
+/* ============================================================
+   胶囊（pill）基类：圆形端头 + 模块色系底色 + 高亮态
+   ------------------------------------------------------------------
+   配色优先级（实色优先）：
+   1) 数据库注入层——渲染层把 `chip_colors` 的 28 行配色写成
+      `.chip-m-*` / `.chip-p-*` { --chip-bg / --chip-fg } 规则插入 head 末尾，
+      与本文件基类同为 (0,1,0) 特异性但更晚出现，故注入的实色底与配对文字色胜出；
+   2) 静态兜底——未注入（首帧 / 数据库读取失败）时用 `chip-pill-tokens.css`
+      （模块基色）与 `chip-preset-colors.css`（预设子类色）：--chip-base 按
+      --chip-mix（混色比例）混入 --pane 得浅混合底，前景 / 描边由基色派生。
+   本文件不绑定任何具体模块：`.chip-m-*` / `.chip-p-*` 由业务侧挂载。
+   hover / 高亮只用颜色、描边、同色光环表达，无位移 / 缩放（§8）。
+   设定档案域的三个标签（别名 / 关系摘要 chip、卡片右上方类别
+   `dossier-card__type`）共用本层形态与配色，仅由各自域文件覆写尺寸。
+   ============================================================ */
+
+.chip-pill,
+.dossier-card__chip,
+.dossier-card__type {
+  /* 在胶囊元素上重算派生色：:root 的 --chip-fg / --chip-border 已在声明处
+     固化到默认基色，无法跟随本元素的 --chip-base，故以同比例就地求值。 */
+  --chip-fg: color-mix(in srgb, var(--chip-base) var(--chip-fg-ratio), var(--text));
+  --chip-border: color-mix(in srgb, var(--chip-base) var(--chip-border-ratio), transparent);
+
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border-radius: var(--chip-pill-radius);
+  border: 1px solid var(--chip-border);
+  /* 实色优先：注入命中时直接用 --chip-bg；未注入时回落旧的浅混合底，保证首帧有色。 */
+  background: var(--chip-bg, color-mix(in srgb, var(--chip-base) var(--chip-mix), var(--pane)));
+  color: var(--chip-fg);
+  transition:
+    color 0.15s var(--ease),
+    background 0.15s var(--ease),
+    border-color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease);
+}
+
+/* 悬停：只加重描边并加一圈同色外环，不改底色 / 文字色。
+   原因：实色底上再混 pane 会变浅（与「加重」意图相反），改 color 又会破坏
+   已校验的实色对比度；本规则同时对未注入的旧浅底胶囊生效，旧底仅靠描边 + 外环
+   表达可交互也不违和。无位移 / 缩放（§8）。 */
+.chip-pill:hover,
+.dossier-card__chip:hover,
+.dossier-card__type:hover {
+  border-color: var(--chip-fg, currentColor);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--chip-fg, currentColor) 40%, transparent);
+}
+
+/* 高亮态：与 hover 同口径不改底色 / 文字色，只把描边与外环加粗一档以示选中。 */
+.chip-pill.is-active,
+.dossier-card__chip.is-active,
+.dossier-card__type.is-active {
+  border-color: var(--chip-fg, currentColor);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--chip-fg, currentColor) 45%, transparent);
+}
+
+/* 中性兜底：无实体语义的标签（如「+N」、自由输入 chip）以正文色作基色，
+   保持同款胶囊形态。豁免实色注入：本类（及其变体 `.dossier-card__chip--more`）
+   不挂任何 `.chip-m-*` / `.chip-p-*`，注入规则因此命中不到它，`--chip-bg` 恒为
+   未定义，background 走 var() 的浅混合兜底分支——有意保持浅底，避免正文色基色
+   直接变纯黑 / 纯白色块。此处不设 --chip-bg。 */
+.chip-pill--neutral {
+  --chip-base: var(--text);
+}

@@ -1,0 +1,308 @@
+/* ============================================================
+   标题栏主题切换弹窗（ThemeSwitcherPopover）
+   ------------------------------------------------------------------
+   面板本体沿用 --pane 不透明底 + 令牌描边 / 阴影。结构（按参考图，自上而下）：
+   标题「外观主题」→「跟随系统」开关行 →「透明效果」开关行 → 四张主题卡网格。
+   预览卡展示「应用界面三栏缩影」：左「图标条」+ 中「正文区（灰线条模拟文字）」
+   + 右「信息栏」，各栏用该主题的固定色值（`.ts-card--{id}` 上的 --mini-* 局部
+   变量，逐字取自 theme.css 同主题令牌），不随当前文档主题变化
+   （sage 弹窗下也能预览 light / honey 的样子）。
+   描边 / 阴影选中态使用 color-mix(... transparent)，符合项目卡片约定。
+   ============================================================ */
+
+/* 按钮包裹层：浮层定位锚点。标题栏整体 -webkit-app-region: drag，
+   此处连同浮层一并退出拖拽区，保证按钮与选项可点击。 */
+.tb-theme-wrap {
+  position: relative;
+  flex: none;
+  -webkit-app-region: no-drag;
+}
+
+/* 展开态图标按钮：叠加在 .wf-iconbtn 基座之上的高亮 */
+.tb-theme-icon.is-active {
+  background: var(--soft-press-solid);
+  color: var(--text);
+}
+
+/* 浮层本体：锚定按钮下方、右对齐 */
+.ts-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  width: 252px;
+  padding: 8px;
+  background: var(--pane);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-popup), 0 0 0 1px var(--line);
+  -webkit-app-region: no-drag;
+}
+
+/* 面板标题「外观主题」 */
+.ts-title {
+  padding: 2px 4px 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* 开关行（跟随系统 / 透明效果）：左侧文本 + 右侧开关 */
+.ts-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 4px;
+  border-top: 1px solid var(--line);
+}
+
+.ts-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ts-row-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.ts-row-sub {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-mute);
+}
+
+/* 四张主题预览卡 2 列网格（`system` 已成开关行，故不再出卡） */
+.ts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+/* 预览卡：三栏缩影卡面（左图标条 / 中正文 / 右信息栏），不透明。
+   已去除底部主题名文字，故高度由 74px 收至 70px（原 74px = 缩影 + 6px gap +
+   主题名文字行），并移除纵向 gap；缩影 `flex: 1` 直接铺满整张卡面，
+   不再留底部空白。仍为 2 列网格。主题名改为按钮的 `aria-label`（无障碍）。 */
+.ts-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  height: 70px;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  background: var(--soft-solid);
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  transition:
+    box-shadow var(--ease) 0.15s;
+}
+
+/* hover：不位移，改为品牌色边缘光晕（描边环 + 外发光），与书籍卡
+   .book-card:hover 一致，四主题随 --brand 适配。 */
+.ts-option:hover:not(:disabled) {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+.ts-option:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: 1px;
+}
+
+/* 选中态：品牌色描边（沿用原选中风格，color-mix 仅用于描边 / 阴影）。
+   追加 :hover 选择器，确保 hover 时仍保留选中描边环（优先级高于上方 hover 光晕）。 */
+.ts-option.is-selected,
+.ts-option.is-selected:hover:not(:disabled) {
+  border-color: var(--brand);
+  box-shadow: inset 0 0 0 1px var(--brand);
+}
+
+/* 选中态右上角勾选标记规则已移除：选中语义仅由上方品牌色描边承载。 */
+
+/* ------------------------------------------------------------------
+   主题缩影：卡面从「桌面渐变纯色块」改为「应用界面三栏缩影」
+   ------------------------------------------------------------------
+   三栏（左「图标条」/ 中「正文区」/ 右「信息栏」）用**该主题的固定色值**
+   渲染，因此任意当前主题下都能预览其余三个主题的样子。色值逐字取自
+   styles/theme.css 同主题令牌，定义为 `.ts-card--{id}` 上的局部变量：
+     --mini-pane     卡面底色 / 中栏「正文」底   = 该主题 --pane
+     --mini-surface  左右栏底                    = 该主题 --win-surface
+     --mini-text     主题名 / 标题线             = 该主题 --text
+     --mini-line     次要灰线条（正文段落）      = 该主题 --text-mute
+     --mini-line-soft 更浅的灰线条（低透明近似） = 该主题 --text-dim
+     --mini-hair     分栏细描边                  = 该主题 --line
+     --mini-brand    强调（图标点 / 标题条 / 小块）  = 该主题 --brand
+   纯色（--pane / --win-surface）为逐字节选令牌值；带 alpha 的 --text-dim /
+   --line 原样引用（局部变量即为该主题令牌的等价静态值）。
+   ------------------------------------------------------------------ */
+
+/* light：--pane #ffffff / --win-surface #fbfbfb / --text #1a1a1a /
+   --text-dim #5c5c5c / --text-mute #8a8a8a / --line rgba(0,0,0,.08) / --brand #5b4de8 */
+.ts-card--light {
+  --mini-pane: #ffffff;
+  --mini-surface: #fbfbfb;
+  --mini-text: #1a1a1a;
+  --mini-line: #8a8a8a;
+  --mini-line-soft: #5c5c5c;
+  --mini-hair: rgba(0, 0, 0, 0.08);
+  --mini-brand: #5b4de8;
+}
+
+/* dark：--pane #202020 / --win-surface #2b2b2e / --text #ffffff /
+   --text-dim #c8c8c8 / --text-mute #909090 / --line rgba(255,255,255,.1) / --brand #8b7ff0 */
+.ts-card--dark {
+  --mini-pane: #202020;
+  --mini-surface: #2b2b2e;
+  --mini-text: #ffffff;
+  --mini-line: #909090;
+  --mini-line-soft: #c8c8c8;
+  --mini-hair: rgba(255, 255, 255, 0.1);
+  --mini-brand: #8b7ff0;
+}
+
+/* sage：--pane #fcfffc / --win-surface #fafdfa / --text #1a2a1e /
+   --text-dim #4e6254 / --text-mute #7e8f83 / --line rgba(20,60,30,.1) / --brand #4a9d5f */
+.ts-card--sage {
+  --mini-pane: #fcfffc;
+  --mini-surface: #fafdfa;
+  --mini-text: #1a2a1e;
+  --mini-line: #7e8f83;
+  --mini-line-soft: #4e6254;
+  --mini-hair: rgba(20, 60, 30, 0.1);
+  --mini-brand: #4a9d5f;
+}
+
+/* honey：--pane #fffef9 / --win-surface #fffdf6 / --text #2b2415 /
+   --text-dim #6a5c3c / --text-mute #96886c / --line rgba(80,60,10,.12) / --brand #c99426 */
+.ts-card--honey {
+  --mini-pane: #fffef9;
+  --mini-surface: #fffdf6;
+  --mini-text: #2b2415;
+  --mini-line: #96886c;
+  --mini-line-soft: #6a5c3c;
+  --mini-hair: rgba(80, 60, 10, 0.12);
+  --mini-brand: #c99426;
+}
+
+/* 卡面 = 该主题 pane 纯色（取代原桌面渐变） */
+.ts-card {
+  background: var(--mini-pane);
+}
+
+/* 缩影容器：横向铺满、撑开主题名以外的剩余高度，三栏横向排布 */
+.ts-option-preview {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  pointer-events: none;
+}
+
+/* 三栏通用：圆角小块 + 纵向排布 + 该主题 1px 细描边 */
+.ts-mini {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--mini-hair);
+  border-radius: 3px;
+}
+
+/* 左「图标条」：最窄，几个小圆点模拟模块图标 */
+.ts-mini--rail {
+  flex: 0 0 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--mini-surface);
+}
+
+.ts-mini-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--mini-line-soft);
+}
+
+/* 首个小圆点用品牌色，暗示「当前模块」 */
+.ts-mini-dot--active {
+  background: var(--mini-brand);
+}
+
+/* 中「正文区」：最宽；灰线条模拟文字（标题条 + 三段不同长度的段落线） */
+.ts-mini--doc {
+  flex: 1 1 auto;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 7px;
+  background: var(--mini-pane);
+}
+
+.ts-mini-bar {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--mini-line);
+  opacity: 0.55;
+}
+
+/* 标题条：更粗 + 品牌色，模拟标题层级 */
+.ts-mini-bar--title {
+  width: 46%;
+  height: 4px;
+  background: var(--mini-brand);
+  opacity: 1;
+}
+
+.ts-mini-bar--w1 {
+  width: 94%;
+}
+
+.ts-mini-bar--w2 {
+  width: 78%;
+}
+
+.ts-mini-bar--w3 {
+  width: 58%;
+}
+
+/* 右「信息栏」：窄栏，顶部一个品牌色小块 + 两条短灰线 */
+.ts-mini--info {
+  flex: 0 0 22px;
+  gap: 4px;
+  padding: 0 4px;
+  justify-content: center;
+  background: var(--mini-surface);
+}
+
+.ts-mini-chip {
+  width: 100%;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--mini-brand);
+  opacity: 0.85;
+}
+
+.ts-mini-line {
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--mini-line);
+  opacity: 0.55;
+}
+
+.ts-mini-line--short {
+  width: 62%;
+}

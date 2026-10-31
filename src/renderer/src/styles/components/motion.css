@@ -1,0 +1,135 @@
+/* ============================================================
+   统一动效基础设施（时长令牌 · 缓动令牌 · 进场 keyframes）
+   ------------------------------------------------------------------
+   令牌定义在 theme.css 的 :root：--dur-fast / --dur-base / --dur-slow
+   与 --ease-out（进场缓动）。
+   本文件只提供**新增**的通用进场 / 退场关键帧与工具类，不改动任何既有
+   keyframes（wf-pop / wf-fade / wf-dropdown-in / ep-search-in …）
+   与既有 transition。既有动画的收敛在后续批次逐项进行。
+   减动效兜底见 base.css 末尾的 prefers-reduced-motion 全局规则。
+   ============================================================ */
+
+/* 统一进场：淡入 + 轻微上移（8px，与三栏面板切换原位移量一致） */
+@keyframes wf-enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 统一退场：淡出 + 轻微下移 */
+@keyframes wf-exit-down {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* 纯淡入（用于不适合位移的场景，如保留滚动位置的面板） */
+@keyframes wf-enter-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 纯淡出（与 wf-enter-fade 对称；用于遮罩等只需透明度的层） */
+@keyframes wf-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* 弹窗退场：与 surface.css 既有的 wf-pop 进场互为反向（位移 + 缩放原路收回）。
+   供 `.wf-modal__panel.is-closing` 使用，时长取 --dur-base。 */
+@keyframes wf-pop-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+/* ---------- 通用工具类 ----------
+   仅供新代码 / 后续收敛批次取用；当前无任何元素挂载这两个类，
+   因此本文件对现有界面零视觉影响。 */
+.wf-enter-up {
+  animation: wf-enter-up var(--dur-base) var(--ease-out) both;
+}
+
+.wf-enter-fade {
+  animation: wf-enter-fade var(--dur-base) var(--ease-out) both;
+}
+
+/* ---------- 主题切换的整屏交叉淡化（View Transitions） ----------
+   仅在 `theme/themeReveal.ts` 通过 `document.startViewTransition` 切换主题时
+   生效，混合方式按窗口材质分两种：
+
+   ① 不透明模式（默认）：**覆盖式**而非真交叉。
+   - old：关掉 UA 默认淡出，旧快照保持不透明垫底（真交叉会让两层同时半透明，
+     透出窗口底，亮 / 暗主题之间整屏泛灰）；
+   - new：在其上从 0 → 1 淡入，新主题渐渐浮上来。
+
+   ② 透明（Acrylic）模式：**真交叉 + plus-lighter 叠加**。
+   此时 `.shell` 只有 70% 不透明（--desk-solid-alpha）、body 透明，覆盖式叠加会
+   把两层快照的 alpha 相加（0.70 → 0.91），表现为过渡中越来越实、快照撤掉后
+   又跳回通透。改为 old / new 各自按 a·(1-t) / a·t 预乘相加后，合计恒为
+   a = 0.70，材质透出率全程 30% 不变。
+   注意：old 必须**也**淡出（见 `themeReveal.ts` 的 acrylic 分支）；若只有 new
+   淡入，plus-lighter 下 alpha 会变成 a + a·t（更实、且被钳制到 1）。
+   `::view-transition-image-pair(root)` 自带 isolation，两层只彼此叠加，
+   不会与页面背景混合。
+
+   注意：快照的透明度**不在这里用 CSS animation 声明**，而是由 `themeReveal.ts`
+   在 `transition.ready` 后用 `documentElement.animate(..., { pseudoElement })`
+   （WAAPI）驱动。原因：CSS 侧之前用 `--ease-out`（强前倾曲线）配合
+   `--dur-base`（180ms），前 3 帧就走掉约 3/4 的透明度，有效可感知时长仅
+   50–60ms，肉眼等同瞬切。WAAPI 还免疫 `!important` 兜底与伪元素上 `var()`
+   继承的问题。因此这里只负责「关掉 UA 动画、固定 new 的起始态、选择混合模式」。
+
+   `animation: none` 同时关闭了 UA 对 old 的淡出与 new 的默认淡入，
+   时长 / 缓动以 `themeReveal.ts` 中的取值为唯一真源。 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* 新快照的起始态固定在 CSS 里（不是只靠 JS）：
+   `::view-transition-new(root)` 的基础 opacity 是 1，若起始态只由 WAAPI 在
+   `transition.ready` 的微任务里建立，就可能提交一帧「新主题已可见」的画面
+   —— 非透明档 alpha=100%、亮暗对比最大，表现为闪屏。
+   这里把基础值设为 0，`ready` 之前的任何一帧都只显示旧主题（= 用户切换前的画面），
+   物理上不可能闪；WAAPI 用 `fill: 'both'` 接管 0→1 的推进与末帧保持。
+   注意 old 刻意保持基础 opacity 1（覆盖式淡化的不透明垫底），不要跟着改。 */
+::view-transition-new(root) {
+  opacity: 0;
+}
+
+/* 透明模式的混合模式覆写。
+   选择器按规范写成「根元素复合选择器 + 伪元素」：View Transition 伪元素的
+   ultimate originating element 一律是文档元素，规范示例即
+   `:root::view-transition-group()`；后代写法 `html[...] ::view-transition-old(root)`
+   反而要求 html 是 html 的后代，命不中。
+   特异性 (0,1,2) 高于上面的 (0,0,1)，与源码顺序无关地胜出；上层 `animation: none`
+   由上面的规则继续生效。 */
+html[data-material='acrylic']::view-transition-old(root),
+html[data-material='acrylic']::view-transition-new(root) {
+  mix-blend-mode: plus-lighter;
+}

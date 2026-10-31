@@ -1,0 +1,77 @@
+/* ============================================================
+   字体资源注册（@font-face）
+   ------------------------------------------------------------------
+   LXGW WenKai GB Screen（霞鹜文楷 屏幕阅读版，SIL OFL 1.1）。
+   源文件已随项目落位：src/renderer/src/assets/fonts/LXGWWenKaiGBScreen.ttf
+   （≈24.8 MB；ttf 为 Vite 默认资源类型，无需 assetsInclude 配置）。
+   仅声明 400 / normal 一个切面：应用处以「正体」引用，不合成粗斜。
+   引用位置：写作页侧栏卷名 / 章名（见 writer-side.css）。
+   ============================================================ */
+
+@font-face {
+  font-family: 'LXGW WenKai GB Screen';
+  src: url('../assets/fonts/LXGWWenKaiGBScreen.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ---------- 状态栏「字体」控件的可选项（正文 --doc-font） ----------
+   源文件同目录 assets/fonts/，均为 400 / normal 单切面，不合成粗斜。
+   `MiSans L3.ttf` 文件名含空格，url() 用引号包裹（Vite 可正确处理）。 */
+
+@font-face {
+  font-family: 'Alibaba PuHuiTi 3.0';
+  src: url('../assets/fonts/AlibabaPuHuiTi-3-55-RegularL3.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LXGW Neo XiHei Plus';
+  src: url('../assets/fonts/LXGWNeoXiHeiPlus.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LXGW WenKai';
+  src: url('../assets/fonts/LXGWWenKai-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LXGW ZhenKai GB';
+  src: url('../assets/fonts/LXGWZhenKaiGB-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MiSans L3';
+  src: url('../assets/fonts/MiSans L3.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Moon Stars Kai';
+  src: url('../assets/fonts/MoonStarsKai-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'WenYuan Rounded SC';
+  src: url('../assets/fonts/WenYuanRoundedSC-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}

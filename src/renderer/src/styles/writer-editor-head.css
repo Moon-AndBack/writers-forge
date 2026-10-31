@@ -1,0 +1,214 @@
+/* ============================================================
+   写作视图 — 中栏（编辑区 / 文档）
+   对应 template/index.html 的 .editor-bar/.editor-inner/
+   .doc-title/.doc-meta/.doc-body/.caret/.editor-foot 与各模块正文块
+   （.outline-block、.profile-*、.asset-*、.notes-split）。
+   半透明底统一改不透明色；品牌浅底用 color-mix 混入 --pane。
+   ============================================================ */
+
+/* ---------- 工具条 ---------- */
+.editor-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 10px 14px 4px;
+}
+
+.editor-bar .spacer {
+  flex: 1;
+}
+
+.editor-bar .bar-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-mute);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0 4px;
+}
+
+/* 标题 / 信息头部块（章节视图）：置于滚动区之外，始终固定显示。
+   头部与写作版心解耦：不随 --page-width / 页宽设置变化，
+   横跨编辑区整宽（宽度只随编辑区容器宽变化）。 */
+.editor-head {
+  flex: none;
+  text-align: left;
+}
+
+/* 头部内层：覆盖通用 .editor-inner 的版心约束
+   （max-width: var(--page-width) + margin 居中 + padding 0 40px），
+   使头部内容横跨头部整宽，上 / 左 / 右各留 40px（上边距与左右对齐）；
+   正文区仍走原 .editor-inner 版心。 */
+.editor-head .editor-inner {
+  max-width: 100%;
+  padding: 38px 40px 0;
+}
+
+/* 正文滚动区：flex 撑满中栏剩余高度，正文独立滚动。
+   （聚焦框覆盖层已移除，滚动区不再需要相对定位 / z-index 分层。） */
+.ep-view[data-view='chapters'] .editor-scroll {
+  scrollbar-gutter: stable;
+}
+
+/* ---------- 文档区 ----------
+   阶段②：章节正文为 Tiptap（DOM: .doc-body > .ProseMirror > p），
+   笔记视图仍为自绘 contenteditable（.doc-body > p）。
+   选择器写作 `.doc-body p` / `.doc-body .ProseMirror p` 并行命中两种层级；
+   焦点态统一用 :focus-within（contenteditable 与 ProseMirror 均成立）。 */
+.editor-inner {
+  max-width: var(--page-width);
+  margin: 0 auto;
+  padding: 0 40px;
+  transition: max-width 0.25s var(--ease);
+}
+
+.editor-inner.is-full {
+  max-width: 100%;
+  padding: 0 28px;
+}
+
+.doc-title {
+  width: 100%;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  padding: 14px 8px 10px;
+  margin: 0 -8px 8px;
+  border-radius: var(--r-xs);
+  transition: background 0.1s var(--ease);
+}
+
+.doc-title:hover {
+  background: var(--soft-hover-solid);
+}
+
+.doc-title:focus {
+  background: color-mix(in srgb, var(--brand) 8%, var(--pane));
+}
+
+/* 章节视图头部标题输入（.editor-head > .editor-inner > input.doc-title）：
+   取消 hover / focus / active 底色，背景全透明；清零基础 .doc-title 的外边距
+   （margin: 0，去掉其上下 / 左右外边距）与内边距（padding: 0）；仅命中头部作用域，
+   不影响大纲 / 设定 / 笔记等其它视图的 .doc-title。
+   保留 caret-color（沿用主题 --caret）/ 文字 / 字号字重；无边框，
+   输入框默认 border / outline / background 已由 base.css 复位。 */
+.editor-head .doc-title,
+.editor-head .doc-title:hover,
+.editor-head .doc-title:focus,
+.editor-head .doc-title:active {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  caret-color: var(--caret);
+}
+
+/* 章节名编辑行（前段只读 + 空隙 + 名段输入）：行容器为 flex，间距由 `gap` 统一提供
+   （前缀与名之间即此空隙）。gap 取 12px：28px/700 的标题字号下，8px 视觉偏紧
+   （前缀「第X章」与名段几乎贴连），12px 与标题块的呼吸感匹配且不显松散。
+   字体不单独声明，继承应用默认字体栈（与侧栏卷 / 章行同口径）。字号 28px 保持。
+   前缀不被编辑、宽度随内容；输入 flex 撑满剩余宽度（min-width: 0 允许收缩）。 */
+.editor-head .doc-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* 固定前缀段（不可编辑）：普通章 =「第X章」编号；特殊章 = 创建时设置的前段
+   （如「序章」，`.doc-title-prefix--special` 仅作语义标记，形态同普通前缀）。
+   默认字体、正体，纯展示不接收编辑。 */
+.editor-head .doc-title-prefix {
+  flex: none;
+  white-space: pre;
+  color: var(--text);
+}
+
+/* 名段输入：复位原生 input 外观（无边框 / 无底色 / 无内边距）；
+   `font: inherit` 整体继承行容器（默认字体 / 28px / 700 / 行高）。
+   普通 / 特殊章共用同一输入框（仅名段可编辑），flex 撑满剩余宽度。 */
+.editor-head .doc-title-input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0;
+  margin: 0;
+  caret-color: var(--caret);
+}
+
+.editor-head .doc-title-input::placeholder {
+  color: var(--text-mute);
+  font-weight: 400;
+}
+
+.editor-head .doc-title-input:disabled {
+  cursor: default;
+}
+
+/* 头部元信息行（.editor-head > .editor-inner > .doc-meta）：仅收紧下外边距，
+   使标题块与正文滚动区衔接更紧凑；不改其 padding / 其它方向尺寸 / 颜色。
+   作用域限定 .editor-head，避免影响大纲 / 世界观等复用 .doc-meta 的视图。 */
+.editor-head .doc-meta {
+  margin-bottom: 10px;
+}
+
+/* 章节状态按钮（两态：草稿 / 定稿）：嵌在元信息行内，视觉为彩色小标签。
+   点击切换状态（定稿 → 草稿 / 草稿 → 定稿）；按钮基础样式复位，
+   仅保留文字 + 轻底；颜色随 --warn（草稿）/ --ok（定稿）四主题自适应。 */
+.editor-head .doc-status {
+  padding: 1px 8px;
+  border: none;
+  border-radius: var(--r-xs);
+  background: var(--soft-solid);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition:
+    background 0.1s var(--ease),
+    color 0.1s var(--ease);
+}
+
+.editor-head .doc-status:hover {
+  background: var(--soft-hover-solid);
+}
+
+.editor-head .doc-status.is-draft {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 16%, var(--pane));
+}
+
+.editor-head .doc-status.is-done {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 16%, var(--pane));
+}
+
+.editor-head .doc-status:disabled {
+  cursor: default;
+}
+
+.doc-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 34px;
+  padding-left: 2px;
+  font-size: 11.5px;
+  color: var(--text-mute);
+}
+
+/* ---------- SpecialChapterDialog（「特殊章节」弹窗） ----------
+   复用全局 Modal / FormField / Input，仅补纵向排布的少量布局。 */
+.special-chapter-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}

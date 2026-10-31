@@ -1,0 +1,58 @@
+/* ============================================================
+   实体类型色令牌（统一设定库五大类）。
+   不透明填充：类型色 color-mix 混入 --pane（非 transparent），
+   四主题（--brand 体系）自动适配；类型基色参考 UI 惯例：
+   人物=品牌色系 / 世界观=青绿 / 势力=橙赭 / 物品=紫堇 / 境界体系=靛蓝。
+   旧四类（地名 / 武器 / 功法）token 保留为别名，供历史数据兼容。
+   禁 html.sage / html.honey，不硬编码十六进制主题色。
+   ============================================================ */
+
+:root {
+  /* 基色（可为任意色相，仅作 color-mix 的输入）：
+     人物 = 品牌色系 / 势力 = 橙赭 / 物品 = 紫堇 / 世界观 = 青绿 /
+     境界体系 = 靛蓝（250，较低彩度，与品牌紫 / 物品紫堇区分）。 */
+  --entity-character: var(--brand);
+  --entity-faction: oklch(0.66 0.11 60);
+  --entity-item: oklch(0.62 0.11 300);
+  --entity-worldview: oklch(0.62 0.09 195);
+  --entity-power_system: oklch(0.58 0.12 250);
+
+  /* 旧四类 token 别名（旧 entities 表数据 / 历史 CSS 仍可能引用，保留兼容）：
+     地名 → 世界观、武器 → 势力、功法 → 物品。 */
+  --entity-place: var(--entity-worldview);
+  --entity-weapon: var(--entity-faction);
+  --entity-art: var(--entity-item);
+
+  /* 高亮底：18% 类型色混入 --pane（不透明填充，遮住正文底色） */
+  --entity-character-bg: color-mix(in srgb, var(--entity-character) 18%, var(--pane));
+  --entity-faction-bg: color-mix(in srgb, var(--entity-faction) 18%, var(--pane));
+  --entity-item-bg: color-mix(in srgb, var(--entity-item) 18%, var(--pane));
+  --entity-worldview-bg: color-mix(in srgb, var(--entity-worldview) 18%, var(--pane));
+  --entity-power_system-bg: color-mix(in srgb, var(--entity-power_system) 18%, var(--pane));
+  --entity-place-bg: var(--entity-worldview-bg);
+  --entity-weapon-bg: var(--entity-faction-bg);
+  --entity-art-bg: var(--entity-item-bg);
+
+  /* 前景文字：加深类型色保证对比 */
+  --entity-character-fg: color-mix(in srgb, var(--entity-character) 65%, var(--text));
+  --entity-faction-fg: color-mix(in srgb, var(--entity-faction) 65%, var(--text));
+  --entity-item-fg: color-mix(in srgb, var(--entity-item) 65%, var(--text));
+  --entity-worldview-fg: color-mix(in srgb, var(--entity-worldview) 65%, var(--text));
+  --entity-power_system-fg: color-mix(in srgb, var(--entity-power_system) 65%, var(--text));
+  --entity-place-fg: var(--entity-worldview-fg);
+  --entity-weapon-fg: var(--entity-faction-fg);
+  --entity-art-fg: var(--entity-item-fg);
+
+  /* 弹窗类型徽标实底 */
+  --entity-character-solid: var(--entity-character);
+  --entity-faction-solid: var(--entity-faction);
+  --entity-item-solid: var(--entity-item);
+  --entity-worldview-solid: var(--entity-worldview);
+  --entity-power_system-solid: var(--entity-power_system);
+  --entity-place-solid: var(--entity-worldview-solid);
+  --entity-weapon-solid: var(--entity-faction-solid);
+  --entity-art-solid: var(--entity-item-solid);
+
+  /* 悬停描边 */
+  --entity-hover-ring: color-mix(in srgb, var(--text) 22%, transparent);
+}

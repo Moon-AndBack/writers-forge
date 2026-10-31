@@ -1,0 +1,157 @@
+/* ============================================================
+   写作视图 · 剧情（plot）— 左栏剧情线列表
+   ------------------------------------------------------------------
+   自 `writer-plot.css` 原样搬移（保持单文件 ≤500 行，§3）。
+   剧情线行 / 色点 / 名段渐隐 / 内联重命名 / 行尾 hover 操作 / 新增线按钮。
+   底座（--soft-solid 圆角底 + 6px 内衬）由通用 `.pane-region` 承载。
+   hover 仅颜色 / 描边 / 阴影过渡，无 transform（§8）。
+   ============================================================ */
+
+/* ============================================================
+   左栏：剧情线列表
+   ============================================================ */
+.plot-line-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  /* 底座（--soft-solid 圆角底 + 6px 内衬）由通用 `.pane-region` 承载
+     （JSX 侧追加，见 PlotPanel）；此处只保留本域布局（纵向列表 + 1px 缝）。 */
+}
+
+/* Plot 左栏 spacing 统一由 .pane-region 通用规则处理（见 writer-side.css），
+   不再单独覆盖上下 margin。 */
+
+.plot-line {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  transition: background 0.1s var(--ease);
+}
+
+.plot-line:hover {
+  background: var(--soft-hover-solid);
+}
+
+.plot-line.is-active {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+/* 色点：非选中中性弱化，选中品牌色（无缩放，仅颜色 / 阴影过渡）。 */
+.plot-line-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--text-mute);
+  opacity: 0.55;
+  transition:
+    background 0.12s var(--ease),
+    opacity 0.12s var(--ease),
+    box-shadow 0.12s var(--ease);
+}
+
+.plot-line.is-active .plot-line-dot {
+  background: var(--brand);
+  opacity: 1;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 12%, transparent);
+}
+
+.plot-line-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  /* 名段溢出用右缘渐隐遮罩（口径同 .chapter-name）。 */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+}
+
+.plot-line.is-active .plot-line-name {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* 内联重命名输入：口径同 .vol-rename（无边框 / 品牌浅底 / 随主题着色）。 */
+.plot-line-rename {
+  flex: 1;
+  min-width: 0;
+  padding: 0 4px;
+  border-radius: var(--r-xs);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-dim);
+  background: color-mix(in srgb, var(--brand) 8%, var(--pane));
+  caret-color: var(--caret);
+}
+
+.plot-line-count {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-mute);
+}
+
+/* hover 操作：绝对定位悬浮于行右缘（口径同 .outline-chapter-actions）。 */
+.plot-line-actions {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  flex: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.1s var(--ease);
+  background: var(--soft-hover-solid);
+  border-radius: var(--r-xs);
+}
+
+.plot-line.is-active .plot-line-actions {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+.plot-line:hover .plot-line-actions,
+.plot-line:focus-within .plot-line-actions {
+  visibility: visible;
+  opacity: 1;
+}
+
+.plot-line.is-active:hover .plot-line-actions {
+  background: var(--soft-hover-solid);
+}
+
+/* hover / 聚焦时线名让位，避免被悬浮操作按钮盖住。 */
+.plot-line:hover .plot-line-name,
+.plot-line:focus-within .plot-line-name {
+  margin-right: 50px;
+}
+
+.plot-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 8px 9px;
+  border-radius: var(--r-xs);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-dim);
+  transition:
+    background 0.1s var(--ease),
+    color 0.1s var(--ease);
+}
+
+.plot-add-btn:hover {
+  background: var(--soft-hover-solid);
+  color: var(--text);
+}

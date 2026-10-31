@@ -1,0 +1,72 @@
+/* ============================================================
+   设定档案卡片：别名 / 关系摘要标签（chip）
+   ------------------------------------------------------------------
+   类别仍用通用 `Tag`（`dossier-card__type`）；别名与关系摘要复用 `Tag` 的
+   结构（`.wf-tag`），仅在本域覆写尺寸。圆角 / 底色 / 描边 / hover 统一由
+   全局胶囊层（`chip-pill.css` + `chip-pill-tokens.css`）提供，模块基色与预设子类色
+   由业务侧挂 `.chip-m-*` / `.chip-p-*`。别名不带分类语义，故在本域单独豁免实色底
+   （见 `.dossier-card__chip--alias`）；关系摘要仍按对端模块 + 预设分类取色。
+   hover 仅颜色 / 描边变化，无位移 / 缩放（§8）。
+   ============================================================ */
+
+/* 标签行：横向排列 + 自动换行；卡片高度随内容增长，不再被 240px 上限裁切。 */
+.dossier-card.wf-card--halo {
+  max-height: none;
+}
+
+.dossier-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* 关系行（关系胶囊 + 「+N」）：单行自适应，容量由 `useChipOverflow` 按容器实测宽得出。
+   **必须保留 flex-wrap: wrap**——该 hook 靠「全量渲染后的换行位置」测量单行容量；
+   改成 nowrap 会让所有胶囊永远排在同一行、容量恒等于总数，「+N」永不出现。
+   折叠后行内只剩「容量−1 条关系 + 更窄的计数胶囊」，实际只占一行：
+   单行效果由容量保证，而非 nowrap。别名行（无修饰类）仍按 `.dossier-card__chips` 换行。 */
+.dossier-card__chips--relations {
+  flex-wrap: wrap;
+}
+
+/* 别名 / 关系标签：略小于类别 Tag；底色、描边、hover 交给全局胶囊层。 */
+.dossier-card__chip.wf-tag {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  padding: 1px 8px;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* 别名标签：不参与胶囊实色配色（别名不带分类语义），保持无底色 + 淡描边 +
+   弱化文字，与关系胶囊（带目标实体分类色）在视觉上明确区分。 */
+.dossier-card__chip--alias.wf-tag {
+  --chip-bg: transparent;
+  --chip-fg: var(--text-mute);
+  --chip-border: color-mix(in srgb, var(--text) 18%, transparent);
+  background: transparent;
+  color: var(--text-mute);
+  border-color: color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+/* 类别标签：同样接入全局胶囊层，尺寸与上面的 chip 对齐；flex / 右对齐等
+   布局仍由 writer-dossier.css 负责，此处不重复声明。 */
+.dossier-card__type {
+  padding: 1px 8px;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* 超出收口的「+N」标签：中性胶囊语义（基色取正文色）+ 等宽数字便于对齐。 */
+.dossier-card__chip--more.wf-tag {
+  --chip-base: var(--text);
+  --chip-mix: 8%;
+  font-variant-numeric: tabular-nums;
+}

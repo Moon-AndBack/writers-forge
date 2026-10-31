@@ -1,0 +1,94 @@
+/* ============================================================
+   欢迎引导页（Welcome）布局样式
+   由 pages/Welcome.tsx 直接 import，不并入 styles/index.css。
+   注意：本页渲染在 `.app-viewport` 内部，标题栏 / 状态栏由外壳保留，
+   故此处不再绘制自绘标题栏，只负责内容区（居中卡片）。
+   卡片本体复用组件库窗口框架 `Window`（.wf-window*），
+   此处仅补齐欢迎页专属的标题组 / 笔名表单 / 尺寸与不透明填充。
+   颜色一律引用 styles/theme.css 令牌（含 color-mix），
+   兼容 light / dark / sage / honey 四主题；卡片填充不透明。
+   ============================================================ */
+
+.wf-welcome {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* 宽度固定 440，高度自适应内容：欢迎页仅一步（笔名 + 开始使用），
+   卡片高度随内容收缩，不再强制撑满 400px。
+   使用复合选择器确保宽度盖过 `.wf-window` 的基础宽度（与导入顺序无关）。 */
+.wf-window.wf-welcome__card {
+  width: 440px;
+  max-width: 100%;
+}
+
+/* ---------- 标题组（标题 + 说明）----------
+   置于 Window 标题区：贴卡片顶部，不参与内容区垂直居中。 */
+.wf-welcome__intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wf-welcome__title {
+  margin: 6px 0 0;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.wf-welcome__desc {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-mute);
+}
+
+/* ---------- 步骤内容（随内容自适应的高度区）----------
+   承载于 Window 内容区（.wf-window__body）；用复合选择器盖过其基础内边距。
+   高度改为自适应后无富余空间可分配，.wf-welcome__panel 的 margin:auto 0
+   在内容未超出时自动坍缩为 0，不会产生额外间距；超出时保持
+   从顶部开始滚动、不裁切顶部。 */
+.wf-window__body.wf-welcome__content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  padding: 14px 20px 14px;
+}
+
+.wf-welcome__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* 在 .wf-welcome__content 内垂直居中；溢出时自动归零 */
+  margin: auto 0;
+}
+
+.wf-welcome__warn {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--warn);
+}
+
+/* ---------- 底部操作区 ----------
+   布局与分隔线由 Window 底部区（.wf-window__footer）提供，
+   此处仅保留左右按钮间的弹性占位。 */
+.wf-welcome__spacer {
+  flex: 1;
+}
+
+/* 底部「开始使用」按钮统一最小宽度：
+   固定 min-width 使宽高稳定；高度沿用 .wf-btn 的 min-height（md 尺寸），
+   无需另行覆盖。取值复用 Window 底部区的共享令牌（弹窗底部按钮同一数值）。 */
+.wf-welcome__action {
+  min-width: var(--wf-window-action-min-w, 104px);
+}

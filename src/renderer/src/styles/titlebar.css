@@ -1,0 +1,195 @@
+/* ============================================================
+   标题栏新增样式（TitleBar 专用）
+   ------------------------------------------------------------------
+   与 styles/shell.css 中已有的 .titlebar / .tb-brand / .tb-page-actions /
+   .tb-spacer 等基础规则互补：本文件仅承载标题栏改版**新增**的类
+   （返回图标 .tb-back、右侧工具组 .tb-right-tools、纯图标主题触发 .tb-theme-icon）。
+   拆独立文件的原因：shell.css 已逼近单文件 500 行硬约束，故标题栏新增规则
+   不再堆入其中。颜色一律取 theme.css 令牌 / color-mix 派生，四主题自适应。
+   注意：本文件在 shell.css 之后导入（App/TitleBar 导入链），故对同名属性可覆盖。
+   ============================================================ */
+
+/* ---------- 左侧「返回书架」图标（仅写作页渲染） ----------
+   复用 IconButton（.wf-iconbtn 圆形 30×30），此处仅补原型 .tb-back 的
+   定位微调：与品牌区之间留出间隔，hover / active 交互沿用 .wf-iconbtn 默认。 */
+.titlebar .tb-back {
+  -webkit-app-region: no-drag;
+}
+
+/* ---------- 模块操作按钮组（仅写作页 · 有注册动作的模块） ----------
+   位于「返回书架」图标右侧、`.tb-page-actions` 之前，横排渲染：
+   章节模块为「新建卷 ｜ 保存 · 撤销 · 重做 ｜ 搜索 ｜ 回收站」，
+   大纲模块为「添加 ｜ 保存 · 撤销 · 重做 ｜ 搜索 ｜ 回收站」。
+   由各模块视图（经模块级 action 插槽）注册，节点在模块视图内构造，
+   故保存禁用态 / 撤销重做可用态 / 搜索 · 回收站激活态等 editor 状态照常获取。
+   `min-width: 0` + `overflow: hidden`：窄窗时随 `.tb-spacer` 之后收缩，避免溢出
+   （按钮 flex: none 保持图标完整；极端窄窗时才裁切，属降级保护）。
+   右侧 14px 渐隐**只落在内边距上**：`padding-right: 14px` 让 mask 的
+   `calc(100% - 14px)` 终点避开最后一个按钮（回收站），常驻启用也不再切到按钮本体。 */
+.tb-module-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 14px;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+  -webkit-app-region: no-drag;
+}
+
+.tb-module-actions:empty {
+  display: none;
+}
+
+/* 分组竖分隔线：横排按钮组内的竖向 1px 线（替代活动栏的横向 `.act-sep`）。 */
+.tb-sep {
+  flex: none;
+  width: 1px;
+  height: 16px;
+  margin: 0 4px;
+  border-radius: 99px;
+  background: var(--line);
+}
+
+/* 正文「聚焦编辑」时标题栏富文本工具栏容器（`PlotActivityActions` /
+   `DossierActivityActions` 注册的节点）：`display: contents` 让内部按钮 / 竖分隔线
+   **直接**参与 `.tb-module-actions` 的 inline-flex 布局（间距与大纲 / 章节工具栏一致，
+   不另造重复样式）；容器自身不生成盒子，仅用于挂 `onMouseDown` 阻止默认——
+   保编辑器选区 / 聚焦，避免工具栏随失焦消失。 */
+.tb-editor-actions {
+  display: contents;
+}
+
+/* 章节操作按钮：沿用 IconButton ghost 基座（圆形 30×30，同 .tb-back / .tb-tool），
+   布局与图标尺寸引用 `.wf-iconbtn` 默认值，不额外覆盖；此处仅补激活态。
+   激活态底色为**不透明全底**（品牌色 18% 混入 --pane，口径同 .act-btn.is-active）；
+   不用 transparent——标题栏背景透明，半透明底会透出 .shell 桌面渐变而观感发花。 */
+.tb-action.is-active {
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 18%, var(--pane));
+}
+
+/* ---------- 右侧常驻工具组：设置 · 主题 · 帮助 ----------
+   位于 .tb-spacer 之后、系统窗口控制按钮预留区之前；gap 提供图标间距，
+   margin-right 与系统预留 padding 之间留出视觉缓冲。 */
+.tb-right-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  margin-right: 2px;
+  -webkit-app-region: no-drag;
+}
+
+/* ---------- 右栏面板开关按钮（.tb-right-tools 内，设置与主题之间） ----------
+   基座沿用 IconButton ghost（圆形 30×30，同 .tb-tool）；激活态仿 .tb-action.is-active：
+   品牌色字 + 品牌色 18% 混入 --pane 的**不透明全底**。激活语义：右栏实际显示中
+   （与搜索 / 回收站等 is-active 语义一致）。仅颜色 / 底色变化，hover 无 transform。 */
+.tb-pane-toggle.is-active {
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 18%, var(--pane));
+}
+
+/* ---------- 主题触发按钮：由「图标 + 文字标签」改为纯图标 ----------
+   复用 IconButton（.wf-iconbtn）作为基座（圆形 30×30、hover 出底），
+   与其左右两侧的设置 / 帮助保持完全一致的观感与间距。
+   `.tb-theme-wrap` 仍为其浮层定位锚点（见 theme-switcher.css）。 */
+.titlebar .tb-theme-icon {
+  color: var(--text-dim);
+}
+
+.titlebar .tb-theme-icon:hover:not(:disabled) {
+  color: var(--text);
+}
+
+/* ---------- 标题栏图标按钮交互底色与按压反馈 ----------
+   标题栏内全部图标按钮（模块操作组的新增 / 保存 / 撤销 / 重做 / 搜索 /
+   回收站 `.tb-action`、返回 `.tb-back`、设置 / 右栏开关 / 主题 / 帮助
+   `.tb-tool` / `.tb-theme-icon`）的 hover / active / focus-visible 一律使用
+   不透明纯色底（`--soft-hover-solid` / `--soft-press-solid`），并以
+   `background-image: none` 屏蔽任何渐变来源；激活态（`.is-active`）沿用
+   品牌色混入 `--pane` 的不透明底（见上），hover 时显式恢复该底色。
+   动效边界：**hover 不做任何位移 / 缩放**（§8 约束的是卡片 hover 弹起，不是
+   按钮按压）；仅 `:active` 按下时做 0.96 轻缩，作为即时按压反馈。 */
+.titlebar .tb-action,
+.titlebar .tb-back,
+.titlebar .tb-tool,
+.titlebar .tb-theme-icon,
+.titlebar .tb-pane-toggle {
+  transition:
+    background 0.15s var(--ease),
+    color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease),
+    transform 0.08s var(--ease);
+}
+
+.titlebar .tb-action:hover:not(:disabled):not(.is-active),
+.titlebar .tb-back:hover:not(:disabled),
+.titlebar .tb-tool:hover:not(:disabled):not(.is-active),
+.titlebar .tb-theme-icon:hover:not(:disabled) {
+  background: var(--soft-hover-solid);
+  background-image: none;
+}
+
+.titlebar .tb-action:active:not(:disabled),
+.titlebar .tb-back:active:not(:disabled),
+.titlebar .tb-tool:active:not(:disabled),
+.titlebar .tb-theme-icon:active:not(:disabled) {
+  background: var(--soft-press-solid);
+  background-image: none;
+}
+
+/* 按下轻缩：transition 只作用于 transform，位移不参与布局。 */
+.titlebar .tb-action:active:not(:disabled),
+.titlebar .tb-back:active:not(:disabled),
+.titlebar .tb-tool:active:not(:disabled),
+.titlebar .tb-theme-icon:active:not(:disabled),
+.titlebar .tb-pane-toggle:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.titlebar .tb-action:focus-visible,
+.titlebar .tb-back:focus-visible,
+.titlebar .tb-tool:focus-visible,
+.titlebar .tb-theme-icon:focus-visible {
+  background: var(--soft-hover-solid);
+  background-image: none;
+}
+
+/* 激活态悬停：显式恢复品牌色底（否则会被 ghost 基座的通用 hover 灰底覆盖）。 */
+.titlebar .tb-action.is-active:hover:not(:disabled),
+.titlebar .tb-pane-toggle.is-active:hover:not(:disabled),
+.titlebar .tb-theme-icon.is-active:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand) 18%, var(--pane));
+  background-image: none;
+}
+
+.titlebar .tb-action.is-active:hover:not(:disabled),
+.titlebar .tb-pane-toggle.is-active:hover:not(:disabled) {
+  color: var(--brand);
+}
+
+.titlebar .tb-action.is-active:active:not(:disabled),
+.titlebar .tb-pane-toggle.is-active:active:not(:disabled) {
+  background: var(--soft-press-solid);
+  background-image: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .titlebar .tb-action,
+  .titlebar .tb-back,
+  .titlebar .tb-tool,
+  .titlebar .tb-theme-icon,
+  .titlebar .tb-pane-toggle {
+    transition: none;
+  }
+
+  .titlebar .tb-action:active:not(:disabled),
+  .titlebar .tb-back:active:not(:disabled),
+  .titlebar .tb-tool:active:not(:disabled),
+  .titlebar .tb-theme-icon:active:not(:disabled),
+  .titlebar .tb-pane-toggle:active:not(:disabled) {
+    transform: none;
+  }
+}

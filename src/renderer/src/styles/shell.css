@@ -1,0 +1,416 @@
+/* ============================================================
+   一体式窗口外壳
+   ------------------------------------------------------------------
+   .shell 为窗口根容器，承载**唯一**底色：标题栏 / 内容 / 状态栏三块
+   共用这一层桌面渐变（对齐原型），自身不画背景（background: transparent）。
+   默认窗口完全不透明，桌面底色为单层 linear-gradient 底 + 三层极淡 radial
+   光斑（原浓度 ×0.2；dark 专属覆盖为斜切「三角」渐隐色带（无光斑），
+   见下方 [data-theme='dark'] .shell），仅使用 theme.css 令牌，兼容
+   light / dark / sage / honey 四主题。
+   可选窗口材质（Acrylic 透明效果）在开启时改用四主题纯色 @70% 底透出 DWM，
+   覆盖规则独立于 styles/acrylic.css（由 App.tsx 在本文件之后导入）。
+   ============================================================ */
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  color: var(--text);
+  /* 桌面渐变（对齐原型）：三层光斑 + 底层线性渐变；结构与参数逐字同原型
+     .desktop，光斑色相同原型、alpha 为原浓度 ×0.2（极淡，近纯色观感），
+     光斑尺寸由 --desk-spot-1/2/3 提供，随主题令牌切换。
+     dark 主题由下方 [data-theme='dark'] .shell 整条覆盖（三段式色带）。 */
+  background:
+    radial-gradient(var(--desk-spot-1) at 12% -8%, var(--desk-glow-1), transparent 58%),
+    radial-gradient(var(--desk-spot-2) at 96% 106%, var(--desk-glow-2), transparent 58%),
+    radial-gradient(var(--desk-spot-3) at 60% 40%, var(--desk-glow-3), transparent 70%),
+    linear-gradient(150deg, var(--desk-1), var(--desk-2) 45%, var(--desk-3));
+  /* 无 background 过渡：本底色是叠加的多层渐变（dark 更是硬编码色带），
+     background-image 不参与插值，写了也只是一次硬跳。若只让面板外壳渐变、
+     而这块占满全窗的桌面底硬跳，切换时反而更割裂——故整体瞬变，
+     约定见 theme.css「主题切换不做过渡」。 */
+}
+
+/* dark 专属（定稿）：斜切「三角」渐隐色带，无光斑——
+   几何（W = 窗口内容宽，可变；H = 100vh）：
+     顶部带：左上角深 260px，沿水平向右收窄，右上角 50px；下边界（斜边）
+             为 (0,260) → (W,50)；
+     底部带：右下角深 260px，向左收窄，左下角 50px；上边界（斜边）
+             为 (0,H-50) → (W,H-260)（顶部带的中心对称镜像）；
+     中段：纯 #161616；
+     渐隐：顶部 #1c1c2b → #161616、底部 #161616 → #19202b，且在**整条斜边**
+           上精确等于 #161616（柔和过渡，无硬边）。
+   实现：底色 #161616 + 4 层不透明 background；不使用伪元素 / clip-path / mask，
+     故无层叠冲突（.shell 为 position:relative，子元素 z-index 100/101），
+     且 .shell 整体不透明（无 rgba 层）。
+     关键：渐变框取 100% × (deep - shallow) = 100% × 210px，并配合角关键字
+     to bottom right / to top left——CSS 规定角关键字的等值线平行于渐变框的
+     副对角线，而该副对角线斜率恰为 -(deep - shallow)/W，正等于本方案斜边，
+     于是斜边上渐变进度恒为 50%，**任意窗宽**下都精确落在 #161616（宽度无关）；
+     斜边以外落在 50% 之后的平台色标，自动为 #161616，因此无需裁剪。
+     渐变框只覆盖 y∈[50,260] / y∈[H-260,H-50]，两侧各 50px 由补齐层提供：
+     顶部补齐框 y∈[0,210]、底部补齐框 y∈[H-210,H]；两补齐层色标整体右移
+     shallow / (2×(deep - shallow)) = 11.9%，保证与主层接缝连续（同色无跳变）。
+   可调参数：--shell-band-deep（深端 260px）、--shell-band-shallow（浅端 50px），
+     框高 = 二者之差（自动跟随）；改值后只需同步一组百分比：补齐层两组色标的
+     右移量 = shallow / (2×(deep - shallow))（本例 50/420 = 11.9%）。
+     色值：顶部起点 #1c1c2b、底部终点 #19202b、底色 #161616。
+   窗口 minHeight = 764px（windowState.ts），恒 > 2×260px，两带不重叠、色标不倒挂。
+   light / sage / honey 沿用上方基础规则，不受影响。 */
+[data-theme='dark'] .shell {
+  --shell-band-deep: 260px;
+  --shell-band-shallow: 50px;
+  background-color: #161616;
+  background-image:
+    linear-gradient(to bottom right, #1c1c2b 0, #161616 50%, #161616 100%),
+    linear-gradient(to bottom right, #1c1c2b 11.9%, #161616 61.9%, #161616 100%),
+    linear-gradient(to top left, #19202b 0, #161616 50%, #161616 100%),
+    linear-gradient(to top left, #19202b 11.9%, #161616 61.9%, #161616 100%);
+  background-size: 100% calc(var(--shell-band-deep) - var(--shell-band-shallow));
+  background-position:
+    0 var(--shell-band-shallow),
+    0 0,
+    left 0 bottom var(--shell-band-shallow),
+    left 0 bottom 0;
+  background-repeat: no-repeat;
+}
+
+/* ---------- 标题栏（背景透明，整条可拖拽） ---------- */
+.titlebar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding-left: 12px;
+  /* 右侧为系统窗口控制按钮预留：titleBarOverlay 注入 env(titlebar-area-*)， 
+     未启用时 fallback 令该差值归零，由 max() 兜底常规内边距。 */
+  padding-right: max(
+    12px,
+    calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 4px)
+  );
+  background: transparent;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+/* 可交互元素退出拖动区，保证可点击 */
+.titlebar button,
+.titlebar a,
+.titlebar input,
+.titlebar [role='button'] {
+  -webkit-app-region: no-drag;
+}
+
+/* 页面注册的标题栏操作插槽（如「新建书籍」按钮）：
+   位于品牌区右侧（品牌名之后），与品牌名间距由 .titlebar 的 gap 提供；
+   未注册时容器不占位，不影响原有品牌 / 主题按钮布局。 */
+.tb-page-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  -webkit-app-region: no-drag;
+}
+
+.tb-page-actions:empty {
+  display: none;
+}
+
+.tb-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  -webkit-app-region: no-drag;
+}
+
+.tb-brand-mark {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  /* 底座与应用图标逐项对齐：圆角 27%（build/icon.svg rx="12.96"）、
+     148° 渐变；配色取生成器固定常量 #0078d4 → #005a9e（窗口图标不随主题变化，
+     故此处不引用 --brand / --brand-2 主题令牌）。 */
+  border-radius: 27%;
+  background: linear-gradient(148deg, #0078d4, #005a9e);
+  letter-spacing: -0.02em;
+  overflow: hidden;
+}
+
+.tb-brand-mark > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.tb-brand-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.tb-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- 内容区（背景透明，自身滚动） ---------- */
+.app-viewport {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+}
+
+/* ---------- 路由进场：新页面淡入 ----------
+   `.app-viewport` 常驻外壳（自身不随路由重挂载），真正随路由更替的是它的
+   **直接子元素**：`<Routes>` 的匹配结果不带额外包裹层，旧页卸载、新页挂载即
+   表现为该容器的子节点替换，因此 animation 天然重播——无需给 React 树加
+   `key`（加 key 会连带丢弃页面组件状态与滚动位置，编辑器实例也会重建）。
+   三个路由页根节点（.bookshelf-view / .writer-view / .wf-welcome）与启动期的
+   .viewport-placeholder 都被此选择器覆盖，新增页面无需再登记。
+   只动 opacity（wf-enter-fade，见 motion.css）：位移 / 缩放会在动画期间为
+   内部 position: fixed 元素生成包含块并触发滚动容器重新合成，代价大于收益。
+   减动效由 base.css 的 prefers-reduced-motion 全局兜底压到 0.01ms，此处不重复
+   写守卫（避免与 `*:not(...)` 压制规则产生层叠冲突）。 */
+.app-viewport > * {
+  animation: wf-enter-fade var(--dur-base) var(--ease-out) both;
+}
+
+.viewport-placeholder {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+}
+
+.viewport-placeholder h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.viewport-placeholder p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-mute);
+}
+
+/* ---------- 状态栏：基础段已迁出至 statusbar.css（容器/分区层） ----------
+   由 shell/statusBar.tsx 在 statusbar-widgets.css 之前导入，层叠顺序不变。 */
+
+/* ============================================================
+   活动栏（左侧模块栏）：悬浮紧凑 / 固定竖条 两态
+   ------------------------------------------------------------------
+   1:1 对齐 template/index.html 的 .act-pill / .activitybar / .act-btn，
+   但遵循本项目「组件填充不透明」约定：
+   - 胶囊 / 活动栏 / 按钮底色一律取 --pane / --soft*-solid 等不透明色，
+     不使用 rgba(...) 半透明底，也不叠加 backdrop-filter；
+   - 阴影 / 描边沿用主题令牌（--sh-sm / --sh-popup / --panel-ring）。
+   两态由 body.act-pinned 驱动：悬浮态靠 .is-shown 展开，固定态常驻竖条。
+   ★唯一特例（经用户确认）：**仅固定态** .activitybar 用半透明底 +
+     backdrop-filter 轻微磨砂（见下方 body.act-pinned .activitybar）；
+     悬浮态与本区块其余组件仍严格不透明。
+   ============================================================ */
+
+/* 活动栏 / 胶囊的绝对定位基准：与原型 .window{position:relative} 对应 */
+.shell {
+  position: relative;
+}
+
+/* ---------- 悬浮胶囊指示器 ---------- */
+.act-pill {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 56px;
+  border-radius: 99px;
+  background: var(--pane);
+  box-shadow: var(--sh-sm), var(--panel-ring);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  z-index: 101;
+  transition:
+    opacity 0.22s var(--ease),
+    background 0.15s var(--ease),
+    transform 0.15s var(--ease),
+    box-shadow 0.15s var(--ease),
+    width 0.15s var(--ease),
+    left 0.15s var(--ease);
+}
+
+.act-pill span {
+  display: block;
+  width: 3px;
+  height: 2px;
+  border-radius: 99px;
+  background: var(--text-mute);
+  transition:
+    background 0.15s,
+    width 0.15s;
+}
+
+.act-pill:hover {
+  background: linear-gradient(180deg, var(--brand), var(--brand-2));
+  width: 10px;
+  left: 5px;
+  box-shadow:
+    0 6px 18px -6px color-mix(in srgb, var(--brand) 60%, transparent),
+    0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.act-pill:hover span {
+  background: #fff;
+  width: 4px;
+}
+
+.act-pill.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) translateX(-8px);
+}
+
+/* ---------- 活动栏（紧凑悬浮 / 固定竖条） ---------- */
+.activitybar {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px;
+  border-radius: var(--r-lg);
+  background: var(--pane);
+  box-shadow: var(--sh-popup), var(--panel-ring);
+  z-index: 100;
+  transform: translate(-120%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.32s var(--ease),
+    opacity 0.22s var(--ease),
+    left 0.32s var(--ease),
+    top 0.32s var(--ease),
+    bottom 0.32s var(--ease),
+    border-radius 0.3s var(--ease),
+    box-shadow 0.3s var(--ease);
+}
+
+.activitybar.is-shown {
+  transform: translate(0, -50%);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---------- 固定态：撑成竖条，占据实际布局空间 ----------
+   top / bottom 与侧边面板（.sidepane）上下边缘对齐：
+   顶 = 标题栏 42px + .workspace 顶部 1px 留白 = 43px；
+   底 = 状态栏 36px + .writer-view padding-bottom 6px = 42px。
+   悬浮态（默认）保持以视口垂直居中（top:50%），不变。
+
+   特例（经用户确认）：**仅固定态**活动栏做「轻微磨砂」——半透明底 +
+   backdrop-filter，透出背后 .shell 的桌面渐变（含 dark 斜切色带）。
+   其余组件的「填充一律不透明」约定不变，勿按违规清理此处。
+   层叠说明：.activitybar 为 .shell 的绝对定位子元素（z-index:100），
+   悬浮在 .app-viewport（background:transparent）之上；固定态下其左缘
+   x∈[8,56] 落在 .writer-view padding-left 64px 之内，背后正是 .shell
+   桌面渐变而非 .sidepane —— 磨砂透出的即桌面渐变本身。
+   参数：blur(10px) saturate(140%) / 底色 alpha 0.55（四主题自适应）。
+   alpha 取 color-mix(in srgb, var(--pane) 55%, transparent)：色相随主题
+   （light/sage/honey 用各自浅色 pane、dark 用深色 --pane #232326），
+   与悬浮态原不透明 --pane 同源，仅透明度不同。 */
+body.act-pinned .activitybar {
+  left: 8px;
+  top: 43px;
+  bottom: 42px;
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+  background: color-mix(in srgb, var(--pane) 55%, transparent);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  /* 固定态去掉投影：仅保留 --panel-ring 描边（磨砂 + 半透明底不变）；
+     若需连描边一并去掉，可改为 box-shadow: none; */
+  box-shadow: var(--panel-ring);
+}
+
+/* 固定态：隐藏悬浮胶囊 */
+body.act-pinned .act-pill {
+  display: none;
+}
+
+/* ---------- 模块按钮（复用 IconButton，覆盖为方形小按钮 1:1） ---------- */
+.act-btn {
+  /* 复位 .wf-iconbtn 的圆形 30×30，恢复原型 36×36 圆角方块 */
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-xs);
+  color: var(--text-dim);
+  transition:
+    background 0.1s var(--ease),
+    color 0.1s var(--ease),
+    transform 0.08s var(--ease);
+}
+
+.act-btn:hover:not(:disabled) {
+  background: var(--soft-hover-solid);
+  color: var(--text);
+}
+
+.act-btn:active:not(:disabled) {
+  background: var(--soft-press-solid);
+  transform: scale(0.96);
+}
+
+/* 激活态：品牌色浅底（不透明）+ 品牌色前景，四主题自动适配 */
+.act-btn.is-active {
+  background: color-mix(in srgb, var(--brand) 14%, var(--pane));
+  color: var(--brand);
+}
+
+.act-btn.is-active:hover:not(:disabled) {
+  color: var(--brand);
+}
+
+.act-btn > svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- 写作视图为固定活动栏让位（供写作页使用） ----------
+   选择：预置于 shell.css（而非 writer.css）。
+   理由：写作页尚不存在，writer.css 暂无归属；活动栏的占位量（8 + 48 + 8 = 64px）
+   是外壳级几何契约，与活动栏样式同源，放此处可保证「两态」样式自洽；待写作页
+   建立 writer.css 后，如以页面样式内聚为由，可平移过去（行为等价）。 */
+body.act-pinned .writer-view {
+  padding-left: 64px;
+}
+
+/* ---------- 窄屏断点（≤1240px / ≤860px）----------
+   原型未在这两个断点隐藏活动栏，故此处保持活动栏 / 胶囊可见，
+   仅沿用原型的写作视图固定态占位 64px；不新增断点专属规则。 */

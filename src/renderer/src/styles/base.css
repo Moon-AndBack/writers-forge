@@ -1,0 +1,122 @@
+/* ============================================================
+   基础重置 + 排版
+   参照 template/index.html 的重置规则，取值全部来自 theme.css 令牌。
+   说明：模板 body 的 overflow:hidden 属于「应用外壳」职责，此处不引入，
+   以免裁剪既有 pages 内容（详见任务报告的风险项）。
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  /* 无 color / background-color 过渡：主题切换整体瞬变（约定见 theme.css
+     「主题切换不做过渡」）。且 body 底色被不透明的 .shell 全覆盖、
+     自身无直接文本，原过渡实际不可见，留着只会误导后来者。 */
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  outline: none;
+  background: none;
+}
+
+/* ---------- 输入光标颜色（全应用统一） ----------
+   所有文本输入处的原生 caret 颜色统一为主题令牌 --caret
+   （light / dark / sage / honey 四主题自适应，见 theme.css）。 */
+input,
+textarea,
+[contenteditable],
+[contenteditable='true'],
+[contenteditable='plaintext-only'] {
+  caret-color: var(--caret);
+}
+
+/* ---------- 文本选区（全应用统一） ----------
+   底色统一取主题令牌 --selection-bg（由品牌色派生，四主题自适应，见 theme.css）；
+   不设 color：保留各主题 --text / --doc-text 原色，避免与主题文字色冲突。
+   未加更特异的 ::selection 覆盖，编辑器（.doc-body > .ProseMirror）内的原生选区
+   同样命中本规则。Chromium 独占运行环境，无需 -moz-selection。 */
+::selection {
+  background: var(--selection-bg);
+}
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.22);
+  border: 4px solid transparent;
+  background-clip: content-box;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.38);
+  background-clip: content-box;
+}
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  background-clip: content-box;
+}
+[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+  background-clip: content-box;
+}
+
+/* ---------- 减动效全局兜底（prefers-reduced-motion） ----------
+   系统开启「减少动态效果」时，全应用的动画与过渡一律瞬时呈现终态。
+   取 0.01ms 而非 0：transitionend / animationend 仍会派发，
+   依赖事件收尾的交互（模态关闭、Toast 出栈等）不会卡住。
+   各文件既有的局部守卫保持原样（本段只兜底未写守卫的文件，
+   如 writer.css 的面板切换与三栏宽度过渡、shell.css 的活动栏滑入、
+   writer-search.css 的 ep-search-in）。
+
+   例外：功能性循环动画必须继续跑，停掉会丢可用性信息。故这些元素
+   以 :not() 排除在通配压制之外（而非用 `animation-duration: revert`
+   覆盖——revert 会回滚掉作者源声明、落到 UA 初始值 0s，反而把光标和
+   旋转停死），从而保留各自原声明的时长 / 迭代次数：
+   - .caret（writer-editor-doc.css：自绘输入光标，blink 1.1s steps(1) infinite）
+   - .ai-msg__cursor（writer-ai.css：AI 流式输出光标，ai-cursor-blink 1s infinite）
+   - .wf-btn__spinner（button.css：加载旋转，wf-btn-spin 0.7s linear infinite；
+     button.css 既有守卫把它放慢到 1.5s，此处不压制以保证该规则继续生效）
+   - [class*='spinner']：兜住今后新增的同类加载旋转。 */
+@media (prefers-reduced-motion: reduce) {
+  *:not(.caret):not(.ai-msg__cursor):not([class*='spinner']),
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

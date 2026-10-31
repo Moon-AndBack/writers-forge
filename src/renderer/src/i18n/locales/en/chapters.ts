@@ -1,0 +1,186 @@
+/**
+ * 机翻占位 · 待校
+ * 章节模块命名空间（`chapters`）英文译文由机器翻译生成，尚未人工校对；如见生硬 / 歧义，以 zh-CN 为准。
+ * key 须与 zh-CN 的 chapters.ts 全等：由本文件 `satisfies ZhCNResources['chapters']` 与 en/index.ts 的聚合 `satisfies` 双重约束，缺 key / 多 key 会在 typecheck 报错。
+ */
+import type { ZhCNResources } from '../zh-CN'
+
+const chapters = {
+  status: {
+    draft: 'Draft',
+    done: 'Final'
+  },
+  numbering: {
+    chapterPrefix: 'Chapter {{n}}',
+    volumePrefix: 'Volume {{n}}',
+    statusPosition: 'Chapter {{index}} of {{total}}',
+    statusTotal: '{{total}} chapters in total'
+  },
+  statusToggleAria: 'Chapter status: {{label}} (click to toggle)',
+  newVolume: 'New Volume',
+  newVolumeTooltip: 'New volume (body volume / custom volume)',
+  pinTop: 'Pin to top',
+  pinBottom: 'Pin to bottom',
+  deleteChapter: 'Delete chapter',
+  dragWithinSegment: 'Drag to reorder (within segment)',
+  rename: 'Rename',
+  namePlaceholder: 'Edit',
+  volumeFull: 'Volume is at maximum capacity',
+  newChapter: 'New chapter',
+  newSpecialChapter: 'New special chapter',
+  deleteVolume: 'Delete volume',
+  specialVolumeNameAria: 'Special volume name',
+  customVolumeNameAria: 'Volume custom name',
+  emptyTitle: 'No volumes yet',
+  emptyDesc: 'Click “New Volume” in the top bar to create one',
+  editor: {
+    lastEdited: 'Last edited {{time}}',
+    footCount: 'This chapter: <b>{{count}}</b> / <b>{{limit}}</b> chars',
+    wordLimitNear: 'Approaching the per-piece word limit',
+    wordLimitReached: 'Per-piece word limit reached'
+  },
+  proofread: {
+    hits: '{{count}} prohibited terms',
+    hitsTitle: 'Number of prohibited-term matches in the text (hint only, never blocks writing)'
+  },
+  cleanWords: {
+    button: 'Prohibited words',
+    buttonTooltip: 'Prohibited words (built-in / mine)',
+    dialogTitle: 'Prohibited words',
+    statsBuiltin: 'Built-in: {{total}}',
+    statsUser: 'Mine: {{total}}',
+    importToggle: 'Import list',
+    importHide: 'Hide import',
+    importPlaceholder: 'One word per line; paste directly from a spreadsheet or document',
+    importHint:
+      'One word per line\nOptionally separate the category with a tab: word <Tab> category\nCategories: political / sexual / violence / ads / profanity / other (default other)\nLines starting with # are comments; blank lines are ignored',
+    importConfirm: 'Import',
+    importEmpty: 'Nothing to import',
+    importDone: 'Imported {{inserted}}, updated {{updated}}, skipped {{skipped}}',
+    importFailed: 'Import failed, please check the list and retry',
+    toggleFailed: 'Failed to save the enabled state',
+    deleteFailed: 'Delete failed',
+    sourceAria: 'Filter by source',
+    sourceAll: 'All',
+    sourceBuiltin: 'Built-in',
+    sourceUser: 'Mine',
+    categoryAria: 'Filter by category',
+    categoryAll: 'All categories',
+    category: {
+      political: 'Political',
+      sexual: 'Sexual',
+      violence: 'Violence',
+      ads: 'Advertising',
+      profanity: 'Profanity',
+      other: 'Other'
+    },
+    searchAria: 'Search words',
+    searchPlaceholder: 'Search words',
+    loading: 'Loading the word list…',
+    loadFailed: 'Failed to load the word list, please close and retry',
+    empty: 'No matching words',
+    shownCount: 'Showing {{shown}} / {{total}}',
+    showMore: 'Show more ({{rest}} left)',
+    toggleAria: 'Enable or disable “{{word}}”',
+    delete: 'Delete',
+    deleteAria: 'Delete “{{word}}”',
+    statusBarAria: 'Prohibited words: {{hits}} matches (click to open the list)',
+    metaLine: 'Source: {{source}} ({{license}}) · fetched on {{date}}'
+  },
+  search: {
+    aria: 'Chapter search and replace',
+    title: 'Find and replace',
+    close: 'Close search',
+    rangeAria: 'Search range',
+    searching: 'Searching…',
+    count: '{{total}} matches',
+    empty: 'No matches',
+    placeholderSearch: 'Search',
+    ariaSearch: 'Search content',
+    placeholderReplace: 'Replace with',
+    ariaReplace: 'Replace content',
+    replace: 'Replace',
+    replaceAll: 'Replace all',
+    replaceHere: 'Replace here',
+    scopeChapter: 'This chapter',
+    scopeBook: 'Whole book',
+    truncated:
+      'Too many results; the list shows only the first part ({{total}} total). “Replace all” still processes every match in range.',
+    errorSearch: 'Search failed',
+    staleHit: 'This spot has changed, please search again',
+    errorReplace: 'Replace failed',
+    errorReplaceAll: 'Replace all failed'
+  },
+  trash: {
+    title: 'Trash',
+    count: '{{total}} items',
+    purgeAll: 'Empty trash',
+    empty: 'Trash is empty',
+    groupVolumes: 'Volumes',
+    groupChapters: 'Chapters',
+    orphanVolume: 'Original volume deleted',
+    restoreVolume: 'Restore volume',
+    purgeVolume: 'Delete volume permanently',
+    restoreChapter: 'Restore chapter',
+    purgeChapter: 'Delete chapter permanently'
+  },
+  newVolumeDialog: {
+    title: 'New Volume',
+    typeAria: 'Volume type',
+    normal: 'Body volume',
+    custom: 'Custom volume',
+    customNameLabel: 'Custom volume name',
+    customNamePlaceholder: 'e.g. Rising Wind (optional)',
+    nameLabel: 'Volume name',
+    namePlaceholder: 'e.g. Side stories / About the work'
+  },
+  specialChapterDialog: {
+    title: 'New Special Chapter',
+    prefixLabel: 'Prefix',
+    prefixPlaceholder: 'e.g. Prologue',
+    prefixRequired: 'Please enter a prefix (e.g. Prologue, Side story)',
+    nameLabel: 'Chapter name',
+    namePlaceholder: 'e.g. Sound of the Tide',
+    nameRequired: 'Please enter a chapter name',
+    positionLabel: 'Position',
+    positionAria: 'Position',
+    pinTop: 'Pin to top',
+    pinBottom: 'Pin to bottom'
+  },
+  titleRow: {
+    specialPrefixAria: 'Special chapter prefix (read-only)',
+    specialNameAria: 'Special chapter name',
+    titleAria: 'Chapter title'
+  },
+  dialog: {
+    deleteVolume: {
+      title: 'Delete volume',
+      message:
+        'Delete “{{name}}”? The volume and its chapters will be moved to the trash and can be restored.',
+      confirm: 'Delete'
+    },
+    deleteChapter: {
+      title: 'Delete chapter',
+      message: 'Delete “{{name}}”? It will be moved to the trash and can be restored.',
+      confirm: 'Delete'
+    },
+    purgeVolume: {
+      title: 'Delete volume permanently',
+      message: '“{{name}}” and its chapters will be permanently deleted and cannot be recovered.',
+      confirm: 'Delete permanently'
+    },
+    purgeChapter: {
+      title: 'Delete chapter permanently',
+      message: '“{{name}}” will be permanently deleted and cannot be recovered.',
+      confirm: 'Delete permanently'
+    },
+    purgeAll: {
+      title: 'Empty trash',
+      message:
+        'All volumes and chapters in the trash will be permanently deleted and cannot be recovered.',
+      confirm: 'Empty'
+    }
+  }
+} satisfies ZhCNResources['chapters']
+
+export default chapters

@@ -1,0 +1,64 @@
+/**
+ * 分类选择器（CategoryTreePicker，前缀 ctp-）。
+ *
+ * 交互：主分类下拉 + 子分类下拉 + 「添加」按钮，已选分类以 chips 展示、可逐个移除。
+ * 下拉与按钮沿用组件库（`.wf-select` / `.wf-btn`），此处仅负责布局与间距。
+ *
+ * §8 合规：可点元素 hover 仅颜色 / 描边变化，**不得含 transform**。
+ */
+
+.ctp {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- 主 / 子下拉 + 添加按钮 ---------- */
+.ctp-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ctp-controls__field {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+/* ---------- 已选 chips ---------- */
+.ctp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ---------- 错误 / 重试 ---------- */
+.ctp-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.ctp-error__retry {
+  padding: 0;
+  border: none;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--brand);
+  background: none;
+  cursor: pointer;
+}
+
+.ctp-error__retry:hover {
+  text-decoration: underline;
+}
+
+/* ---------- 加载占位 ---------- */
+.ctp-loading {
+  padding: 6px 2px;
+  font-size: 12px;
+  color: var(--text-dim);
+}

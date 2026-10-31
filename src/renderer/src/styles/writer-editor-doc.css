@@ -1,0 +1,345 @@
+.doc-body {
+  font-family: var(--doc-font);
+  font-size: calc(16px * var(--doc-zoom));
+  line-height: var(--doc-line);
+  letter-spacing: var(--doc-letter);
+  color: var(--doc-text);
+  /* 正文输入光标跟随主题（四主题 --caret 令牌，见 theme.css） */
+  caret-color: var(--caret);
+  /* color 过渡已移除：正文色随主题令牌变化，主题切换整体瞬变（见 theme.css）。
+     余下四项服务于「字体 / 字号 / 行距 / 字距」设置变更（状态栏排版面板），
+     与主题无关，按 --dur-base 保留（原为裸 0.2s）。 */
+  transition:
+    font-family var(--dur-base) var(--ease),
+    font-size var(--dur-base) var(--ease),
+    line-height var(--dur-base) var(--ease),
+    letter-spacing var(--dur-base) var(--ease);
+}
+
+.doc-body p,
+.doc-body .ProseMirror p {
+  position: relative;
+  margin: 0 0 1.05em;
+  padding: 2px 8px;
+  margin-left: -8px;
+  margin-right: -8px;
+  text-indent: 2em;
+  border-radius: var(--r-xs);
+  transition: background 0.1s var(--ease);
+}
+
+.doc-body p:hover,
+.doc-body .ProseMirror p:hover {
+  background: var(--soft-hover-solid);
+}
+
+.doc-body p:focus,
+.doc-body .ProseMirror p:focus {
+  outline: none;
+  background: color-mix(in srgb, var(--brand) 8%, var(--pane));
+}
+
+/* ---------- 斜体（CJK 无真斜体面 → Chromium 合成 oblique）两侧留白 ----------
+   CJK 正文无真斜体面，`em` / `i`（Tiptap italic mark → `<em>`）由 Chromium 合成
+   oblique 渲染：字形墨迹沿基线**向右**倾斜溢出（实测 0.12–0.156em），基线下方
+   墨迹略向左溢。紧邻的普通文字 / 标点 / 高亮色块边缘会被墨迹挤压。
+   此处为斜体行内盒左右各留间距，随字号与 --doc-zoom 等比
+   （.doc-body font-size = calc(16px × var(--doc-zoom))，em 随之缩放）：
+     - 右 0.16em：覆盖实测最大右溢，与 entity-highlight.css 的右侧出血同口径；
+     - 左 0.06em：覆盖基线下方墨迹的左溢（幅度小于右溢）。
+   代价与取舍：斜体行内盒净宽 +0.22em，属「有意增距」——纯 CSS 无法在零净宽下
+   造出间距（零净宽方案只能让底色出血、不产生间隙）。仅在恰好排满的行上可能
+   提前换行，属正常重排，无跳变；段落首行 text-indent: 2em 不受影响。
+   与高亮配合（Decoration.inline 包在 mark 外层，DOM 为
+   `span.entity-highlight > em`）：实测父级高亮背景会覆盖子级 `em` 的 margin 区，
+   色块内不出现透明缝；色块右缘出血量与改动前一致（仍是 0.16em），覆盖不退化。
+   斜体反向嵌套（`em > span.entity-highlight`）时间距落在色块外侧，同样不挤压。
+   不使用 transform（§8）；斜体 ↔ 普通文字 / 高亮 / 标点各情形均已覆盖。 */
+.doc-body em,
+.doc-body i {
+  margin-right: 0.16em;
+  margin-left: 0.06em;
+}
+
+/* Tiptap 容器自身复位：ProseMirror 编辑区默认 outline / 白底清除 */
+.doc-body .ProseMirror {
+  outline: none;
+  min-height: 1em;
+}
+
+/* ---------- 高亮 mark（多色背景）—— 暗色主题可读性 ----------
+   高亮底为固定浅色板（`components/editor/formatColors.ts` 的 `background`，随文档持久化，
+   不随主题变）。亮色系主题（light / sage / honey）正文本身为深色（--doc-text），浅底深字清晰；
+   暗色主题正文转浅（--doc-text 为浅色），浅色正文压固定浅底对比不足——故在暗色主题给该浅底
+   叠一层半透明黑（background-image 均匀覆盖层：绘于元素底色之上、正文内容之下，不遮挡文字），
+   把各色档整体压深并保留色相，使浅色正文在各色高亮块上均清晰可辨、色档之间仍可区分。
+   该规则对所有富文本视图（大纲 / 剧情）的 `.doc-body .ProseMirror` 生效，一处统管。
+   仅暗色覆盖；亮色 / sage / honey 不受影响。无 transform（§8）。 */
+[data-theme='dark'] .doc-body .ProseMirror mark {
+  background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6));
+}
+
+/* ---------- 定稿（只读）正文轻提示 ----------
+   定稿时 `editor.setEditable(false)`：正文不可编辑，但**保留滚动**与
+   实体高亮 / 悬停弹窗（Decoration 与 DOM 事件不依赖可编辑性）。
+   视觉轻提示（不新增 DOM、不改字号 / 行高）：
+   - 文本轻微降饱和（filter: saturate(0.9) + 低不透明度），与草稿态可感知区分；
+   - 段落 hover 背景取消（只读不再有「可输入」暗示）；
+   - 光标改为默认（非文本输入光标）。
+   仅作用于章节视图，不影响其它模块正文。 */
+.ep-view[data-view='chapters'] .doc-body.is-readonly .ProseMirror {
+  filter: saturate(0.9);
+  opacity: 0.94;
+  cursor: default;
+}
+
+.ep-view[data-view='chapters'] .doc-body.is-readonly .ProseMirror p:hover {
+  background: transparent;
+}
+
+/* ---------- 章节正文空态占位提示（励志诗句 / 名句）----------
+   章节视图与大纲视图共用：正文为空（doc 仅一个空段落）时，在首行「光标处」
+   以内联灰色文本显示一句诗 / 名言 + 出处；一旦有内容，React 移除 .is-empty，提示随之消失。
+   文本由 React 经 CSS 变量 --editor-placeholder 传入，由首段 p 的 ::before 渲染。
+
+   不遮挡光标 / 不影响排版的三点保证：
+   - position: absolute：脱离行内流，不参与排版，因而不推动空段落的
+     trailing <br>，原生光标定位不变；
+   - left: calc(10px + 2em)：正文首行本身带 2em 首行缩进（.doc-body p 的
+     text-indent），光标落在「padding-left 8px + 2em」处；提示再右移 2px（一个光标宽），
+     使光标恰好位于提示文本左缘、两者相邻而不重叠；
+   - text-indent: 0：复位 ::before 从 p 继承来的首行缩进，避免二次缩进；
+   - pointer-events: none / user-select: none：纯装饰，不接收鼠标事件、不参与选择。
+
+   轮换淡入：data-placeholder-phase 在 0 / 1 间交替，切换两个同名关键帧，
+   换句时重新触发淡入（CSS 变量变更本身不会重启动画，故用 phase 驱动）。
+   颜色仅用令牌 --text-mute（四主题各自定义），无硬编码色值，四主题自适应。 */
+.ep-view[data-view='chapters'] .doc-body.is-empty .ProseMirror > p:first-child::before,
+.ep-view[data-view='outline'] .doc-body.is-empty .ProseMirror > p:first-child::before {
+  content: var(--editor-placeholder);
+  position: absolute;
+  left: calc(10px + 2em);
+  right: 8px;
+  top: 2px;
+  text-indent: 0;
+  font-style: italic;
+  color: var(--text-mute);
+  opacity: 0.85;
+  pointer-events: none;
+  user-select: none;
+  animation: editor-placeholder-in 0.6s var(--ease) both;
+}
+
+/* phase=1 时换用同名别名关键帧 → animation-name 变化 → 淡入动画重启 */
+.ep-view[data-view='chapters']
+  .doc-body.is-empty[data-placeholder-phase='1']
+  .ProseMirror
+  > p:first-child::before {
+  animation-name: editor-placeholder-in-alt;
+}
+
+.ep-view[data-view='outline']
+  .doc-body.is-empty[data-placeholder-phase='1']
+  .ProseMirror
+  > p:first-child::before {
+  animation-name: editor-placeholder-in-alt;
+}
+
+@keyframes editor-placeholder-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.85;
+  }
+}
+
+@keyframes editor-placeholder-in-alt {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.85;
+  }
+}
+
+/* ---------- 切换章节 / 条目：正文区淡入 ----------
+   内容提交（`setContent`）后由 `components/editor/useContentSwap.ts` 翻转
+   `.editor-scroll` 的 `data-swap-phase`，两档相位各绑定一档**同内容的别名关键帧**
+   （wf-enter-fade / wf-enter-fade-alt）：animation-name 变化 → 淡入重播
+   （CSS 变量 / 属性值本身不会重启动画，故用相位驱动，与上方 placeholder 同一手法）。
+   章节与大纲共用（两条链路同构，§9）。
+
+   三条边界（改动前必读）：
+   - 只动 opacity（wf-enter-fade 族）：容器 transform 会在动画期间为内部
+     `position: fixed` 元素生成包含块并触发滚动容器重新合成，代价大于收益
+     （见 shell.css 路由进场注释）；
+   - 缓动用 --ease（近线性）而非 --ease-out：后者前 19% 时间走完 66%，感知上等同瞬切；
+   - 动画挂在由 **React** 管理的 `.editor-scroll` 上，**绝不**下放到 `.ProseMirror`
+     或段落：前者由 ProseMirror 命令式管理，且会原地复用 `<p>` 元素只改文本节点，
+     挂在上面的动画既不会触发、又会与输入冲突。
+   首次挂载不淡入：useContentSwap 在初次提交（loadToken ≤ 1）时给出 phase = null，
+   调用处不渲染 data-swap-phase，避免与应用级进场叠加。
+   减动效由 base.css 的 prefers-reduced-motion 全局兜底压到 0.01ms（本文件不重复写守卫）。 */
+.ep-view[data-view='chapters'] .editor-scroll[data-swap-phase='0'],
+.ep-view[data-view='outline'] .editor-scroll[data-swap-phase='0'] {
+  animation: wf-enter-fade var(--dur-base) var(--ease) both;
+}
+
+.ep-view[data-view='chapters'] .editor-scroll[data-swap-phase='1'],
+.ep-view[data-view='outline'] .editor-scroll[data-swap-phase='1'] {
+  animation: wf-enter-fade-alt var(--dur-base) var(--ease) both;
+}
+
+/* wf-enter-fade 的别名（内容完全相同、名字不同）：唯一目的是让 animation-name 变化
+   从而在相位翻转时重启动画（见 components/motion.css 的同名关键帧）。 */
+@keyframes wf-enter-fade-alt {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---------- 章节正文 / 大纲：可编辑区高度向下填满滚动区 ----------
+   目的：内容不足一屏时，让 .ProseMirror 撑满 .editor-scroll 的可视内容高，
+   点击正文下方空白仍落在可编辑区（ProseMirror）内并聚焦输入。
+
+   链路（只用 flex，纵向逐层撑满；百分比高度在 auto 高度父级上不可靠，故用 flex）：
+     .editor-scroll（flex 列，内容盒高 = 可视高 - 上下 padding 40px）
+       → .editor-inner（flex:1，撑到滚动区内容盒高；width:100% 保持版心/居中不变）
+         → .doc-body（flex:1，撑满 .editor-inner）
+           → .ProseMirror（flex:1，撑满 .doc-body，即撑到底部）
+
+   `flex: 1 0 auto`（grow=1 / shrink=0 / basis=auto）两态行为：
+     - 内容不足一屏：basis=auto（内容高）→ grow 吃满剩余空间 → 撑到底部；
+       此时总内容高 = 上下 padding 40px + 撑满的子项，恰等于 clientHeight，不产生滚动条。
+     - 内容超过一屏：free space 为负 → grow 不生效，shrink=0 保证不被压扁，
+       子项随内容增高，滚动区正常滚动（不裁顶、不溢出异常）。
+
+   作用域限定 data-view='chapters' 与 data-view='outline'：其它 4 个模块视图的 .editor-scroll / .editor-inner
+   / .doc-body 结构（含笔记 contenteditable）沿用原规则，行为不变。
+   大纲 DOM 与章节同构（OutlineEditor vs ChaptersView），共用同一套四层 flex 撑满规则。 */
+.ep-view[data-view='chapters'] .editor-scroll,
+.ep-view[data-view='outline'] .editor-scroll {
+  display: flex;
+  flex-direction: column;
+}
+
+.ep-view[data-view='chapters'] .editor-scroll > .editor-inner,
+.ep-view[data-view='outline'] .editor-scroll > .editor-inner {
+  flex: 1 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ep-view[data-view='chapters'] .doc-body,
+.ep-view[data-view='outline'] .doc-body {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.ep-view[data-view='chapters'] .doc-body .ProseMirror,
+.ep-view[data-view='outline'] .doc-body .ProseMirror {
+  flex: 1 0 auto;
+}
+
+/* 聚焦态 outline 复位（自绘聚焦框已移除）：
+   笔记视图 .doc-body 为 contenteditable，Chromium 点击聚焦会给出默认
+   `outline: auto`（浅色主题为深黑），此处清零，避免残留描边；
+   章节视图 Tiptap 的 ProseMirror 早已 outline:none，同样无框。 */
+.doc-body:focus,
+.doc-body:focus-within,
+.doc-body .ProseMirror:focus {
+  outline: none;
+}
+
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 1px;
+  vertical-align: -2px;
+  background: var(--brand);
+  animation: blink 1.1s steps(1) infinite;
+}
+
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.editor-foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 22px 14px;
+  font-size: 11px;
+  color: var(--text-mute);
+}
+
+/* 左侧保存状态：复用状态栏 .st-item / .st-dot / .st-save 类（圆点 + 文案）。
+   与右侧 .editor-foot-count 同为 .editor-foot 的直接子项，二者盒尺寸统一：
+   font-size 11px + line-height 1 + padding / margin 0 → 两个 span 均为 11px 高，
+   因 .editor-foot 为 align-items:center，故两行盒中心对齐、视觉等高。
+   两者间距由 .editor-foot 的 gap 提供（不靠单侧 margin）。
+   字号 11px 覆盖 .st-item b 的 10.5px。圆点与文字垂直对齐沿用
+   .st-save 的 inline-flex + align-items:center（圆点 6px 在 11px 行盒内居中）。 */
+.editor-foot .st-save {
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  font-size: 11px;
+}
+
+.editor-foot .st-save b {
+  font-size: 11px;
+}
+
+/* 右侧字数额：靠右放置，内部文字水平居中；盒尺寸与左侧 .st-save 对齐
+   （同 font-size 11px + line-height 1 + padding / margin 0 → 同为 11px 高）。
+   数值 `<b>` 用等宽字体；常态沿用 --text-dim 弱化显示。 */
+.editor-foot-count {
+  text-align: center;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  font-size: 11px;
+}
+
+.editor-foot-count b {
+  color: var(--text-dim);
+}
+
+/* 单篇字数上限预警（≥ 90%）：数值转 --warn 色，提示以警示色跟随。
+   仅改颜色 / 描边，无位移或缩放（§8）。 */
+.editor-foot-count.is-warn b,
+.editor-foot-count.is-warn .doc-limit-hint {
+  color: var(--warn);
+}
+
+/* 达到单篇字数上限：数值与提示转 --danger 色，明确「已无法继续输入」。 */
+.editor-foot-count.is-full b,
+.editor-foot-count.is-full .doc-limit-hint {
+  color: var(--danger);
+}
+
+/* 上限提示文案：紧随字数之后（同基线、极窄间距），避免与脚注其他元素抢视觉。 */
+.doc-limit-hint {
+  margin-left: 8px;
+}
+
+.editor-foot .spacer {
+  flex: 1;
+}

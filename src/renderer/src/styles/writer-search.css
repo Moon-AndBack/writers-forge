@@ -1,0 +1,209 @@
+/* ============================================================
+   写作视图 — 中栏「查找与替换」浮窗（ChaptersSearchView）
+   右上侧浮窗：绝对定位于 .ep-view[data-view='chapters'] 内（无需 portal）。
+   底色一律取 --pane / --soft*-solid；品牌 / 警示色用 color-mix 混入 --pane；
+   命中高亮用 --brand 派生，四主题（light / dark / sage / honey）自适应，禁止硬编码品牌色。
+   ============================================================ */
+
+/* 浮窗容器：锚定中栏右上，固定宽、受视口高度约束。 */
+.ep-search {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 20;
+  width: 360px;
+  max-width: calc(100% - 28px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  border-radius: var(--r-lg);
+  background: var(--pane);
+  box-shadow: var(--sh-sm), var(--panel-ring);
+  animation: ep-search-in 0.18s var(--ease) both;
+}
+
+@keyframes ep-search-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- 头部 ---------- */
+.ep-search-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 2px 2px;
+}
+
+.ep-search-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ep-search-head .spacer {
+  flex: 1;
+}
+
+/* ---------- 范围切换 ---------- */
+.ep-search-scope {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ep-search-count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-mute);
+}
+
+/* ---------- 输入区 ---------- */
+.ep-search-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 搜索 / 替换输入：撑满浮窗宽。 */
+.ep-search-fields .ep-search-input {
+  width: 100%;
+}
+
+.ep-search-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+/* ---------- 结果列表 ---------- */
+.ep-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: min(46vh, 420px);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  margin: 0 -4px;
+  padding: 2px 4px;
+}
+
+.ep-search-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  transition: background 0.1s var(--ease);
+}
+
+.ep-search-row:hover {
+  background: var(--soft-hover-solid);
+}
+
+.ep-search-row.is-active {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+.ep-search-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ep-search-row-chapter {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ep-search-row-context {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-mute);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* 命中词高亮：品牌浅底 + 品牌字色（四主题自适应）。 */
+.ep-search-hit {
+  padding: 0 1px;
+  border-radius: 3px;
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 18%, var(--pane));
+  font-weight: 600;
+}
+
+/* 行尾替换按钮：默认弱化，hover 行时浮现。 */
+.ep-search-row-replace {
+  flex: none;
+  visibility: hidden;
+  color: var(--text-dim);
+}
+
+.ep-search-row:hover .ep-search-row-replace,
+.ep-search-row.is-active .ep-search-row-replace {
+  visibility: visible;
+}
+
+/* ---------- 空态 / 加载更多 / 提示 ---------- */
+.ep-search-empty,
+.ep-search-note {
+  padding: 18px 8px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--text-mute);
+}
+
+.ep-search-note {
+  padding: 8px;
+  line-height: 1.6;
+}
+
+.ep-search-more {
+  margin: 4px 0 2px;
+  padding: 7px;
+  border-radius: var(--r-xs);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: var(--soft-solid);
+  transition:
+    background 0.1s var(--ease),
+    color 0.1s var(--ease);
+}
+
+.ep-search-more:hover:not(:disabled) {
+  background: var(--soft-hover-solid);
+  color: var(--brand);
+}
+
+.ep-search-more:disabled {
+  cursor: default;
+  color: var(--text-mute);
+}
+
+.ep-search-error {
+  padding: 6px 8px;
+  border-radius: var(--r-xs);
+  font-size: 11.5px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, var(--pane));
+}

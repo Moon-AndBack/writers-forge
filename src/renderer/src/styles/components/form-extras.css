@@ -1,0 +1,404 @@
+/* ============================================================
+   表单扩展类通用组件样式（前缀 wf-）
+   视觉来源：template/index.html 的
+     .shelf-search（搜索框：前置图标 + :focus-within 品牌环）
+     .field-chips / .field-chip / .field-chip-add（可增删标签）
+     .st-zoom / .st-zoom-btn / .st-zoom-val（− / 值 / + 步进器）
+     .field / .field-label（字段容器）
+   颜色一律引用 styles/theme.css 令牌，并用 color-mix 从
+   --brand / --danger 推导浅色底，保证 light/dark/sage/honey
+   四主题自适应；禁用 html.sage / html.honey 选择器与硬编码品牌色。
+   ============================================================ */
+
+/* ============================================================
+   SearchInput（搜索框）
+   ============================================================ */
+.wf-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 12px;
+  background: var(--soft-solid);
+  border: 1px solid transparent;
+  border-radius: var(--r-xs);
+  transition:
+    background 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
+}
+.wf-search:hover:not(.is-disabled) {
+  background: var(--soft-hover-solid);
+}
+.wf-search:focus-within {
+  background: var(--pane);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+}
+.wf-search.is-invalid {
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+}
+.wf-search.is-invalid:focus-within {
+  border-color: color-mix(in srgb, var(--danger) 60%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--danger) 14%, transparent);
+}
+.wf-search.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.wf-search__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  color: var(--text-mute);
+}
+.wf-search__icon svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+}
+.wf-search__input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+  background: none;
+  border: 0;
+  outline: none;
+}
+.wf-search__input::placeholder {
+  color: var(--text-mute);
+}
+.wf-search__input:disabled {
+  cursor: not-allowed;
+}
+.wf-search__clear {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  color: var(--text-mute);
+  background: transparent;
+  border-radius: 50%;
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.wf-search__clear:hover {
+  color: var(--text);
+  background: var(--soft-hover-solid);
+}
+.wf-search__clear:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: 1px;
+}
+.wf-search__clear svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+}
+
+/* ============================================================
+   ChipInput（可增删标签输入）
+   ============================================================ */
+.wf-chipinput {
+  display: block;
+  width: 100%;
+}
+.wf-chipinput__field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 6px 8px;
+  background: var(--soft-solid);
+  border: 1px solid transparent;
+  border-radius: var(--r-xs);
+  cursor: text;
+  transition:
+    background 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
+}
+.wf-chipinput__field:hover {
+  background: var(--soft-hover-solid);
+}
+.wf-chipinput__field:focus-within {
+  background: var(--pane);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+}
+.wf-chipinput.is-invalid .wf-chipinput__field {
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+}
+.wf-chipinput.is-invalid .wf-chipinput__field:focus-within {
+  border-color: color-mix(in srgb, var(--danger) 60%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--danger) 14%, transparent);
+}
+.wf-chipinput.is-disabled .wf-chipinput__field {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.wf-chipinput__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 5px 3px 10px;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+.wf-chipinput__chip-close {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  font-size: 10px;
+  line-height: 1;
+  color: inherit;
+  background: color-mix(in srgb, var(--brand) 16%, var(--pane));
+  border-radius: 50%;
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.wf-chipinput__chip-close:hover {
+  color: #fff;
+  background: var(--danger);
+}
+.wf-chipinput__chip-close:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--danger) 60%, transparent);
+  outline-offset: 1px;
+}
+.wf-chipinput__entry {
+  flex: 1 1 64px;
+  min-width: 64px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+  background: none;
+  border: 0;
+  outline: none;
+}
+.wf-chipinput__entry::placeholder {
+  color: var(--text-mute);
+}
+.wf-chipinput__entry:disabled {
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   AliasEditor（别名编辑：上方输入框 + 添加按钮，下方列表展示已有别名）
+   输入框 / 按钮 / 列表项分别复用 wf-input / wf-btn / wf-tag，
+   此处只补布局（纵向分组 + 输入行 + 列表换行），无位移 / 缩放（§8）。
+   ============================================================ */
+.wf-alias {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wf-alias__add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wf-alias__add .wf-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.wf-alias__add .wf-btn {
+  flex: none;
+  align-self: stretch;
+}
+.wf-alias__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wf-alias__empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-mute);
+}
+
+/* 输入框 / 复合输入 / 列表项偶落在有底色容器（右栏字段卡 / 境界体系分区等挂了
+   `.on-soft` 的容器）上：默认填充与容器 --soft-solid 过近而看不出边界，改用
+   「有底色容器上的控件」令牌（语义见 theme.css 的 --control-on-soft*，与 form.css
+   的 `.on-soft` 同口径）。**必须与 `.on-soft` 组合**——别名编辑器也用于弹窗（宿主为
+   --pane，旁边名称输入框走默认填充），无条件套用会让弹窗内输入框比同级控件深一档。 */
+.on-soft .wf-alias .wf-input {
+  background: var(--control-on-soft);
+  border-color: var(--control-on-soft-line);
+}
+.on-soft .wf-alias .wf-input:hover:not(:disabled):not(:read-only):not([aria-readonly='true']) {
+  background: var(--control-on-soft-hover);
+}
+.on-soft .wf-alias .wf-input:focus {
+  background: var(--pane);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+}
+.on-soft .wf-alias .wf-tag--neutral {
+  background: var(--control-on-soft);
+}
+
+/* ChipInput（标签输入）外壳同为 --soft-solid：落在 `.on-soft` 卡片内（境界体系
+   「体系信息」）时同样换令牌，否则整块与卡片糊平。focus-within 仍回 --pane。 */
+.on-soft .wf-chipinput__field {
+  background: var(--control-on-soft);
+  border-color: var(--control-on-soft-line);
+}
+.on-soft .wf-chipinput__field:hover {
+  background: var(--control-on-soft-hover);
+}
+.on-soft .wf-chipinput__field:focus-within {
+  background: var(--pane);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+}
+
+/* ============================================================
+   Stepper（− / 值 / + 步进器）
+   ============================================================ */
+.wf-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 2px;
+  background: var(--pill-bg-solid);
+  border-radius: var(--r-xs);
+}
+.wf-stepper.is-disabled {
+  opacity: 0.6;
+}
+.wf-stepper__btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-dim);
+  background: transparent;
+  border-radius: var(--r-xs);
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.wf-stepper__btn:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--soft-hover-solid);
+}
+.wf-stepper__btn:active:not(:disabled) {
+  background: var(--soft-press-solid);
+}
+.wf-stepper__btn:disabled {
+  color: var(--text-mute);
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.wf-stepper__btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: -1px;
+}
+.wf-stepper__value {
+  min-width: 44px;
+  padding: 0 6px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text-dim);
+  border-radius: var(--r-xs);
+  user-select: none;
+}
+.wf-stepper__value.is-editable {
+  cursor: text;
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.wf-stepper__value.is-editable:hover {
+  color: var(--text);
+  background: var(--soft-hover-solid);
+}
+.wf-stepper__value.is-editable:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: -1px;
+}
+.wf-stepper__input {
+  width: 54px;
+  padding: 2px 4px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text);
+  background: var(--pane);
+  border: 1px solid color-mix(in srgb, var(--brand) 45%, transparent);
+  border-radius: var(--r-xs);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 11%, transparent);
+}
+
+/* ============================================================
+   FormField（字段容器）
+   ============================================================ */
+.wf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wf-field__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-dim);
+}
+.wf-field__required {
+  color: var(--danger);
+  line-height: 1;
+}
+.wf-field__control {
+  display: block;
+}
+.wf-field__hint {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+.wf-field__error {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--danger);
+}
+.wf-field.is-invalid .wf-field__label {
+  color: var(--danger);
+}
+
+/* ============================================================
+   无障碍：尊重系统「减少动态效果」
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .wf-search,
+  .wf-search__clear,
+  .wf-chipinput__field,
+  .wf-chipinput__chip-close,
+  .wf-stepper__btn,
+  .wf-stepper__value.is-editable {
+    transition: none;
+  }
+}

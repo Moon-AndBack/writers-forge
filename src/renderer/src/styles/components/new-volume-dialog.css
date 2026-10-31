@@ -1,0 +1,25 @@
+/* ---------- NewVolumeDialog（「新建卷」弹窗） ----------
+   复用全局 Modal / FormField / Input / Segmented，仅补纵向排布与
+   变体形态的少量布局。样式自包含，随组件一同加载。 */
+.new-volume-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 顶部切换器的满宽 + 与「卷名」输入框等高（.wf-seg--fill，见
+   styles/components/segmented.css，三弹窗共用，此处不再单独覆盖）。 */
+
+/* 正文卷形态：卷号（只读）+ 自定义名 两列。 */
+.new-volume-normal {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+}
+
+.new-volume-normal .doc-title-input:disabled,
+.new-volume-normal input:disabled {
+  color: var(--text-mute);
+  background: var(--soft-solid);
+  cursor: default;
+}

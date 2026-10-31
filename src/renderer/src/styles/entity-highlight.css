@@ -1,0 +1,256 @@
+/* ============================================================
+   阶段②：实体高亮（Tiptap Decoration）+ 悬停弹窗（HoverCard）
+   高亮原则：**实色优先**——命中预设 / 模块类时用胶囊同款日本传统色实底
+   （--chip-bg）+ 配对文字色（--chip-fg）；未命中时回落「类型色 color-mix
+   混入 --pane」的浅混合底与派生文字色
+   （四主题自动适配，禁 html.sage / html.honey，不硬编码品牌色）。
+   令牌放此处集中管理；writer-editor.css 的聚焦框令牌不动。
+   ============================================================ */
+
+/* ---------- 高亮 span（Decoration.inline attrs 注入的 class） ---------- */
+span.entity-highlight {
+  /* 高亮固定填充比例（仅用于「无 --chip-bg」时的回落分支；与改造前的固定 18% 一致） */
+  --chip-mix: 18%;
+  /* 实色优先：数据库注入 / 静态预设色提供 --chip-bg 与配对 --chip-fg；
+     未命中（无预设也无模块类）时回落旧的浅混合底与派生文字色。
+     注意：此处**不得**声明 --chip-fg（否则 (0,1,1) 会压过 `.chip-p-*` 的
+     (0,1,0)），只以 `var(--chip-fg, …)` 消费。 */
+  background: var(--chip-bg, color-mix(in srgb, var(--chip-base) var(--chip-mix), var(--pane)));
+  color: var(--chip-fg, color-mix(in srgb, var(--chip-base) 65%, var(--text)));
+  border-radius: 3px;
+  /* 右侧留 0.16em 出血：CJK 正文字体无真斜体面，Chromium 合成斜体（oblique）
+     会让字形墨迹向右溢出（实测 0.12–0.156em），不透明底色会把末字裁掉。
+     em 随字号 / --doc-zoom 等比；等量负 margin 抵消，行内占位与原先一致。 */
+  padding: 1px 0.16em 1px 0;
+  margin: 0 -0.16em 0 -1px;
+  cursor: default;
+  transition: background 0.12s var(--ease);
+}
+
+/* 统一设定库五类：只绑定模块基色，用 `:where(span.entity-highlight)` 把元素部分
+   特异性压到 0，整条规则因此仅为 (0,1,0)——与 `.chip-p-*`（预设分类色）同级。
+   靠加载顺序取胜：本文件（writer.css 链）早于 `index.css` 的
+   `chip-preset-colors.css` 与数据库注入的 head 末尾规则加载，故同时挂
+   `.chip-m-*` / `.chip-p-*` 时，预设色的 `--chip-base` / `--chip-bg` /
+   `--chip-fg` 覆盖此处的模块基色。
+   （与胶囊共用 `chip-pill-tokens.css` 的同一套令牌，见 `entityHighlight.ts` 拼装 class。） */
+:where(span.entity-highlight).entity-character {
+  --chip-base: var(--entity-character);
+}
+
+:where(span.entity-highlight).entity-worldview {
+  --chip-base: var(--entity-worldview);
+}
+
+:where(span.entity-highlight).entity-item {
+  --chip-base: var(--entity-item);
+}
+
+:where(span.entity-highlight).entity-faction {
+  --chip-base: var(--entity-faction);
+}
+
+:where(span.entity-highlight).entity-power_system {
+  --chip-base: var(--entity-power_system);
+}
+
+/* 旧三类别名保留兼容历史数据（指向对应模块基色）。
+   同样以 `:where()` 压到 (0,1,0)：别名与 `.chip-p-*` 同级，预设色仍可覆盖。 */
+:where(span.entity-highlight).entity-place {
+  --chip-base: var(--entity-place);
+}
+
+:where(span.entity-highlight).entity-weapon {
+  --chip-base: var(--entity-weapon);
+}
+
+:where(span.entity-highlight).entity-art {
+  --chip-base: var(--entity-art);
+}
+
+span.entity-highlight:hover {
+  box-shadow: 0 0 0 1px var(--entity-hover-ring);
+}
+
+/* ---------- 悬停弹窗（fixed 定位，风格对齐 overlay.css 的浮层体系：
+   --pane 面板 + --sh-popup 阴影 + 0 0 0 1px var(--line) 描边（单环）+ --r-lg 圆角） ----------
+   层级：高于活动栏（100）/ 状态栏弹窗（900）/ 格式浮层（940），低于自绘 tooltip（990）
+   与模态（1000）——浮窗由 body 承载，与 .shell 内元素同处根层叠上下文，故须显式越过 100。 */
+.entity-card {
+  position: fixed;
+  z-index: var(--z-hover-card);
+  box-sizing: border-box;
+  /* 视口内双向约束：宽度定宽（内联），高度超高时卡片内部滚动，
+     避免贴边卡片被视口裁剪（20px = 2 × POPOVER_VIEWPORT_MARGIN，与定位钳制口径一致）。 */
+  max-width: calc(100vw - 20px);
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
+  padding: 12px 14px;
+  background: var(--pane);
+  border-radius: var(--r-lg);
+  box-shadow:
+    var(--sh-popup),
+    0 0 0 1px var(--line);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  animation: entity-card-in 0.14s var(--ease) both;
+}
+
+@keyframes entity-card-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.entity-card-loading {
+  color: var(--text-mute);
+  font-size: 12px;
+}
+
+.entity-card-head {
+  display: flex;
+  align-items: center;
+  /* 名字靠左、模块胶囊贴最右：两端对齐，名字过长时只压缩名字。 */
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.entity-card-type {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 600;
+  /* 配色跟随数据库模块色（.chip-m-* 提供 --chip-bg / --chip-fg）；
+     未命中时回落到弱化文字色底 + 面板色文字，保证仍可读。 */
+  background: var(--chip-bg, var(--text-dim));
+  color: var(--chip-fg, var(--pane));
+}
+
+/* 别名 / 关系的胶囊列表：值与值之间自动换行留 4px 间距。 */
+.entity-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* 悬停卡内的胶囊：比档案卡略大一点，便于阅读；颜色取中性胶囊。 */
+.entity-card-chip {
+  padding: 1px 8px;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* 可交互胶囊（调用方传入 hover 回调时挂上）：仅提示可悬停查详情，不改配色。 */
+.entity-card-chip.is-interactive {
+  cursor: pointer;
+}
+
+/* 「+N」计数胶囊的语义类：只作为 `useChipOverflow` 的 `moreSelector` 命中标记
+   （'.entity-card-chip--more'），配色仍由 `chip-pill--neutral` 提供，视觉与改造前一致。 */
+.entity-card-chip--more {
+  flex: none;
+}
+
+/* 「+N」浮窗：列出被收口的关系胶囊。层级高于悬停卡，低于 tooltip（990）。
+   宽度随内容（fixed 定位收缩宽度），高度上限 50vh，超出内部滚动；淡入仅 opacity。 */
+.entity-card-more {
+  position: fixed;
+  z-index: var(--z-popover);
+  box-sizing: border-box;
+  max-width: 340px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 10px 12px;
+  background: var(--pane);
+  border-radius: var(--r-lg);
+  box-shadow:
+    var(--sh-popup),
+    0 0 0 1px var(--line);
+  animation: entity-card-in 0.14s var(--ease) both;
+}
+
+/* 关系胶囊展开出的嵌套详情卡：层级高于「+N」浮窗，避免被父浮窗压住。 */
+.entity-card--nested {
+  z-index: var(--z-popover-nested);
+}
+
+.entity-card-name {
+  /* flex 子项可收缩 + 单行省略：长名字压缩自己，不挤走右侧模块胶囊。 */
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.entity-card-desc {
+  /* 第三行正文：与上方别名行留 6px；全文不截断，超高时区块内滚动。 */
+  margin-top: 6px;
+  margin-bottom: 4px;
+  max-height: 40vh;
+  overflow-y: auto;
+  color: var(--text-dim);
+}
+
+/* 正文按段渲染：段间留 0.5em，每段首行缩进两字（中文排版惯例）。
+   用 em 而非 px，字号变化时缩进量随之等比。
+   长文本 / 无空格串强制换行，避免溢出卡片（从容器下放到段，容器已无直接文本）。 */
+.entity-card-para {
+  margin: 0 0 0.5em;
+  text-indent: 2em;
+  overflow-wrap: anywhere;
+}
+
+.entity-card-para:last-child {
+  margin-bottom: 0;
+}
+
+.entity-card-aliases,
+.entity-card-relations {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--text-mute);
+  font-size: 11.5px;
+}
+
+/* 第四行关系行与正文之间留 6px（正文缺省时与别名行之间也保持同一间距）。 */
+.entity-card-relations {
+  margin-top: 6px;
+}
+
+/* 行前缀在 flex 布局中由 gap 统一控制间距，取消行内 margin 避免双倍留白。 */
+.entity-card-aliases .entity-card-label,
+.entity-card-relations .entity-card-label {
+  margin-right: 0;
+}
+
+.entity-card-label {
+  display: inline-block;
+  margin-right: 6px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entity-card,
+  .entity-card-more {
+    animation: none;
+  }
+
+  span.entity-highlight {
+    transition: none;
+  }
+}

@@ -1,0 +1,444 @@
+/* ============================================================
+   书籍页（书架视图）
+   ------------------------------------------------------------------
+   视觉对齐 template/index.html 的 .bookshelf-view / .shelf-toolbar /
+   .book-grid / .book-card 一组规则，但按当前需求裁剪：
+   - 不含 .shelf-hero（统计已移入外壳状态栏）；
+   - 不含 .add-book-card（新建书籍卡）。
+   颜色一律取 theme.css 令牌或用 color-mix 推导，兼容 light / dark /
+   sage / honey 四主题；卡片等组件填充为不透明纯色，材质从缝隙透出。
+   ============================================================ */
+
+.bookshelf-view {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  overflow: hidden;
+}
+
+/* ---------- 工具条：标签页 + 搜索 + 排序 ---------- */
+.shelf-toolbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 2px 12px;
+}
+
+.shelf-toolbar__spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 筛选标签页四项等宽：组件库 `.wf-seg__item` 默认 `flex: 1 1 auto` + 内边距，
+   宽度随文字长短自适应（「全部」/「草稿」比「连载中」/「已完结」窄）。此处用页面
+   CSS 覆盖为等宽——统一 flex 基准并给足最小宽度（容纳最长项「连载中」3 字 ≈
+   37.5px + 左右内边距 28px ≈ 65.5px，取 70px 留余量），四项实际宽度相等。
+   不改组件库文件。 */
+.shelf-toolbar .wf-seg__item {
+  flex: 1 0 auto;
+  min-width: 70px;
+  justify-content: center;
+}
+
+.shelf-search {
+  flex: none;
+  width: 240px;
+  max-width: 40vw;
+}
+
+/* 排序触发器定宽：四个选项（最近编辑 / 字数最多 / 章节最多 / 书名）文字长度不同，
+   若按内容自适应会导致触发器宽度跳动。此处给固定最小宽度，文字区 `flex: 1`
+   占满中间余量并水平居中；左右两侧的排序图标 / 箭头由 `flex: none` 固定，
+   故任一选项下文字都在中间可用空间内居中、触发器总宽一致。
+   4 字最长项 ≈ 50px + 左排序图标 13px + gap 5×2 + 右箭头 13px + 左右内边距 24px
+   ≈ 110px，取 112px 留少量余量。 */
+.shelf-sort__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 112px;
+  padding: 7px 12px;
+  border-radius: var(--r-xs);
+  font-size: 12.5px;
+  color: var(--text-dim);
+  background: var(--soft-solid);
+  white-space: nowrap;
+  transition:
+    background 0.15s var(--ease),
+    color 0.15s var(--ease);
+}
+
+.shelf-sort__trigger:hover {
+  color: var(--text);
+  background: var(--soft-hover-solid);
+}
+
+.shelf-sort__trigger svg {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  opacity: 0.65;
+}
+
+.shelf-sort__label {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* ---------- 书籍网格 ---------- */
+/* 布局：CSS Grid `auto-fit` + 固定列宽 200px + 固定间距 18px / 14px，**整块**水平居中。
+   目标行为（用户明确）：书架只有一行（含不满一行）→ 整行水平居中；多行 → 不居中，
+   每行从容器左边开始、左对齐（第 2 行不满的卡片与首行第 1 张正上下对齐）。
+   原理：
+   - `repeat(auto-fit, 200px)` 会**折叠未被占用的整列空轨道** → 只有一行时网格
+     内容宽 = 实际卡片列宽之和（不含空轨道），`justify-content: center` 使**整行
+     水平居中**；
+   - 多行时首行填满各列轨道（不折叠），网格内容宽 ≈ 容器可用宽，`center` 无视觉
+     效果；第 2 行不满的卡片落在**第 1 条列轨道**内 → 与首行第 1 张左对齐；
+   - **必须用 `auto-fit`（不可用 `auto-fill`）**：`auto-fill` 保留空轨道，会让
+     「卡片数 < 满行列数」时整块被空轨道撑宽、`center` 后卡片整体左偏；
+   - **不用 `space-between`**：会把不满行摊满整行，产生错误拉伸。
+   竖向 `align-content`：内容不足一屏（如仅一行书）时整块在竖向可用空间内**垂直
+   居中**（`safe center`）；内容溢出一屏时 `safe` 关键字强制回退起点，行轨道从顶部
+   排列、正常滚动、绝不裁顶（前一条 `flex-start` 作不支持 `safe` 时的回退）。
+   `align-items: start` 阻止卡片在行内被纵向拉伸，配合卡片自身 `aspect-ratio: 1/2`
+   （200px 宽 → 400px 高）保证行高精确、行间不重叠。
+   竖向 `safe center` 为历史既有行为（内容矮时整块在内容区内居中，正对应用户反馈
+   的「只有一行时不居中了」）：此声明此前只存在于未提交工作区，曾被一次
+   `bookshelf.css` 还原到提交版（`e8662a3`，仅含 `flex-start`）时误删，务必保留。 */
+.book-grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 200px);
+  grid-auto-rows: max-content;
+  justify-content: center; /* 整块网格居中：单行→整行居中；多行→块≈容器宽，行内左对齐 */
+  justify-items: start;
+  align-content: flex-start; /* 回退：不支持 safe 关键字时贴顶 */
+  align-content: safe center; /* 竖向：内容不足一屏时整块竖向居中（务必保留） */
+  align-items: start;
+  gap: 14px 18px;
+  padding: 2px 4px 14px;
+}
+
+/* ---------- 书籍卡片 ---------- */
+/* 固定卡宽 200px：grid 轨道由 `.book-grid` 的 `repeat(auto-fit, 200px)` 锁定，
+   卡片宽度与轨道一致，不会被拉伸 / 压缩。
+   `aspect-ratio: 1 / 2` 决定卡高（200 → 400），与封面 3/4 共同锁定比例。 */
+.book-card {
+  position: relative;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  aspect-ratio: 1 / 2;
+  background: var(--soft-solid);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-sm);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.22s var(--ease);
+}
+
+/* 进场：卡片挂载（进入书架 / 新建书籍）时淡入 + 8px 上浮，取 motion.css 的
+   `wf-enter-up` 与时长 / 缓动令牌。**只加 animation，不动上面的 transition**——
+   §8 明确禁止 transform 进入 hover 过渡，而进场位移发生在挂载瞬间，与 hover 无关，
+   两者互不影响。
+   fill-mode 取 backwards 而非 both：动画结束后不再持有 transform / opacity——
+   - 不留下永久 transform（避免卡片长期成为绝对 / 固定定位子元素的包含块，
+     也避免被提升为合成层）；
+   - 不覆盖状态类基于 opacity 的声明（全局兜底模式下也只会瞬时呈现终态）；
+   - 末帧与常态同值，结束瞬间无跳变。
+   重排 / 筛选不重播：列表 key 取数据 id，元素未卸载则 animation 不会重启；
+   仅新挂载的卡片（新增书籍、筛选后重新出现的书）会播放一次。 */
+.book-card {
+  animation: wf-enter-up var(--dur-base) var(--ease-out) backwards;
+}
+
+/* hover：不位移，改为品牌色边缘光晕（描边环 + 外发光），四主题随 --brand 适配 */
+.book-card:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+.book-card:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: 2px;
+}
+
+/* 选中态：与两个实心按钮「一眼可分」——采用「整卡 2px 描边环 + 外发光 + 轻微品牌底」
+   的大范围视觉语言，而按钮是 26×26 的小圆实心，形态 / 强度均明显不同。
+   环色刻意比 --brand 压暗一档（color-mix 混入 #000）：light / dark 下 --brand 与编辑按钮
+   同系，若直接用 var(--brand) 会与按钮完全同色、无法满足「选中环 / 编辑底 / 删除底 三者
+   两两不同」的验收；压暗后仍属品牌色系，但 RGB 与按钮拉开。
+   外发光取 --brand 半透明，提供 hover 之外的「更强、更大范围」光晕。 */
+.book-card.is-selected {
+  background: color-mix(in srgb, var(--brand) 5%, var(--pane));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--brand) 72%, #000),
+    0 10px 26px -10px color-mix(in srgb, var(--brand) 62%, transparent),
+    var(--sh-sm);
+}
+
+/* 封面：渐变由行内 background-image 提供，此处负责高光 / 暗角与文字 */
+.book-cover {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  color: #fff;
+}
+
+.book-cover__char {
+  font-family: var(--serif);
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  user-select: none;
+}
+
+/* 封面图：铺满封面块；有图时关闭顶部高光（照片上叠加会失真），
+   仅保留 `::after` 的底部暗角以衬托状态胶囊 / 操作按钮。 */
+.book-cover__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.book-cover.has-image::before {
+  display: none;
+}
+
+.book-cover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.28), transparent 60%);
+  pointer-events: none;
+}
+
+.book-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 60%, rgba(0, 0, 0, 0.18));
+  pointer-events: none;
+}
+
+/* 状态胶囊：定位与固定底色由页面负责，尺寸 / 圆角 / 字号由组件库 `.wf-badge` 提供。
+   选择器叠加 `.wf-badge*` 提高优先级，确保页面覆盖胜过组件库默认色调。
+   对齐：与右上角操作按钮（26×26）同处一条水平中线——两者均设 `top: 10px`，
+   且徽章总高对齐到按钮的 26px（border-box：line-height 20px + 上下 padding 3px × 2），
+   故 `top` 相同、中心 Y 也相同（10 + 26 / 2 = 23px）。
+   底色为「固定」状态色，不随主题 / 强调色变化：直接取 light 主题的品牌 / 成功 /
+   警告基色 hex（#5b4de8 / #0f7b4f / #9d5d00），四主题下三态外观完全一致。
+   刻意不引用 --brand / --ok / --warn —— sage 下 --brand 与 --ok 同值（#4a9d5f）、
+   honey 下 --brand 与 --warn 近色（#c99426 / #b88a1e），用令牌必然撞色。
+   白字对比度：品牌 5.72:1、成功 5.29:1、警告 5.25:1，均 ≥ WCAG AA 4.5。 */
+.book-status.wf-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  padding: 3px 9px;
+  font-size: 10.5px;
+  line-height: 20px;
+  color: #fff;
+  background: #5b4de8;
+}
+
+.book-status.wf-badge--brand {
+  background: #5b4de8;
+}
+
+.book-status.wf-badge--ok {
+  background: #0f7b4f;
+}
+
+.book-status.wf-badge--warn {
+  background: #9d5d00;
+}
+
+/* 封面右上角操作组：编辑 + 删除两个 IconButton 并排（编辑在左），
+   同一水平线（align-items: center → 中心 Y 相等），水平间距 6px。
+   整组绝对定位，单个按钮不再各自定位，两按钮天然对齐。
+   尺寸由组件库默认 30×30 略微缩小至 26×26（图标 16 → 15），仍 ≥ 24px 可点击。
+
+   形态 = 常驻半透明暗底 + 白色图标（复用组件库 ghost 变体，卡内只做
+   「封面场景」增强）：
+   封面为花色渐变 / 用户图片（明暗不可控），固定彩色圆底对比不稳，故——
+   - 默认：固定半透明暗底 rgba(0,0,0,0.32) + 白色图标，不再使用盒阴影 /
+     图标 drop-shadow（需求①：移除按钮阴影与图标压痕）；暗底在亮 / 暗 /
+     花色封面上都能与白色图标拉开对比，按钮区域始终与封面区分。该固定值
+     不随主题变化——封面本身也不随主题变化，四主题下观感一致；
+   - hover / focus：底色加深一档作为反馈（仅颜色变化，无位移 / 缩放，
+     遵循 AGENTS.md §8 卡片交互约束）；
+   - 删除的危险语义：基础态在常驻暗底上叠一层危险色相以便编辑 / 删除在
+     静止态即可区分；hover / focus 时图标转 var(--danger) 并以暗底衬托——
+     危险色随四主题令牌变化（light #c42b1c / dark #e05252 等），触发瞬间
+     用户注意力已在按钮上，红色可辨且各主题下均与暗底保持对比。 */
+.book-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.book-actions .wf-iconbtn {
+  width: 26px;
+  height: 26px;
+  color: #fff;
+  /* 常驻半透明暗底：移除原盒阴影后仍能托住白图标，且在任何封面
+     （亮 / 暗 / 花色）上都能与图标区分；固定值不随主题变化，四主题
+     观感一致（封面本身也不随主题变化）。 */
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.book-actions .wf-iconbtn > svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* hover / 键盘聚焦：底色加深一档增强反馈（仅颜色变化，无描边环、无位移 /
+   缩放，遵循 AGENTS.md §8 卡片交互约束），白图标保持。
+   覆盖组件库 ghost / danger 的主题色 hover 底（--soft-hover / --pane 派生
+   在花色封面上不可控），改为封面场景专用的固定半透明暗色。 */
+.book-actions .wf-iconbtn:hover:not(:disabled),
+.book-actions .wf-iconbtn:focus-visible {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.46);
+}
+
+/* 删除 = 危险语义：基础态在常驻暗底上叠一层危险色相，使静止态即可与
+   编辑区分（编辑为中性暗底）；hover / focus 时图标转危险红（主题令牌），
+   底换更深暗色以衬托红图标，无描边环。危险色随四主题令牌变化。 */
+.book-actions .book-delete {
+  background: color-mix(in srgb, var(--danger) 32%, rgba(0, 0, 0, 0.3));
+}
+
+.book-actions .book-delete:hover:not(:disabled),
+.book-actions .book-delete:focus-visible {
+  color: var(--danger);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* 卡片正文：高度 = 封面高度的一半（封面 3:4 → 正文 3:2），
+   在固定高度内以 space-between 排布 标题 / 元信息 / 进度 / 标签。 */
+.book-body {
+  flex: none;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  aspect-ratio: 3 / 2;
+  padding: 12px 14px 14px;
+  overflow: hidden;
+}
+
+.book-title {
+  margin: 0;
+  min-height: 36px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.book-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-mute);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.book-meta .dot {
+  flex: none;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-mute);
+  opacity: 0.5;
+}
+
+.book-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: auto;
+}
+
+/* 标签：排列由 `.book-tags` 负责，尺寸 / 圆角 / 中性底色由组件库 `.wf-tag` 提供，
+   仅用页面 className 覆盖字号 / 内边距以贴合原型。 */
+.book-tag.wf-tag {
+  padding: 2px 8px;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+/* ---------- 材质态 ----------
+   卡片 / 排序触发器 / 状态胶囊 / 操作按钮均为不透明纯色，
+   不再随 DWM 材质调半透明；窗口材质仅从卡片与外壳之间的缝隙透出。 */
+
+/* ---------- 窄窗口 ---------- */
+@media (max-width: 640px) {
+  /* 与宽屏同策略（grid auto-fit + 整块居中），仅固定卡宽由 200 收窄到 160。
+     grid 下 `.book-card` 的 `width` 不改变轨道宽，须同步轨道列宽；容器再窄也只会
+     退化为 1 列，卡片仍为 160px（不被拉伸成整行），不会竖排异常。 */
+  .book-grid {
+    grid-template-columns: repeat(auto-fit, 160px);
+  }
+
+  .book-card {
+    width: 160px;
+  }
+
+  .shelf-search {
+    width: 180px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-card,
+  .shelf-sort__trigger {
+    transition: none;
+  }
+
+  /* 组件库进度条填充的宽度过渡也一并关闭 */
+  .book-body .wf-progress__bar {
+    transition: none;
+  }
+}
+
+/* ---------- 确认弹窗正文 ----------
+   与 writer 域 `.confirm-msg`（styles/writer-trash.css）等价：ConfirmDialog
+   的 message 依赖此行距 / 颜色样式，书架页不加载 writer 域样式，故在本页
+   补一份最小等价定义（复用同一样式类名，避免改动 writer 域文件）。 */
+.confirm-msg {
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text-dim);
+  word-break: break-word;
+}

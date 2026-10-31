@@ -1,0 +1,128 @@
+/* ============================================================
+   窗口框架（Window）——标题区 / 内容区 / 底部操作区
+   被 `Modal` 与欢迎页共用，保证浮层与引导卡片外观一致。
+   设计语言参照 template/index.html（--pane + --r-lg + 浮层阴影 + 描边环）。
+   颜色一律取 theme.css 令牌（含 color-mix），兼容 light / dark / sage / honey。
+   前缀 wf-：根 .wf-window；尺寸变体 --sm/--md/--lg/--xl；元素 __head/__title/__close/__body/__footer。
+   ============================================================ */
+
+.wf-window {
+  /* 底部操作区分隔线的渐隐色：由 --text 派生，随主题自动适配 */
+  --wf-window-fade-line: color-mix(in srgb, var(--text) 6%, transparent);
+  /* 底部操作区按钮统一最小宽度（欢迎页 / 弹窗共用同一值）；
+     高度沿用 .wf-btn 的 md 尺寸（32px）。 */
+  --wf-window-action-min-w: 104px;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--pane);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-float), var(--panel-ring);
+}
+
+/* ---------- 宽度档位（与 Modal sm/md/lg/xl 对齐） ---------- */
+.wf-window--sm {
+  max-width: 360px;
+}
+
+.wf-window--md {
+  max-width: 480px;
+}
+
+.wf-window--lg {
+  max-width: 640px;
+}
+
+/* 设置弹窗（SettingsDialog）：四组设置项单列铺开，640px 过窄。 */
+.wf-window--xl {
+  max-width: 880px;
+}
+
+/* ---------- 标题区 ---------- */
+.wf-window__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px 12px;
+}
+
+.wf-window__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.wf-window__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-xs);
+  font-size: 15px;
+  line-height: 1;
+  color: var(--text-dim);
+  transition:
+    background 0.1s var(--ease),
+    color 0.1s var(--ease);
+}
+
+.wf-window__close:hover {
+  background: var(--soft-solid);
+  color: var(--text);
+}
+
+/* ---------- 内容区（可滚动） ---------- */
+.wf-window__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 20px 16px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* ---------- 底部操作区 ----------
+   分隔线左右渐隐，样式与状态栏上边线（.statusbar::before）一致：
+   两端透明、中段实色，颜色由 --text 派生以随主题变化。 */
+.wf-window__footer {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  /* 两端分布：取消居左 / 确认居右的标准弹窗布局；
+     欢迎页 / BookFormDialog 的 flex:1 spacer 为首个子项，会吸收全部剩余空间，
+     按钮仍靠右（与两端分布兼容，冗余无害）。 */
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 20px 18px;
+}
+
+.wf-window__footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--wf-window-fade-line) 20%,
+    var(--wf-window-fade-line) 80%,
+    transparent
+  );
+}
+
+/* 底部按钮统一最小宽度（欢迎页 / 弹窗共用）；可被页面自身的规则覆盖。 */
+.wf-window__footer .wf-btn {
+  min-width: var(--wf-window-action-min-w);
+}

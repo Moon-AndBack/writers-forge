@@ -1,0 +1,52 @@
+/* ============================================================
+   写作视图 · 剧情（plot）— 独立时间线只读视图变体
+   ------------------------------------------------------------------
+   自 `writer-plot.css` 原样搬移（保持单文件 ≤500 行，§3）。
+   复用纵线 / 圆点 / 卡片，仅以 `.timeline-main` / `is-origin` 区分只读首段；
+   含左内衬（纵线随之右移）与「卡片尺寸」控件变量兜底。
+   ============================================================ */
+
+/* ============================================================
+   独立时间线只读首段（复用纵线 / 圆点 / 卡片，仅 is-origin 区分）
+   ============================================================ */
+.timeline-main .plot-row.is-origin .plot-scene-card.is-origin {
+  cursor: default;
+  /* 只过渡投影 / 描边（hover 光晕）；底色仅随主题变化，不加过渡
+     （主题切换整体瞬变，见 theme.css「主题切换不做过渡」）。 */
+  transition:
+    box-shadow 0.22s var(--ease),
+    border-color 0.22s var(--ease);
+}
+
+.timeline-main .plot-row.is-origin .plot-scene-card.is-origin:hover {
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+/* 中栏内容整体右移：给独立时间线加左侧内衬（纵线随之右移，与圆点保持对齐）。
+   注意 `.plot-timeline::before` 为绝对定位、以 padding box 为基准，故其 left 需叠加内衬宽度。 */
+.timeline-main {
+  padding-left: 24px;
+}
+
+.timeline-main::before {
+  left: calc(24px + var(--plot-line-x));
+}
+
+/* 卡片尺寸：受状态栏「卡片尺寸」控件控制（最小 / 最大宽度、最小 / 最大高度，各 4 档，
+   见 timeline/timelineCardContext.ts）。变量由 Provider 写入文档根内联样式，此处以 var()
+   兜底默认值——与现状视觉一致（宽 320px / 宽上限 100% / 高 min 120px / 高上限 240px）。
+   仅作用于 `.timeline-main`（独立时间线只读卡）；剧情线视图 `.plot-scene-wrap` 卡片不受影响。
+   `overflow: hidden` 仅在「最大高度」非 none 档时对超高内容收口（默认档不裁剪）。 */
+.timeline-main .plot-scene-card {
+  flex: 0 0 var(--tl-card-min-w, 320px);
+  width: var(--tl-card-min-w, 320px);
+  max-width: var(--tl-card-max-w, 100%);
+  min-height: var(--tl-card-min-h, 120px);
+  max-height: var(--tl-card-max-h, 240px);
+  overflow: hidden;
+}

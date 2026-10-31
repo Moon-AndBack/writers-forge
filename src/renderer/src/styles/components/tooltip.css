@@ -1,0 +1,47 @@
+/* ============================================================
+   自绘 tooltip（图标按钮提示浮层）
+   ------------------------------------------------------------------
+   替换浏览器原生 title 气泡（原生样式由系统绘制、方角、不可控）。
+   视觉与 theme-switcher.css 的 .ts-popover / statusbar-widgets.css 的
+   .st-popup 一脉：--pane 不透明底 + var(--sh-popup), 0 0 0 1px var(--line)
+   阴影描边（单环）+ 小圆角 --r-xs + 小字号。
+   颜色一律取 theme.css 令牌，四主题（light / dark / sage / honey）自适应。
+   定位：由 useTooltip 以 fixed + 视口避让计算后内联 left/top；
+        浮层本身 pointer-events: none（不挡点击）。
+   层级：高于内容与下拉（60）/ 状态栏弹窗（900）/ 光标（950），
+        低于抽屉与模态（1000）。
+   ============================================================ */
+
+.wf-tooltip {
+  position: fixed;
+  z-index: 990;
+  box-sizing: border-box;
+  max-width: 240px;
+  padding: 5px 9px;
+  background: var(--pane);
+  border-radius: var(--r-xs);
+  box-shadow: var(--sh-popup), 0 0 0 1px var(--line);
+
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-align: left;
+
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s var(--ease);
+}
+
+/* 位置测量完成后再显形，避免首帧从默认坐标闪现 */
+.wf-tooltip.is-ready {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wf-tooltip {
+    transition: none;
+  }
+}

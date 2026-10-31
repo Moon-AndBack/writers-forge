@@ -1,0 +1,393 @@
+/* ============================================================
+   主题令牌（设计契约）
+   来源：template/index.html 的 :root / html.dark / html.sage / html.honey
+   切换：document.documentElement.dataset.theme = 'light' | 'dark' | 'sage' | 'honey'
+   变量名沿用模板原始命名（仅把 --desk-3 的混合大小写规范为小写）。
+   文件末尾「兼容层」令牌供既有 global.css / pages 使用，映射见任务报告。
+   ============================================================ */
+
+/* ---------- 主题无关令牌 ---------- */
+:root {
+  --page-width: 620px;
+  --doc-font:
+    system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; /* 默认正文字体：系统默认（与 typographyContext.ts 的 DEFAULT_DOC_FONT 逐字一致） */
+  --doc-line: 2;
+  --doc-zoom: 1;
+  --doc-letter: 0.01em;
+  --r-xs: 4px;
+  --r-lg: 8px;
+  --r-window: 8px;
+  --font:
+    'Segoe UI Variable Display', 'Segoe UI', 'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC',
+    -apple-system, BlinkMacSystemFont, sans-serif;
+  --serif:
+    'Songti SC', 'SimSun', 'Source Han Serif SC', 'Noto Serif SC', Georgia, 'Times New Roman', serif;
+  --mono: 'Cascadia Mono', 'Consolas', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --ease: cubic-bezier(0.33, 0, 0.67, 1);
+
+  /* 动效时长梯度（统一取用，禁止再写裸时长） */
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 240ms;
+
+  /* 主题切换（data-theme 变更）本身**不做 CSS transition**：整体一帧瞬变。
+     ① 唯一承载桌面底色的 `.shell` 是多层渐变（dark 另为硬编码色带），
+        background-image 不可插值，必然硬跳；
+     ② 界面色几乎全部经主题令牌派生，可过渡的只有其中一部分属性
+        （面板底色可插值、其内的文字 / 描边 / 图标 / 硬编码色不可），
+        同屏「一部分渐变、一部分硬跳」比纯瞬切更割裂；
+     ③ 整窗淡化不靠 CSS 过渡，而由 View Transitions 拍摄整窗快照后交叉淡化
+        （见 `theme/themeReveal.ts` + `styles/components/motion.css` 的
+        `::view-transition-*` 规则）。
+     结论：`--dur-*` 只用于交互（hover / 展开 / 拖拽 / 显隐）与进出场动画，
+     **不得**挂在仅由主题令牌引起的 color / background / box-shadow 上；
+     发现「只有切换主题才会触发」的过渡，一律删除。 */
+  /* 进场专用缓动（快出慢入，比 --ease 更适合进场） */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* 浮层层级：数值顺序体现叠放关系（数值越大越靠上）。
+     悬停卡 < 「+N」浮窗 < 嵌套详情卡 < tooltip < 模态。
+     相对序在此集中维护；使用处（entity-highlight.css / writer-right-panels.css）只引用变量。 */
+  --z-hover-card: 970;
+  --z-popover: 971;
+  --z-popover-nested: 972;
+
+  /* 桌面光斑尺寸（.shell 三层 radial 的椭圆大小）：dark 主题在下方覆盖为一半 */
+  --desk-spot-1: 1000px 640px;
+  --desk-spot-2: 880px 620px;
+  --desk-spot-3: 700px 500px;
+
+  /* 窗口材质（Acrylic）开启时纯色底的透明度（主题无关）：与各主题 --desk-solid 经
+     color-mix 派生出半透明底，见 acrylic.css 的 [data-material='acrylic'] .shell */
+  --desk-solid-alpha: 70%;
+
+  /* 文本选区底色（::selection，见 base.css）：由品牌色派生，四主题自动跟随。
+     data-theme 与 :root 同挂在 <html> 上，故此处 var(--brand) 解析到当前主题的
+     --brand 值（深色 / 浅黄另有覆写，见各 [data-theme='...'] 块）。
+     默认 22%：浅底（--pane 近白）上呈极淡品牌色晕染，观感对齐系统原生选区，
+     且不设 color、正文文字保持原色时仍有充足对比。 */
+  --selection-bg: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+/* ---------- 亮色（默认） ---------- */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* 桌面 / 窗口表面 */
+  --desk-1: #dfe4f2;
+  --desk-2: #eef0f6;
+  --desk-3: #e6e9f4;
+  /* 窗口材质（Acrylic）开启时的纯色底：取 --desk-2，@70% 透明度（--desk-solid-alpha）透出 DWM 材质 */
+  --desk-solid: #eef0f6;
+  /* 桌面渐变光斑：色相对齐原型 .desktop，alpha 为原浓度 ×0.2（极淡，近纯色观感） */
+  --desk-glow-1: rgba(91, 77, 232, 0.044);
+  --desk-glow-2: rgba(47, 154, 224, 0.04);
+  --desk-glow-3: rgba(255, 255, 255, 0.1);
+  --win-rgb: 243, 243, 243;
+  --win-surface: #fbfbfb;
+  --pane: #ffffff;
+
+  /* 交互底色 */
+  --soft: rgba(0, 0, 0, 0.037);
+  --soft-hover: rgba(0, 0, 0, 0.06);
+  --soft-press: rgba(0, 0, 0, 0.09);
+  --pill-bg: rgba(0, 0, 0, 0.05);
+  --pill-bg-hover: rgba(0, 0, 0, 0.085);
+  --line: rgba(0, 0, 0, 0.08);
+
+  /* 不透明交互底色：组件自身填充用，alpha = 1。
+     以 --text 按原 --soft* / --pill-bg* 的透明度混入 --pane 推导，
+     观感对齐半透明版本，使窗口材质仅从组件之间的缝隙透出。
+     注：--soft-solid 已刻意加深至 6%（左栏分区容器卡口径，全库共享），
+     不再严格等于 --soft 的 3.7%。 */
+  --soft-solid: color-mix(in srgb, var(--text) 6%, var(--pane));
+  --soft-hover-solid: color-mix(in srgb, var(--text) 6%, var(--pane));
+  --soft-press-solid: color-mix(in srgb, var(--text) 9%, var(--pane));
+  --pill-bg-solid: color-mix(in srgb, var(--text) 5%, var(--pane));
+  --pill-bg-hover-solid: color-mix(in srgb, var(--text) 8.5%, var(--pane));
+
+  /* 「有底色容器上的控件」令牌（亮色 · 中性）：输入框 / 下拉 / 多行文本 / 键值行 /
+     别名列表项等控件落在 --soft-solid 底色的卡片上时，若沿用 --soft-solid 填充会与
+     容器同色、边界不可辨。本组用高于 --soft-solid（6%）的 --text 比例混入 --pane——
+     浅色系 --text 为深色，故控件**更深**。
+
+     当前取向：**控件底接近卡片底，边界靠描边**。10% 档控件底约 #e8e8e8、卡片底约
+     #f1f1f1（对比约 1.09:1，只留一档极轻的层次，观感明亮）；边界不再靠加深填充，
+     而由 --control-on-soft-line 的 37% 细描边承担（描边对控件底约 2.25:1，清晰可辨）。
+     旧 15% 档 1.21:1 控件偏黑，故本批再压一档。
+     聚焦态仍回到 --pane + 品牌环（见 form.css 的 `.on-soft`）。
+
+     ▸ 快速微调：只调下面这三个比例，即可整体调亮 / 调暗控件底与描边强度
+       （调低比例 → 控件更接近卡片底、更亮；调高 → 更深、对比更强）。
+       四套主题**各自显式定义**，不依赖 :root 继承。 */
+  --control-on-soft: color-mix(in srgb, var(--text) 10%, var(--pane));
+  --control-on-soft-hover: color-mix(in srgb, var(--text) 14%, var(--pane));
+  --control-on-soft-line: color-mix(in srgb, var(--text) 37%, transparent);
+
+  /* 文本 */
+  --text: #1a1a1a;
+  --text-dim: #5c5c5c;
+  --text-mute: #8a8a8a;
+
+  /* 品牌 / 语义色 */
+  --brand: #5b4de8;
+  --brand-2: #2f9ae0;
+  --ok: #0f7b4f;
+  --warn: #9d5d00;
+  --danger: #c42b1c;
+
+  /* 正文（文档区） */
+  --doc-text: #252b3b;
+  /* 正文输入光标：品牌主色 #5b4de8 向正文前景色 #252b3b 暗化加深
+     （brand 55% + doc-text 45%），保证浅底上光标清晰且不刺眼；
+     与 light 强调色同相，正文区协调。 */
+  --caret: color-mix(in srgb, var(--brand) 55%, var(--doc-text));
+
+  /* 阴影 / 描边 */
+  --sh-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.045);
+  --sh-popup: 0 -4px 20px rgba(0, 0, 0, 0.1), 0 4px 16px rgba(0, 0, 0, 0.12);
+  --sh-float: 0 12px 32px -8px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08);
+  --win-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.1), 0 24px 60px -12px rgba(0, 0, 0, 0.28),
+    0 8px 20px rgba(0, 0, 0, 0.1);
+  --panel-ring: 0 0 0 1px rgba(0, 0, 0, 0.05);
+
+  /* 浮层遮罩（Modal / Drawer 通用）：纯黑固定浓度，明暗同值；
+     组件侧一律引用 --overlay-mask，不再硬编码 rgba。 */
+  --overlay-mask: rgba(0, 0, 0, 0.32);
+
+  /* 兼容层：既有 global.css / pages 的历史令牌 */
+  --bg: #f7f7f8;
+  --fg: #1f2328;
+  --accent: #3b82f6;
+  --border: #d0d7de;
+}
+
+/* ---------- 暗色 ---------- */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* 桌面底色：dark 最终背景为垂直三段式色带（见 shell.css 的
+     [data-theme='dark'] .shell，字面色值 #1c1c2b/#161616/#19202b，无光斑）。
+     下方 --desk-1/2/3 为回退底色（左上 #1c1c2b → 右下 #19202b 的对角观感），
+     当前无渲染路径（dark 下基础 .shell 被覆盖规则整体替代）；若移除覆盖
+     规则回退到基础 3 光斑版时生效。基础 .shell 的 3 光斑版供其余主题使用 */
+  --desk-1: #1c1c2b;
+  --desk-2: #1c1c2b;
+  --desk-3: #19202b;
+  /* 窗口材质（Acrylic）开启时的纯色底：dark 定为 #161616（与 shell.css dark 斜切带中段同值），
+     @70% 透明度（--desk-solid-alpha）透出 DWM 材质 */
+  --desk-solid: #161616;
+  --win-rgb: 26, 26, 28;
+  --win-surface: #2b2b2e;
+  --pane: #202020;
+
+  --soft: rgba(255, 255, 255, 0.05);
+  --soft-hover: rgba(255, 255, 255, 0.08);
+  --soft-press: rgba(255, 255, 255, 0.11);
+  --pill-bg: rgba(255, 255, 255, 0.07);
+  --pill-bg-hover: rgba(255, 255, 255, 0.12);
+  --line: rgba(255, 255, 255, 0.1);
+
+  /* 不透明交互底色（暗色）：--text 为白，混入 --pane 提亮，值对齐原 rgba */
+  --soft-solid: color-mix(in srgb, var(--text) 5%, var(--pane));
+  --soft-hover-solid: color-mix(in srgb, var(--text) 8%, var(--pane));
+  --soft-press-solid: color-mix(in srgb, var(--text) 11%, var(--pane));
+  --pill-bg-solid: color-mix(in srgb, var(--text) 7%, var(--pane));
+  --pill-bg-hover-solid: color-mix(in srgb, var(--text) 12%, var(--pane));
+
+  /* 「有底色容器上的控件」（暗色）：语义同亮色块（快速微调同样只调下面三个比例）。
+     --text 为白，取 14% 混入 --pane 即**更亮**于 --soft-solid（5%），控件底约
+     #3f3f3f、卡片底约 #2b2b2b，对比约 1.34:1；hover 19% 再亮一档。描边按白 22%
+     混透明，暗底上可见。dark 下控件本就亮于底色（不会「偏黑」），故保留 14% 不再
+     压低，避免与卡片底糊平。 */
+  --control-on-soft: color-mix(in srgb, var(--text) 14%, var(--pane));
+  --control-on-soft-hover: color-mix(in srgb, var(--text) 19%, var(--pane));
+  --control-on-soft-line: color-mix(in srgb, var(--text) 22%, transparent);
+
+  --text: #ffffff;
+  --text-dim: #c8c8c8;
+  --text-mute: #909090;
+
+  --brand: #8b7ff0;
+  --brand-2: #5fc0ec;
+  --ok: #4ccfa4;
+  --warn: #f2b357;
+  --danger: #e05252;
+
+  --doc-text: #d8d8dc;
+
+  /* 正文输入光标：暗底上品牌色 #8b7ff0 已足够亮、与正文 #d8d8dc 对比清晰，
+     直接取 --brand（主题品牌色）。 */
+  --caret: var(--brand);
+
+  --sh-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
+  --sh-popup: 0 -4px 20px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.5);
+  --sh-float: 0 12px 32px -8px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
+  --win-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08), 0 24px 60px -12px rgba(0, 0, 0, 0.6),
+    0 8px 20px rgba(0, 0, 0, 0.4);
+  --panel-ring: 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+  /* 浮层遮罩（Modal / Drawer 通用）：与亮色同值，遮罩浓度不随主题变化。 */
+  --overlay-mask: rgba(0, 0, 0, 0.32);
+
+  /* 文本选区（::selection）：深底上 22% 的品牌色绝对亮度差过小、易糊进底色，
+     提到 30%（#8b7ff0 30% 混 --pane 约 #403d5e，对面板底对比约 1.59:1，
+     浅色主题同为 1.38:1 量级观感）。 */
+  --selection-bg: color-mix(in srgb, var(--brand) 30%, transparent);
+
+  --bg: #1a1c26;
+  --fg: #ffffff;
+  --accent: #8b7ff0;
+  --border: rgba(255, 255, 255, 0.1);
+}
+
+/* ---------- 浅绿 ---------- */
+[data-theme='sage'] {
+  color-scheme: light;
+
+  --desk-1: #dbe9dc;
+  --desk-2: #e9f1ea;
+  --desk-3: #e0ebe2;
+  /* 窗口材质（Acrylic）开启时的纯色底：取 --desk-2，@70% 透明度（--desk-solid-alpha）透出 DWM 材质 */
+  --desk-solid: #e9f1ea;
+  /* 桌面渐变光斑：色相对齐原型 html.sage，alpha 为原浓度 ×0.2（极淡） */
+  --desk-glow-1: rgba(74, 157, 95, 0.036);
+  --desk-glow-2: rgba(108, 191, 136, 0.03);
+  --desk-glow-3: rgba(255, 255, 255, 0.1);
+  --win-rgb: 238, 245, 238;
+  --win-surface: #fafdfa;
+  --pane: #fcfffc;
+
+  --soft: rgba(20, 60, 30, 0.05);
+  --soft-hover: rgba(20, 60, 30, 0.08);
+  --soft-press: rgba(20, 60, 30, 0.11);
+  --pill-bg: rgba(20, 60, 30, 0.07);
+  --pill-bg-hover: rgba(20, 60, 30, 0.11);
+  --line: rgba(20, 60, 30, 0.1);
+
+  /* 不透明交互底色（浅绿）：按原 rgba 基色 (20,60,30) 混入 --pane；
+     --soft-solid 已刻意加深至 6%（左栏分区容器卡口径，全库共享）。 */
+  --soft-solid: color-mix(in srgb, rgb(20, 60, 30) 6%, var(--pane));
+  --soft-hover-solid: color-mix(in srgb, rgb(20, 60, 30) 8%, var(--pane));
+  --soft-press-solid: color-mix(in srgb, rgb(20, 60, 30) 11%, var(--pane));
+  --pill-bg-solid: color-mix(in srgb, rgb(20, 60, 30) 7%, var(--pane));
+  --pill-bg-hover-solid: color-mix(in srgb, rgb(20, 60, 30) 11%, var(--pane));
+
+  /* 「有底色容器上的控件」（浅绿）：沿用本主题软底色的基色 rgb(20, 60, 30) 推导
+     ——10% 混入 --pane（--soft-solid 同基色 6%），控件底约 #e5ece6、卡片底约
+     #eef3ef，对比约 1.08:1，仍带本主题绿调。当前取向：**控件底接近卡片底，边界
+     靠描边**——边界由同基色 37% 透明描边承担（描边对控件底约 2.0:1；旧 15% / 32%
+     档控件偏黑、对比 1.18:1）。
+     快速微调：只改下面三个比例（调低更亮 / 调高更深）。 */
+  --control-on-soft: color-mix(in srgb, rgb(20, 60, 30) 10%, var(--pane));
+  --control-on-soft-hover: color-mix(in srgb, rgb(20, 60, 30) 14%, var(--pane));
+  --control-on-soft-line: color-mix(in srgb, rgb(20, 60, 30) 37%, transparent);
+
+  --text: #1a2a1e;
+  --text-dim: #4e6254;
+  --text-mute: #7e8f83;
+
+  --brand: #4a9d5f;
+  --brand-2: #6cbf88;
+  --ok: #4a9d5f;
+  --warn: #b88a1e;
+  --danger: #c34a3a;
+
+  --doc-text: #1f3225;
+
+  /* 正文输入光标：浅绿品牌色 #4a9d5f 与正文 #1f3225 同色系，取 --brand 即可
+     与主题协调且对比充分。 */
+  --caret: var(--brand);
+
+  --sh-popup: 0 -4px 20px rgba(20, 50, 30, 0.1), 0 4px 16px rgba(20, 50, 30, 0.12);
+  --sh-float: 0 12px 32px -8px rgba(20, 50, 30, 0.22), 0 4px 12px rgba(20, 50, 30, 0.08);
+  --win-shadow:
+    0 0 0 1px rgba(30, 60, 40, 0.12), 0 24px 60px -12px rgba(20, 50, 30, 0.28),
+    0 8px 20px rgba(20, 50, 30, 0.1);
+  --panel-ring: 0 0 0 1px rgba(30, 60, 40, 0.06);
+
+  --bg: #dbe9dc;
+  --fg: #1a2a1e;
+  --accent: #4a9d5f;
+  --border: rgba(20, 60, 30, 0.1);
+}
+
+/* ---------- 浅黄 ---------- */
+[data-theme='honey'] {
+  color-scheme: light;
+
+  --desk-1: #ece3cd;
+  --desk-2: #f5edd9;
+  --desk-3: #eee5d1;
+  /* 窗口材质（Acrylic）开启时的纯色底：取 --desk-2，@70% 透明度（--desk-solid-alpha）透出 DWM 材质 */
+  --desk-solid: #f5edd9;
+  /* 桌面渐变光斑：色相对齐原型 html.honey，alpha 为原浓度 ×0.2（极淡） */
+  --desk-glow-1: rgba(201, 148, 38, 0.036);
+  --desk-glow-2: rgba(224, 184, 94, 0.03);
+  --desk-glow-3: rgba(255, 255, 255, 0.1);
+  --win-rgb: 249, 243, 228;
+  --win-surface: #fffdf6;
+  --pane: #fffef9;
+
+  --soft: rgba(80, 60, 10, 0.045);
+  --soft-hover: rgba(80, 60, 10, 0.07);
+  --soft-press: rgba(80, 60, 10, 0.1);
+  --pill-bg: rgba(80, 60, 10, 0.06);
+  --pill-bg-hover: rgba(80, 60, 10, 0.1);
+  --line: rgba(80, 60, 10, 0.12);
+
+  /* 不透明交互底色（浅黄）：按原 rgba 基色 (80,60,10) 混入 --pane；
+     --soft-solid 已刻意加深至 6%（左栏分区容器卡口径，全库共享）。 */
+  --soft-solid: color-mix(in srgb, rgb(80, 60, 10) 6%, var(--pane));
+  --soft-hover-solid: color-mix(in srgb, rgb(80, 60, 10) 7%, var(--pane));
+  --soft-press-solid: color-mix(in srgb, rgb(80, 60, 10) 10%, var(--pane));
+  --pill-bg-solid: color-mix(in srgb, rgb(80, 60, 10) 6%, var(--pane));
+  --pill-bg-hover-solid: color-mix(in srgb, rgb(80, 60, 10) 10%, var(--pane));
+
+  /* 「有底色容器上的控件」（浅黄）：沿用本主题软底色的基色 rgb(80, 60, 10) 推导
+     ——10% 混入 --pane（--soft-solid 同基色 6%），控件底约 #eeebe1、卡片底约
+     #f5f2eb，对比约 1.07:1，仍带本主题暖黄调。当前取向：**控件底接近卡片底，边界
+     靠描边**——边界由同基色 37% 透明描边承担（描边对控件底约 1.9:1；旧 15% / 32%
+     档控件偏黑、对比 1.17:1）。
+     快速微调：只改下面三个比例（调低更亮 / 调高更深）。 */
+  --control-on-soft: color-mix(in srgb, rgb(80, 60, 10) 10%, var(--pane));
+  --control-on-soft-hover: color-mix(in srgb, rgb(80, 60, 10) 14%, var(--pane));
+  --control-on-soft-line: color-mix(in srgb, rgb(80, 60, 10) 37%, transparent);
+
+  --text: #2b2415;
+  --text-dim: #6a5c3c;
+  --text-mute: #96886c;
+
+  --brand: #c99426;
+  --brand-2: #e0b85e;
+  --ok: #6b9d3a;
+  --warn: #b88a1e;
+  --danger: #c34a3a;
+
+  --doc-text: #332a17;
+
+  /* 正文输入光标：浅黄品牌色 #c99426 与正文 #332a17 同色系，取 --brand 即可
+     与主题协调且对比充分。 */
+  --caret: var(--brand);
+
+  --sh-popup: 0 -4px 20px rgba(80, 60, 10, 0.1), 0 4px 16px rgba(80, 60, 10, 0.12);
+  --sh-float: 0 12px 32px -8px rgba(80, 60, 10, 0.22), 0 4px 12px rgba(80, 60, 10, 0.08);
+  --win-shadow:
+    0 0 0 1px rgba(80, 60, 10, 0.12), 0 24px 60px -12px rgba(80, 60, 10, 0.26),
+    0 8px 20px rgba(80, 60, 10, 0.1);
+  --panel-ring: 0 0 0 1px rgba(80, 60, 10, 0.06);
+
+  /* 文本选区（::selection）：品牌 #c99426 与米色面板底明度接近，22% 混出近奶油色、
+     边界偏弱；提到 28%（约 #f0e0be，对面板底对比约 1.30:1）后暖黄选区清晰可辨。 */
+  --selection-bg: color-mix(in srgb, var(--brand) 28%, transparent);
+
+  --bg: #ece3cd;
+  --fg: #2b2415;
+  --accent: #c99426;
+  --border: rgba(80, 60, 10, 0.12);
+}

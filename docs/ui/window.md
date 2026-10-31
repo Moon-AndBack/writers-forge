@@ -1,0 +1,227 @@
+# 窗口行为（Window）
+
+本文描述主窗口的创建参数、尺寸与持久化、窗口材质（Acrylic）、自绘标题栏、宽度磁吸与开发态快捷键。
+所有数值以源码为准，标注为「文件:行号」。
+
+- 创建与装配：`src/main/window.ts`
+- 尺寸与持久化：`src/main/windowState.ts`
+- 材质：`src/main/windowMaterial.ts`、`src/renderer/src/theme/windowMaterial.ts`
+- 宽度磁吸：`src/main/resizeSnap.ts`、`src/main/ipc/snap.ts`、`src/renderer/src/pages/bookshelf/useShelfSnap.ts`
+- 标题栏 overlay：`src/main/ipc/window.ts`、`src/renderer/src/theme/useTitleBarOverlay.ts`
+- 渲染层样式：`styles/acrylic.css`、`styles/statusbar.css`、`styles/shell.css`、`styles/bookshelf.css`
+
+## 1. 窗口创建参数
+
+主窗口由 `createMainWindow()` 创建，`BrowserWindow` 选项集中在 `src/main/window.ts:74-99`。
+
+| 参数 | 取值 | 说明 | 出处 |
+| --- | --- | --- | --- |
+| `width` / `height` | 持久化值，缺省 902 × 764 | 外框尺寸，单位 DIP | `window.ts:75-76`、`windowState.ts:22-23` |
+| `minWidth` / `minHeight` | 902 × 764 | 与默认尺寸相同，窗口不可再缩小 | `window.ts:77-78` |
+| `backgroundColor` | 材质生效 `#00000000`；否则 `#f3f3f3` | 透明用 alpha 通道实现，**不用** `transparent: true` | `window.ts:84` |
+| `backgroundMaterial` | `resolveMaterial()` 结果 | `acrylic` / `none` | `window.ts:65,85` |
+| `icon` | 开发态 `build/icon.png`；打包态 `resources/icon.png` | 路径由 `app.isPackaged` 分支决定 | `window.ts:70-72,80` |
+| `titleBarStyle` | `'hidden'` | 隐藏系统标题栏，渲染层自绘 | `window.ts:86` |
+| `titleBarOverlay` | `color: '#00000000'`、`symbolColor: '#5c5c5c'`、`height: 42` | 仅保留右上角系统按钮（WCO） | `window.ts:87-91` |
+| `show` | `false` | 等 `ready-to-show` 再 `show()`，避免白屏闪烁 | `window.ts:79,110-113` |
+| `autoHideMenuBar` | `true` | 隐藏菜单栏 | `window.ts:92` |
+| `webPreferences` | `contextIsolation: true`、`sandbox: false`、`nodeIntegration: false` | preload 为 `../preload/index.js` | `window.ts:93-98` |
+
+其他行为：
+
+- 外链交给系统浏览器，应用内禁止新开窗口（`window.ts:116-119`）。
+- 导航守卫只放行应用自身来源（`window.ts:126`）。
+- 开发态加载 `ELECTRON_RENDERER_URL`；打包态 `loadFile('../renderer/index.html')`（`window.ts:123-135`）。
+
+## 2. 默认尺寸推导
+
+默认尺寸 902 × 764 DIP 是「恰好吃下 4 张书卡 + 1.5 行卡片」的实测结果，推导写在 `windowState.ts:11-21`。
+
+宽度（`windowState.ts:16-17`）：
+
+```
+4 × 200（卡宽） + 3 × 18（列间距） + 2 × 14（.bookshelf-view 左右 padding）
++ 2 × 4（.book-grid 左右 padding） + 12（垂直滚动条） = 902
+```
+
+高度（`windowState.ts:18-20`）：
+
+```
+42（.titlebar） + 36（.statusbar） + 2 × 12（.bookshelf-view 上下 padding）
++ 45.8（.shelf-toolbar） + [2（.book-grid padding-top） + 400（第 1 排卡）
++ 14（行距） + 200（半排）] = 763.8 → 764
+```
+
+注意 `minWidth/minHeight` 直接复用了这两个默认值（`window.ts:77-78`），因此**最小尺寸等于默认尺寸**，用户无法把窗口缩到 902 × 764 以下（磁吸目标档低于该值时同样受系统最小值约束）。
+
+## 3. 尺寸持久化
+
+实现见 `registerWindowSizePersistence()`（`windowState.ts:107-133`）。
+
+| 项目 | 取值 / 行为 | 出处 |
+| --- | --- | --- |
+| settings 键 | `windowSize` | `windowState.ts:9` |
+| 存储格式 | `"<宽>x<高>"`，四舍五入取整 | `windowState.ts:45,63-65` |
+| 防抖间隔 | 300 ms（`WINDOW_SIZE_SAVE_DELAY`） | `windowState.ts:98,120-123` |
+| 忽略状态 | 最大化 / 全屏 / 最小化时不写库 | `windowState.ts:114` |
+| 取值来源 | `getNormalBounds()`，保留恢复态尺寸 | `windowState.ts:116` |
+| 关闭补写 | `close` 时清定时器并立即写一次 | `windowState.ts:126-132` |
+| 合法范围 | 宽 320–10000、高 240–10000 | `windowState.ts:26-29,50-57` |
+| 解析规则 | 仅接受 `^\d{1,4}x\d{1,4}$`；null / 空串 / 负数 / 小数 / 越界一律丢弃 | `windowState.ts:42-60` |
+
+- 启动读取：`readInitialWindowSize()` 有合法值用持久化值，无值 / 非法 / 读库异常回退 902 × 764（`windowState.ts:76-85`）。
+- 写库异常只记 `warn`，不影响窗口使用（`windowState.ts:88-95`）。
+- 关闭流程中数据库可能已关闭，因此写失败是预期分支，不抛出。
+
+## 4. 材质模型
+
+### 4.1 取值
+
+窗口材质**只有两种**（`src/main/windowMaterial.ts:14`）：
+
+| 值 | 含义 |
+| --- | --- |
+| `acrylic` | 开启亚克力透明：窗口底全透明，透出 Windows DWM Acrylic |
+| `none` | 关闭：不透明，回退渲染层光斑渐变 |
+
+- 默认值：`acrylic`（`windowMaterial.ts:24`；渲染层默认一致，`theme/windowMaterial.ts:17`）。
+- settings 键：`windowMaterial`（`windowMaterial.ts:17`、`theme/windowMaterial.ts:10`）。
+- 旧值迁移：历史值 `mica` 一律按 `acrylic` 处理，其余非法值返回 `null`（`windowMaterial.ts:50-54`、`theme/windowMaterial.ts:25-29`）。
+
+### 4.2 系统门槛
+
+- 仅 Windows：`process.platform === 'win32'`（`windowMaterial.ts:68`）。
+- 仅 Windows 11 22H2 及以上：build ≥ **22621**（`ACRYLIC_MIN_BUILD`，`windowMaterial.ts:36,67-71`）。
+- 非 Windows / 低版本一律解析为 `none`（`resolveMaterial`，`windowMaterial.ts:90-92`）。
+- 门槛依据是 Electron `setBackgroundMaterial` 的实现限制；Win10 原生亚克力不在此 API 暴露范围内（`windowMaterial.ts:27-34`）。
+
+### 4.3 启动应用流程
+
+1. 建窗前读 settings 键并归一化：`readInitialWindowMaterial()`（`windowMaterial.ts:78-87`）。
+2. `resolveMaterial()` 结合平台能力算出真实可生效值（`windowMaterial.ts:65,90-92`）。
+3. 由该值决定 `backgroundMaterial` 与 `backgroundColor`：开启时 `#00000000`，关闭时 `#f3f3f3`（`window.ts:66,84-85`；常量在 `windowMaterial.ts:39,42`）。
+4. 渲染层 `main.tsx` 预取同一键、校验后作为 `WindowMaterialProvider` 的 `initialMaterial`，避免异步读取造成闪屏（`src/renderer/src/main.tsx:34-42,60`）。
+
+### 4.4 运行时切换
+
+- IPC `window:setMaterial`：入参经 `normalizeWindowMaterial()` 迁移旧值，非法返回 `null`，否则调用 `applyWindowMaterial()` 并返回**实际生效**值（`src/main/ipc/window.ts:63-74`）。
+- IPC `window:acrylicSupported`：返回当前系统是否支持 Acrylic，渲染层据此禁用开关（`src/main/ipc/window.ts:78`）。
+- `applyWindowMaterial()` 内部：`setBackgroundMaterial(effective)` + 同步 `setBackgroundColor()`（`windowMaterial.ts:101-114`）。
+- preload 暴露为 `window.api.windowMaterial.set / acrylicSupported`（`src/preload/index.ts:345-351`）。
+
+### 4.5 渲染层投影
+
+- `WindowMaterialProvider` 计算 `enabled = setting === 'acrylic' && supported`（`WindowMaterialProvider.tsx:51`）。
+- 状态写入根元素 `data-material`：开启为 `acrylic`，关闭为 `none`（`WindowMaterialProvider.tsx:53-55`）。
+- `styles/acrylic.css` 依 `data-material` 生效：
+  - `[data-material='acrylic'] .shell` 用 `color-mix(... var(--desk-solid-alpha), transparent)` 换成半透明纯色底（`acrylic.css:24-26`）。
+  - `[data-material='acrylic'] body` 置透明，否则 body 底会挡住 DWM 材质（`acrylic.css:30-32`）。
+- 切换时三件事同步：调主进程、写 `data-material`、经 `settings:set` 持久化（`WindowMaterialProvider.tsx:57-71`）。
+- 主进程返回的实际值与请求不一致时（如系统不支持），Provider 回退本地状态（`WindowMaterialProvider.tsx:63-67`）。
+
+### 4.6 失败降级
+
+- 平台不支持：`resolveMaterial` 提前降级 `none`，不会调用无效 API（`windowMaterial.ts:97,104`）。
+- 调用异常：`setBackgroundMaterial` 抛错时记录 `error` 并返回 `DEFAULT_WINDOW_MATERIAL`（当前为 `acrylic`，见 `windowMaterial.ts:108-112`）；窗口保持上一次底色，属边界现状，正常平台不触发。
+- 窗口已销毁：直接返回默认常量（`windowMaterial.ts:102`）。
+- 渲染层查询 `acrylicSupported` 失败视为不支持，开关置灰（`WindowMaterialProvider.tsx:35-48`）。
+
+## 5. 自绘标题栏与 WCO
+
+- `titleBarStyle: 'hidden'` 隐藏系统标题栏，右上角保留窗口控制按钮（WCO），高度 **42**（`window.ts:86-91`）。
+- 初始符号色 `#5c5c5c`；背景保持全透明，让自绘标题栏与 DWM 材质透出（`window.ts:88-89`；`useTitleBarOverlay.ts:5-8`）。
+- CSS `.titlebar` 高度同为 42px（`styles/shell.css:86-91`），三处（主进程 overlay / 渲染层常量 / CSS）必须一致。
+- 主题切换后由 `useTitleBarOverlay()` 读取 `--text-dim` 作为新的 `symbolColor`，读取失败回退 `#5c5c5c`（`useTitleBarOverlay.ts:11-18,44-55`）。
+- 同步延迟一帧（`requestAnimationFrame`），确保取到新主题下的令牌值（`useTitleBarOverlay.ts:47-54`）。
+- IPC `window:titlebar:set-overlay` 仅 Windows 生效；非 Windows 直接返回 `false`，参数非法或窗口缺失同样返回 `false`（`src/main/ipc/window.ts:41-58`）。
+- preload 暴露为 `window.api.titleBar.setOverlay`（`src/preload/index.ts:341-344`）。
+
+## 6. 宽度磁吸
+
+### 6.1 触发条件
+
+- **仅书架页生效**：`useShelfSnap()` 在书籍页挂载时 `window:snap:set` 上报配置，卸载或卡片数为 0 时 `window:snap:clear`（`useShelfSnap.ts:63-74,129-138`）。
+- 其他页面没有配置，主进程在 `will-resize` 中直接旁路（`resizeSnap.ts:166`）。
+- `will-resize` 监听按窗口幂等注册，同一窗口不叠加（`resizeSnap.ts:203-216`）。
+
+### 6.2 阈值与决策
+
+| 常量 | 值 | 含义 | 出处 |
+| --- | --- | --- | --- |
+| `SNAP_ENTER` | 12 DIP | 未锁定时，距最近档 ≤ 12 即吸附 | `resizeSnap.ts:44` |
+| `SNAP_EXIT` | 24 DIP | 已锁定时，偏离 > 24 才解锁（滞回防抖） | `resizeSnap.ts:46` |
+
+- 档位宽度：`overhead + N × cardWidth + (N − 1) × columnGap`，取整（`resizeSnap.ts:101-103`）。
+- 决策为纯函数 `decideSnap()`：已锁定且未越 EXIT → 维持吸附；越 EXIT → 重新寻档；未锁定且 ≤ ENTER → 锁定；否则自由（`resizeSnap.ts:131-153`）。
+- 只有 `N ≤ maxColumns` 的档位参与判定，`maxColumns` 即当前卡片数（`resizeSnap.ts:23,129,140`）。
+
+### 6.3 `will-resize` 拦截
+
+1. 跳过未启用、窗口销毁 / 最大化 / 全屏（`resizeSnap.ts:166-167`）。
+2. 跳过 `edge === 'bottom'` 与 `'top'`，只处理横向边缘（`resizeSnap.ts:170`）。
+3. 命中吸附时先 `setBounds({ x, width })`，成功后再 `event.preventDefault()`；`setBounds` 抛错则不拦截，让窗口跟随拖动，避免冻住（`resizeSnap.ts:190-200`）。
+4. 提议宽度已等于目标且锁定档未变时不重复 `setBounds`（`resizeSnap.ts:180-183`）。
+5. 左边缘拖动时右边缘固定，补偿 `x = current.x + current.width − 目标宽`（`resizeSnap.ts:185-188`）。
+6. `setBounds` 不会再次触发 `will-resize`（Electron 保证），无递归（`resizeSnap.ts:13`）。
+
+### 6.4 参数上报
+
+- 渲染层从 `.book-grid` 实测：`contentWidth = clientWidth − 左右 padding`，卡宽取首条网格轨道，列距取 `columnGap`（`useShelfSnap.ts:30-51`）。
+- `overhead = round(窗口外宽 − contentWidth)`，一次性涵盖窗口边框 + padding + 滚动条（`useShelfSnap.ts:89-95`）。
+- 卡宽断点 **640**：宽屏 200、窄屏 160；列距兜底 18（`useShelfSnap.ts:4-11`；`styles/bookshelf.css:119,126,406-415`）。
+- 上报键为 `cardWidth|columnGap|overhead|cardCount`，不变则跳过 IPC（`useShelfSnap.ts:97-99`）。
+
+### 6.5 静默期与观察
+
+- 尺寸静默期 **150 ms**（`SETTLE_MS`）：拖拽中布局连续变化，停稳后再上报，避免频繁重置锁定档（`useShelfSnap.ts:11,112-118`）。
+- 首帧立即上报一次，保证挂载后吸附即时生效（`useShelfSnap.ts:120-121`）。
+- 监听 `ResizeObserver`（网格尺寸）与 `matchMedia('(max-width: 640px)')`（断点切换）（`useShelfSnap.ts:123-127`）。
+
+### 6.6 IPC 通道
+
+| 通道 | 作用 | 出处 |
+| --- | --- | --- |
+| `window:snap:set` | 校验配置并启用吸附 | `src/main/ipc/snap.ts:19-29` |
+| `window:snap:clear` | 关闭吸附（离开书架页） | `src/main/ipc/snap.ts:31-36` |
+| `window:snap:status` | 读取当前吸附状态 | `src/main/ipc/snap.ts:38-41` |
+| `window:bounds:get` | 返回窗口外宽（DIP），供渲染层算 overhead | `src/main/ipc/snap.ts:44-47` |
+
+preload 对应 `window.api.windowSnap`（`src/preload/index.ts:352-361`）。配置校验拒绝 NaN / Infinity / 负值 / 非整数列数（`resizeSnap.ts:71-98`）。
+
+## 7. 高度约束
+
+垂直方向由两段固定 chrome 夹住内容区，二者都是硬编码高度，改动需三处同步（主进程 overlay、CSS、推导注释）：
+
+| 区段 | 高度 | 出处 |
+| --- | --- | --- |
+| 标题栏 `.titlebar` | 42 px | `styles/shell.css:86-91`；`window.ts:90` |
+| 状态栏 `.statusbar` | 36 px | `styles/statusbar.css:17-22` |
+
+- 默认高度 764 已包含 42 + 36（`windowState.ts:18-20`）。
+- 最小高度同为 764（`window.ts:78`），因此内容区高度下限 = 764 − 42 − 36 − 页面 padding / 工具条。
+- 磁吸只改宽度，不参与高度计算。
+
+## 8. DevTools 快捷键
+
+- **仅开发态注册**：判定依据是 `ELECTRON_RENDERER_URL` 是否存在，打包态不注册，避免暴露入口（`window.ts:121-130`）。
+- 支持按键（`window.ts:24-32,39-51`）：
+  - 通用：`F12`；
+  - Windows / Linux：`Ctrl + Shift + I`；
+  - macOS：`Cmd + Option + I`（`meta + alt`，且不带 `control`）。
+- 命中后 `preventDefault()`；已打开则关闭，未打开则以 `mode: 'detach'` 打开（`window.ts:44-49`）。
+
+## 9. 常见误区
+
+- **不存在 `mica` / `tabbed` / `auto` 材质**。合法值只有 `acrylic` 与 `none`；`mica` 仅是历史值，读到时迁移为 `acrylic`（`windowMaterial.ts:14,50-54`）。
+- **不要写 `transparent: true`**。透明效果通过 `backgroundColor: '#00000000'` 的 alpha 通道实现，`transparent: true` 会在 Windows 上带来无法缩放、无阴影等副作用（`window.ts:81-84`）。
+- **材质生效时禁止给背景再叠加 `backdrop-filter`**。DWM Acrylic 已在系统层完成模糊，渲染层再模糊会二次处理、破坏透明链路并增加掉帧；材质态只允许改底色透明度（见 `acrylic.css:24-32`）。
+- **`material.ts` 已改名 `windowMaterial.ts`**（主进程与渲染层各一份），旧路径与旧文档引用均已失效。
+- **不存在 `window:material:*` 通道**。实际通道是 `window:setMaterial`、`window:acrylicSupported`、`window:titlebar:set-overlay`（`src/main/ipc/window.ts:41,63,78`）。
+- **渲染层标记是 `data-material`**，不是 `data-window-material`，也不是 `data-theme` 的附属值（`WindowMaterialProvider.tsx:54`）。
+- **`acrylicSupported` 只在 Windows 返回 true**，非 Windows 下开关必然置灰，属预期行为（`windowMaterial.ts:67-71`）。
+- **最小尺寸不是 320 × 240**：320 / 240 只是持久化数据的合法下限；窗口实际最小值为 902 × 764（`windowState.ts:26-27`、`window.ts:77-78`）。
+- **磁吸不是全局能力**：离开书架页即 `clear`，其他页面拖动完全自由（`useShelfSnap.ts:129-138`）。
+
+---
+
+最后核对：2026-10-31

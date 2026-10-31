@@ -1,0 +1,413 @@
+@import './form-select.css';
+
+/* ============================================================
+   表单类通用组件样式（前缀 wf-）
+   视觉来源：template/index.html 的
+     .field-input / .field-textarea（底色 soft、r-xs、聚焦品牌环）
+     .field-seg / .field-chips（同一圆角与过渡语言）
+     .st-popup / .st-popup-item（下拉面板的浮层与选项样式）
+   颜色一律引用 styles/theme.css 令牌，并用 color-mix 从
+   --brand / --danger 推导浅色底，保证 light/dark/sage/honey 四主题自适应。
+   Select 相关规则已拆至同目录 form-select.css（由本文件顶部 @import 转发）。
+   ============================================================ */
+
+/* ---------- 隐藏原生控件（Checkbox/Radio/Switch 共用） ---------- */
+.wf-checkbox__input,
+.wf-radio__input,
+.wf-switch__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ============================================================
+   Input / Textarea
+   ============================================================ */
+.wf-input,
+.wf-textarea {
+  display: block;
+  width: 100%;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--soft-solid);
+  border: 1px solid transparent;
+  outline: none;
+  transition:
+    background 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease),
+    color 0.18s var(--ease);
+}
+.wf-input {
+  padding: 9px 12px;
+  line-height: 1.4;
+  border-radius: var(--r-xs);
+}
+.wf-textarea {
+  min-height: 82px;
+  padding: 11px 12px;
+  line-height: 1.65;
+  border-radius: var(--r-lg);
+  resize: vertical;
+}
+.wf-input::placeholder,
+.wf-textarea::placeholder {
+  color: var(--text-mute);
+}
+.wf-input:hover:not(:disabled):not(:read-only):not([aria-readonly='true']),
+.wf-textarea:hover:not(:disabled):not(:read-only):not([aria-readonly='true']) {
+  background: var(--soft-hover-solid);
+}
+.wf-input:focus,
+.wf-textarea:focus {
+  background: var(--pane);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+}
+.wf-input:is([aria-invalid='true'], .is-invalid),
+.wf-textarea:is([aria-invalid='true'], .is-invalid) {
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+}
+.wf-input:is([aria-invalid='true'], .is-invalid):focus,
+.wf-textarea:is([aria-invalid='true'], .is-invalid):focus {
+  border-color: color-mix(in srgb, var(--danger) 60%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--danger) 14%, transparent);
+}
+.wf-input:disabled,
+.wf-textarea:disabled,
+.wf-input:read-only,
+.wf-textarea:read-only,
+.wf-input[aria-readonly='true'],
+.wf-textarea[aria-readonly='true'] {
+  color: var(--text-mute);
+  background: var(--soft-solid);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.wf-input--sm {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.wf-input--lg {
+  padding: 11px 14px;
+  font-size: 14px;
+}
+.wf-textarea--sm {
+  min-height: 62px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.wf-textarea--lg {
+  min-height: 108px;
+  padding: 13px 14px;
+  font-size: 14px;
+}
+
+/* ============================================================
+   「有底色容器上的控件」（容器修饰类 `.on-soft`）
+   ------------------------------------------------------------------
+   适用：容器自身为 --soft-solid 底色（卡片 / 分隔区块），内部再放表单控件时。
+   问题：`.wf-input` / `.wf-select__trigger` 默认也用 --soft-solid 填充 → 控件与
+   容器同色，看不出边界。
+   做法：容器挂 `.on-soft`，内部输入框 / 多行文本 / 下拉触发器改用
+   --control-on-soft 令牌（四套主题各自定义，浅色系比 --soft-solid 深一档、暗色系
+   更亮，见 theme.css），并补一圈 --control-on-soft-line 描边；hover 更深一档，
+   聚焦仍回到 --pane + 品牌环。
+   说明：选择器特异性 (0,2,0) 高于基类 (0,1,0)，且本段位于 form-select.css 的
+   @import 之后、与基类状态规则同权重时靠后取胜，无需 `!important`。
+   ============================================================ */
+.on-soft .wf-input,
+.on-soft .wf-textarea,
+.on-soft .wf-select__trigger {
+  background: var(--control-on-soft);
+  border-color: var(--control-on-soft-line);
+}
+.on-soft .wf-input:hover:not(:disabled):not(:read-only):not([aria-readonly='true']),
+.on-soft .wf-textarea:hover:not(:disabled):not(:read-only):not([aria-readonly='true']),
+.on-soft .wf-select__trigger:hover:not(:disabled) {
+  /* hover 只换填充、不写 border-color：与基类 `.wf-input:hover` 同口径，
+     让聚焦态的 `border-color`（品牌色）不被更高权重的 hover 规则压掉。 */
+  background: var(--control-on-soft-hover);
+}
+.on-soft .wf-input:focus,
+.on-soft .wf-textarea:focus,
+.on-soft .wf-select__trigger:focus-visible,
+.on-soft .wf-select.is-open .wf-select__trigger {
+  background: var(--pane);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+}
+.on-soft .wf-input:disabled,
+.on-soft .wf-textarea:disabled,
+.on-soft .wf-input:read-only,
+.on-soft .wf-textarea:read-only,
+.on-soft .wf-input[aria-readonly='true'],
+.on-soft .wf-textarea[aria-readonly='true'] {
+  background: var(--control-on-soft);
+  border-color: var(--control-on-soft-line);
+}
+
+/* ============================================================
+   Checkbox / Radio（共用外壳）
+   ============================================================ */
+.wf-checkbox,
+.wf-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+.wf-checkbox.is-disabled,
+.wf-radio.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.wf-checkbox__box,
+.wf-radio__dot {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  transition:
+    background 0.15s var(--ease),
+    border-color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease);
+}
+.wf-checkbox__box {
+  color: #fff;
+  border-radius: var(--r-xs);
+}
+.wf-radio__dot {
+  border-radius: 50%;
+}
+.wf-checkbox__label,
+.wf-radio__label {
+  line-height: 1.4;
+}
+.wf-checkbox:hover .wf-checkbox__input:not(:disabled):not(:checked) + .wf-checkbox__box,
+.wf-radio:hover .wf-radio__input:not(:disabled):not(:checked) + .wf-radio__dot {
+  background: var(--soft-hover-solid);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+}
+.wf-checkbox:hover .wf-checkbox__input:not(:disabled):checked + .wf-checkbox__box,
+.wf-radio:hover .wf-radio__input:not(:disabled):checked + .wf-radio__dot {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 14%, transparent);
+}
+.wf-checkbox__input:focus-visible + .wf-checkbox__box,
+.wf-radio__input:focus-visible + .wf-radio__dot {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);
+}
+.wf-checkbox__input:disabled + .wf-checkbox__box,
+.wf-radio__input:disabled + .wf-radio__dot {
+  background: var(--soft-solid);
+  border-color: var(--line);
+}
+.wf-checkbox.is-invalid .wf-checkbox__box,
+.wf-radio.is-invalid .wf-radio__dot {
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+}
+.wf-checkbox__input:checked + .wf-checkbox__box {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.wf-checkbox__tick {
+  width: 11px;
+  height: 11px;
+  opacity: 0;
+  transform: scale(0.7);
+  transition:
+    opacity 0.12s var(--ease),
+    transform 0.12s var(--ease);
+}
+.wf-checkbox__input:checked + .wf-checkbox__box .wf-checkbox__tick {
+  opacity: 1;
+  transform: scale(1);
+}
+.wf-radio__dot::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  background: var(--brand);
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.15s var(--ease);
+}
+.wf-radio__input:checked + .wf-radio__dot {
+  background: var(--pane);
+  border-color: var(--brand);
+}
+.wf-radio__input:checked + .wf-radio__dot::after {
+  transform: scale(1);
+}
+/* 尺寸 */
+.wf-checkbox--sm,
+.wf-radio--sm {
+  gap: 6px;
+  font-size: 12px;
+}
+.wf-checkbox--sm .wf-checkbox__box,
+.wf-radio--sm .wf-radio__dot {
+  width: 14px;
+  height: 14px;
+}
+.wf-checkbox--lg,
+.wf-radio--lg {
+  gap: 9px;
+  font-size: 14px;
+}
+.wf-checkbox--lg .wf-checkbox__box,
+.wf-radio--lg .wf-radio__dot {
+  width: 18px;
+  height: 18px;
+}
+.wf-radio--sm .wf-radio__dot::after {
+  width: 6px;
+  height: 6px;
+}
+.wf-radio--lg .wf-radio__dot::after {
+  width: 8px;
+  height: 8px;
+}
+
+/* ============================================================
+   Switch
+   ============================================================ */
+.wf-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+}
+.wf-switch.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.wf-switch__track {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  /* 关闭态轨道：中性灰底 + 1px 描边，四主题自适应（纯令牌，无硬编码）。
+     目的是让「关」一眼可辨：不依赖品牌色，也不与任何主题底色融掉。
+     描边不用 --line（对底色仅约 1.2–1.6:1，浅色不足），改用 --text-dim 70% 混 --pane：
+     四主题下对底部表面约 3.3:1（light/sage/honey）～5.4:1（dark），满足 WCAG 非文本 ≥3:1。 */
+  background: color-mix(in srgb, var(--text) 14%, var(--pane));
+  border: 1px solid color-mix(in srgb, var(--text-dim) 70%, var(--pane));
+  box-shadow: inset 0 1px 2px color-mix(in srgb, var(--text) 8%, transparent);
+  border-radius: 99px;
+  transition:
+    background 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
+}
+.wf-switch__thumb {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 16px;
+  height: 16px;
+  background: var(--pane);
+  border-radius: 50%;
+  /* 滑块投影：读作「凸起的钮」；关闭/开启态统一同一投影，保持一致性 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition:
+    transform 0.18s var(--ease),
+    background 0.18s var(--ease);
+}
+.wf-switch:hover .wf-switch__input:not(:disabled):not(:checked) + .wf-switch__track {
+  background: color-mix(in srgb, var(--text) 20%, var(--pane));
+  /* hover 加深一档时描边同步加强（保持中性灰，不再低于基础态对比度） */
+  border-color: color-mix(in srgb, var(--text-dim) 85%, var(--pane));
+}
+.wf-switch:hover .wf-switch__input:not(:disabled):checked + .wf-switch__track {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent);
+}
+.wf-switch__input:checked + .wf-switch__track {
+  /* 开启态：品牌色轨道 + 更明显的内描边，与中性灰关闭态形成强区分 */
+  background: var(--brand);
+  border-color: var(--brand);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 18%, transparent);
+}
+.wf-switch__input:checked + .wf-switch__track .wf-switch__thumb {
+  background: #fff;
+  /* 与关闭态同一滑块投影，保持一致 */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transform: translateX(16px);
+}
+.wf-switch__input:focus-visible + .wf-switch__track {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);
+}
+.wf-switch__input:disabled + .wf-switch__track {
+  background: var(--soft-solid);
+  border-color: var(--line);
+}
+.wf-switch__label {
+  line-height: 1.4;
+}
+.wf-switch--sm {
+  gap: 7px;
+  font-size: 12px;
+}
+.wf-switch--sm .wf-switch__track {
+  width: 30px;
+  height: 17px;
+}
+.wf-switch--sm .wf-switch__thumb {
+  width: 13px;
+  height: 13px;
+}
+.wf-switch--sm .wf-switch__input:checked + .wf-switch__track .wf-switch__thumb {
+  transform: translateX(13px);
+}
+.wf-switch--lg {
+  gap: 10px;
+  font-size: 14px;
+}
+.wf-switch--lg .wf-switch__track {
+  width: 44px;
+  height: 24px;
+}
+.wf-switch--lg .wf-switch__thumb {
+  width: 20px;
+  height: 20px;
+}
+.wf-switch--lg .wf-switch__input:checked + .wf-switch__track .wf-switch__thumb {
+  transform: translateX(20px);
+}
+
+/* ============================================================
+   无障碍：尊重系统「减少动态效果」
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .wf-input,
+  .wf-textarea,
+  .wf-select__trigger,
+  .wf-select__caret,
+  .wf-select__option,
+  .wf-checkbox__box,
+  .wf-checkbox__tick,
+  .wf-radio__dot,
+  .wf-radio__dot::after,
+  .wf-switch__track,
+  .wf-switch__thumb {
+    transition: none;
+  }
+
+  .wf-select__panel {
+    animation: none;
+  }
+}

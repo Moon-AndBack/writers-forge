@@ -1,0 +1,97 @@
+/* ============================================================
+   Modal 模态框（自 surface.css 拆出，仅搬运，未改动任何样式值）
+   由 surface.css 首行 @import 引入（与拆分前的层叠位置一致）。
+   ============================================================ */
+
+/* ---------- Modal 模态框 ----------
+   原型：.drawer-mask（遮罩 + 模糊）+ .book-drawer（浮层面板）诸规则；
+   模板为右侧抽屉，此处收敛为居中模态，所有视觉令牌保持一致。
+   面板本体已由组件库 `Window`（.wf-window*）渲染，此处仅保留定位 / 遮罩，
+   以及面板的最大高度约束（承载 .wf-window 的浮层容器）。 */
+.wf-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.wf-modal__mask {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay-mask);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: wf-fade 0.2s var(--ease) both;
+}
+
+.wf-modal__panel {
+  position: relative;
+  z-index: 1;
+  max-height: calc(100vh - 48px);
+  animation: wf-pop 0.22s var(--ease) both;
+}
+
+/* ---------- 退场（`.is-closing`） ----------
+   由 `Modal` 在 `open` 变 false 的那次提交挂上，一个 --dur-base 之后才卸载。
+   遮罩淡出 + 面板沿进场路径回落，与 wf-fade / wf-pop 对称（keyframes 见 motion.css）。
+   容器同时禁用指针事件：逻辑上弹窗已关闭，退场中的遮罩不应再截获点击
+   —— 与改动前「关闭即背景可交互」的语义保持一致（pointer-events 可继承，
+   子元素无需重复声明）。 */
+.wf-modal.is-closing {
+  pointer-events: none;
+}
+
+.wf-modal__mask.is-closing {
+  animation: wf-fade-out var(--dur-base) var(--ease-out) both;
+}
+
+.wf-modal__panel.is-closing {
+  animation: wf-pop-out var(--dur-base) var(--ease-out) both;
+}
+
+/* 遮罩避开标题栏：仅供 `coverTitlebar={false}` 的弹窗（设置弹窗），
+   让触发按钮（标题栏齿轮 ×）保持可点击。`inset: 0` 已把 top 设为 0，此处覆盖。
+   42px 为 `.titlebar` 的固定高度（见 shell.css `.titlebar { height: 42px }`），
+   项目暂无该高度的 CSS 变量，故以 var() 兜底写法保留后续变量化空间。 */
+.wf-modal--no-titlebar {
+  top: var(--titlebar-height, 42px);
+}
+
+/* 容器整体下移后可用高度减少，面板上限同步收紧，避免面板溢出到标题栏或视口外
+   （原 100vh - 48px 扣的是上下各 24px 内边距，再加上标题栏 42px）。 */
+.wf-modal--no-titlebar .wf-modal__panel {
+  max-height: calc(100vh - 90px);
+}
+
+/* 尊重系统「减少动态效果」：遮罩淡入 / 面板弹出 / 退场均直接呈现终态
+   （退场时组件侧同步把卸载延时置 0，不会留下空等）。 */
+@media (prefers-reduced-motion: reduce) {
+  .wf-modal__mask,
+  .wf-modal__panel,
+  .wf-modal__mask.is-closing,
+  .wf-modal__panel.is-closing {
+    animation: none;
+  }
+}
+
+@keyframes wf-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes wf-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

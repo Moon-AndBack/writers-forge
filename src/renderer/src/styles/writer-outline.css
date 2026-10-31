@@ -1,0 +1,304 @@
+/* ============================================================
+   写作视图 — 左栏大纲（outline）卷章树 + 非卷区
+   自 `writer-side.css` 拆出（保持单文件 ≤500 行，§3）。沿用该文件定义的
+   `.vol*`（卷头 / 折叠）/ `.drop-line` / `.pane-*` 等基础样式，本文件只承载
+   大纲专属的 `.outline-chapter*`、新建入口与非卷区（单条目 + 分组）样式。
+   ============================================================ */
+
+/* ---------- 大纲卷章树（outline） ----------
+   沿用卷头 `.vol*` 与折叠 `.chapters*` 结构（见 writer-side.css），章行改用大纲专属
+   `.outline-chapter*`：无编号段（`chapter-prefix`）/ 无圆点分隔符 / 无草稿徽标，
+   章名即纯自定义名（空名走占位 + 弱化字色）。操作 / 把手定位口径与章节域一致。 */
+.outline-chapters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0 4px;
+}
+
+.outline-chapter {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  transition: background 0.1s var(--ease);
+}
+
+/* 条目进场：条目挂载时淡入 + 8px 上浮（motion.css 的 `wf-enter-up`）。
+   **只加 animation，不动上面的 transition**（§8：行 hover 仅底色过渡）。
+   fill-mode 取 backwards 的硬性理由：`.outline-chapter.is-dragging` 用
+   opacity: 0.45 表达拖拽态，取 both 会让动画末帧的 opacity: 1 永久压掉它；
+   backwards 仅在动画区间内生效，结束后状态类照常求值。
+   卷内条目即使卷已收起也常驻 DOM，故展开 / 收起卷不会重播；实际可见进场为
+   「面板挂载一次」与「新建条目 / 分组重排后新增项的挂载」。占位线 `.drop-line`
+   不参与进场。 */
+.outline-chapter {
+  animation: wf-enter-up var(--dur-base) var(--ease-out) backwards;
+}
+
+.outline-chapter:hover {
+  background: var(--soft-hover-solid);
+}
+
+.outline-chapter.is-active {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+.outline-chapter-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--text-mute);
+  opacity: 0.5;
+  transition:
+    background 0.12s var(--ease),
+    opacity 0.12s var(--ease);
+}
+
+.outline-chapter.is-active .outline-chapter-dot {
+  background: var(--brand);
+  opacity: 1;
+}
+
+.outline-chapter-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  /* 名段溢出用右缘渐隐遮罩（口径同 .chapter-name）：mask 常驻。 */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+}
+
+/* 选中态（600 + 品牌色）挂在行容器。 */
+.outline-chapter.is-active .outline-chapter-name {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* 空名占位：弱化字色（占位文案由 JS 提供）。 */
+.outline-chapter-name.is-empty {
+  color: var(--text-mute);
+  font-style: italic;
+}
+
+/* hover 时章名让位（操作按钮悬浮于右缘）：
+   无把手（非卷区条目）让位 52px（操作组 right: 2px）；
+   有把手（卷区条目）让位 72px（操作组为把手让位 right: 22px）。 */
+.outline-chapter:hover .outline-chapter-name {
+  margin-right: 52px;
+}
+
+.outline-chapter.has-grip:hover .outline-chapter-name {
+  margin-right: 72px;
+}
+
+/* 操作按钮组：默认贴右缘（无把手）；有把手时为把手让位右移 22px。 */
+.outline-chapter-actions {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  flex: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.1s var(--ease);
+  background: var(--soft-hover-solid);
+  border-radius: var(--r-xs);
+}
+
+.outline-chapter.has-grip .outline-chapter-actions {
+  right: 22px;
+}
+
+.outline-chapter.is-active .outline-chapter-actions {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+.outline-chapter:hover .outline-chapter-actions,
+.outline-chapter:focus-within .outline-chapter-actions {
+  visibility: visible;
+  opacity: 1;
+}
+
+.outline-chapter.is-active:hover .outline-chapter-actions {
+  background: var(--soft-hover-solid);
+}
+
+/* 拖拽把手（口径同 .chapter-grip）：行尾 hover 显示，pointer 拖拽（同卷内）。 */
+.outline-chapter-grip {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 22px;
+  color: var(--text-mute);
+  cursor: grab;
+  touch-action: none;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    color 0.1s var(--ease),
+    opacity 0.1s var(--ease);
+}
+
+.outline-chapter:hover .outline-chapter-grip,
+.outline-chapter-grip:focus-visible {
+  visibility: visible;
+  opacity: 1;
+}
+
+.outline-chapter-grip:hover {
+  color: var(--brand);
+}
+
+/* 拖拽中：被拖行半透明 + 品牌浅底提示。 */
+.outline-chapter.is-dragging {
+  opacity: 0.45;
+  background: color-mix(in srgb, var(--brand) 8%, var(--pane));
+}
+
+/* 面板底部「新建卷」入口：幽灵按钮，hover 出柔和底。 */
+.outline-add-volume {
+  padding: 6px 2px 2px;
+}
+
+/* ---------- 大纲「新建」创建弹窗（标题栏「添加」按钮） ----------
+   单弹窗三形态（条目 / 分组 / 正文卷）+ 名称输入，复用全局 Modal / Segmented /
+   FormField / Input / Button（对齐 NewVolumeDialog 范式）。 */
+.outline-create-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 顶部切换器的满宽 + 与「名称」输入框等高：走通用类 .wf-seg--fill
+   （styles/components/segmented.css），此处不再单独覆盖（AGENTS §9）。 */
+
+/* ---------- 大纲非卷区 / 卷区（上下两块独立容器卡） ----------
+   沿用卷 / 章行视觉（.vol-head / .outline-chapter）；分组行复用 `.vol-head`
+   的 hover 底色与 `.vol-actions` 悬浮操作，仅箭头包成按钮、分组名可点改名。
+   非卷区与卷区各为一块容器卡：卡底座（--soft-solid 圆角底 + 6px 内衬）走
+   通用类 `.pane-region`（JSX 追加，见 styles/components/surface.css），此处只保留两卡
+   各自特有规则；块间 10px 间隙，替代原细线分隔。 */
+/* .nonvol-section 上下间距由通用 .pane-region 规则统一，此处不再单独配置。 */
+
+/* 卷区容器卡：包裹全部卷分组（.vol × N 兄弟平铺），卡内纵向间距 6px。 */
+.vol-region {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 分组箭头：命中区贴合行首，仅旋转内含的 chevron（复用 .vol-arrow；展开旋转由 .nonvol-group.is-open 规则提供，见下）。 */
+.nonvol-group-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--r-xs);
+  color: var(--text-mute);
+}
+
+.nonvol-group-arrow:hover {
+  color: var(--text);
+}
+
+/* 分组展开旋转：分组容器类为 .nonvol-group，补齐与 .vol.is-open 同口径的旋转
+   （transition: transform 由 .vol-arrow 自带，动画自动生效）。 */
+.nonvol-group.is-open .vol-arrow {
+  transform: rotate(90deg);
+}
+
+/* 卷行 / 分组行选中态：与 .outline-chapter.is-active 同口径（品牌 12% 底）。
+   选中类挂在行容器 .vol / .nonvol-group 上，与折叠态 is-open 正交可并存；
+   收起列表时高亮保持（选中跟随中栏编辑器，视图态折叠不解除选中）。
+   选择器挂 .vol-head（行头本身），而非容器直子级，以压过 writer-side.css 的
+   `.vol-head:hover`（同特异性 0,2,0 → 后源序胜），保证选中底与 hover 底不打架。 */
+.vol.is-active .vol-head,
+.nonvol-group.is-active .nonvol-group-head {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+/* 选中卷 hover：让位给行 hover 底（口径同 .chapter.is-active:hover）。 */
+.vol.is-active:hover .vol-head,
+.nonvol-group.is-active:hover .nonvol-group-head {
+  background: var(--soft-hover-solid);
+}
+
+.vol.is-active .vol-prefix,
+.vol.is-active .vol-name,
+.nonvol-group.is-active .nonvol-group-name {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* 悬浮操作组底色与所在行对齐：.vol-actions 在 writer-side.css 中未设底色（透明），
+   选中行需补品牌浅底，否则按钮组悬浮时会透出品牌底色断层；hover 时回退行 hover 底。
+   显隐仍由 writer-side.css 的 .vol-head:hover/.focus-within（visibility + opacity）控制，
+   此处只定底色，不改变显隐。 */
+.vol.is-active .vol-actions,
+.nonvol-group.is-active .vol-actions {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+.vol.is-active:hover .vol-actions,
+.nonvol-group.is-active:hover .vol-actions {
+  background: var(--soft-hover-solid);
+}
+
+/* 分组名：占满行、可点击进入内联改名；溢出渐隐口径同 .vol-name。 */
+.nonvol-group-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: text;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+}
+
+.nonvol-group-name.is-empty,
+.nonvol-group-name:empty {
+  color: var(--text-mute);
+  font-style: italic;
+}
+
+/* 分组 hover 时名段让位（操作按钮组悬浮于右缘，口径同 .vol-head 3 按钮 72px 让位）。 */
+.nonvol-group-head:hover .nonvol-group-name,
+.nonvol-group-head:focus-within .nonvol-group-name {
+  margin-right: 72px;
+}
+
+/* 分组子条目：缩进一级显示（视觉从属）。 */
+.outline-chapter.is-nested {
+  padding-left: 26px;
+}
+
+.nonvol-children {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0 4px;
+}

@@ -1,0 +1,97 @@
+/* ============================================================
+   图标按钮通用组件样式
+   来源：template/index.html 的圆形图标触发件（.drawer-close / .mini-btn 等）。
+   命名：根类 .wf-iconbtn；变体 --ghost / --solid；色调 --default / --danger；
+        尺寸 --sm（md 为默认，不输出类）。
+   颜色一律取 theme.css 令牌；hover 反馈用 --soft-hover（中性）或 --danger
+   （危险色）派生，四主题自动适配；圆形容器用 border-radius: 50%。
+   ============================================================ */
+
+.wf-iconbtn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+
+  font-family: inherit;
+  line-height: 1;
+  color: var(--text-dim);
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+
+  transition:
+    background 0.15s var(--ease),
+    color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease);
+}
+
+.wf-iconbtn > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.wf-iconbtn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: 1px;
+}
+
+.wf-iconbtn:disabled,
+.wf-iconbtn[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- 变体 ---------- */
+.wf-iconbtn--ghost {
+  background: transparent;
+}
+
+.wf-iconbtn--solid {
+  background: var(--soft-solid);
+}
+
+.wf-iconbtn--ghost:hover:not(:disabled),
+.wf-iconbtn--solid:hover:not(:disabled) {
+  background: var(--soft-hover-solid);
+  color: var(--text);
+}
+
+/* ---------- 色调 ---------- */
+.wf-iconbtn--danger:hover:not(:disabled) {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, var(--pane));
+}
+
+.wf-iconbtn--danger.wf-iconbtn--solid {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, var(--pane));
+}
+
+.wf-iconbtn--danger.wf-iconbtn--solid:hover:not(:disabled) {
+  color: #fff;
+  background: var(--danger);
+}
+
+/* ---------- 尺寸 ---------- */
+.wf-iconbtn--sm {
+  width: 24px;
+  height: 24px;
+}
+
+.wf-iconbtn--sm > svg {
+  width: 14px;
+  height: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wf-iconbtn {
+    transition: none;
+  }
+}

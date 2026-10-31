@@ -1,0 +1,140 @@
+/* ============================================================
+   书籍表单对话框样式（新建 / 编辑复用，前缀 bf-）
+   ------------------------------------------------------------------
+   仅负责 Modal 内部表单的布局与间距；控件外观沿用组件库
+   `.wf-field` / `.wf-input` / `.wf-textarea` / `.wf-select` / `.wf-swatch` /
+   `.wf-btn`（由对应组件引入）。颜色一律引用 theme.css 令牌，
+   兼容 light / dark / sage / honey。
+   ============================================================ */
+
+.bf-form {
+  /* 表单控件统一尺寸（md ≈38px）：输入 / 下拉 / 按钮 / 色板等高 */
+  --wf-control-h: 38px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 4px;
+}
+
+/* 底部按钮：左区为封面操作（选择 / 移除），spacer 撑开，取消 / 保存靠右。 */
+.bf-footer__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 「移除封面图」用危险色区分破坏性操作；加容器前缀以压过 .wf-btn--ghost 的配色。 */
+.wf-window__footer .bf-footer__danger {
+  color: var(--danger);
+}
+
+.wf-window__footer .bf-footer__danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 12%, var(--pane));
+  color: var(--danger);
+}
+
+.bf-footer-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 双栏主体：左窄栏封面（竖排） + 右栏字段（书名 / 简介 / 状态 / 频道篇幅 / 分类） */
+.bf-body {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+/* 右栏：字段纵向排列，行距 14px */
+.bf-body__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+/* 双栏字段行（频道 + 篇幅） */
+.bf-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* ---------- 封面：色板 + 预览 + 隐藏文件输入（左窄栏竖排） ---------- */
+.bf-cover {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.bf-cover__preview {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: var(--r-xs);
+  box-shadow: var(--sh-sm), var(--panel-ring);
+  color: #fff;
+}
+
+.bf-cover__char {
+  font-family: var(--serif);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  user-select: none;
+}
+
+.bf-cover__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bf-cover__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* 原生 file 输入完全隐藏（仅经按钮 `fileRef.click()` 触发，无需可聚焦） */
+.bf-cover__file {
+  display: none;
+}
+
+/* 色板：色块与输入 / 按钮等高（md ≈38px），左窄栏竖排下保持统一控件尺寸 */
+.bf-form .bf-cover .wf-swatch {
+  padding: 0;
+}
+
+.bf-form .bf-cover .wf-swatch__item {
+  width: var(--wf-control-h);
+  height: var(--wf-control-h);
+}
+
+/* ---------- 窄窗口：双栏改单栏，封面回退横排 ---------- */
+@media (max-width: 480px) {
+  .bf-body {
+    grid-template-columns: 1fr;
+  }
+
+  .bf-row {
+    grid-template-columns: 1fr;
+  }
+
+  .bf-cover {
+    flex-direction: row;
+  }
+
+  /* 横排回退：预览复位为固定宽，避免 width:100% 在横排下撑满整行 */
+  .bf-cover__preview {
+    width: 84px;
+  }
+}

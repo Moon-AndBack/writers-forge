@@ -1,0 +1,172 @@
+/* ============================================================
+   设置弹窗（SettingsDialog）样式
+   由 components/dialogs/SettingsDialog.tsx 直接 import（在组件库样式之后，故可
+   覆盖 `.wf-card` 的高度上限与 `.wf-window__body` 的内衬假设）。
+   内容渲染在 `Modal` 的 `.wf-window--xl`（880px）面板内：标题区 / 关闭按钮由
+   Window 提供，滚动交给 `.wf-window__body`（单层滚动），本文件只负责内容排版。
+   布局为单列（无左侧分区导航），卡片自上而下排列。设计蓝本：
+   template/settings.html，但按本项目规范落地：颜色一律取 styles/theme.css 令牌 /
+   color-mix 派生（四主题自适应），控件复用 components/ui（Button / Select /
+   Switch / Card）；hover 仅做底色 / 颜色反馈，无任何位移 / 缩放（遵守 §8）。
+   ============================================================ */
+
+/* ---------- 内容列（占满面板可用宽，不再居中压缩） ---------- */
+.settings-container {
+  /* `.wf-window--xl` 880px 扣掉 `.wf-window__body` 左右各 20px 内衬后为 840px；
+     容器直接铺满，无需再设 max-width。 */
+  max-width: none;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 4px;
+}
+
+/* ---------- 分区卡片（复用 Card，内容自带边距） ---------- */
+/* 覆盖 `surface.css` 中 `.wf-card { max-height: 240px }`：四个分组的累积高度
+   远超该值（「基础偏好」单组已约 268px），弹窗可视区更小，必须让卡片按内容
+   自然增高（`min-height: 120px` 保留）。双类选择器特异性高于 `.wf-card`，
+   不受样式导入顺序影响。 */
+.wf-card.settings-group {
+  max-height: none;
+}
+
+.wf-card__body.settings-group__body {
+  padding: 0;
+}
+
+.settings-group__head {
+  padding: 16px 18px 0;
+}
+
+.settings-group__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.settings-group__desc {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--text-mute);
+}
+
+.settings-group__rows {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px 8px;
+}
+
+/* ---------- 设置项行（三槽：名称 + 说明 / 控件） ---------- */
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 10px;
+  border-radius: var(--r-xs);
+  transition: background 0.15s var(--ease);
+}
+
+.settings-row:hover {
+  background: var(--soft-solid);
+}
+
+.settings-row__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.settings-row__label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.settings-row__desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+.settings-row__control {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+/* Select 默认 width:100%，此处收窄为固定控件宽度（特异性高于 .wf-select）。 */
+.settings-row__control .settings-control--select {
+  width: 176px;
+}
+
+/* 「即将推出」占位：按钮禁用，外层 span 承载原生 title 提示。 */
+.settings-soon {
+  display: inline-flex;
+}
+
+/* ---------- AI 配置分区（AiSection） ----------
+   Base URL / API Key / 手填模型 ID 需要比 176px 的 --select 更宽；独立类名，
+   不改动既有 `.settings-control--select` 的宽度。悬停反馈全部交给控件自身
+   （颜色 / 描边 / 阴影），此处不引入任何位移 / 缩放（§8）。 */
+.settings-row__control .settings-control--wide {
+  width: 320px;
+}
+
+/* 模型下拉：留出与「刷新」按钮并排的空间。 */
+.settings-row__control .settings-control--model {
+  width: 240px;
+}
+
+/* 行内控件组：输入 / 下拉 + 紧邻按钮。 */
+.ai-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 控件下方 / 说明槽内的状态行（加载、成功、错误、提示）。 */
+.ai-status {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+.ai-status--ok {
+  color: var(--ok);
+}
+
+.ai-status--warn {
+  color: var(--warn);
+}
+
+.ai-status--error {
+  color: var(--danger);
+}
+
+/* ---------- 遮罩加强（仅设置弹窗，经 Modal 的 maskClassName 挂载） ----------
+   与固定态活动栏的磨砂参数同源，让背景更深地退到弹窗之后；其余弹窗仍用
+   surface.css 的默认 blur(2px)。 */
+.wf-modal__mask--strong {
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+}
+
+/* 尊重系统「减少透明效果」：关闭磨砂，仅保留遮罩底色。 */
+@media (prefers-reduced-transparency: reduce) {
+  .wf-modal__mask--strong {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-row {
+    transition: none;
+  }
+}

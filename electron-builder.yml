@@ -1,0 +1,55 @@
+appId: com.writersforge.app
+productName: "Writer's Forge"
+
+# 应用图标：源 SVG 见 build/icon.svg，由 scripts/generate-icon.mjs 生成 icon.ico / icon.png
+icon: build/icon.ico
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - 'out/**'
+  - 'package.json'
+  - '!src/**'
+  - '!template/**'
+  - '!dist/**'
+  - '!build/**'
+  - '!**/.vscode/*'
+  - '!**/.idea/*'
+  - '!**/.github/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!eslint.config.{js,mjs,cjs}'
+  - '!electron-builder.{yml,yaml,json,js,ts}'
+  - '!{.prettierrc,.prettierrc.json,.prettierrc.yaml,.prettierrc.yml,.prettierignore,.editorconfig,.gitignore}'
+  - '!{.eslintrc,.eslintrc.js,.eslintrc.cjs,.eslintrc.mjs,.eslintignore}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!README.md'
+  - '!**/.env*'
+  - '!{.npmrc,pnpm-lock.yaml,package-lock.json,yarn.lock}'
+  - '!**/*.{db,sqlite,sqlite3,log}'
+  - '!*.{md,map}'
+
+# build/ 不进入 app 包（见 files 的 '!build/**'），窗口图标以额外资源投放，
+# 供 src/main/window.ts 在打包态经 process.resourcesPath 读取。
+extraResources:
+  - from: build/icon.png
+    to: icon.png
+
+win:
+  executableName: "Writer's Forge"
+  icon: build/icon.ico
+  target:
+    - nsis
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: "Writer's Forge"
+  artifactName: ${name}-${version}-setup.${ext}
+  uninstallDisplayName: ${productName}
+
+npmRebuild: false

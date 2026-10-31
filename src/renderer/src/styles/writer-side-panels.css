@@ -1,0 +1,168 @@
+/* ============================================================
+   写作视图 · 左栏 — 面板滚动区与通用列表行
+   ------------------------------------------------------------------
+   自 `writer-side.css` 原样搬移（保持单文件 ≤500 行，§3）。
+   面板滚动区 / 内容容器、`.pane-region` 间距规则（所有侧栏统一），
+   通用列表行（大纲 / 人物 / 世界观 / 笔记）与时间线左栏列表行。
+   ============================================================ */
+
+/* 面板滚动区：容纳卷章树（超出滚动）。 */
+.pane-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.pane-body {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+/* 左栏有底色分区卡（.pane-region）间距规则（所有侧栏统一）：
+   - 第一个：上 0 / 下 8px
+   - 最后一个：上 8px / 下 0
+   - 中间：上下 8px
+   - 仅一个：上下 0
+   其它上下边距配置一律取消，仅保留 padding 6 + 本规则 margin。 */
+.pane-scroll > .pane-region:first-child {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.pane-scroll > .pane-region:last-child {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.pane-scroll > .pane-region:not(:first-child):not(:last-child) {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.pane-scroll > .pane-region:only-child {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* ---------- 列表行（大纲 / 人物 / 世界观 / 笔记） ---------- */
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 120px;
+  max-height: 240px;
+  padding: 8px 10px;
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  transition: background 0.1s var(--ease);
+}
+
+.list-item:hover {
+  background: var(--soft-hover-solid);
+}
+
+.list-item.is-active {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+.list-avatar {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.list-avatar.photo {
+  background: linear-gradient(135deg, #5b4de8, #7d8cf5);
+}
+
+.list-avatar.loc {
+  background: linear-gradient(135deg, #2f9ae0, #5fc0ec);
+}
+
+.list-avatar.org {
+  background: linear-gradient(135deg, #0f7b4f, #4ccfa4);
+}
+
+.list-avatar.item {
+  background: linear-gradient(135deg, #9d5d00, #f2b357);
+}
+
+.list-avatar.note {
+  background: linear-gradient(135deg, #8a8a8a, #b0b0b0);
+}
+
+.list-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-sub {
+  font-size: 10.5px;
+  color: var(--text-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- 时间线左栏（timeline）列表行 ----------
+   与剧情线 / 章节 / 大纲左栏行样式对齐：纵向列表 1px 缝 + 行 hover / 选中反馈；
+   无 transform（§8），仅颜色 / 背景过渡。 */
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  transition: background 0.1s var(--ease);
+}
+
+.timeline-item:hover {
+  background: var(--soft-hover-solid);
+}
+
+.timeline-item.is-active {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+.timeline-item-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+}
+
+.timeline-item.is-active .timeline-item-name {
+  color: var(--brand);
+  font-weight: 600;
+}

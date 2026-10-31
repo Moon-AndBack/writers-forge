@@ -1,0 +1,272 @@
+/* ============================================================
+   写作视图 · 右栏「大纲 / 剧情」双页签面板
+   ------------------------------------------------------------------
+   章节模块（双页签）与大纲模块（无页签，直接挂载剧情面板）共用：
+   页签条（仅章节）+ 两张底色卡（筛选卡 / 时间轴列表卡）；大纲右栏不补
+   页签条占位，首张卡直接从栏级 8px 内衬起排。
+   章节模块「大纲」页签的下拉 / 上下分栏 / 只读正文见 writer-right-outline.css（§3 拆分）。
+   底色与描边统一取令牌（--soft-solid / --line / --r-lg）；hover 仅颜色 /
+   描边 / 阴影变化，禁用 transform（AGENTS §8）。
+   ============================================================ */
+
+/* ---------- 页签条（与书架工具条的分段控件同款） ----------
+   书架 `.shelf-toolbar > .wf-seg` 外层只有间距，没有卡片底色 / 描边 / 内衬：
+   分段控件自带 `--soft-solid` 圆角底框（3px 内衬 + 6px 圆角，见
+   components/segmented.css），页面层不再叠加第二层底框。此处保留栏级
+   8px 外边距（与 `.rp-panel` 内衬对齐），上下不再额外加内衬。 */
+.rp-tabs {
+  flex: none;
+  margin: 8px 8px 0;
+}
+
+.rp-tabs__seg {
+  display: flex;
+  width: 100%;
+}
+
+/* ---------- 页签面板 ---------- */
+.rp-tabpanel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* `hidden` 参与布局切换：面板常驻 DOM，只切显隐（列表滚动位置不丢）。 */
+.rp-tabpanel[hidden] {
+  display: none;
+}
+
+/* 页签切换进场：纯淡入（不位移），与同栏模块切换的 `wf-enter-up` 上浮形成
+   「模块切换更重、页签切换更轻」的层级。面板从 display:none 恢复为 display:flex 时，
+   浏览器会重放该 animation（与 `.rp-view.is-active` 同一机制），故无需改 TSX。
+   `:not([hidden])` 提升特异性并保证 `display:none` 期间不触发。 */
+.rp-tabpanel:not([hidden]) {
+  animation: wf-enter-fade var(--dur-base) var(--ease-out) both;
+}
+
+.rp-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+/* 整面板空态（如章节右栏 AI 页签占位）：内容横向 / 纵向居中，
+   空态文字仍复用 `.rp-list-empty`（字号 / 颜色不另起一套）。 */
+.rp-panel--center {
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- 底色卡 ---------- */
+.rp-card {
+  flex: none;
+  padding: 6px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* 列表卡：占据剩余高度，列表自身滚动（切页签 / 点详情不丢滚动位置）。 */
+.rp-card--list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ---------- 空态 ---------- */
+.rp-list-empty {
+  padding: 12px 9px;
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--text-mute);
+}
+
+/* ============================================================
+   章节模块「剧情」页签 / 大纲模块右栏：时间线 + 剧情线双下拉 + 只读时间轴卡片
+   ------------------------------------------------------------------
+   两个下拉同处一行且等分；卡片列表复用中栏 `.plot-timeline` 结构
+   （时间列 + 节点圆点 + 纵向连线 + `.plot-scene-card`），此处只做
+   右栏窄版覆盖（列宽 / 内衬 / 字号），不改中栏样式。hover 仅颜色 /
+   描边 / 阴影变化，禁用 transform（AGENTS §8）。
+   悬停正文浮窗 portal 到 body，fixed 定位 + opacity 淡入（无 transform）。
+   ============================================================ */
+
+/* ---------- 筛选卡：一行两个下拉 ---------- */
+.rp-plot-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 覆盖 `.wf-select` 的 100% 宽：两个下拉等分一行，窄栏下文字省略。
+   底 / 描边 / 字号 / 内衬全部走 `wf-select--sm` + `.on-soft`（JSX 侧挂类），
+   与「大纲」页签的下拉完全同款，此处不再覆写任何控件属性。 */
+.rp-plot-filters > .wf-select {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+}
+
+/* ---------- 只读时间轴（右栏紧凑变体） ---------- */
+/* 双类选择器提高优先级：覆盖中栏 `.plot-timeline` 变量与窄窗媒体查询。 */
+.rp-plot-timeline.plot-timeline {
+  --plot-col-time: 56px;
+  --plot-col-node: 28px;
+  --plot-card-w: 100%;
+  padding: 2px 0 8px;
+}
+
+.rp-plot-timeline .plot-col-time {
+  padding: 13px 8px 0 0;
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.rp-plot-timeline .plot-col-node {
+  padding-top: 13px;
+}
+
+.rp-plot-timeline .plot-col-content {
+  padding-bottom: 10px;
+}
+
+/* 圆点按右栏列宽收小（仍保留空心环 / 选中实心 + 光晕，无位移）。 */
+.rp-plot-timeline .plot-dot {
+  width: 13px;
+  height: 13px;
+  border-width: 3px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--line-color, var(--brand)) 12%, transparent);
+}
+
+.rp-plot-timeline .plot-row.is-active .plot-dot {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--line-color, var(--brand)) 20%, transparent);
+}
+
+/* 卡片吃满内容列（覆盖中栏 clamp 宽），底改 `--pane` 与列表卡底色区分。 */
+.rp-plot-timeline .plot-scene-wrap .plot-scene-card {
+  flex: 0 0 100%;
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  max-height: 220px;
+  padding: 11px 13px;
+  background: var(--pane);
+}
+
+.rp-plot-timeline .plot-scene-title {
+  font-size: 12.5px;
+  letter-spacing: 0.2px;
+}
+
+/* 正文容器收窄字号（标题 / 时间 / 说明文案不在此列）；行高收窄后同步收窄
+   裁切高度，保证窄栏下仍恰好 4 行。 */
+.rp-plot-timeline .plot-scene-body {
+  font-size: 11px;
+  line-height: 1.6;
+  max-height: calc(4 * 1.6em);
+}
+
+/* 胶囊块与卡同宽（右栏恒紧凑：胶囊落在卡下）。 */
+.rp-plot-timeline .plot-scene-wrap .plot-char-block {
+  flex: 0 0 100%;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding-top: 6px;
+}
+
+.rp-plot-timeline .plot-char-card {
+  min-height: 21px;
+  max-width: 128px;
+  padding: 4px 10px;
+}
+
+.rp-plot-timeline .plot-char-name {
+  font-size: 11px;
+}
+
+.rp-plot-timeline .plot-char-more {
+  min-height: 21px;
+  padding: 4px 10px;
+  font-size: 10.5px;
+}
+
+/* ---------- 悬停正文浮窗（pointer-events: none，不挡鼠标） ----------
+   层级取 --z-popover：与实体「+N」浮窗同档并沿用原 90/91 的相对序，高于活动栏（100）/
+   状态栏弹窗（900）/ 格式浮层（940），低于自绘 tooltip（990）与模态（1000）。 */
+.rp-plot-hover {
+  position: fixed;
+  z-index: var(--z-popover);
+  box-sizing: border-box;
+  width: 360px;
+  max-width: calc(100vw - 20px);
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 12px 14px;
+  background: var(--pane);
+  border-radius: var(--r-lg);
+  box-shadow:
+    var(--sh-popup),
+    0 0 0 1px var(--line);
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--text-dim);
+  pointer-events: none;
+  animation: rp-plot-hover-in 0.14s var(--ease) both;
+}
+
+@keyframes rp-plot-hover-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.rp-plot-hover__head {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+}
+
+/* 标题与正文之间的分隔线：左右渐隐（复用 `.statusbar::before` / `.plot-editor-actions::before`
+   口径，两端透明、中段实色，颜色随主题变化）；用伪元素替代 border-bottom，几何位置不变。 */
+.rp-plot-hover__head::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 80%, transparent);
+}
+
+.rp-plot-hover__title {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text);
+  overflow-wrap: break-word;
+}
+
+.rp-plot-hover__meta {
+  font-size: 11px;
+  color: var(--text-mute);
+}
+
+/* 完整正文：保留换行，长词 / 长链接不撑破浮窗。 */
+.rp-plot-hover__body {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.rp-plot-hover__empty {
+  color: var(--text-mute);
+}

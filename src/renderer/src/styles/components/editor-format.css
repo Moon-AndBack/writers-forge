@@ -1,0 +1,387 @@
+/* ============================================================
+   编辑器格式浮层面板（FormatPopover / FormatButton）
+   ------------------------------------------------------------------
+   用于写作页标题栏的「标题 / 段落 / 插入 / 高亮 / 字色」分组面板与
+   表格右键上下文菜单。
+   面板经 createPortal 挂到 document.body、position: fixed 定位
+   （标题栏容器与外壳均 overflow: hidden，就地展开会被裁切）。
+   颜色一律取 theme.css 令牌 / color-mix 派生，四主题自适应；
+   卡片 hover 无 transform（§8）；面板不限高，随内容自然撑开。
+   ============================================================ */
+
+/* 触发器包裹层：portal 面板的定位锚点（面板定位读触发器矩形）。
+   标题栏整条 -webkit-app-region: drag，按钮本身已在 .titlebar button 规则中
+   退出拖拽区（shell.css），此处显式再声明一次，保证不依赖父级选择器顺序。 */
+.wf-format-pop-wrap {
+  display: inline-flex;
+  flex: none;
+  -webkit-app-region: no-drag;
+}
+
+/* 禁用但保留 tooltip 的触发器（`disabledReason` → aria-disabled，而非原生 disabled）：
+   aria-disabled 不会被 `.wf-iconbtn--ghost:hover:not(:disabled)` 排除，hover 底色仍会命中；
+   此处抑制之，仅保留 icon-button.css 的置灰（透明度 + not-allowed 光标）。 */
+.wf-format-pop-wrap .tb-action[aria-disabled='true'],
+.wf-format-pop-wrap .tb-action[aria-disabled='true']:hover {
+  background: transparent;
+}
+
+/* 浮层面板本体：fixed + 视口夹取后的内联 left / top。
+   z-index 940：高于活动栏（100）与状态栏弹窗（900），低于自绘 tooltip（990）
+   与抽屉 / 模态（1000）——面板由 body 直接承载，故与 .shell 内元素同处根层叠上下文。
+
+   transform-origin: top left——面板左对齐触发器、自上而下展开，缩放从锚点一侧起算。
+   无 `will-change`：面板短命，常驻合成层不划算。 */
+.wf-format-pop {
+  position: fixed;
+  z-index: 940;
+  box-sizing: border-box;
+  padding: 8px;
+  background: var(--pane);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-popup), 0 0 0 1px var(--line);
+  -webkit-app-region: no-drag;
+  transform-origin: top left;
+}
+
+/* 进场：位移 + 缩放 + 淡入，时长取 --dur-base
+   （原 0.12s 纯 opacity 太快、无方向感）。
+
+   只在 `.is-placed`（定位完成、摆脱 visibility: hidden）后启动：FormatPopover 的
+   定位 effect 在首帧之后才 setPos，首帧面板是 visibility: hidden——若动画挂在
+   `.wf-format-pop` 本体上，前 1–2 帧（16–33ms）会在隐藏阶段被消耗，可见时已进入
+   中段透明度，观感就是「突然出现」。TableContextMenu 首帧即可见，故恒定带该类。
+
+   幅度刻意小于模态的 `wf-pop`（translateY 8px / scale 0.98）：浮层比模态更"轻"。
+   上翻（贴触发器上方）时位移方向略反，4px 幅度下不可感知，不做分支。 */
+.wf-format-pop.is-placed {
+  animation: wf-format-pop-in var(--dur-base) var(--ease-out) backwards;
+}
+
+@keyframes wf-format-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ---------- 分区 ---------- */
+.wf-format-pop__section + .wf-format-pop__section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.wf-format-pop__title {
+  padding: 0 4px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-mute);
+}
+
+/* ---------- 按钮网格 ---------- */
+.wf-format-pop__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+/* 竖向排列（标题 / 段落面板）：每项独占一行。 */
+.wf-format-pop__grid--stack {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* 双列（表格菜单的行列增删 / 合并拆分 / 对齐分区）。 */
+.wf-format-pop__grid--pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* 图标按钮（紧凑工具条）：正方格，无文字，tooltip 提供文案。 */
+.wf-format-pop__btn--icon {
+  padding: 0;
+  min-width: 28px;
+}
+
+.wf-format-pop__btn-glyph {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+}
+
+.wf-format-pop__btn-glyph > svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+}
+
+/* ---------- 文本按钮 ---------- */
+.wf-format-pop__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--r-xs);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--text-dim);
+  background: var(--soft-solid);
+  cursor: pointer;
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s var(--ease),
+    border-color 0.12s var(--ease);
+}
+
+.wf-format-pop__btn:hover:not(:disabled) {
+  background: var(--soft-hover-solid);
+  color: var(--text);
+}
+
+.wf-format-pop__btn.is-active {
+  color: var(--brand);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+}
+
+.wf-format-pop__btn.is-active:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand) 20%, var(--pane));
+}
+
+.wf-format-pop__btn.is-danger:hover:not(:disabled) {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, var(--pane));
+}
+
+.wf-format-pop__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wf-format-pop__btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 55%, transparent);
+  outline-offset: -1px;
+}
+
+/* ---------- 行（标签 + 控件） ---------- */
+.wf-format-pop__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+}
+
+.wf-format-pop__row + .wf-format-pop__row {
+  margin-top: 2px;
+}
+
+.wf-format-pop__row-label {
+  flex: none;
+  min-width: 40px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.wf-format-pop__row-label--wide {
+  min-width: 0;
+}
+
+/* 勾选行（如「含表头行」）：整行可点，复选框 + 文案。 */
+.wf-format-pop__check {
+  cursor: pointer;
+}
+
+.wf-format-pop__check > input {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
+.wf-format-pop__check > input:disabled {
+  cursor: not-allowed;
+}
+
+/* 数值输入（表格行列数）：紧凑，随行撑满剩余宽度。 */
+.wf-format-pop__num {
+  flex: 1;
+  min-width: 0;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xs);
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--soft-solid);
+}
+
+.wf-format-pop__num:focus {
+  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
+  background: var(--pane);
+}
+
+/* 链接地址输入 */
+.wf-format-pop__url {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xs);
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--soft-solid);
+}
+
+.wf-format-pop__url:focus {
+  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
+  background: var(--pane);
+}
+
+.wf-format-pop__url::placeholder {
+  color: var(--text-mute);
+}
+
+/* 隐藏的原生文件选择框（「插入图片」本地入口）：仅经按钮 `fileRef.click()` 触发。 */
+.wf-format-pop__file {
+  display: none;
+}
+
+.wf-format-pop__actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.wf-format-pop__actions > .wf-format-pop__btn {
+  flex: 1;
+}
+
+/* ============================================================
+   表格右键上下文菜单
+   ------------------------------------------------------------------
+   复用 .wf-format-pop 与 .wf-format-pop__btn / .wf-format-pop__grid，
+   仅外层容器收紧内边距（标题 + 分区更紧凑）。卡片 hover 无 transform（§8）。
+   ============================================================ */
+
+/* 右键菜单：在通用面板基础上收紧内边距（标题 + 分区更紧凑）。 */
+.wf-tablemenu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wf-tablemenu .wf-format-pop__section + .wf-format-pop__section {
+  margin-top: 0;
+  padding-top: 6px;
+}
+
+/* ============================================================
+   高亮 / 字色 色板（EditorColorButton）
+   ------------------------------------------------------------------
+   复用 .wf-format-pop 面板与 .wf-format-pop__btn 按钮；此处补充色块与网格。
+   色值为组件传入的固定色板（不随主题变），故不做主题派生。无 transform（§8）。
+   ============================================================ */
+
+/* 色块网格：5 列，容纳 10 色（两行）；gap 保持 6px。 */
+.wf-color-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+/* 色块按钮填满形态（仅色板网格内）：去内边 + 透明底，色块铺满无留白；
+   hover / 激活仅颜色 / 描边 / 阴影，无 transform（§8）。 */
+.wf-color-grid .wf-format-pop__btn--icon {
+  min-width: 0;
+  width: 100%;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border-color: transparent;
+}
+
+.wf-color-grid .wf-format-pop__btn--icon:hover:not(:disabled) {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 30%, transparent);
+}
+
+.wf-color-grid .wf-format-pop__btn--icon.is-active {
+  background: transparent;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent);
+}
+
+.wf-color-grid .wf-format-pop__btn-glyph {
+  width: 100%;
+  height: 100%;
+}
+
+/* 单个色块（置于 FormatButton 的图标槽内）：铺满按钮，无暗边。 */
+.wf-color-dot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--r-xs);
+  box-shadow: none;
+}
+
+/* 触发器色值指示条：图标下方细条（.wf-format-pop__trigger--ind 提供定位上下文）。
+   绝对定位脱离 .wf-iconbtn 的 inline-grid 流，不影响图标居中；无 transform。 */
+.wf-format-pop__trigger--ind {
+  position: relative;
+}
+
+.wf-format-pop__ind {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 16px;
+  height: 3px;
+  margin-left: -8px;
+  border-radius: 99px;
+  /* 指示条内描边：色块承载任意字色，需固定的「暗向」对比细边；
+     #000 18% 与主题 / 品牌无关（不随明暗翻转），故不取主题令牌。 */
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #000 18%, transparent);
+}
+
+/* 减动效守卫：`.wf-format-pop.is-placed`（0,2,0）特异性高于本体内单类，
+   必须并列写入 `.is-placed` 才能真正关掉（`.wf-format-pop` 单条会被压掉）。 */
+@media (prefers-reduced-motion: reduce) {
+  .wf-format-pop,
+  .wf-format-pop.is-placed {
+    animation: none;
+  }
+  .wf-format-pop__btn {
+    transition: none;
+  }
+}
+
+/* ============================================================
+   链接面板失焦期选区镜像（.wf-link-mirror）
+   ------------------------------------------------------------------
+   面板打开期间以 Decoration.inline 镜像快照选区的浅蓝常驻
+   （见 components/editor/linkSelectionMirror.ts），关 / 提交即清——
+   **仅失焦期存在**。与查找高亮 `.ep-search-hit`（writer-search.css，
+   品牌字色 + 加粗）区分：此处只铺浅底，不改字色字重，避免两类高亮冲突。
+   ============================================================ */
+.wf-link-mirror {
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--brand) 30%, transparent);
+}

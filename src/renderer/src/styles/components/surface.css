@@ -1,0 +1,426 @@
+@import './modal.css';
+/* ↑ Modal 模态框样式已拆至 components/modal.css：在本文件首行引入，使它与本文件
+   同属「组件层早期 CSS」，仍早于 settings.css 的 `.wf-modal__mask--strong`
+   （同特异性 0,1,0，靠后加载覆盖默认 blur(2px)），层叠结果与拆分前一致。 */
+
+/* ============================================================
+   通用组件样式：容器 / 展示 / 反馈
+   设计语言参照 template/index.html（圆角、描边环、柔和底、状态点）。
+   颜色全部取自 theme.css 令牌；品牌/语义色的半透明底用 color-mix 从变量派生，
+   不使用 html.sage / html.honey，也不硬编码品牌色，保证 4 主题通用。
+   前缀 wf-：根 wf-card / wf-tag / wf-badge；变体 --*；元素 __*；状态 is-*。
+   ============================================================ */
+
+/* ---------- Card 容器 ----------
+   原型：.hero-card / .book-card / .sidepane（--pane + --r-lg + --sh-sm + --panel-ring）
+   与 .outline-block / .sum-card / .scene-card（--soft 柔和底）。 */
+.wf-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 120px;
+  max-height: 240px;
+  background: var(--soft-solid);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-sm);
+  /* 只过渡投影（hover / active 光晕）；底色 `--soft-solid` 仅随主题变化，
+     不加过渡——主题切换整体瞬变，见 theme.css「主题切换不做过渡」。 */
+  transition: box-shadow var(--dur-base) var(--ease);
+}
+
+.wf-card--soft {
+  min-height: 120px;
+  max-height: 240px;
+  background: var(--soft-solid);
+  border-radius: var(--r-xs);
+  box-shadow: none;
+}
+
+.wf-card--interactive {
+  cursor: pointer;
+}
+
+/* 唯一会在交互中换底色的卡变体（hover 换 --soft-hover-solid）：
+   底色过渡只在此声明，避免其余卡片因主题切换而淡入淡出。 */
+.wf-card--soft.wf-card--interactive {
+  transition:
+    background var(--dur-base) var(--ease),
+    box-shadow var(--dur-base) var(--ease);
+}
+
+/* hover：不位移，改为品牌色边缘光晕（描边环 + 外发光），与书籍卡一致 */
+.wf-card--interactive:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+.wf-card--soft.wf-card--interactive:hover {
+  background: var(--soft-hover-solid);
+  box-shadow: none;
+}
+
+/* ---------- Halo hover 边缘光晕 ----------
+   通用卡 hover 态：常态中性（口径同书籍卡常态），仅移入显边缘光晕、
+   移出即消（描边环 + 外发光，口径同书籍卡 hover）；
+   剧情卡（PlotTimeline / TimelineView）挂载此类与系统其他卡一致；
+   选中更强档（2px 环 + 更强外发光）。均无 transform，仅颜色 / 描边 / 阴影过渡。 */
+.wf-card--halo {
+  min-height: 120px;
+  max-height: 240px;
+  box-shadow: var(--sh-sm);
+}
+
+.wf-card--halo:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+.wf-card--halo.is-active {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--brand) 30%, transparent),
+    0 0 26px -8px color-mix(in srgb, var(--brand) 55%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+.wf-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px 0;
+}
+
+.wf-card__titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.wf-card__title {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.wf-card__subtitle {
+  margin-top: 2px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+.wf-card__extra {
+  flex: none;
+  margin-left: auto;
+}
+
+.wf-card__body {
+  min-width: 0;
+  padding: 14px 16px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.wf-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--text-mute);
+}
+
+/* ---------- Region 分区容器卡 ----------
+   左栏分区容器卡（章节 / 大纲两域共享）：--soft-solid 圆角底 + 6px 内衬。
+   由 `.pane-region` 通用类承载（JSX 侧追加，见 ChaptersPanel / OutlinePanel /
+   OutlineNonVolumeList）；域特有类 `.nonvol-section` / `.vol-region` 只补充
+   本域规则（间距 / 布局），不再重复底座。原位于 writer-side.css，因两域共用
+   而迁移至通用容器层。 */
+.pane-region {
+  padding: 6px;
+  background: var(--soft-solid);
+  border-radius: var(--r-lg);
+}
+
+/* ---------- Tag 标签 ----------
+   原型：.field-chip（可关闭）/ .book-tag / .list-tag / .mood-chip / .scene-tag。 */
+.wf-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 3px 10px;
+  border-radius: var(--r-xs);
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  vertical-align: middle;
+  white-space: nowrap;
+  color: var(--text-dim);
+  background: var(--soft-solid);
+}
+
+.wf-tag__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wf-tag--neutral {
+  color: var(--text-dim);
+  background: var(--soft-solid);
+}
+
+.wf-tag--brand {
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+.wf-tag--ok {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, var(--pane));
+}
+
+.wf-tag--warn {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 16%, var(--pane));
+}
+
+.wf-tag--danger {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, var(--pane));
+}
+
+.wf-tag__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  font-size: 10px;
+  line-height: 1;
+  color: inherit;
+  background: color-mix(in srgb, currentColor 16%, var(--pane));
+  transition:
+    background 0.15s var(--ease),
+    color 0.15s var(--ease);
+}
+
+.wf-tag__close:hover {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* ---------- Badge 徽标 / 状态点 ----------
+   原型：.book-status（状态胶囊）/ .list-tag / .st-dot（状态点）。 */
+.wf-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.7;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+  white-space: nowrap;
+  color: var(--text-dim);
+  background: var(--soft-solid);
+}
+
+.wf-badge__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wf-badge__dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-mute);
+}
+
+.wf-badge--neutral {
+  color: var(--text-dim);
+  background: var(--soft-solid);
+}
+
+.wf-badge--neutral .wf-badge__dot {
+  background: var(--text-mute);
+}
+
+.wf-badge--brand {
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 14%, var(--pane));
+}
+
+.wf-badge--brand .wf-badge__dot {
+  background: var(--brand);
+}
+
+.wf-badge--ok {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, var(--pane));
+}
+
+.wf-badge--ok .wf-badge__dot {
+  background: var(--ok);
+}
+
+.wf-badge--warn {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 16%, var(--pane));
+}
+
+.wf-badge--warn .wf-badge__dot {
+  background: var(--warn);
+}
+
+.wf-badge--danger {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, var(--pane));
+}
+
+.wf-badge--danger .wf-badge__dot {
+  background: var(--danger);
+}
+
+/* ---------- Divider 分隔线 ----------
+   原型：.tb-sep / .bar-sep（竖线）、.rel-line / .profile-hero 底边（横线）。 */
+.wf-divider {
+  flex: none;
+  background: var(--line);
+}
+
+.wf-divider--horizontal {
+  width: 100%;
+  height: 1px;
+}
+
+.wf-divider--vertical {
+  width: 1px;
+  align-self: stretch;
+  min-height: 16px;
+}
+
+/* ---------- Avatar 头像 ----------
+   原型：.list-avatar（圆角小方）/ .profile-avatar（大圆角）。 */
+.wf-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  overflow: hidden;
+  font-weight: 700;
+  color: #fff;
+  user-select: none;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+}
+
+.wf-avatar--sm {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+}
+
+.wf-avatar--md {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.wf-avatar--lg {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+  font-size: 28px;
+  box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--brand) 50%, transparent);
+}
+
+.wf-avatar--circle {
+  border-radius: 50%;
+}
+
+.wf-avatar--ok {
+  background: linear-gradient(135deg, var(--ok), color-mix(in srgb, var(--ok) 60%, var(--pane)));
+}
+
+.wf-avatar--warn {
+  background: linear-gradient(
+    135deg,
+    var(--warn),
+    color-mix(in srgb, var(--warn) 60%, var(--pane))
+  );
+}
+
+.wf-avatar--danger {
+  background: linear-gradient(
+    135deg,
+    var(--danger),
+    color-mix(in srgb, var(--danger) 60%, var(--pane))
+  );
+}
+
+.wf-avatar--neutral {
+  color: var(--text-dim);
+  background: var(--soft-solid);
+}
+
+.wf-avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---------- Progress 进度条 ----------
+   原型：.book-progress / .scene-bar（--soft 轨道 + 品牌渐变填充）。 */
+.wf-progress {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 99px;
+  background: var(--soft-solid);
+}
+
+.wf-progress--sm {
+  height: 3px;
+}
+
+.wf-progress--md {
+  height: 4px;
+}
+
+.wf-progress--lg {
+  height: 6px;
+}
+
+.wf-progress__bar {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--brand), var(--brand-2));
+  transition: width 0.4s var(--ease);
+}
+
+.wf-progress__bar--ok {
+  background: var(--ok);
+}
+
+.wf-progress__bar--warn {
+  background: var(--warn);
+}
+
+.wf-progress__bar--danger {
+  background: var(--danger);
+}

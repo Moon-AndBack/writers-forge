@@ -1,0 +1,188 @@
+/* ============================================================
+   按钮类通用组件样式
+   来源：template/index.html 的 .btn / .btn.primary / .btn.ghost、
+        .tb-tool / .act-btn / .eb-tool / .mini-btn（图标按钮）、
+        .st-side-btn / .st-pill-btn / .drawer-close 等。
+   命名：根类 .wf-btn；变体 --primary/--secondary/--ghost/--danger；
+        尺寸 --sm/--lg（md 为默认，不输出类）；图标按钮 --icon。
+   颜色一律取 theme.css 令牌；品牌浅底 / 光晕用 color-mix 由 --brand
+   派生，以兼容 light / dark / sage / honey 四主题。
+   ============================================================ */
+
+.wf-btn {
+  --wf-btn-h: 32px;
+  --wf-btn-px: 16px;
+  --wf-btn-fs: 13px;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  min-height: var(--wf-btn-h);
+  padding: 0 var(--wf-btn-px);
+  border: 0;
+  border-radius: var(--r-xs);
+
+  font-family: inherit;
+  font-size: var(--wf-btn-fs);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+
+  transition:
+    background 0.15s var(--ease),
+    color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease),
+    transform 0.1s var(--ease),
+    filter 0.15s var(--ease);
+}
+
+.wf-btn:active {
+  transform: translateY(1px);
+}
+
+.wf-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: 1px;
+}
+
+.wf-btn:disabled,
+.wf-btn[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+
+/* ---------- 变体 ---------- */
+.wf-btn--primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--brand) 90%, transparent);
+}
+.wf-btn--primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.wf-btn--primary:active:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+.wf-btn--secondary {
+  color: var(--text);
+  background: var(--soft-solid);
+}
+.wf-btn--secondary:hover:not(:disabled) {
+  background: var(--soft-hover-solid);
+}
+.wf-btn--secondary:active:not(:disabled) {
+  background: var(--soft-press-solid);
+}
+
+.wf-btn--ghost {
+  color: var(--text-dim);
+  background: transparent;
+}
+.wf-btn--ghost:hover:not(:disabled) {
+  background: var(--soft-solid);
+  color: var(--text);
+}
+.wf-btn--ghost:active:not(:disabled) {
+  background: var(--soft-press-solid);
+  color: var(--text);
+}
+
+.wf-btn--danger {
+  color: #fff;
+  background: var(--danger);
+}
+.wf-btn--danger:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.wf-btn--danger:active:not(:disabled) {
+  filter: brightness(0.94);
+}
+
+/* ---------- 尺寸 ---------- */
+.wf-btn--sm {
+  --wf-btn-h: 26px;
+  --wf-btn-px: 10px;
+  --wf-btn-fs: 12px;
+}
+.wf-btn--lg {
+  --wf-btn-h: 40px;
+  --wf-btn-px: 22px;
+  --wf-btn-fs: 14px;
+}
+
+/* ---------- 图标按钮（方形） ---------- */
+.wf-btn--icon {
+  width: var(--wf-btn-h);
+  min-width: var(--wf-btn-h);
+  padding: 0;
+  gap: 0;
+}
+.wf-btn--icon > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.wf-btn--sm.wf-btn--icon > svg {
+  width: 14px;
+  height: 14px;
+}
+.wf-btn--lg.wf-btn--icon > svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- 内容 / 加载态 ---------- */
+.wf-btn__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: inherit;
+}
+
+.wf-btn.is-loading > .wf-btn__content {
+  visibility: hidden;
+}
+
+.wf-btn__spinner {
+  position: absolute;
+  inset: 0;
+  width: 1em;
+  height: 1em;
+  margin: auto;
+  border: 2px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: wf-btn-spin 0.7s linear infinite;
+}
+
+@keyframes wf-btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wf-btn {
+    transition: none;
+  }
+  .wf-btn:active {
+    transform: none;
+  }
+  .wf-btn.is-loading .wf-btn__spinner {
+    animation-duration: 1.5s;
+  }
+}

@@ -1,0 +1,104 @@
+/**
+ * 设置页 · OneDrive 云备份分区（前缀 od-）。
+ *
+ * 只服务 `OneDriveSection`：账号状态行、操作按钮组、备份进度块、行内错误 / 提示、
+ * clientId 输入组。配色一律取 `theme.css` 令牌；无任何位移 / 缩放动画（§8）。
+ */
+
+/* ---------- 按钮组 / 账号状态 ---------- */
+.od-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.od-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.od-account__email {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+.od-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--text-mute);
+}
+
+.od-dot--ok {
+  background: var(--ok);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ok) 22%, transparent);
+}
+
+/* ---------- 提示 / 错误 ---------- */
+.od-note {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+.od-note--warn {
+  color: var(--warn);
+}
+
+.od-alert {
+  margin: 0;
+  padding: 0 10px 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+.od-alert--error {
+  color: var(--danger);
+}
+
+/* ---------- 备份进度块 ---------- */
+.od-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 10px 8px;
+  padding: 10px 12px;
+  border-radius: var(--r-xs);
+  background: var(--soft-solid);
+}
+
+.od-progress__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.od-progress__phase {
+  color: var(--text);
+}
+
+.od-progress__bytes {
+  flex: none;
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- clientId 输入组 ---------- */
+.od-client {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.od-client__input {
+  width: 260px;
+}

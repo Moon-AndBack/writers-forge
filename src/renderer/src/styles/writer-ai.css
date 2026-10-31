@@ -1,0 +1,469 @@
+/* ============================================================
+   写作视图 · 右栏「AI」页签面板
+   ------------------------------------------------------------------
+   章节右栏 AI 面板（AiPanel）与消息气泡（ChatMessage）专属样式：
+   对话记录卡、统一输入区（输入框 / 控件行 / 上下文切换 / 字数提示），以及
+   assistant 气泡内的 Markdown 元素（p / 标题 / 列表 / 代码 / 表格 / 引用 / 链接）。
+   底色与描边统一取令牌（--pane / --soft-solid / --control-on-soft / --line / --r-lg），
+   hover 只改颜色 / 描边 / 阴影，禁用 transform（AGENTS §8）；
+   流式光标只动 opacity。面板骨架（.rp-panel / .rp-card / .rp-list-empty）
+   沿用 writer-right-panels.css，这里只补 AI 专属增量。
+   ============================================================ */
+
+/* ---------- 提示 / 错误行 ---------- */
+.ai-panel__hint {
+  flex: none;
+  padding: 0 2px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-mute);
+  overflow-wrap: anywhere;
+}
+
+/* 模型加载失败：文案 + 重试按钮同处一行（失败时仍可重试拉取）。 */
+.ai-panel__error {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 2px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--danger);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 统一输入区（底部） ---------- */
+.ai-panel__composer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 输入框不参与剩余高度分配（列表卡独占剩余高度）。 */
+.ai-panel__input {
+  flex: none;
+  resize: none;
+}
+
+/* ---------- 内置提示词（作品设定开关 + 预览） ----------
+   位于输入框上方：一行开关 + 可选展开按钮，下方是限行文本。
+   文本默认限 2 行（省略号），title 悬浮全文，展开后完整显示——
+   风格句可能多条，全铺开会把输入区顶出可视范围。
+   底 / 描边取软底 + --line 一档（与 .ai-chat 同层语言），hover 只改颜色（§8）。 */
+.ai-panel__builtin {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: var(--r-lg);
+  background: var(--soft);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* 开关行：开关靠左，「展开 / 收起」靠右；无分类说明文字夹在中间（可换行）。 */
+.ai-panel__builtin-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-panel__builtin-head .wf-switch {
+  flex: none;
+}
+
+.ai-panel__builtin-head > .wf-btn {
+  flex: none;
+  margin-left: auto;
+}
+
+/* 无分类说明：弱化色，随开关行一起换行。 */
+.ai-panel__builtin-note {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--text-mute);
+  overflow-wrap: anywhere;
+}
+
+/* 预览文本：小字号、弱化色，默认 2 行省略。 */
+.ai-panel__builtin-text {
+  display: -webkit-box;
+  margin: 0;
+  padding: 0 2px;
+  overflow: hidden;
+  font-size: 10.5px;
+  line-height: 1.55;
+  color: var(--text-mute);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* 展开态：取消限行，完整显示（可换行，不滚动——面板整体已在滚动容器外）。 */
+.ai-panel__builtin-text.is-expanded {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+
+/* 控件行：模型 / 功能 / 两个上下文切换 / 发送，窄栏下按行换行（顺序不变）。
+   行内控件统一高度（--ai-ctl-h）：Button sm 高 26px（min-height、纵向无内边距），
+   Select sm 触发器高 30.8px（6px×2 内边距 + 12px×1.4 行高 + 1px×2 描边），
+   两者不等高；这里把两者都钉到 31px（改的只是本行外观，不动组件自身的尺寸定义），
+   保证两个下拉、两个切换按钮、发送按钮落在同一条基线上。 */
+.ai-panel__controls {
+  --ai-ctl-h: 31px;
+
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 两个下拉等分一行（窄栏下文字省略），触发器钉高与按钮齐平。 */
+.ai-panel__controls > .wf-select {
+  flex: 1 1 88px;
+  width: auto;
+  min-width: 0;
+}
+
+.ai-panel__controls > .wf-select > .wf-select__trigger {
+  height: var(--ai-ctl-h);
+}
+
+/* 两个上下文切换按钮成组：始终同处一行，换行时整体换行、不被拆散。 */
+.ai-panel__carry {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-panel__carry .wf-btn {
+  height: var(--ai-ctl-h);
+}
+
+/* 切换按钮：未激活 = Button 默认 secondary（软底，与同行两个下拉同一视觉层，
+   不抢右侧主操作的视觉）；激活（aria-pressed="true"）= 品牌浅底 + 品牌字 +
+   内描边环，口径同 `.wf-format-pop__btn.is-active` / `.wf-seg__item.is-active`。
+   只改颜色 / 描边 / 阴影，不加 transform（§8）；也不改字重——切换时字重
+   变化会让按钮宽度抖动、引起控件行重排。 */
+.ai-panel__carry .wf-btn[aria-pressed='true'],
+.ai-panel__carry .wf-btn[aria-pressed='true']:hover:not(:disabled),
+.ai-panel__carry .wf-btn[aria-pressed='true']:active:not(:disabled) {
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent);
+}
+
+/* 发送 / 停止靠右，换行后仍贴行尾；钉高与其他控件一致。 */
+.ai-panel__controls > .wf-btn {
+  flex: none;
+  height: var(--ai-ctl-h);
+  margin-left: auto;
+}
+
+/* ---------- 对话记录（占满剩余高度，自身滚动） ----------
+   底色对齐右栏其余列表卡（`.pane-region` 口径：--soft-solid 软底 + --r-lg 圆角），
+   不再透出 `.rp-panel` 的栏底。气泡在此底之上再分层（见下）：
+   user = --control-on-soft（软底上再深 / 再亮一档的层）+ 37% 描边；
+   assistant = --pane（内容卡层）+ --line 描边；四套主题下均与容器可分。
+   `gap` 已承接原「角色标签」腾出的纵向留白（气泡上方不再有一行小字）。 */
+.ai-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px;
+  border-radius: var(--r-lg);
+  background: var(--soft-solid);
+}
+
+/* ---------- 消息气泡 ----------
+   无角色标签：user / assistant 仅靠对齐方向与底色区分（无 transform，§8）。
+   `gap` 只作用于「气泡 ↔ 回插按钮行」。 */
+.ai-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ai-msg--user {
+  align-items: flex-end;
+}
+
+.ai-msg--assistant {
+  align-items: flex-start;
+}
+
+.ai-msg__bubble {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--r-lg);
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* user：右侧气泡，底取「软底容器上的控件」层（--control-on-soft，与容器
+   --soft-solid 差一档），并配同源 37% 描边——浅色主题下填充差异仅约 1.09:1，
+   边界主要由描边承担，四套主题均清晰可辨；宽度不超过容器 88%。 */
+.ai-msg--user .ai-msg__bubble {
+  max-width: 88%;
+  background: var(--control-on-soft);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
+}
+
+/* assistant：左侧整宽卡面（--pane 内容卡层，与 --soft-solid 容器区分），便于阅读 Markdown。 */
+.ai-msg--assistant .ai-msg__bubble {
+  width: 100%;
+  background: var(--pane);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.ai-msg__text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ai-msg__error {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--danger);
+}
+
+/* 错误气泡只换描边色，不改底色（保持可读性）。 */
+.ai-msg__bubble.is-error {
+  box-shadow: inset 0 0 0 1px var(--danger);
+}
+
+.ai-msg__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+/* 流式光标：只做透明度闪烁，不位移 / 不缩放。 */
+.ai-msg__cursor {
+  display: inline-block;
+  width: 6px;
+  height: 12px;
+  margin-left: 2px;
+  vertical-align: -1px;
+  border-radius: 1px;
+  background: var(--brand);
+  animation: ai-cursor-blink 1s steps(2, start) infinite;
+}
+
+/* 无正文时单独占位（不撑出空段落）。 */
+.ai-msg__cursor--solo {
+  margin-left: 0;
+}
+
+@keyframes ai-cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.15;
+  }
+}
+
+/* ---------- assistant 气泡内的 Markdown 元素 ---------- */
+.ai-msg__body {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ai-md-p {
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+}
+
+.ai-md-p:last-child {
+  margin-bottom: 0;
+}
+
+.ai-md-h {
+  margin: 8px 0 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.ai-md-ul,
+.ai-md-ol {
+  margin: 0 0 6px;
+  padding-left: 18px;
+}
+
+.ai-md-li {
+  margin: 2px 0;
+}
+
+.ai-md-li > .ai-md-p {
+  margin: 0;
+}
+
+.ai-md-code {
+  padding: 1px 4px;
+  border-radius: var(--r-xs);
+  background: var(--soft);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text);
+}
+
+.ai-md-code--block {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.ai-md-pre {
+  max-width: 100%;
+  margin: 0 0 6px;
+  padding: 8px 10px;
+  border-radius: var(--r-lg);
+  background: var(--soft-solid);
+  box-shadow: inset 0 0 0 1px var(--line);
+  overflow-x: auto;
+}
+
+.ai-md-pre code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  white-space: pre;
+}
+
+/* 表格：块级容器自身横向滚动，长表不撑破气泡。 */
+.ai-md-table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 6px;
+  border-collapse: collapse;
+  font-size: 11.5px;
+  overflow-x: auto;
+}
+
+.ai-md-th,
+.ai-md-td {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.ai-md-th {
+  background: var(--soft);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ai-md-quote {
+  margin: 0 0 6px;
+  padding: 2px 0 2px 10px;
+  border-left: 2px solid var(--line);
+  color: var(--text-mute);
+}
+
+.ai-md-hr {
+  margin: 8px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.ai-md-a {
+  color: var(--brand);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.ai-md-strong {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ai-md-em {
+  font-style: italic;
+}
+
+/* ============================================================
+   编辑器失焦期选区镜像（.ai-selection-mirror）
+   ------------------------------------------------------------------
+   面板聚焦在输入框时，ProseMirror 不再渲染原生选区（blur 后
+   `selectionToDOM` 直接返回），正文里看不出「会带进 AI 的是哪段」。
+   故失焦期以 Decoration.inline 给该段铺浅品牌色底
+   （见 components/editor/linkSelectionMirror.ts 的 showSelectionMirror）。
+
+   与原生 ::selection 对齐（同底色、同几何）：
+   - 不设 border-radius：Chromium 的 ::selection 不支持圆角，原生选区恒为
+     直角；镜像若带圆角，短选区 / 行首行尾一眼就能看出两种形状。
+   - 不设 padding / border：inline 盒的背景只铺 content area（字体度量高），
+     与原生选区按文本片段绘制的高度一致；加 padding 会让色块变胖并撑高行盒
+     （正文抖动）。
+   - 跨行沿用默认 box-decoration-break: slice，每行各自成块，与原生选区逐行
+     绘制一致（无 padding / border / 圆角时 slice 与 clone 视觉等价）。
+
+   聚焦期隐藏：原生选区由 ProseMirror 自绘，饰带再叠一层会双重高亮。
+   隐藏**只能**用 CSS（`.ProseMirror-focused` 在 focus 时由 ProseMirror 添加、
+   blur 时移除）：聚焦由点击正文触发，若在 focus 帧 dispatch 清理事务，
+   `selectionToDOM` 会把旧选区写回 DOM，吞掉该次点击的落点。
+   只清底色、不卸载节点 → 零布局抖动；无 transform（AGENTS §8）。
+   ============================================================ */
+.ai-selection-mirror {
+  background: var(--selection-bg);
+}
+
+/* 两条镜像（AI / 链接面板）聚焦期统一隐藏：聚焦时原生选区已可见，叠加即双重高亮。 */
+.ProseMirror-focused .ai-selection-mirror,
+.ProseMirror-focused .wf-link-mirror {
+  background: none;
+}
+
+/* ============================================================
+   违禁词命中标注（.wf-clean-hit）+ 状态栏计数（.wf-clean-count）
+   ------------------------------------------------------------------
+   只提示不阻断：命中由 Decoration.inline 铺「波浪下划线」
+   （见 chapters/proofreadMark.ts 的 CleanWordMark），不改文档内容、
+   不动选区、不拦输入。
+
+   与实体高亮共存：`.entity-highlight` 只设 background / color，
+   本类只设 text-decoration，两者可叠在同一文本上（互不覆盖）。
+
+   只取 --danger 主题令牌（四主题各自定义），无 transform（AGENTS §8）。
+   thickness / offset 固定：正文 16px 行高下波浪线落在基线下 3px，
+   不压下一行、不与实体高亮的浅底边缘打架。
+   ============================================================ */
+.wf-clean-hit {
+  text-decoration: underline wavy var(--danger);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+/* 状态栏「N 处违禁词」胶囊：复用 .st-meta 胶囊底，仅把文字色换成 --danger。
+   双类选择器（.st-meta.wf-clean-count）保证压过 .st-meta 的 color，
+   不依赖 writer-ai.css 与 statusbar-widgets.css 的加载先后。 */
+.st-meta.wf-clean-count {
+  color: var(--danger);
+}

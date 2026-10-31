@@ -1,0 +1,32 @@
+/* ============================================================
+   窗口材质（Acrylic）透明效果 —— 桌面底色覆盖
+   ------------------------------------------------------------------
+   仅背景透明：开启时 `.shell` 从「3 层光斑 + 线性渐变」（dark 为斜切色带，
+   见 shell.css）切换为四主题各自的纯色底 @70% 透明度，透出 Windows DWM
+   Acrylic 材质；面板 / 侧栏 / 编辑区仍用不透明 --pane / --win-surface，内容
+   保持可读（仅背景透明）。
+
+   组织方式：
+   - 四主题纯色底在 theme.css 提供 `--desk-solid`（light/sage/honey 取 --desk-2，
+     dark 取 #161616），透明度用主题无关的 `--desk-solid-alpha`（70%），
+     此处经 color-mix 派生半透明底，避免 rgba 硬编码散落四处；
+   - 根元素标记由 WindowMaterialProvider 写入：开透明 `data-material='acrylic'`，
+     关透明 `data-material='none'`（不命中本文件规则 → 回退 shell.css 的光斑渐变）。
+
+   落位与优先级：
+   - 独立小文件，避免 shell.css 触碰 500 行上限；
+   - 由 App.tsx 在 `./styles/shell.css` 之后导入，选择器特异性 (0,2,0) 与
+     [data-theme='dark'] .shell 相同，靠源码顺序胜出；
+   - 用 background 简写一并复位 dark 的 background-image / background-size /
+     background-position，避免 dark 斜切带残留。
+   ============================================================ */
+
+[data-material='acrylic'] .shell {
+  background: color-mix(in srgb, var(--desk-solid) var(--desk-solid-alpha), transparent);
+}
+
+/* 材质态下把 body 画布底置透明：否则 body 的不透明 --bg 会垫在 .shell（@70%）
+   之后，挡住 DWM Acrylic。仅清 body / 画布底，面板等组件不受影响。 */
+[data-material='acrylic'] body {
+  background: transparent;
+}

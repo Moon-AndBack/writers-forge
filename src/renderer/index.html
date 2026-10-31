@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Writer's Forge</title>
+    <!--
+      CSP 说明：实际策略由主进程在生产模式经响应头注入（src/main/security.ts 的
+      PRODUCTION_CSP），开发模式不注入，以保证 electron-vite HMR 的 ws 连接与内联脚本
+      正常工作。此处刻意不放 <meta http-equiv="Content-Security-Policy">，否则会同时
+      作用于开发模式并阻断热更新。
+    -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

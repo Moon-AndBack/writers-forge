@@ -1,0 +1,186 @@
+/* ============================================================
+   Select（自定义下拉）
+   由 form.css 顶部 @import 转发；拆分仅为控制单文件行数，
+   选择器 / 取值与原 form.css 完全一致（纯搬运，视觉零变化）。
+   ============================================================ */
+.wf-select {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.wf-select__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  color: var(--text);
+  background: var(--soft-solid);
+  border: 1px solid transparent;
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  outline: none;
+  transition:
+    background 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease),
+    color 0.18s var(--ease);
+}
+.wf-select__trigger:hover:not(:disabled) {
+  background: var(--soft-hover-solid);
+}
+.wf-select__trigger:focus-visible,
+.wf-select.is-open .wf-select__trigger {
+  background: var(--pane);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+}
+.wf-select__trigger:is([aria-invalid='true'], .is-invalid) {
+  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+}
+.wf-select__trigger:disabled {
+  cursor: not-allowed;
+}
+.wf-select.is-disabled {
+  opacity: 0.6;
+}
+.wf-select__value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wf-select__value.is-placeholder {
+  color: var(--text-mute);
+}
+.wf-select__caret {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  color: var(--text-mute);
+  transition:
+    transform 0.2s var(--ease),
+    color 0.18s var(--ease);
+}
+.wf-select__caret svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+.wf-select.is-open .wf-select__caret {
+  transform: rotate(180deg);
+}
+.wf-select__panel {
+  /* portal 到 body + 视口坐标定位（逃逸 .wf-window__body 的 overflow 裁剪）；
+     left / top / width 由组件按触发器矩形注入，此处仅保留固定定位与层级。 */
+  position: fixed;
+  top: 0;
+  left: 0;
+  /* z-index 1040：高于 Modal（1000）与自绘 tooltip（990），低于 toast（1100） */
+  z-index: 1040;
+  max-height: 260px;
+  padding: 5px;
+  overflow-y: auto;
+  background: var(--pane);
+  border-radius: var(--r-lg);
+  box-shadow:
+    var(--sh-popup),
+    0 0 0 1px var(--line);
+  animation: wf-select-in 0.14s var(--ease) both;
+}
+@keyframes wf-select-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.wf-select__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  transition:
+    background 0.1s var(--ease),
+    color 0.1s var(--ease);
+}
+.wf-select__option:hover,
+.wf-select__option.is-active {
+  color: var(--text);
+  background: var(--soft-hover-solid);
+}
+.wf-select__option.is-selected {
+  color: var(--brand);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+.wf-select__option.is-disabled {
+  color: var(--text-mute);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.wf-select__option-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wf-select__check {
+  flex: none;
+  font-size: 12px;
+  line-height: 1;
+}
+.wf-select__empty {
+  padding: 10px;
+  font-size: 12px;
+  color: var(--text-mute);
+  text-align: center;
+}
+.wf-select--sm .wf-select__trigger {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.wf-select--lg .wf-select__trigger {
+  padding: 11px 14px;
+  font-size: 14px;
+}
+
+/* ---------- Combobox（可输入过滤的下拉） ----------
+   视觉完全复用上面的 `.wf-select` 系列：Root 同时挂 `.wf-select`，输入框挂
+   `.wf-select__trigger`，面板 / 选项 / 空态直接复用。此处只补输入框的右内边距
+   与 caret 的绝对定位（`.wf-select` 本身已 position: relative）。 */
+.wf-combobox__input {
+  padding-right: 34px;
+  cursor: text;
+}
+.wf-select--sm.wf-combobox .wf-combobox__input {
+  padding-right: 30px;
+}
+.wf-select--lg.wf-combobox .wf-combobox__input {
+  padding-right: 38px;
+}
+.wf-combobox .wf-select__caret {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.wf-combobox.is-open .wf-select__caret {
+  transform: translateY(-50%) rotate(180deg);
+}

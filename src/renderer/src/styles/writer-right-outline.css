@@ -1,0 +1,296 @@
+/* 自 writer-right-panels.css 拆出（§3 单文件行数上限）：本文件只承载章节模块
+   右栏「大纲」页签的下拉行 / 上下分栏 / 只读正文排版，由 styles/writer.css
+   @import 引入（紧随 writer-right-panels.css）。 */
+
+/* ============================================================
+   章节模块右栏「大纲」页签：混合下拉 + 只读富文本
+   ------------------------------------------------------------------
+   一个**无文字标签**的下拉（条目 / 卷 / 分组混排）+ 一片只读正文；
+   选卷或分组时下方再出现细纲栏（其下条目下拉 + 条目正文），上下默认各占
+   一半，中间的水平分隔条可拖动调节比例（每栏不小于 80px，双击恢复默认）。
+   展示区完全只读：无光标、无工具栏、无段落 hover 底色。
+   底色 / 描边 / 圆角全部取令牌。
+   ============================================================ */
+
+/* ---------- 容器：上下两栏 ----------
+   `.rp-outline` 与通用 `.rp-panel` 同节点：纵向 flex / 8px 间距 / 内衬全部由
+   `.rp-panel` 提供。双栏时列间距改由水平分隔条自身承担（8px），与侧栏分隔条同口径，
+   故这里把面板 gap 归零；单栏时无第二个子元素，gap 本就不生效。 */
+.rp-panel.rp-outline {
+  gap: 0;
+}
+
+/* ---------- 单栏（下拉 + 展示区） ----------
+   底座不再手写复刻（AGENTS §9）：JSX 侧直接挂通用 `pane-region`（--soft-solid 底 +
+   --r-lg 圆角 + 6px 内衬）、`rp-card`（--line 内描边 + 卡片内衬）与 `on-soft`
+   （软底上的控件换 --control-on-soft 底 + 描边，见 form.css）；域类只补纵向布局。 */
+.rp-outline__pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* 上下两栏按 `flex-grow` 比例分配可用高度（默认由面板传 50 / 50，可拖动改变）。
+   每栏最小 80px，避免拖到 0 / 容器变矮时被压没（与 OutlineRightPanel 的
+   MIN_PANE_HEIGHT 同步）。选「条目」时只有一栏，`flex: 1 1 0` 同样吃满剩余高度。 */
+.rp-outline__pane.rp-card {
+  flex: 1 1 0;
+  min-height: 80px;
+}
+
+/* 下拉行：**不显示文字标签**，下拉独占整行（可访问名由 Select 的 aria-label 提供）。
+   下内衬 6px = 剧情页签筛选卡的内衬，切页签时下拉位置与控件块高一致、不跳动。 */
+.rp-outline__head {
+  flex: none;
+  padding: 0 0 6px;
+}
+
+/* ---------- 只读正文（紧凑排版，内部滚动） ----------
+   独立作用域（不复用 `.doc-body` 的中栏版式：那边是 16px + 2em 首行缩进，
+   窄栏里过宽）。字号小于中栏编辑器，行高适中。 */
+.rp-read {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  /* 四边内衬与卡片内衬同口径（原上方 2px 偏薄，与下方不对称）。 */
+  padding: 8px;
+  /* 只读：不显示输入光标；段落 / 标题 hover 不叠底色（文本仍可拖选复制）。 */
+  caret-color: transparent;
+}
+
+.rp-read__doc {
+  flex: 1 0 auto;
+  min-height: 0;
+}
+
+/* 空态：字号 / 内衬与列表空态 `.rp-list-empty` 同口径（11px / 12px 9px），
+   仅额外做纵向居中（只读区比列表卡更高）。 */
+.rp-read__empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 9px;
+  font-size: 11px;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--text-mute);
+}
+
+.rp-read .ProseMirror {
+  outline: none;
+  font-family: var(--doc-font);
+  font-size: 12.8px;
+  line-height: 1.75;
+  letter-spacing: var(--doc-letter);
+  color: var(--text-dim);
+  cursor: default;
+  /* 窄栏长词 / 长链接不撑破卡片。 */
+  overflow-wrap: break-word;
+}
+
+/* 只读态不提供任何 hover 反馈（正文 / 标题都不叠底色）。 */
+.rp-read .ProseMirror p:hover,
+.rp-read .ProseMirror h1:hover,
+.rp-read .ProseMirror h2:hover,
+.rp-read .ProseMirror h3:hover,
+.rp-read .ProseMirror h4:hover,
+.rp-read .ProseMirror h5:hover,
+.rp-read .ProseMirror h6:hover {
+  background: transparent;
+}
+
+/* ---------- 块级排版：段落 / 标题 ---------- */
+.rp-read .ProseMirror p {
+  margin: 0 0 0.7em;
+  text-indent: 0;
+}
+
+.rp-read .ProseMirror h1,
+.rp-read .ProseMirror h2,
+.rp-read .ProseMirror h3,
+.rp-read .ProseMirror h4,
+.rp-read .ProseMirror h5,
+.rp-read .ProseMirror h6 {
+  margin: 1em 0 0.4em;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.rp-read .ProseMirror > h1:first-child,
+.rp-read .ProseMirror > h2:first-child,
+.rp-read .ProseMirror > h3:first-child,
+.rp-read .ProseMirror > h4:first-child,
+.rp-read .ProseMirror > h5:first-child,
+.rp-read .ProseMirror > h6:first-child {
+  margin-top: 0;
+}
+
+.rp-read .ProseMirror h1 {
+  font-size: 1.5em;
+}
+
+.rp-read .ProseMirror h2 {
+  font-size: 1.32em;
+}
+
+.rp-read .ProseMirror h3 {
+  font-size: 1.18em;
+}
+
+.rp-read .ProseMirror h4 {
+  font-size: 1.08em;
+}
+
+.rp-read .ProseMirror h5 {
+  font-size: 1em;
+}
+
+.rp-read .ProseMirror h6 {
+  font-size: 0.94em;
+  color: var(--text-dim);
+}
+
+/* 末块不留尾距（滚动区底部更紧凑）。 */
+.rp-read .ProseMirror > :last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- 列表 / 引用 ---------- */
+.rp-read .ProseMirror ul,
+.rp-read .ProseMirror ol {
+  margin: 0 0 0.7em;
+  padding-left: 1.4em;
+}
+
+.rp-read .ProseMirror li {
+  margin: 0.1em 0;
+}
+
+.rp-read .ProseMirror li p,
+.rp-read .ProseMirror blockquote p,
+.rp-read .ProseMirror th p,
+.rp-read .ProseMirror td p {
+  margin: 0;
+}
+
+.rp-read .ProseMirror blockquote {
+  margin: 0 0 0.7em;
+  padding: 2px 0 2px 10px;
+  border-left: 2px solid color-mix(in srgb, var(--brand) 45%, transparent);
+  color: var(--text-mute);
+}
+
+/* ---------- 代码块 / 行内代码 ---------- */
+.rp-read .ProseMirror pre {
+  margin: 0 0 0.7em;
+  padding: 8px 10px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xs);
+  background: var(--pane);
+  font-family: var(--mono);
+  font-size: 0.92em;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.rp-read .ProseMirror pre code {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: inherit;
+  color: inherit;
+}
+
+.rp-read .ProseMirror :not(pre) > code {
+  padding: 0.1em 0.3em;
+  border-radius: var(--r-xs);
+  background: var(--pane);
+  font-family: var(--mono);
+  font-size: 0.92em;
+  color: color-mix(in srgb, var(--brand) 70%, var(--text));
+}
+
+/* ---------- 分隔线 / 链接 ---------- */
+.rp-read .ProseMirror hr {
+  height: 0;
+  margin: 1em 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.rp-read .ProseMirror a {
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* ---------- 表格 ---------- */
+.rp-read .ProseMirror .tableWrapper {
+  margin: 0 0 0.7em;
+  overflow-x: auto;
+}
+
+.rp-read .ProseMirror table {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.rp-read .ProseMirror th,
+.rp-read .ProseMirror td {
+  min-width: 2em;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  vertical-align: top;
+  text-align: left;
+}
+
+.rp-read .ProseMirror th {
+  background: var(--pane);
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ---------- 行内图片（复用编辑器节点视图的类名，只补只读排版） ---------- */
+.rp-read .ProseMirror .wf-editor-image-node {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: bottom;
+  line-height: 0;
+}
+
+.rp-read .ProseMirror .wf-editor-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--r-xs);
+}
+
+.rp-read .ProseMirror .wf-editor-image-missing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-xs);
+  background: var(--pane);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-mute);
+  user-select: none;
+}
+
+/* 高亮 mark：底色为文档内固定浅色板，暗色主题下叠半透明黑压深以保可读性
+   （口径与 writer-editor-doc.css 的 `.doc-body .ProseMirror mark` 一致）。 */
+[data-theme='dark'] .rp-read .ProseMirror mark {
+  background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6));
+}

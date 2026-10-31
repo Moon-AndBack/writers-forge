@@ -1,0 +1,99 @@
+/**
+ * 自定义分类管理（设置页 · CategoriesSection，前缀 cm-）。
+ *
+ * 交互：新增行（输入 + 添加）+ 列表（名称 + 重命名 / 删除）+ 行内错误。
+ * 配色一律走 theme.css 令牌；行 hover 仅底色变化，无位移 / 缩放（§8）。
+ */
+
+.cm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 10px 4px;
+}
+
+/* ---------- 新增行 ---------- */
+.cm-create {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cm-create__input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- 提示 / 错误 ---------- */
+.cm-error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--danger);
+}
+
+.cm-empty {
+  margin: 0;
+  padding: 4px 2px;
+  font-size: 12px;
+  color: var(--text-mute);
+}
+
+/* ---------- 分类列表 ---------- */
+.cm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cm-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 4px 4px 10px;
+  border-radius: var(--r-xs);
+  transition: background 0.15s var(--ease);
+}
+
+.cm-item:hover {
+  background: var(--soft-solid);
+}
+
+.cm-item__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.cm-item__actions {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* ---------- 重命名行内编辑 ---------- */
+.cm-rename {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cm-rename__input {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-item {
+    transition: none;
+  }
+}

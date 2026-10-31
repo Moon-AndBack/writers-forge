@@ -1,0 +1,182 @@
+/* ============================================================
+   胶囊（chip / pill）预设子类独立配色：23 预设 + 5 自定义 = 28 色
+   ------------------------------------------------------------------
+   口径：
+   - 23 个**预设子类**（真源：`src/main/database/worldSubtypes.ts` 的
+     `PRESET_WORLD_SUBTYPES`）各占一种可明显分辨的独立颜色，由本文件以
+     `.chip-p-<presetKey>` 绑定 `--chip-bg` / `--chip-fg` / `--chip-base`；
+   - **用户自定义分类**没有 `preset_key`，不挂本文件的类，回落到
+     `chip-pill-tokens.css` 的 `.chip-m-*` 五个模块色系，
+     即 5 种颜色。两类合计 28 色。
+
+   **静态值是数据库日本传统色的首帧副本**：真源在 `chip_colors` 表（28 行
+   日本传统色，含 scope='preset' 的 23 行与 scope='module' 的 5 行兜底色）。
+   渲染层启动后读取该表并把 `.chip-p-*` / `.chip-m-*` 的
+   `{ --chip-bg / --chip-fg }` 规则注入 head 末尾覆盖本文件。本文件存在的
+   唯一目的是让**首帧**即为最终外观，避免「启动时旧色 → 注入后新色」的跳变，
+   因此此处色值必须与数据库逐字一致；改动数据库配色时须同步本文件（及
+   `chip-pill-tokens.css` 的 5 个模块色）。
+
+   用法：本文件在 `index.css` 中排在最后（`chip-pill.css` 之后），以便 `.chip-p-*`
+   的配对文字色覆盖 `.chip-pill` 的派生值；同时仍晚于 `chip-pill-tokens.css`，
+   预设基色因此覆盖模块基色。标签 / 卡片类别元素同时挂模块类与预设类，例如
+   `class="chip-pill chip-m-item chip-p-weapon"`；`.chip-p-*` 与 `.chip-m-*`
+   特异性相同（均 0,1,0），后加载的预设色覆盖模块基色。
+   未命中预设（自定义 / 未分类 / 旧数据）时不挂 `.chip-p-*`，由模块色兜底。
+
+   设计：
+   - 全部为日本传统色的**实色底**（hex），前景取 `#ffffff` 或 `#1a1a1a`，
+     按底色明度配对以保证对比度；
+   - `--chip-base` 与 `--chip-bg` 同值，供描边 / 高亮态等派生令牌复用；
+   - 同一预设的色值在 light / dark / sage / honey 四套主题下保持不变（只有
+     `--pane` 变化），因此不写主题覆盖。
+   本文件只定义预设色令牌类，不含布局或外观声明。
+   ============================================================ */
+
+/* ---------- 世界观（6） ---------- */
+
+.chip-p-overview {
+  --chip-bg: #326467;
+  --chip-fg: #ffffff;
+  --chip-base: #326467;
+}
+
+.chip-p-geography {
+  --chip-bg: #437b7c;
+  --chip-fg: #ffffff;
+  --chip-base: #437b7c;
+}
+
+.chip-p-culture {
+  --chip-bg: #54a0a0;
+  --chip-fg: #1a1a1a;
+  --chip-base: #54a0a0;
+}
+
+.chip-p-race {
+  --chip-bg: #6db6b3;
+  --chip-fg: #1a1a1a;
+  --chip-base: #6db6b3;
+}
+
+.chip-p-economy {
+  --chip-bg: #8dc8c3;
+  --chip-fg: #1a1a1a;
+  --chip-base: #8dc8c3;
+}
+
+.chip-p-ruleset {
+  --chip-bg: #b0d8d3;
+  --chip-fg: #1a1a1a;
+  --chip-base: #b0d8d3;
+}
+
+/* ---------- 物品（6） ---------- */
+
+.chip-p-weapon {
+  --chip-bg: #583267;
+  --chip-fg: #ffffff;
+  --chip-base: #583267;
+}
+
+.chip-p-skill {
+  --chip-bg: #77428d;
+  --chip-fg: #ffffff;
+  --chip-base: #77428d;
+}
+
+.chip-p-pill {
+  --chip-bg: #9554ab;
+  --chip-fg: #ffffff;
+  --chip-base: #9554ab;
+}
+
+.chip-p-talent {
+  --chip-bg: #a574b4;
+  --chip-fg: #1a1a1a;
+  --chip-base: #a574b4;
+}
+
+.chip-p-equipment {
+  --chip-bg: #b893c2;
+  --chip-fg: #1a1a1a;
+  --chip-base: #b893c2;
+}
+
+.chip-p-material {
+  --chip-bg: #cdb5d4;
+  --chip-fg: #1a1a1a;
+  --chip-base: #cdb5d4;
+}
+
+/* ---------- 势力（6） ---------- */
+
+.chip-p-sect {
+  --chip-bg: #8a6410;
+  --chip-fg: #ffffff;
+  --chip-base: #8a6410;
+}
+
+.chip-p-family {
+  --chip-bg: #a87c10;
+  --chip-fg: #1a1a1a;
+  --chip-base: #a87c10;
+}
+
+.chip-p-dynasty {
+  --chip-bg: #f8b500;
+  --chip-fg: #1a1a1a;
+  --chip-base: #f8b500;
+}
+
+.chip-p-guild {
+  --chip-bg: #c79a2e;
+  --chip-fg: #1a1a1a;
+  --chip-base: #c79a2e;
+}
+
+.chip-p-alliance {
+  --chip-bg: #f2c85a;
+  --chip-fg: #1a1a1a;
+  --chip-base: #f2c85a;
+}
+
+.chip-p-demonic {
+  --chip-bg: #5c4300;
+  --chip-fg: #ffffff;
+  --chip-base: #5c4300;
+}
+
+/* ---------- 角色（4） ---------- */
+
+.chip-p-character-lead {
+  --chip-bg: #b7282e;
+  --chip-fg: #ffffff;
+  --chip-base: #b7282e;
+}
+
+.chip-p-character-support {
+  --chip-bg: #bf4a54;
+  --chip-fg: #ffffff;
+  --chip-base: #bf4a54;
+}
+
+.chip-p-character-extra {
+  --chip-bg: #d19fa7;
+  --chip-fg: #1a1a1a;
+  --chip-base: #d19fa7;
+}
+
+.chip-p-character-villain {
+  --chip-bg: #772237;
+  --chip-fg: #ffffff;
+  --chip-base: #772237;
+}
+
+/* ---------- 境界体系（1） ---------- */
+
+.chip-p-power_system {
+  --chip-bg: #1e50a2;
+  --chip-fg: #ffffff;
+  --chip-base: #1e50a2;
+}

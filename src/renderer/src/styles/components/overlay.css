@@ -1,0 +1,287 @@
+/* ============================================================
+   通用组件样式：浮层 / 导航（下拉菜单、侧边抽屉）
+   设计语言参照 template/index.html：
+   - 菜单：.st-popup / .st-popup-item / .check（--pane + --sh-popup + --r-lg）
+   - 抽屉：.book-drawer + .drawer-mask（--pane + --sh-float + --overlay-mask + blur(2px)）
+   颜色全部取自 theme.css 令牌；品牌色半透明底用 color-mix 从变量派生，
+   不使用 html.sage / html.honey，也不硬编码品牌色，保证 4 主题通用。
+   前缀 wf-：根 wf-dropdown / wf-drawer；元素 __*；变体 --*；状态 is-*。
+   ============================================================ */
+
+/* ---------- Dropdown 下拉菜单 ----------
+   原型：.st-popup（--pane 面板）/ .st-popup-item（悬停 --soft）/ .check（勾选）。 */
+.wf-dropdown {
+  position: relative;
+  display: inline-flex;
+  max-width: 100%;
+}
+
+.wf-dropdown.is-disabled {
+  cursor: not-allowed;
+}
+
+.wf-dropdown__trigger {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.wf-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 60;
+  min-width: 160px;
+  max-height: 280px;
+  padding: 5px;
+  overflow-y: auto;
+  background: var(--pane);
+  border-radius: var(--r-lg);
+  box-shadow:
+    var(--sh-popup),
+    0 0 0 1px var(--line);
+  animation: wf-dropdown-in 0.14s var(--ease) both;
+}
+
+.wf-dropdown__menu--start {
+  left: 0;
+}
+
+.wf-dropdown__menu--end {
+  right: 0;
+}
+
+.wf-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--r-xs);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.1s var(--ease),
+    color 0.1s var(--ease);
+}
+
+.wf-dropdown__item:hover,
+.wf-dropdown__item.is-active {
+  color: var(--text);
+  background: var(--soft-hover-solid);
+}
+
+.wf-dropdown__item.is-checked {
+  color: var(--brand);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+.wf-dropdown__item.is-disabled {
+  color: var(--text-mute);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.wf-dropdown__item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 55%, transparent);
+  outline-offset: -2px;
+}
+
+.wf-dropdown__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+}
+
+.wf-dropdown__icon svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.wf-dropdown__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wf-dropdown__check {
+  flex: none;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--brand);
+  opacity: 0;
+}
+
+.wf-dropdown__item.is-checked .wf-dropdown__check {
+  opacity: 1;
+}
+
+.wf-dropdown__sep {
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--line);
+}
+
+/* ---------- Drawer 侧边抽屉 ----------
+   原型：.drawer-mask（遮罩 + 模糊）/ .book-drawer（右侧 400px + --pane + 左侧圆角）。
+   收敛为通用左右两侧抽屉：遮罩铺满视口，面板贴边滑入。 */
+.wf-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.wf-drawer__mask {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay-mask);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: wf-overlay-fade 0.2s var(--ease) both;
+}
+
+.wf-drawer__panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  width: 400px;
+  max-width: 90vw;
+  overflow: hidden;
+  background: var(--pane);
+  box-shadow: var(--sh-float), 0 0 0 1px var(--line);
+}
+
+.wf-drawer__panel--right {
+  right: 0;
+  border-top-left-radius: var(--r-lg);
+  border-bottom-left-radius: var(--r-lg);
+  animation: wf-drawer-in-right 0.32s var(--ease) both;
+}
+
+.wf-drawer__panel--left {
+  left: 0;
+  border-top-right-radius: var(--r-lg);
+  border-bottom-right-radius: var(--r-lg);
+  animation: wf-drawer-in-left 0.32s var(--ease) both;
+}
+
+.wf-drawer__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px 12px;
+}
+
+.wf-drawer__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.wf-drawer__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-xs);
+  font-size: 15px;
+  line-height: 1;
+  color: var(--text-dim);
+  transition:
+    background 0.1s var(--ease),
+    color 0.1s var(--ease);
+}
+
+.wf-drawer__close:hover {
+  background: var(--soft-solid);
+  color: var(--text);
+}
+
+.wf-drawer__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 20px 16px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.wf-drawer__foot {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid var(--line);
+}
+
+/* ---------- 动画 ---------- */
+@keyframes wf-overlay-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes wf-drawer-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes wf-drawer-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes wf-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   无障碍：尊重系统「减少动态效果」
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .wf-dropdown__item,
+  .wf-drawer__close {
+    transition: none;
+  }
+
+  .wf-dropdown__menu,
+  .wf-drawer__mask,
+  .wf-drawer__panel--right,
+  .wf-drawer__panel--left {
+    animation: none;
+  }
+}

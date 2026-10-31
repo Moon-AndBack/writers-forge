@@ -1,0 +1,38 @@
+/* ============================================================
+   写作视图 — 剧情（plot）
+   ------------------------------------------------------------------
+   左栏剧情线列表 + 中栏纵向时间轴 + 右栏节点正文富文本编辑器
+   （剧情模块右栏可编辑；章节「剧情」页签与大纲模块右栏仍为只读列表）。
+   设计参照 template/storyline.html（只读原型），但：
+   - 一律使用 theme.css 设计令牌与 color-mix，禁止硬编码原型色值；
+   - hover 反馈遵循 AGENTS.md §8：**禁止 transform 位移 / 缩放**，
+     卡片改为品牌色边缘光晕（描边环 + 外发光）+ 颜色 / 阴影过渡；
+   - 状态类沿用 .is-active / .is-selected（对齐项目既有面板）。
+
+   按 AGENTS.md §3（单文件 ≤500 行）拆分为下列子文件，本文件仅作聚合入口。
+   导入顺序 = 搬移前的源序（左栏 → 中栏骨架 → 中栏舞台 → 右栏 → 独立
+   时间线 → 弹窗 → 响应式），保证级联结果与拆分前逐段一致。
+   ============================================================ */
+
+@import './writer-plot-lines.css';
+@import './writer-plot-timeline.css';
+@import './writer-plot-stage.css';
+@import './writer-plot-editor.css';
+@import './writer-plot-timeline-standalone.css';
+@import './writer-plot-dialogs.css';
+
+/* ============================================================
+   响应式（窄窗收窄时间列 / 卡片）
+   ============================================================ */
+@media (max-width: 860px) {
+  .plot-timeline {
+    --plot-col-time: 68px;
+    --plot-col-node: 42px;
+    --plot-card-w: 100%;
+  }
+
+  .plot-char-block {
+    flex-basis: 100%;
+    padding-top: 8px;
+  }
+}

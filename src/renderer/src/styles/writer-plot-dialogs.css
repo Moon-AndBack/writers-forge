@@ -1,0 +1,72 @@
+/* ============================================================
+   写作视图 · 剧情（plot）— 新建剧情线 / 节点弹窗
+   ------------------------------------------------------------------
+   自 `writer-plot.css` 原样搬移（保持单文件 ≤500 行，§3）。
+   新建剧情线弹窗（名称 / 类型 / 颜色）、节点弹窗（时间三件套 + 标题）、颜色单选网格。
+   ============================================================ */
+
+/* ============================================================
+   新建剧情线弹窗（三字段：名称 / 类型 / 颜色）
+   ============================================================ */
+.plot-line-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 节点弹窗（时间三件套 + 标题）：字段纵向排布；时间描述 / 标题各占一行，
+   仅「纪元 + 年份」在 `.plot-time-row` 内并排一行。 */
+.plot-node-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 时间行：纪元 Select 与年份 Input 同一行并排（Select 定宽、Input 吃满余宽）。
+   两者基类 `.wf-select` / `.wf-input` 均为 `display: block; width: 100%`，
+   无此行内宽度分配时会各自占满一行（即原「上下两行」形态）。 */
+.plot-node-dialog .plot-time-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plot-node-dialog .plot-time-row > .wf-select {
+  flex: 0 0 118px;
+}
+
+.plot-node-dialog .plot-time-row > .wf-input {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* 颜色单选：8 列两行 16 色圆点；hover / 选中仅描边环 + 自身色光晕（无位移 / 缩放）。 */
+.plot-color-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+
+.plot-color-option {
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  cursor: pointer;
+  transition:
+    border-color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease);
+}
+
+.plot-color-option:hover {
+  box-shadow:
+    0 0 0 2px var(--pane),
+    0 0 0 4px currentColor;
+}
+
+.plot-color-option.is-active {
+  border-color: var(--pane);
+  box-shadow:
+    0 0 0 2px var(--pane),
+    0 0 0 4px currentColor;
+}

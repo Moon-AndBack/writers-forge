@@ -1,0 +1,200 @@
+/* ============================================================
+   写作视图 · 左栏 — 章折叠与章行
+   ------------------------------------------------------------------
+   自 `writer-side.css` 原样搬移（保持单文件 ≤500 行，§3）。
+   卷内折叠容器（grid-template-rows）、章行、章名 / 草稿徽标 / 特殊章、
+   章操作组、拖拽把手与拖拽占位线。
+   沿用 writer-side-volumes.css 定义的卷头结构与 `.row-act` 基类。
+   ============================================================ */
+
+.chapters {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s var(--ease);
+}
+
+.vol.is-open .chapters {
+  grid-template-rows: 1fr;
+}
+
+.chapters-inner {
+  overflow: hidden;
+}
+
+.chapters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0 4px;
+}
+
+.chapter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--r-xs);
+  cursor: pointer;
+  transition: background 0.1s var(--ease);
+}
+
+/* 章行进场：行挂载时淡入 + 8px 上浮（motion.css 的 `wf-enter-up`）。
+   **只加 animation，不动本文件的既有 transition**（§8 同理：行 hover 仅底色过渡）。
+   fill-mode 取 backwards 的硬性理由：`.chapter.is-dragging` 用 opacity: 0.45 表达
+   拖拽态，若取 both，动画结束后仍持续供给 opacity: 1，会把拖拽半透明效果压掉。
+   backwards 在动画区间结束后不再介入，状态类照常生效。
+   触发时机：章行即使所在卷折叠也常驻 DOM（`.chapters` 用 grid-template-rows 0fr
+   收起），故不会在展开 / 收起卷时重播；实际可见的进场是「面板挂载一次」与
+   「新建章后该行挂载」。拖拽占位线 `.drop-line` 不参与进场，避免每次拖拽重放。 */
+.chapter {
+  animation: wf-enter-up var(--dur-base) var(--ease-out) backwards;
+}
+
+.chapter:hover {
+  background: var(--soft-hover-solid);
+}
+
+.chapter.is-active {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+/* 选中态（600 + 品牌色）挂在行容器，前后缀两段同时生效。 */
+.chapter.is-active .chapter-prefix,
+.chapter.is-active .chapter-name {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.chapter-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--text-mute);
+  opacity: 0.5;
+  transition:
+    background 0.12s var(--ease),
+    opacity 0.12s var(--ease);
+}
+
+.chapter.is-active .chapter-dot {
+  background: var(--brand);
+  opacity: 1;
+}
+
+/* 章行前缀段「第X章」：默认字体、不斜体（与卷行「卷X」同口径）。 */
+.chapter-prefix {
+  flex: none;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.chapter-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  /* 名段溢出用右缘渐隐遮罩（而非 ellipsis 硬截断）：口径同 .vol-name——
+     mask 常驻，未溢出时末 14px 是行尾空白无副作用；溢出时末尾自然淡出。
+     前缀段（.chapter-prefix）不渐隐，保持完整可读。 */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent 100%);
+}
+
+/* 草稿徽标：JSX 显式渲染（.chapter-draft），语义不变（仍标识草稿态）。
+   位置改为**贴行右缘**（margin-left:auto，跟随悬浮操作按钮所在侧），不再紧贴
+   章名文字侵占名段空间；hover 时与操作按钮**互斥**（隐藏徽标、显示按钮），
+   与卷行「hover 隐藏计数」同一显隐模式。 */
+.chapter-draft {
+  margin-left: auto;
+  flex: none;
+  padding: 1px 6px;
+  border-radius: var(--r-xs);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 16%, var(--pane));
+}
+
+/* hover 时隐藏草稿徽标（让位给章操作按钮，防重叠）；徽标语义保留。 */
+.chapter:hover .chapter-draft {
+  visibility: hidden;
+}
+
+/* 特殊章（序章 / 番外等）：整名走 .chapter-name（默认字体，**不用斜体区分**），
+   仅字色略深 + 圆点品牌色，不额外占位（保持行高一致）。 */
+.chapter.is-special .chapter-name {
+  color: var(--text);
+}
+
+.chapter.is-special .chapter-dot {
+  background: var(--brand);
+  opacity: 0.7;
+}
+
+/* 章行圆点分隔符「●」（v2）：前缀段（「第X章」/ 特殊章前段）与名段之间，
+   纯装饰小圆点（区别于行首的 .chapter-dot 状态点）。
+   两侧 margin -3px 收紧：口径同 .vol-sep（gap 10px → 有效 ≈7px）。 */
+.chapter-sep {
+  flex: none;
+  font-size: 6px;
+  line-height: 1;
+  color: var(--text-mute);
+  opacity: 0.7;
+  margin: 0 -3px;
+}
+
+/* 拖拽把手（v2）：行尾 hover 显示；pointer 拖拽（同 pin 段内），抓取光标。
+   绝对定位悬浮于行右缘（right:4px，同章操作按钮的悬浮模式）：
+   非 hover 不占流内空间，章行右缘整段留给草稿徽标 / 名段渐隐。 */
+.chapter-grip {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 22px;
+  color: var(--text-mute);
+  cursor: grab;
+  touch-action: none;
+  visibility: hidden;
+  opacity: 0;
+  /* 淡入与行 hover 背景同步（口径同 .chapter-actions）；移出仍即时隐藏。 */
+  transition:
+    color 0.1s var(--ease),
+    opacity 0.1s var(--ease);
+}
+
+.chapter:hover .chapter-grip,
+.chapter-grip:focus-visible {
+  visibility: visible;
+  opacity: 1;
+}
+
+.chapter-grip:hover {
+  color: var(--brand);
+}
+
+/* 拖拽中：被拖行半透明 + 品牌浅底提示。 */
+.chapter.is-dragging {
+  opacity: 0.45;
+  background: color-mix(in srgb, var(--brand) 8%, var(--pane));
+}
+
+/* 拖拽占位线（v2）：段内插入缝指示，品牌色细线横贯行位。 */
+.drop-line {
+  height: 2px;
+  margin: 0 8px;
+  border-radius: 1px;
+  background: var(--brand);
+  opacity: 0.8;
+}

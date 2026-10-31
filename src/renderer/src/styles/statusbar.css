@@ -1,0 +1,95 @@
+/* ============================================================
+   状态栏（容器 / 分区层）
+   ------------------------------------------------------------------
+   自 shell.css 迁入状态栏基础段（.statusbar / .statusbar::before /
+   .st-item / .st-item b / .st-dot / .st-spacer），并自
+   statusbar-widgets.css 收拢分区容器与页面级内边距规则（.st-right /
+   .st-leading / .statusbar.is-writer）。本文件只承载状态栏「容器 /
+   分区层」；元素级小部件（图钉 / 排版胶囊 / 弹窗 / 缩放 / 元信息胶囊 /
+   保存状态）留在 statusbar-widgets.css。导入顺序由 shell/statusBar.tsx
+   保证：本文件（基础层）先于 statusbar-widgets.css（小部件层）。
+   仅使用 theme.css 令牌。
+   ============================================================ */
+
+/* ---------- 状态栏（背景透明） ----------
+   注意：不可加 overflow:hidden——排版胶囊弹窗（.st-popup）向上弹出，
+   会被裁剪（原型亦无此属性）。 */
+.statusbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 36px;
+  padding: 0 15px;
+  font-size: 11px;
+  color: var(--text-mute);
+  background: transparent;
+  position: relative;
+}
+
+.statusbar::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 80%, transparent);
+}
+
+.st-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.st-item b {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.st-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+.st-spacer {
+  flex: 1;
+}
+
+/* ---------- 状态栏右侧分组（.st-right，原型 L734） ---------- */
+.st-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ---------- 状态栏最左分组（.st-leading：图钉） ---------- */
+.st-leading {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+}
+
+/* ---------- 状态栏按页面区分的内边距 ----------
+   基础 padding（0 14px）由上方 .statusbar 提供，服务书籍页等其它页面。
+   写作页由渲染层按路由加 `.is-writer` 修饰类（App.tsx，`/write/*` 前缀），
+   比 :has(.st-leading) 更稳：不受插槽是否渲染 / 是否为空 div 影响。
+   写作页默认：右 8 / 左 20。 */
+.statusbar.is-writer {
+  padding: 0 8px 0 20px;
+}
+
+/* 图钉激活（固定）态：左内边距收窄到 8px。
+   真源为 body.act-pinned（activityPinnedProvider.tsx 投影）。 */
+body.act-pinned .statusbar.is-writer {
+  padding-left: 8px;
+}

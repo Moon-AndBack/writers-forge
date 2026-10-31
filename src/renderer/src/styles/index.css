@@ -1,0 +1,24 @@
+/* 样式入口：字体资源 → 主题令牌 → 实体高亮令牌 → 胶囊配色令牌
+   → 基础重置 → 动效基础设施 → 既有组件/布局样式 → 胶囊基类 → 预设配色（置于末尾，必须最后加载）
+   --entity-* 在此全局引入：胶囊令牌的默认基色 --chip-base 依赖它，
+   不再隐式依赖写作域的 entity-highlight.css 加载链。
+   覆盖关系一（基色）：`.chip-m-*`（模块色系）与 `.chip-p-*`（23 预设子类）特异性相同
+   （均 0,1,0），预设色恒排在 chip-pill-tokens.css 之后，故预设色才能覆盖模块基色；
+   主题兜底规则用 `:where()` 压到同级，保证预设色在各主题下依然各自生效。
+   覆盖关系二（文字色）：chip-pill.css 的 `.chip-pill` 就地派生 `--chip-fg`
+   （--chip-base 按 --chip-fg-ratio 向 --text 收敛），与 `.chip-p-*` 的配对文字色
+   同为 (0,1,0) 特异性，同元素上后加载者胜。故 chip-preset-colors.css 必须排在
+   chip-pill.css 之后（文件末尾），让预设色的配对文字色覆盖派生色；否则首帧（注入前）
+   实色底配的是低对比派生色，会闪烁且可读性下降。 */
+@import './fonts.css';
+@import './theme.css';
+@import './entity-highlight-tokens.css';
+@import './chip-pill-tokens.css';
+@import './base.css';
+/* 统一动效基础设施（令牌已在 theme.css；此处只有新增的进场 keyframes 与工具类）。
+   置于基础重置之后、既有组件 / 布局样式之前：工具类均为单类选择器且当前无元素挂载，
+   排在前面可让任何业务样式按「后加载者胜」正常覆盖，不夺走既有规则的优先级。 */
+@import './components/motion.css';
+@import './global.css';
+@import './chip-pill.css';
+@import './chip-preset-colors.css';

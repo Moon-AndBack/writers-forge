@@ -1,0 +1,14 @@
+/* ============================================================
+   写作视图 — 左栏（章节树 / 列表）
+   ------------------------------------------------------------------
+   对应 template/index.html 的 .vol* / .chapter / .add-chapter / .list-item 组。
+   半透明底（--soft / rgba 品牌底）统一改不透明：--soft-solid /
+   color-mix(in srgb, var(--brand) N%, var(--pane))。
+
+   按 AGENTS.md §3（单文件 ≤500 行）拆分为下列子文件，本文件仅作聚合入口。
+   导入顺序 = 搬移前的源序（卷行 → 章行 → 面板与列表），保证级联与拆分前一致。
+   ============================================================ */
+
+@import './writer-side-volumes.css';
+@import './writer-side-chapters.css';
+@import './writer-side-panels.css';

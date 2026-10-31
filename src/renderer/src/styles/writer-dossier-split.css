@@ -1,0 +1,149 @@
+/* ============================================================
+   设定档案右栏 · 上下两张卡片（上段子类字段 + 下段富文本正文）+ 底部保存条
+   ------------------------------------------------------------------
+   上段只放子类表内字段（`SubtypeFieldsPanel`）：世界观 / 物品功法 / 势力各自的
+   专属字段组、物品预设子类的品阶 / 档位、自定义子类的键值字段；名称 / 类别 / 别名 /
+   标签 / 关系均不在右栏出现。下段仍是富文本正文编辑器。
+   两段各为独立卡片（`--soft-solid` 底色 + `--line` 描边 + `--r-lg` 圆角），间距一致；
+   底部保存条为第三张独立卡片，只承载手动保存按钮（批 B 起右栏改为手动保存）。
+   本文件只承载分栏布局与正文编辑器容器样式；通用字段 / 关系 / 卡片样式仍在
+   `writer-dossier.css`。
+   颜色一律取 theme.css 令牌；无 transform（§8 卡片 / 按钮 hover 仅颜色 / 描边 / 阴影）。
+   ============================================================ */
+
+/* 右栏五域视图（含境界体系）：`.rp-body` 改为纵向 flex 容器，令上下分栏撑满可用高度、
+   由内部两段各自滚动（与剧情视图 `[data-view='plot']` 同口径）。
+   注意：新增 dossier 域时必须同步把其 `data-view` 加进本白名单，否则该域右栏正文
+   会塌成内容高度（`.dossier-detail--split` 的 `flex: 1` 在非 flex 父级上失效）。 */
+.rp-view[data-view='worldview'] .rp-body,
+.rp-view[data-view='characters'] .rp-body,
+.rp-view[data-view='factions'] .rp-body,
+.rp-view[data-view='items'] .rp-body,
+.rp-view[data-view='power_system'] .rp-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 上下分栏根（+ 底部保存条）：上段字段卡 + 下段正文卡；保存条为分栏的兄弟节点
+   （见 `.dossier-save-bar`），故本根只占剩余高度、不再写死 `height: 100%`
+   （否则与保存条叠加会溢出）。 */
+.dossier-detail--split {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  gap: 8px;
+}
+
+/* 上段卡片：只放子类专属字段。高度随内容自适应，超过上限时自身滚动，
+   保证下段正文始终有可用高度。窄窗口下由 `min-width: 0` + 子项
+   `overflow-wrap` 收口，不横向溢出。 */
+.dossier-fields-panel {
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 0;
+  max-height: 55%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 12px;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+/* 子类字段栈：品阶档位 / 预设字段组 / 自定义键值，统一 14px 节间距
+   （与 `.dossier-detail` 的字段间距同口径）。 */
+.dossier-subtype-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 下段卡片：富文本正文，撑满剩余高度；圆角处裁掉内部滚动内容。 */
+.dossier-body-panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+/* 底部保存条：独立底色卡片（与上方字段卡 / 正文卡区分），固定高度不参与压缩。
+   内边距 / 底色 / 描边 / 圆角与上方两卡同令牌（--soft-solid + --line + --r-lg）；
+   `margin-top` 补足与正文卡的 8px 间距（`.rp-body` 本身无 gap）。
+   颜色一律取 theme.css 令牌；无 transform（§8）。 */
+.dossier-save-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+/* 正文滚动容器：正文独立内滚（`.rp-body` 不再滚动）；工具栏已移至标题栏
+   （聚焦编辑时由 `DossierActivityActions` 渲染），正文区上方不再有工具栏行。 */
+.dossier-body-editor {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* 版心：与 `.editor-inner` / 剧情正文同口径（--page-width + margin auto 居中），
+   窄栏左右内衬按百分比退让，宽栏封顶 34px。正文排版复用全局 `.doc-body`。 */
+.dossier-body-editor .doc-body {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: var(--page-width);
+  margin: 0 auto;
+  padding: 16px clamp(10px, 5%, 34px) 28px;
+}
+
+.dossier-body-editor .doc-body .ProseMirror {
+  flex: 1 0 auto;
+}
+
+/* 空正文占位（与章节 / 大纲 / 剧情同款 ::before 方案；文案经 `--editor-placeholder`
+   由 React 传入）。绝对定位脱离行内流，不推动空段落光标。 */
+.dossier-body-editor .doc-body.is-empty .ProseMirror > p:first-child::before {
+  content: var(--editor-placeholder);
+  position: absolute;
+  left: calc(10px + 2em);
+  right: 8px;
+  top: 2px;
+  text-indent: 0;
+  font-style: italic;
+  color: var(--text-mute);
+  opacity: 0.85;
+  pointer-events: none;
+  user-select: none;
+  animation: editor-placeholder-in 0.6s var(--ease) both;
+}
+
+/* ============================================================
+   切换条目进场（点卡片后详情随 `key={detail.id}` 重建 → 挂动画即重播）
+   ------------------------------------------------------------------
+   表单返回 Fragment 双子节点（`.dossier-detail--split` + `.dossier-save-bar`），
+   两者各挂一次、用 `:is()` 合并覆盖；**不加包裹层**（会破坏 `flex: 1` 撑高链）。
+   作用域取 `.rp-body--no-head`：它只出现在五域右栏（writer.css），无需枚举五个
+   `data-view`，也不会误伤中栏卡片 / 弹窗里的同名节点。
+   时长 --dur-base、缓动 --ease（近线性；--ease-out 前段过快，肉眼等同瞬切）；
+   fill-mode 取 backwards，动画结束不残留 transform / opacity。
+   减动效由 base.css 的 prefers-reduced-motion 全局兜底，此处不重复写守卫。 */
+.rp-body--no-head > :is(.dossier-detail--split, .dossier-save-bar) {
+  animation: wf-enter-up var(--dur-base) var(--ease) backwards;
+}

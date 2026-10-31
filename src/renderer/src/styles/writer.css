@@ -1,0 +1,472 @@
+/* ============================================================
+   写作视图（writer-view）— 布局骨架
+   ------------------------------------------------------------------
+   1:1 移植 template/index.html 的三栏规则（.writer-view/.workspace/
+   .splitter/.sidepane/.editor-pane/.rightpane/面板切换/断点）。
+   按栏拆分的面板细节见 @import 的三个子文件。
+   遵循本项目「组件填充不透明」约定：底色取 --pane / --soft*-solid，
+   color-mix(... transparent) 仅用于阴影 / 描边；不使用 backdrop-filter。
+   令牌与 color-mix 四主题兼容，禁止 html.sage / html.honey。
+   ============================================================ */
+
+@import './writer-side.css';
+@import './writer-outline.css';
+@import './writer-editor.css';
+@import './writer-outline-blocks.css';
+@import './writer-right-panels.css';
+@import './writer-right-outline.css';
+@import './writer-ai.css';
+@import './writer-plot.css';
+@import './writer-dossier.css';
+@import './writer-dossier-relation.css';
+@import './writer-dossier-card.css';
+@import './writer-dossier-split.css';
+@import './writer-trash.css';
+@import './writer-search.css';
+@import './entity-highlight.css';
+
+/* ---------- 页面外壳 ----------
+   `.app-view` 在本项目仅为路由标记类（无定位样式），故需自带
+   flex 列布局 + 高度，与 .bookshelf-view 同范式。 */
+.writer-view {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px 6px 20px;
+  transition: padding-left 0.32s var(--ease);
+}
+
+.workspace {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 0;
+  /* 为三栏向外扩 1px 的描边环留出可见空间，避免顶部被 .app-viewport 的 overflow 裁掉 */
+  padding-top: 1px;
+}
+
+/* ---------- 分隔条 ---------- */
+.splitter {
+  flex: none;
+  width: 8px;
+  position: relative;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 5;
+  /* 与 .rightpane 的 width 过渡同档（--dur-slow），右栏展开时分隔条不错拍。 */
+  transition: width var(--dur-slow) var(--ease);
+}
+
+.splitter::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 36px;
+  border-radius: 99px;
+  background: transparent;
+  transition:
+    background 0.16s var(--ease),
+    height 0.18s var(--ease);
+}
+
+.splitter:hover::before,
+.splitter.is-dragging::before,
+.splitter:focus-visible::before {
+  background: var(--brand);
+  height: 52px;
+}
+
+/* 上下分栏的水平分隔条：8px 高命中区与侧栏同宽，中央圆条横置。
+   与 vertical 共用拖拽逻辑，只换轴 / 光标 / 圆条方向（AGENTS §9 无平行实现）。 */
+.splitter-horizontal {
+  width: auto;
+  height: 8px;
+  cursor: row-resize;
+  transition: height var(--dur-slow) var(--ease);
+}
+
+.splitter-horizontal::before {
+  width: 36px;
+  height: 3px;
+  transition:
+    background 0.16s var(--ease),
+    width 0.18s var(--ease);
+}
+
+.splitter-horizontal:hover::before,
+.splitter-horizontal.is-dragging::before,
+.splitter-horizontal:focus-visible::before {
+  width: 52px;
+  height: 3px;
+}
+
+/* 键盘聚焦：不画默认矩形焦点环，改由品牌色圆条提示（与 hover 同口径）。 */
+.splitter:focus-visible {
+  outline: none;
+}
+
+.splitter.is-hidden {
+  width: 0;
+  pointer-events: none;
+}
+
+.splitter-horizontal.is-hidden {
+  width: auto;
+  height: 0;
+}
+
+body.is-resizing,
+body.is-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.is-resizing-y,
+body.is-resizing-y * {
+  cursor: row-resize !important;
+}
+
+/* 拖拽期间禁用宽度过渡：三栏与分隔条在拖拽时不做 transition，
+   避免每次宽度变更都走 --dur-slow（240ms）的缓动，造成拖拽「迟滞 / 拖影」；
+   拖拽结束移除 body.is-resizing 后恢复原过渡。 */
+body.is-resizing .sidepane,
+body.is-resizing .rightpane,
+body.is-resizing .splitter {
+  transition: none;
+}
+
+/* ---------- 三栏 ----------
+   三栏底色 / 投影随主题令牌变化，但**不加过渡**：主题切换整体瞬变，见 theme.css
+   「主题切换不做过渡」。若只让三栏底色渐变而栏内文字、描边、图标瞬变，会出现
+   「同一块面板一部分动、一部分不动」的割裂；三栏的过渡仅保留布局与显隐
+   （width / min-width / margin / opacity）。 */
+.sidepane {
+  flex: none;
+  width: 280px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--pane);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-sm), var(--panel-ring);
+  overflow: hidden;
+  min-width: 180px;
+  max-width: 480px;
+  transition:
+    width var(--dur-slow) var(--ease),
+    min-width var(--dur-slow) var(--ease),
+    opacity var(--dur-base) var(--ease),
+    margin var(--dur-slow) var(--ease);
+}
+
+.sidepane.is-auto-hidden {
+  width: 0 !important;
+  min-width: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.editor-pane {
+  flex: 1;
+  min-width: 280px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative; /* 提供包含块：章节搜索浮窗锚定中栏右上（.ep-search 绝对定位） */
+  background: var(--pane);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-sm), var(--panel-ring);
+  overflow: hidden;
+  /* 无 transition：原有两条（background / box-shadow）只服务于主题切换，
+     已随「主题切换整体瞬变」一并移除；本栏无布局 / 显隐过渡需求。 */
+}
+
+.rightpane {
+  flex: none;
+  width: 550px; /* 与 Writer.tsx 的 RIGHT_DEFAULT 同步（内联 width 为真源，此处兜底） */
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--pane);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-sm), var(--panel-ring);
+  overflow: hidden;
+  min-width: 450px;
+  max-width: 850px;
+  /* min-width 必须与 width 同步插值：展开时二者都从 0 起插（min-width 450·p /
+     width 550·p），全程 min-width ≤ width，钳位不会把 width 卡在下限上
+     （否则前 ~73% 视觉僵停、末段才滑出）。 */
+  transition:
+    width var(--dur-slow) var(--ease),
+    min-width var(--dur-slow) var(--ease),
+    opacity var(--dur-base) var(--ease);
+}
+
+.rightpane.is-hidden {
+  width: 0 !important;
+  min-width: 0;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+  margin: 0;
+}
+
+/* 深色三栏面板：把各栏 1px 描边环由 --panel-ring（白 6%）提亮到白 14%，
+   让三栏在深色桌面底上边界更清晰。三栏基线投影同为 var(--sh-sm)，
+   故合并为一条规则；保留原投影，只替换描边环，固定与悬浮活动栏状态均生效。 */
+[data-theme='dark'] .sidepane,
+[data-theme='dark'] .editor-pane,
+[data-theme='dark'] .rightpane {
+  box-shadow:
+    var(--sh-sm),
+    0 0 0 1px color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+/* ---------- 面板切换（6 模块共用） ---------- */
+.sp-panel,
+.ep-view,
+.rp-view {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 进场统一取 motion.css 的 wf-enter-up（淡入 + translateY(8px→0)）与时长令牌：
+   面板切换属「大块内容替换」，取 --dur-slow（240ms）上限内偏慢的一档，
+   与原先 0.32s 观感接近又不超出 120–240ms 区间。 */
+.sp-panel.is-active,
+.ep-view.is-active,
+.rp-view.is-active {
+  display: flex;
+  /* 大块面板替换：--ease（近线性）而非 --ease-out —— 后者前 46ms 就走完 66%，
+     240ms 的有效可感知段只剩 ~80ms，肉眼等同瞬切。
+     fill-mode 取 backwards：避免动画结束后 transform 常驻，为面板永久生成包含块。 */
+  animation: wf-enter-up var(--dur-slow) var(--ease) backwards;
+}
+
+/* ---------- 侧栏两层：栏容器内衬 + 栏内区块 ----------
+   侧栏元素（栏容器内衬）：`.pane-body`（左栏）/ `.rp-body`（右栏）为栏容器提供内衬，
+   统一四边 8px，使左右两栏内容对齐。
+   侧栏内元素（栏内块）：通用类 `.pane-region`（--soft-solid 圆角底 + 6px 内衬，
+   见 styles/components/surface.css），各域只补布局、不再重复底座。 */
+.pane-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+  margin: 0;
+}
+
+.editor-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* 常驻滚动条槽：内容高度跨过一屏时纵向滚动条的显隐会让内容宽 ±12px，
+     在定值轨道网格的列数阈值附近可能再触发一次列数 / 居中位移。章节视图本就
+     已单独启用（writer-editor-head.css），此处统一到全部模块视图，消除该类
+     宽度反馈。代价：无滚动条的视图版心永久窄 12px（与章节视图一致）。 */
+  scrollbar-gutter: stable;
+  padding: 20px 0 44px;
+}
+
+/* 正文滚动区（章节视图）：上下对称留白 20px（> 14px 渐隐带），
+   使首行 / 末行文字完全落在渐隐带之外、不被淡化；mask 仍贴滚动区上下缘生效。
+   其它 5 个模块视图沿用上方内边距（20px 0 44px）。 */
+.ep-view[data-view='chapters'] .editor-scroll {
+  padding: 20px 0;
+}
+
+/* 正文滚动区：上下缘渐隐（mask）——文字接近滚动区上 / 下缘时淡出。
+   渐隐带 14px，小于行高（--doc-line: 2 × 16px = 32px），保证不裁掉
+   正常阅读区的可读性。
+   （聚焦框 / 覆盖层已移除，本节保留滚动渐隐观感，仅为章节视图启用，
+   避免影响其它视图滚动区的滚动行为；上下 padding 20px 后首 / 末行在渐隐带内缘之外。） */
+.ep-view[data-view='chapters'] .editor-scroll {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 14px,
+    black calc(100% - 14px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black 14px,
+    black calc(100% - 14px),
+    transparent 100%
+  );
+}
+
+.rp-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* 右栏栏容器内衬：对齐左栏 `.pane-body` 四边 8px。 */
+  padding: 8px;
+}
+
+/* 无面板头的视图（当前仅设定档案五域，标题由中栏承载）：顶部内衬补 4px，
+   避免首张详情卡直接贴住栏顶；其余视图沿用基准 8px。 */
+.rp-body--no-head {
+  padding-top: 12px;
+}
+
+/* ---------- 面板标题 ---------- */
+.pane-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 14px 8px;
+}
+
+.pane-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.pane-head .spacer {
+  margin-left: auto;
+}
+
+/* ---------- 迷你按钮 / 分段（不透明底） ---------- */
+.mini-btn {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-xs);
+  color: var(--text-dim);
+  transition:
+    background 0.1s var(--ease),
+    color 0.1s var(--ease),
+    transform 0.08s var(--ease);
+}
+
+.mini-btn:hover {
+  background: var(--soft-hover-solid);
+  color: var(--text);
+}
+
+.mini-btn:active {
+  background: var(--soft-press-solid);
+  transform: scale(0.96);
+}
+
+.mini-btn > svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mini-seg {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--soft-solid);
+  border-radius: 6px;
+}
+
+.mini-seg button {
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim);
+  transition:
+    background 0.1s var(--ease),
+    color 0.1s var(--ease),
+    box-shadow 0.1s var(--ease);
+}
+
+.mini-seg button.is-active {
+  background: var(--pane);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--sh-xs);
+}
+
+/* ---------- 模块占位视图（剧情 / 角色 / 势力 / 物品功法 / 时间线 / 伏笔 / 灵感） ---------- */
+.placeholder-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 260px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-mute);
+}
+
+.placeholder-view .placeholder-icon {
+  width: 40px;
+  height: 40px;
+  opacity: 0.35;
+}
+
+.placeholder-view .placeholder-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.placeholder-view .placeholder-desc {
+  font-size: 12px;
+  color: var(--text-mute);
+}
+
+.placeholder-view.is-compact {
+  gap: 7px;
+  min-height: 180px;
+  padding: 28px 12px;
+}
+
+.placeholder-view.is-compact .placeholder-icon {
+  width: 30px;
+  height: 30px;
+}
+
+.placeholder-view.is-compact .placeholder-title {
+  font-size: 12.5px;
+}
+
+.placeholder-view.is-compact .placeholder-desc {
+  font-size: 11px;
+}
+
+/* ---------- 断点（对齐原型） ---------- */
+/* 右栏在 ≤1240px 隐藏：默认宽 550 时，固定活动栏下中栏需 550 + 300 + 280 + 16 + 64 + 28
+   = 1238px 才保 ≥300px 余量，故取 1240px（留 2px），可见最小视口 1241px 时中栏约 303px。 */
+@media (max-width: 1240px) {
+  .rightpane {
+    display: none;
+  }
+  .splitter.splitter-right {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .sidepane {
+    display: none;
+  }
+  .splitter.splitter-left {
+    display: none;
+  }
+  .writer-view {
+    padding-left: 16px;
+  }
+  body.act-pinned .writer-view {
+    padding-left: 64px;
+  }
+}

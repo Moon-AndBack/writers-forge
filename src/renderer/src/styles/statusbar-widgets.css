@@ -1,0 +1,279 @@
+/* ============================================================
+   状态栏小部件（PinButton / TypographyControls / ZoomControls）
+   ------------------------------------------------------------------
+   1:1 对齐 template/index.html 的 .st-side-btn / .st-pill-* /
+   .st-popup* / .st-zoom*（原型 CSS L710–771），但遵循本项目
+   「组件填充不透明」约定：底色一律取 --pill-bg-solid /
+   --soft-*-solid / --pane 等不透明色，不使用 rgba 半透明底。
+   激活浅底改用 color-mix(brand 12%, var(--pane))（不透明，
+   与 .act-btn.is-active 同范式），四主题自动适配。
+   仅使用 theme.css 令牌。
+   ============================================================ */
+
+/* ---------- 图钉按钮（.st-side-btn，原型 L710–728） ---------- */
+.st-side-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 24px;
+  flex: none;
+  border-radius: var(--r-xs);
+  color: var(--text-dim);
+  background: var(--pill-bg-solid);
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s;
+}
+
+.st-side-btn:hover:not(:disabled) {
+  background: var(--pill-bg-hover-solid);
+  color: var(--text);
+}
+
+.st-side-btn:active:not(:disabled) {
+  background: var(--soft-press-solid);
+}
+
+.st-side-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* 双图标随态切换：悬浮态显示 ic-float、固定态显示 ic-pinned。
+   原型两个 svg 不同 id/class 但路径相同，此处复用同一图标组件，
+   以 first-of-type / last-of-type 实现同样的显隐效果。 */
+.st-side-btn svg:first-of-type,
+.st-side-btn svg:last-of-type {
+  display: none;
+}
+
+.st-side-btn[data-state='float'] svg:first-of-type {
+  display: block;
+}
+
+.st-side-btn[data-state='pinned'] svg:last-of-type {
+  display: block;
+}
+
+/* ★ 激活态：品牌色浅底（不透明）+ 品牌色前景（参照 .act-btn.is-active 范式） */
+.st-side-btn[data-state='pinned'] {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  color: var(--brand);
+}
+
+.st-side-btn[data-state='pinned']:active {
+  background: var(--soft-press-solid);
+}
+
+/* ---------- 排版胶囊（.st-pill-*，原型 L736–745） ---------- */
+.st-pill-wrap {
+  position: relative;
+  flex: none;
+}
+
+.st-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 4px 11px;
+  border-radius: var(--r-xs);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--pill-bg-solid);
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s;
+  white-space: nowrap;
+}
+
+.st-pill-btn:hover:not(:disabled) {
+  background: var(--pill-bg-hover-solid);
+  color: var(--text);
+}
+
+.st-pill-btn.is-open {
+  background: var(--pill-bg-hover-solid);
+  color: var(--text);
+}
+
+/* ---------- 胶囊弹窗（.st-popup*，原型 L746–763） ---------- */
+.st-popup {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 900;
+  min-width: 132px;
+  padding: 5px;
+  background: var(--pane);
+  border-radius: var(--r-lg);
+  box-shadow:
+    var(--sh-popup),
+    0 0 0 1px var(--line);
+}
+
+.st-popup-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: left;
+  white-space: nowrap;
+  transition:
+    background 0.1s var(--ease),
+    color 0.1s;
+}
+
+.st-popup-item:hover {
+  background: var(--soft-hover-solid);
+  color: var(--text);
+}
+
+.st-popup-item.is-active {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.st-popup-item .check {
+  margin-left: auto;
+  width: 12px;
+  height: 12px;
+  opacity: 0;
+  color: var(--brand);
+}
+
+.st-popup-item.is-active .check {
+  opacity: 1;
+}
+
+/* ---------- 缩放控件（.st-zoom*，原型 L764–771） ---------- */
+.st-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  flex: none;
+  padding: 2px;
+  border-radius: var(--r-xs);
+  background: var(--pill-bg-solid);
+}
+
+.st-zoom-btn {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 2px;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 600;
+  transition:
+    background 0.12s var(--ease),
+    color 0.12s;
+}
+
+.st-zoom-btn:hover:not(:disabled) {
+  background: var(--soft-hover-solid);
+  color: var(--text);
+}
+
+.st-zoom-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.st-zoom-val {
+  min-width: 42px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  user-select: none;
+}
+
+/* ---------- 状态栏元信息胶囊（.st-meta，通用） ----------
+   状态栏通用元信息胶囊：写作模块与页面级插槽（书架页等）共用。
+   起源于章节序号（编辑头「N/M」位置口径移入状态栏：位于图钉按钮右侧，
+   left 插槽首项，.st-leading 之后）。底色与状态栏按钮（.st-side-btn /
+   .st-pill-btn）一致取 --pill-bg-solid 胶囊底；纯展示项：cursor: default、
+   无 hover / active 交互（不注册任何 pointer 事件，仅静态着色），四主题经
+   令牌自适应。 */
+.st-meta {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: var(--r-xs);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--pill-bg-solid);
+  white-space: nowrap;
+  user-select: none;
+  cursor: default;
+}
+
+/* ---------- 保存状态（.st-save） ----------
+   复用 .st-dot 小圆点；圆点与文案配色随保存态切换，四主题自适应。
+   状态修饰类由 SaveStatus.tsx 按 useChapterDoc 的 status + dirty 归并给出。
+
+   布局：保存状态已从外壳状态栏移入写作页编辑器脚注（`.editor-foot` 左侧），
+   故此处不再提供状态栏内的定位 / 居中规则（原 `.statusbar.is-writer .st-save`
+   已移除）；仅保留基础盒模型与状态配色，供脚注内的实例复用。
+
+   垂直对齐：inline-flex + align-items: center 使圆点与文字在同一行盒中心
+   对齐；文字行高归一为 1，消除继承自 body 的 1.55 行高带来的行盒高度偏差，
+   使圆点垂直居中于文字。 */
+.st-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.st-save b {
+  line-height: 1;
+}
+
+.st-save.is-loading .st-dot {
+  background: var(--text-mute);
+}
+
+.st-save.is-saving .st-dot {
+  background: var(--brand);
+}
+
+.st-save.is-dirty .st-dot {
+  background: var(--warn);
+}
+
+.st-save.is-saved .st-dot {
+  background: var(--ok);
+}
+
+.st-save.is-error .st-dot {
+  background: var(--danger);
+}
+
+.st-save.is-loading b,
+.st-save.is-saving b {
+  color: var(--text-mute);
+}
+
+.st-save.is-dirty b {
+  color: var(--warn);
+}
+
+.st-save.is-saved b {
+  color: var(--ok);
+}
+
+.st-save.is-error b {
+  color: var(--danger);
+}

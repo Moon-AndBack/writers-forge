@@ -1,0 +1,175 @@
+/* ---------- 关系胶囊列表 ---------- */
+/* 关系类型胶囊配色令牌：默认取品牌 / 次级品牌 / 成功 / 警示四色。sage 主题下
+   --brand 与 --ok 同值（#4a9d5f）、honey 主题下 --brand 与 --brand-2 同色系，
+   故在这两套主题里把 subordinate 换成中性深色、并各调开 peer / belonging 一档，
+   保证四套主题下 superior / subordinate / peer / belonging 四类语义色都可辨。
+   这些令牌只供胶囊的左侧圆点与描边取用（底色 / 前景由目标实体的分类配色
+   承担：注入的 --chip-bg / --chip-fg 优先，未注入时回落
+   `chip-pill-tokens.css` 的 --chip-base / --chip-mix 浅混合底），不硬编码颜色。 */
+:root {
+  --rel-pill-superior: var(--brand);
+  --rel-pill-subordinate: var(--brand-2);
+  --rel-pill-peer: var(--ok);
+  --rel-pill-belonging: var(--warn);
+}
+
+[data-theme='sage'] {
+  --rel-pill-subordinate: var(--text-dim);
+  --rel-pill-peer: var(--danger);
+}
+
+[data-theme='honey'] {
+  --rel-pill-subordinate: var(--text-dim);
+  --rel-pill-belonging: var(--danger);
+}
+
+.dossier-rel-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dossier-rel-pill-item {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* 胶囊基于通用 Tag 类（.wf-tag / .wf-tag__label / .wf-tag__close）扩展：
+   只改圆角、配色、左侧语义圆点与操作按钮，不复制 Tag 的盒模型（§9 / 胶囊复用 chip 口径）。
+   配色口径：底色 / 前景取目标实体的模块基色与预设子类色（`.chip-m-*` / `.chip-p-*`
+   与档案卡内 chip 完全一致）；关系语义色只保留在左侧圆点与描边上。 */
+.wf-tag.dossier-rel-pill {
+  gap: 5px;
+  padding: 3px 6px 3px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--rel-pill) 45%, transparent);
+  color: var(--chip-fg);
+  /* 实色优先（同 chip-pill.css 口径）：注入命中时用 --chip-bg，未注入回落浅混合底。 */
+  background: var(--chip-bg, color-mix(in srgb, var(--chip-base) var(--chip-mix), var(--pane)));
+  transition:
+    background 0.15s var(--ease),
+    border-color 0.15s var(--ease),
+    color 0.15s var(--ease);
+}
+
+/* 左侧关系语义色圆点：Tag 无前置插槽，用伪元素排在最左（.wf-tag 已是 inline-flex）。 */
+.wf-tag.dossier-rel-pill::before {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rel-pill);
+}
+
+/* 默认中性色（低特异性，放在变体之前，便于 `.dossier-rel-pill--*` 覆盖）。 */
+.dossier-rel-pill {
+  --rel-pill: var(--text-dim);
+}
+
+/* hover：只加重语义色描边（实色底不再叠 pane，否则会变浅），底色 / 文字色不动，
+   以免破坏已校验的对比度；无位移 / 缩放（§8）。 */
+.wf-tag.dossier-rel-pill:hover {
+  border-color: color-mix(in srgb, var(--rel-pill) 70%, transparent);
+}
+
+/* 展开编辑中的胶囊加一圈语义色描边环（关系类型识别由语义色承担，无位移 / 缩放，§8）。 */
+.wf-tag.dossier-rel-pill.is-editing {
+  border-color: color-mix(in srgb, var(--rel-pill) 65%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rel-pill) 20%, transparent);
+}
+
+.dossier-rel-pill--superior {
+  --rel-pill: var(--rel-pill-superior);
+}
+
+.dossier-rel-pill--subordinate {
+  --rel-pill: var(--rel-pill-subordinate);
+}
+
+.dossier-rel-pill--peer {
+  --rel-pill: var(--rel-pill-peer);
+}
+
+.dossier-rel-pill--belonging {
+  --rel-pill: var(--rel-pill-belonging);
+}
+
+.dossier-rel-pill--neutral {
+  --rel-pill: var(--text-dim);
+}
+
+.dossier-rel-pill .wf-tag__label {
+  min-width: 0;
+}
+
+/* 展开编辑按钮：与 Tag 关闭按钮同尺寸；hover 仅换底色 / 颜色（§8）。 */
+.dossier-rel-pill__action {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 10px;
+  line-height: 1;
+  color: inherit;
+  background: color-mix(in srgb, currentColor 16%, var(--pane));
+  cursor: pointer;
+  transition:
+    background 0.15s var(--ease),
+    color 0.15s var(--ease);
+}
+
+.dossier-rel-pill__action:hover {
+  background: color-mix(in srgb, currentColor 28%, var(--pane));
+}
+
+/* 就地编辑面板：类型 / 备注（全宽，位于胶囊组下方） */
+.dossier-rel-editor {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+
+.dossier-rel-incoming {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* 关系区说明文案（「被引用」区可改可删说明 / 入边类型语义提示）。 */
+.dossier-rel-hint {
+  color: var(--text-mute);
+  font-size: 11px;
+}
+
+/* 删除关系按钮（关系胶囊使用通用 `.wf-tag__close`；本类保留给自定义字段键值行复用）。 */
+.dossier-rel-remove {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  border-radius: 50%;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-mute);
+  background: transparent;
+  transition:
+    background 0.15s var(--ease),
+    color 0.15s var(--ease);
+}
+
+.dossier-rel-remove:hover {
+  color: #fff;
+  background: var(--danger);
+}
