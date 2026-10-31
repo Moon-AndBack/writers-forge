@@ -2,7 +2,7 @@
 
 本文描述 `src/renderer/src/styles/theme.css` 的令牌体系：单一真源的组织、主题标识与 `system` 解析、主题无关令牌、四套主题的分组与差异、不透明令牌与窗口材质的配合、系统强调色、主题切换过渡、样式导入顺序与使用规约。
 
-- 令牌定义：`src/renderer/src/styles/theme.css`（393 行，197 条声明）
+- 令牌定义：`src/renderer/src/styles/theme.css`（357 行，165 条声明）
 - 主题标识 / 解析：`theme/themes.ts`、`theme/ThemeProvider.tsx`；系统强调色：`theme/useSystemAccent.ts`、`theme/color.ts`、`src/main/theme.ts`、`src/main/ipc/theme.ts`
 - 切换过渡：`theme/themeReveal.ts`、`styles/components/motion.css`；材质 / 外壳：`styles/acrylic.css`、`styles/shell.css`；入口：`styles/index.css`、`App.tsx`
 
@@ -14,14 +14,14 @@
 
 | 区块 | 选择器 | 行号 | 声明数 | 作用 |
 | --- | --- | --- | --- | --- |
-| 主题无关 | `:root` | 10-70 | 24 | 排版、圆角、字体、动效、层级、光斑、材质透明度、选区 |
-| 亮色（默认） | `:root, [data-theme='light']` | 73-166 | 45 | 亮色主题，同时是全部主题的**基底** |
-| 暗色 | `[data-theme='dark']` | 169-247 | 43 | 暗色主题 |
-| 浅绿 | `[data-theme='sage']` | 250-318 | 42 | 浅绿主题 |
-| 浅黄 | `[data-theme='honey']` | 321-393 | 43 | 浅黄主题 |
-| **合计** | — | — | **197** | — |
+| 主题无关 | `:root` | 10-71 | 24 | 排版、圆角、字体、动效、层级、光斑、材质透明度、选区 |
+| 亮色（默认） | `:root, [data-theme='light']` | 74-157 | 37 | 亮色主题，同时是全部主题的**基底** |
+| 暗色 | `[data-theme='dark']` | 160-229 | 35 | 暗色主题 |
+| 浅绿 | `[data-theme='sage']` | 232-291 | 34 | 浅绿主题 |
+| 浅黄 | `[data-theme='honey']` | 294-357 | 35 | 浅黄主题 |
+| **合计** | — | — | **165** | — |
 
-- **亮色块与 `:root` 同挂 `<html>`**：选择器是 `:root, [data-theme='light']`，任何主题下都会命中。sage / honey 块同为 0,1,0 特异性且排在后面，只覆盖自己声明的属性，**未声明项回退到亮色块**——这正是它们只有 42 / 43 条的原因（省略了 `--sh-xs`、`--sh-sm`、sage 的 `--overlay-mask` 等）。
+- **亮色块与 `:root` 同挂 `<html>`**：选择器是 `:root, [data-theme='light']`，任何主题下都会命中。sage / honey 块同为 0,1,0 特异性且排在后面，只覆盖自己声明的属性，**未声明项回退到亮色块**——这正是它们只有 34 / 35 条的原因（省略了 `--sh-xs`、`--sh-sm`、sage 的 `--overlay-mask` 等）。
 - 每个主题块首行写 `color-scheme`（light / dark），驱动原生滚动条、表单控件与选区基线；块内分组顺序固定：桌面/窗口表面 → 交互底色 → 不透明交互底色 → 控件 on-soft → 文本 → 品牌/语义 → 正文 → 阴影/描边 → 遮罩 → 选区 → 兼容层。变量名沿用原型命名，仅 `--desk-3` 大小写被规范为小写。
 
 > `theme.css` 顶部注释仍写「来源：template/index.html」。`template/` 已删除，**不得**再作为设计出处；以当前取值为准。
@@ -47,7 +47,7 @@
 
 ## 3. 主题无关令牌（24 条）
 
-`:root`（`theme.css:10-70`）中取值与主题无关的令牌：
+`:root`（`theme.css:10-71`）中取值与主题无关的令牌：
 
 | 变量 | 值 / 含义 | 用途 |
 | --- | --- | --- |
@@ -74,7 +74,7 @@
 | `--desk-solid-alpha` | `70%` | 材质开启时 `--desk-solid` 的保留不透明度 |
 | `--selection-bg` | `brand 22%` + transparent | 全局 `::selection` 底色，随当前主题 `--brand` 变化 |
 
-分组计数：排版 5、圆角 3、字体 3、动效 5、层级 3、光斑 3、材质 1、选区 1，共 **24** 条。层级令牌只维护相对序（悬停卡 < 浮窗 < 嵌套卡 < tooltip < 模态 1000+），使用处不写字面量 `z-index`；注释提到「dark 把光斑覆盖为一半」，但 dark 块内**并无** `--desk-spot-*` 覆写——dark 的 `.shell` 由 `shell.css:67-83` 的硬编码色带整体替换，光斑不参与绘制。
+分组计数：排版 5、圆角 3、字体 3、动效 5、层级 3、光斑 3、材质 1、选区 1，共 **24** 条。层级令牌只维护相对序（悬停卡 < 浮窗 < 嵌套卡 < tooltip < 模态 1000+），使用处不写字面量 `z-index`；注释明确本组光斑仅 light / sage / honey 生效——dark 由 `shell.css` 的 `[data-theme='dark'] .shell` 整体替换为无光斑的斜切色带，**四主题块均不覆写** `--desk-spot-*`。
 
 ---
 
@@ -86,18 +86,18 @@
 
 | 分组 | light | dark | sage | honey | 说明 |
 | --- | --- | --- | --- | --- | --- |
-| 桌面 / 窗口表面 | 10 | 7 | 10 | 10 | dark 无 `--desk-glow-*` |
-| 交互底色 | 6 | 6 | 6 | 6 | `--soft*` / `--pill-bg*` / `--line` |
+| 桌面 / 窗口表面 | 9 | 6 | 9 | 9 | dark 无 `--desk-glow-*` |
+| 交互底色 | 2 | 2 | 2 | 2 | `--soft` / `--line` |
 | 不透明交互底色 | 5 | 5 | 5 | 5 | `--*-solid` |
 | 控件 on-soft | 3 | 3 | 3 | 3 | `--control-on-soft*` |
 | 文本 | 3 | 3 | 3 | 3 | `--text*` |
 | 品牌 / 语义 | 5 | 5 | 5 | 5 | `--brand*` / `--ok` / `--warn` / `--danger` |
 | 正文 | 2 | 2 | 2 | 2 | `--doc-text` / `--caret` |
-| 阴影 / 描边 | 6 | 6 | 4 | 4 | sage / honey 省略 `--sh-xs`、`--sh-sm` |
+| 阴影 / 描边 | 5 | 5 | 3 | 3 | sage / honey 省略 `--sh-xs`、`--sh-sm` |
 | 浮层遮罩 | 1 | 1 | 0 | 0 | sage / honey 继承亮色块 |
 | 文本选区 | 0 | 1 | 0 | 1 | light / sage 用 `:root` 的 22% |
-| 兼容层 | 4 | 4 | 4 | 4 | `--bg` / `--fg` / `--accent` / `--border` |
-| **合计** | **45** | **43** | **42** | **43** | — |
+| 兼容层 | 2 | 2 | 2 | 2 | `--bg` / `--fg` |
+| **合计** | **37** | **35** | **34** | **35** | — |
 
 ### 4.2 桌面与窗口表面
 
@@ -109,19 +109,16 @@
 | `--desk-solid` | `#eef0f6` | `#161616` | `#e9f1ea` | `#f5edd9` |
 | `--desk-glow-1/2/3` | 紫 / 蓝 / 白，α≈0.04 | **无** | 绿系，α≈0.03 | 金系，α≈0.03 |
 | `--win-rgb` | `243, 243, 243` | `26, 26, 28` | `238, 245, 238` | `249, 243, 228` |
-| `--win-surface` | `#fbfbfb` | `#2b2b2e` | `#fafdfa` | `#fffdf6` |
 | `--pane` | `#ffffff` | `#202020` | `#fcfffc` | `#fffef9` |
 
 - `.shell` 桌面底 = 三层 radial 光斑 + `linear-gradient(150deg, --desk-1, --desk-2 45%, --desk-3)`（`shell.css:30-34`）；dark 由 `[data-theme='dark'] .shell` 覆盖为 4 层不透明色带（`#1c1c2b` / `#161616` / `#19202b`），**这是全库唯一允许写主题色字面量的例外**。
-- `--desk-solid` 在 light / sage / honey 恒等于各自 `--desk-2`，dark 单独定为 `#161616`。`--win-rgb` 仅被主进程用作 `BrowserWindow.backgroundColor` 参照（`window.ts:81-84`、`windowMaterial.ts:38-39` 写死 `#f3f3f3`）；`--win-surface` 无 CSS 消费点，作为左右栏底色契约保留；`--pane` 是面板 / 编辑区不透明底（约 150 处，频次最高）。
+- `--desk-solid` 在 light / sage / honey 恒等于各自 `--desk-2`，dark 单独定为 `#161616`。`--win-rgb` 仅被主进程用作 `BrowserWindow.backgroundColor` 参照（`window.ts:81-84`、`windowMaterial.ts:38-39` 写死 `#f3f3f3`）；`--pane` 是左右栏 / 面板 / 编辑区的不透明底（约 150 处，频次最高）。原先作为左右栏底色契约保留的 `--win-surface` 已无消费点，已于本次清理删除。
 
 ### 4.3 交互底色与控件底色
 
 | 变量 | light | dark | sage | honey |
 | --- | --- | --- | --- | --- |
 | `--soft` | 黑 3.7% | 白 5% | `rgb(20,60,30)` 5% | `rgb(80,60,10)` 4.5% |
-| `--soft-hover` / `--soft-press` | 6% / 9% | 8% / 11% | 8% / 11% | 7% / 10% |
-| `--pill-bg` / `--pill-bg-hover` | 5% / 8.5% | 7% / 12% | 7% / 11% | 6% / 10% |
 | `--line` | 黑 8% | 白 10% | `rgb(20,60,30)` 10% | `rgb(80,60,10)` 12% |
 | `--soft-solid` | `--text` 6% 混 `--pane` | 5% | `rgb(20,60,30)` 6% | `rgb(80,60,10)` 6% |
 | `--soft-hover-solid` | 6% | 8% | 8% | 7% |
@@ -130,7 +127,7 @@
 | `--control-on-soft` / `-hover` | 10% / 14% | 14% / 19% | 10% / 14% | 10% / 14% |
 | `--control-on-soft-line` | 37% | 22% | 37% | 37% |
 
-- 半透明组中**只有 `--soft` 仍有消费点**（`writer-ai.css` 3 处）；`--soft-hover`、`--soft-press`、`--pill-bg`、`--pill-bg-hover` 已被 `-solid` 取代，保留为契约，新代码不要使用。light / sage / honey 的 `--soft-solid` **刻意加深到 6%**（左栏分区容器卡口径，全库共享），故 light 的 `--soft-solid` 与 `--soft-hover-solid` 同值，这是有意为之。
+- 半透明组中**只有 `--soft` 仍有消费点**（`writer-ai.css` 3 处）；`--soft-hover`、`--soft-press`、`--pill-bg`、`--pill-bg-hover` 早已被 `-solid` 取代、无任何消费点，已于本次清理从四主题块删除，新代码不要使用。light / sage / honey 的 `--soft-solid` **刻意加深到 6%**（左栏分区容器卡口径，全库共享），故 light 的 `--soft-solid` 与 `--soft-hover-solid` 同值，这是有意为之。
 - 混色分两派：light / dark 用 `var(--text)`（dark 下白字混入 = 提亮）；sage / honey 固定用本主题基色 `rgb(20,60,30)` / `rgb(80,60,10)` 以保住绿调 / 暖黄调，改用 `--text` 会掉色相。
 - **控件 on-soft 的方向相反**：light 下 `--text` 为深色，10% 混入使控件**更深**；dark 下为白色，14% 混入使控件**更亮**。统一取向是「控件底接近卡片底，边界靠 `--control-on-soft-line`」：浅色系约 1.07–1.09:1 + 37% 描边（对控件底 1.9–2.25:1），dark 约 1.34:1 + 22% 白描边。微调只需改这三行比例，且四套主题各自显式定义，不依赖 `:root` 继承。
 
@@ -144,11 +141,10 @@
 | `--doc-text` | `#252b3b` | `#d8d8dc` | `#1f3225` | `#332a17` |
 | `--caret` | `brand 55% + doc-text 45%` | `var(--brand)` | `var(--brand)` | `var(--brand)` |
 | `--bg` / `--fg` | `#f7f7f8` / `#1f2328` | `#1a1c26` / `#ffffff` | `#dbe9dc` / `#1a2a1e` | `#ece3cd` / `#2b2415` |
-| `--accent` / `--border` | `#3b82f6` / `#d0d7de` | `#8b7ff0` / 白 10% | `#4a9d5f` / 绿黑 10% | `#c99426` / 棕黑 12% |
 
 - **`--brand` / `--brand-2` 的静态值只是回退**：light / dark 下会被系统强调色内联覆盖（§6），sage / honey 始终使用静态值。
 - light 的 `--caret` 由品牌色向正文色暗化，避免浅底上过亮；其余三套直接取 `--brand`。
-- **兼容层** `--bg` / `--fg` / `--accent` / `--border` 为历史令牌：`--bg` / `--fg` 仅 `global.css:8-12` 的 `body` 使用（材质态下 `body` 底被置透明），`--accent` / `--border` 已无消费点。新代码不得引用。
+- **兼容层** `--bg` / `--fg` 为历史令牌：仅 `global.css:8-12` 的 `body` 使用（材质态下 `body` 底被置透明）。新代码不得引用；同组的 `--accent` / `--border` 已无消费点，已于本次清理删除。
 
 ### 4.5 阴影、遮罩与选区
 
@@ -157,12 +153,11 @@
 | `--sh-xs` / `--sh-sm` | 黑 5% / 6% + 4.5% | 黑 30% / 30% + 25% | 继承 light |
 | `--sh-popup` | 黑 10% / 12% | 黑 40% / 50% | 本主题基色 10% / 12% |
 | `--sh-float` | 黑 22% | 黑 60% | 本主题基色 22% |
-| `--win-shadow` | 1px 黑 10% 环 + 大投影 | 1px 白 8% 环 + 更深投影 | 本主题基色 12% 环 |
 | `--panel-ring` | 1px 黑 5% | 1px 白 6% | 本主题基色 6% |
 | `--overlay-mask` | `rgba(0,0,0,.32)` | 同值 | 继承（0.32） |
 | `--selection-bg` | `:root` 的 22% | 30% | sage 22% / honey 28% |
 
-- `--win-shadow` 无 CSS 消费点（窗口外阴影由系统承担），作为窗口卡片契约保留；`--panel-ring` 是面板描边的实际主力（20+ 处），常与 `--sh-*` 组合为 `box-shadow: var(--sh-sm), var(--panel-ring)`。遮罩浓度四主题统一 32%，**不随明暗变化**；组件一律引用 `--overlay-mask`。选区按底色明度单独调过：dark 22% 会糊进 `#202020` 故 30%，honey 品牌金与米色底明度接近故 28%，sage 沿用 22%。
+- `--panel-ring` 是面板描边的实际主力（20+ 处），常与 `--sh-*` 组合为 `box-shadow: var(--sh-sm), var(--panel-ring)`；窗口外阴影由系统承担，原先作为窗口卡片契约保留的 `--win-shadow` 无消费点，已于本次清理删除。遮罩浓度四主题统一 32%，**不随明暗变化**；组件一律引用 `--overlay-mask`。选区按底色明度单独调过：dark 22% 会糊进 `#202020` 故 30%，honey 品牌金与米色底明度接近故 28%，sage 沿用 22%。
 
 ### 4.6 light / dark 差异清单（不可互相推导）
 
@@ -170,13 +165,13 @@
 2. **交互底色方向**：light 用黑 α 压暗，dark 用白 α 提亮（`--soft` 3.7% → 5%，`--line` 8% → 10%）。
 3. **`--soft-solid` 基数**：light 6/6/9/5/8.5%，dark 5/8/11/7/12%（dark 无「容器卡加深到 6%」偏移）；控件 on-soft 亦相反（light 10/14/37，dark 14/19/22）。
 4. **阴影与描边**：light `--sh-xs` 5%、`--sh-float` 22%；dark 30% / 60%，`--panel-ring` 由黑环变白环。
-5. **光标与选区**：`--caret` light 混 `--doc-text`、dark 直接 `--brand`；选区 22% vs 30%；条数 45 vs 43（dark 少 3 条光斑、多 1 条选区）。
+5. **光标与选区**：`--caret` light 混 `--doc-text`、dark 直接 `--brand`；选区 22% vs 30%；条数 37 vs 35（dark 少 3 条光斑、多 1 条选区）。
 
 ---
 
 ## 5. 不透明令牌与材质协同
 
-`--*-solid` 组（light 99-108、dark 194-199、sage 273-279、honey 344-350）是组件自身填充专用：**alpha 恒为 1**，用 `color-mix` 把原半透明档的比例混入不透明 `--pane`。
+`--*-solid` 组（light 100-104、dark 182-186、sage 253-257、honey 315-319）是组件自身填充专用：**alpha 恒为 1**，用 `color-mix` 把原半透明档的比例混入不透明 `--pane`。
 
 | 令牌 | 语义 | 典型消费 |
 | --- | --- | --- |
@@ -189,7 +184,7 @@
 
 1. `WindowMaterialProvider` 在 `<html>` 写 `data-material='acrylic' | 'none'`。
 2. 开启时 `acrylic.css:24-26` 把 `.shell` 底色换为 `color-mix(in srgb, var(--desk-solid) var(--desk-solid-alpha), transparent)`，即各主题纯色底保留 **70%** 不透明度；同时 `body` 背景置透明（`acrylic.css:30-32`），否则 `body` 的 `--bg` 会挡住 DWM 材质。
-3. 面板 / 侧栏 / 编辑区继续用不透明 `--pane` / `--win-surface`，**只有组件缝隙**透出材质。这正是 `-solid` 组存在的理由：若沿半透明 `--soft`，材质会从每张卡内部透出，文字对比度随壁纸漂移。
+3. 面板 / 侧栏 / 编辑区继续用不透明 `--pane`，**只有组件缝隙**透出材质。这正是 `-solid` 组存在的理由：若沿半透明 `--soft`，材质会从每张卡内部透出，文字对比度随壁纸漂移。
 4. `--desk-solid-alpha` 是主题无关的单一旋钮（70%），四主题共用；dark 的 `--desk-solid` 取 `#161616`（与色带中段同值），避免深色下材质偏亮。主进程窗口底：材质开 `#00000000`，关 `#f3f3f3`（= light 的 `--win-rgb`），避免创建瞬间黑闪（`window.ts:81-84`）。
 
 选择顺序：**`--soft-solid` 容器上的输入类控件用 `--control-on-soft*`；普通卡片 / 按钮用 `--*-solid`；只有确需透出下层的浮层才用半透明档**。
@@ -275,7 +270,7 @@ resolved === 当前 dataset.theme → flushSync 只提交状态，不启动过�
 5. **不透明优先**：组件填充用 `--*-solid`，否则 Acrylic 下材质从组件内部透出。
 6. **字号 / 行高 / 缩放走 `--doc-*`**，时长走 `--dur-*`，缓动走 `--ease` / `--ease-out`，层级走 `--z-*`；禁止裸 `0.2s`、`ease-in-out`、字面量 `z-index`。
 7. **语义色不改语义**：`--ok` / `--warn` / `--danger` 只表达状态，不当品牌强调；`--brand` 会被系统强调色覆盖，不要当固定色画插画。
-8. **兼容层令牌禁止新增使用**（`--bg` / `--fg` / `--accent` / `--border`）。
+8. **兼容层令牌禁止新增使用**（`--bg` / `--fg`；同组原 `--accent` / `--border` 已随本次清理删除）。
 9. 改令牌后核对四套主题的正文 / 次要文字 / 控件描边 / 选区对比度，并在 Acrylic 开、关两种状态下各看一遍；若涉及主题或外观描述，同步教学书种子（`seedGuideBook/`）。
 
-最后核对：2026-10-31
+最后核对：2026-11-01

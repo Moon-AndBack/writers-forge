@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import type { WriterModule } from '../../../shell/activityBar'
-import { useModuleLabel } from '../../../shell/activityBar'
+import { useModuleLabel } from '../../../shell/activityBarModules'
 import PlaceholderView from '../PlaceholderView'
 
 /** 占位模块面板：显示名走 `module` i18n 命名空间（键即模块 id），随界面语言切换。 */

@@ -52,7 +52,8 @@
   --z-popover: 971;
   --z-popover-nested: 972;
 
-  /* 桌面光斑尺寸（.shell 三层 radial 的椭圆大小）：dark 主题在下方覆盖为一半 */
+  /* 桌面光斑尺寸（.shell 三层 radial 的椭圆大小）。仅 light / sage / honey 生效：dark 由
+     shell.css 的 [data-theme='dark'] .shell 整体替换为无光斑的斜切色带，四主题块均不覆写本组令牌。 */
   --desk-spot-1: 1000px 640px;
   --desk-spot-2: 880px 620px;
   --desk-spot-3: 700px 500px;
@@ -85,20 +86,15 @@
   --desk-glow-2: rgba(47, 154, 224, 0.04);
   --desk-glow-3: rgba(255, 255, 255, 0.1);
   --win-rgb: 243, 243, 243;
-  --win-surface: #fbfbfb;
   --pane: #ffffff;
 
   /* 交互底色 */
   --soft: rgba(0, 0, 0, 0.037);
-  --soft-hover: rgba(0, 0, 0, 0.06);
-  --soft-press: rgba(0, 0, 0, 0.09);
-  --pill-bg: rgba(0, 0, 0, 0.05);
-  --pill-bg-hover: rgba(0, 0, 0, 0.085);
   --line: rgba(0, 0, 0, 0.08);
 
   /* 不透明交互底色：组件自身填充用，alpha = 1。
-     以 --text 按原 --soft* / --pill-bg* 的透明度混入 --pane 推导，
-     观感对齐半透明版本，使窗口材质仅从组件之间的缝隙透出。
+     以 --text 按下列比例混入 --pane 推导（填充 6% / hover 6% / 按下 9%；
+     胶囊底 5% / 胶囊 hover 8.5%），使窗口材质仅从组件之间的缝隙透出。
      注：--soft-solid 已刻意加深至 6%（左栏分区容器卡口径，全库共享），
      不再严格等于 --soft 的 3.7%。 */
   --soft-solid: color-mix(in srgb, var(--text) 6%, var(--pane));
@@ -149,9 +145,6 @@
   --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.045);
   --sh-popup: 0 -4px 20px rgba(0, 0, 0, 0.1), 0 4px 16px rgba(0, 0, 0, 0.12);
   --sh-float: 0 12px 32px -8px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08);
-  --win-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.1), 0 24px 60px -12px rgba(0, 0, 0, 0.28),
-    0 8px 20px rgba(0, 0, 0, 0.1);
   --panel-ring: 0 0 0 1px rgba(0, 0, 0, 0.05);
 
   /* 浮层遮罩（Modal / Drawer 通用）：纯黑固定浓度，明暗同值；
@@ -161,8 +154,6 @@
   /* 兼容层：既有 global.css / pages 的历史令牌 */
   --bg: #f7f7f8;
   --fg: #1f2328;
-  --accent: #3b82f6;
-  --border: #d0d7de;
 }
 
 /* ---------- 暗色 ---------- */
@@ -181,17 +172,13 @@
      @70% 透明度（--desk-solid-alpha）透出 DWM 材质 */
   --desk-solid: #161616;
   --win-rgb: 26, 26, 28;
-  --win-surface: #2b2b2e;
   --pane: #202020;
 
   --soft: rgba(255, 255, 255, 0.05);
-  --soft-hover: rgba(255, 255, 255, 0.08);
-  --soft-press: rgba(255, 255, 255, 0.11);
-  --pill-bg: rgba(255, 255, 255, 0.07);
-  --pill-bg-hover: rgba(255, 255, 255, 0.12);
   --line: rgba(255, 255, 255, 0.1);
 
-  /* 不透明交互底色（暗色）：--text 为白，混入 --pane 提亮，值对齐原 rgba */
+  /* 不透明交互底色（暗色）：--text 为白，按比例混入 --pane 提亮
+     （填充 5% / hover 8% / 按下 11%；胶囊底 7% / 胶囊 hover 12%）。 */
   --soft-solid: color-mix(in srgb, var(--text) 5%, var(--pane));
   --soft-hover-solid: color-mix(in srgb, var(--text) 8%, var(--pane));
   --soft-press-solid: color-mix(in srgb, var(--text) 11%, var(--pane));
@@ -227,9 +214,6 @@
   --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
   --sh-popup: 0 -4px 20px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.5);
   --sh-float: 0 12px 32px -8px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
-  --win-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.08), 0 24px 60px -12px rgba(0, 0, 0, 0.6),
-    0 8px 20px rgba(0, 0, 0, 0.4);
   --panel-ring: 0 0 0 1px rgba(255, 255, 255, 0.06);
 
   /* 浮层遮罩（Modal / Drawer 通用）：与亮色同值，遮罩浓度不随主题变化。 */
@@ -242,8 +226,6 @@
 
   --bg: #1a1c26;
   --fg: #ffffff;
-  --accent: #8b7ff0;
-  --border: rgba(255, 255, 255, 0.1);
 }
 
 /* ---------- 浅绿 ---------- */
@@ -260,17 +242,13 @@
   --desk-glow-2: rgba(108, 191, 136, 0.03);
   --desk-glow-3: rgba(255, 255, 255, 0.1);
   --win-rgb: 238, 245, 238;
-  --win-surface: #fafdfa;
   --pane: #fcfffc;
 
   --soft: rgba(20, 60, 30, 0.05);
-  --soft-hover: rgba(20, 60, 30, 0.08);
-  --soft-press: rgba(20, 60, 30, 0.11);
-  --pill-bg: rgba(20, 60, 30, 0.07);
-  --pill-bg-hover: rgba(20, 60, 30, 0.11);
   --line: rgba(20, 60, 30, 0.1);
 
-  /* 不透明交互底色（浅绿）：按原 rgba 基色 (20,60,30) 混入 --pane；
+  /* 不透明交互底色（浅绿）：按基色 rgb(20, 60, 30) 混入 --pane
+     （填充 6% / hover 8% / 按下 11%；胶囊底 7% / 胶囊 hover 11%）；
      --soft-solid 已刻意加深至 6%（左栏分区容器卡口径，全库共享）。 */
   --soft-solid: color-mix(in srgb, rgb(20, 60, 30) 6%, var(--pane));
   --soft-hover-solid: color-mix(in srgb, rgb(20, 60, 30) 8%, var(--pane));
@@ -306,15 +284,10 @@
 
   --sh-popup: 0 -4px 20px rgba(20, 50, 30, 0.1), 0 4px 16px rgba(20, 50, 30, 0.12);
   --sh-float: 0 12px 32px -8px rgba(20, 50, 30, 0.22), 0 4px 12px rgba(20, 50, 30, 0.08);
-  --win-shadow:
-    0 0 0 1px rgba(30, 60, 40, 0.12), 0 24px 60px -12px rgba(20, 50, 30, 0.28),
-    0 8px 20px rgba(20, 50, 30, 0.1);
   --panel-ring: 0 0 0 1px rgba(30, 60, 40, 0.06);
 
   --bg: #dbe9dc;
   --fg: #1a2a1e;
-  --accent: #4a9d5f;
-  --border: rgba(20, 60, 30, 0.1);
 }
 
 /* ---------- 浅黄 ---------- */
@@ -331,17 +304,13 @@
   --desk-glow-2: rgba(224, 184, 94, 0.03);
   --desk-glow-3: rgba(255, 255, 255, 0.1);
   --win-rgb: 249, 243, 228;
-  --win-surface: #fffdf6;
   --pane: #fffef9;
 
   --soft: rgba(80, 60, 10, 0.045);
-  --soft-hover: rgba(80, 60, 10, 0.07);
-  --soft-press: rgba(80, 60, 10, 0.1);
-  --pill-bg: rgba(80, 60, 10, 0.06);
-  --pill-bg-hover: rgba(80, 60, 10, 0.1);
   --line: rgba(80, 60, 10, 0.12);
 
-  /* 不透明交互底色（浅黄）：按原 rgba 基色 (80,60,10) 混入 --pane；
+  /* 不透明交互底色（浅黄）：按基色 rgb(80, 60, 10) 混入 --pane
+     （填充 6% / hover 7% / 按下 10%；胶囊底 6% / 胶囊 hover 10%）；
      --soft-solid 已刻意加深至 6%（左栏分区容器卡口径，全库共享）。 */
   --soft-solid: color-mix(in srgb, rgb(80, 60, 10) 6%, var(--pane));
   --soft-hover-solid: color-mix(in srgb, rgb(80, 60, 10) 7%, var(--pane));
@@ -377,9 +346,6 @@
 
   --sh-popup: 0 -4px 20px rgba(80, 60, 10, 0.1), 0 4px 16px rgba(80, 60, 10, 0.12);
   --sh-float: 0 12px 32px -8px rgba(80, 60, 10, 0.22), 0 4px 12px rgba(80, 60, 10, 0.08);
-  --win-shadow:
-    0 0 0 1px rgba(80, 60, 10, 0.12), 0 24px 60px -12px rgba(80, 60, 10, 0.26),
-    0 8px 20px rgba(80, 60, 10, 0.1);
   --panel-ring: 0 0 0 1px rgba(80, 60, 10, 0.06);
 
   /* 文本选区（::selection）：品牌 #c99426 与米色面板底明度接近，22% 混出近奶油色、
@@ -388,6 +354,4 @@
 
   --bg: #ece3cd;
   --fg: #2b2415;
-  --accent: #c99426;
-  --border: rgba(80, 60, 10, 0.12);
 }

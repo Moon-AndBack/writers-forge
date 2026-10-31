@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { isValidElement } from 'react'
-import { useActivityBar } from './activityBar'
+import { useActivityBar } from './activityBarContext'
 import type { WriterModule } from './activityBar'
 import { StatusBarContext, useResolvedStatusBarSlots } from './statusBarContext'
 import type { StatusBarSlots, StatusBarState } from './statusBarContext'

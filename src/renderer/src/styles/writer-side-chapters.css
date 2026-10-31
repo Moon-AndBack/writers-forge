@@ -73,8 +73,8 @@
   background: var(--text-mute);
   opacity: 0.5;
   transition:
-    background 0.12s var(--ease),
-    opacity 0.12s var(--ease);
+    background var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
 }
 
 .chapter.is-active .chapter-dot {

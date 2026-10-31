@@ -92,7 +92,7 @@ async function streamChat(
     onEvent({
       type: 'error',
       requestId,
-      error: { code: 'invalid_request', message: '对话消息不能为空' }
+      error: { code: 'invalid_request', message: 'Chat messages are empty' }
     })
     return
   }
@@ -102,7 +102,7 @@ async function streamChat(
     onEvent({
       type: 'error',
       requestId,
-      error: { code: 'invalid_request', message: '尚未选择模型' }
+      error: { code: 'invalid_request', message: 'No model selected' }
     })
     return
   }

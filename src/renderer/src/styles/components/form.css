@@ -227,8 +227,8 @@
   opacity: 0;
   transform: scale(0.7);
   transition:
-    opacity 0.12s var(--ease),
-    transform 0.12s var(--ease);
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
 }
 .wf-checkbox__input:checked + .wf-checkbox__box .wf-checkbox__tick {
   opacity: 1;

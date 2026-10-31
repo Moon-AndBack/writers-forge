@@ -111,7 +111,7 @@ export function registerAiIpc(): void {
     const provider = readProviderInput(input)
     if (!provider) {
       log.warn('ai:models:list 入参非法')
-      return { ok: false, error: { code: 'invalid_request', message: 'AI 服务商入参非法' } }
+      return { ok: false, error: { code: 'invalid_request', message: 'Invalid AI provider input' } }
     }
     try {
       const models = await listModels(provider, { timeoutMs: PROBE_TIMEOUT_MS })
@@ -131,7 +131,7 @@ export function registerAiIpc(): void {
       return {
         ok: false,
         latencyMs: 0,
-        error: { code: 'invalid_request', message: 'AI 服务商入参非法' }
+        error: { code: 'invalid_request', message: 'Invalid AI provider input' }
       }
     }
     const startedAt = Date.now()

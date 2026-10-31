@@ -138,9 +138,9 @@
   background: var(--soft-solid);
   cursor: pointer;
   transition:
-    background 0.12s var(--ease),
-    color 0.12s var(--ease),
-    border-color 0.12s var(--ease);
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 }
 
 .wf-format-pop__btn:hover:not(:disabled) {

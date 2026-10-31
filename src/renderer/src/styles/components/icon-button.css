@@ -3,7 +3,7 @@
    来源：template/index.html 的圆形图标触发件（.drawer-close / .mini-btn 等）。
    命名：根类 .wf-iconbtn；变体 --ghost / --solid；色调 --default / --danger；
         尺寸 --sm（md 为默认，不输出类）。
-   颜色一律取 theme.css 令牌；hover 反馈用 --soft-hover（中性）或 --danger
+   颜色一律取 theme.css 令牌；hover 反馈用 --soft-hover-solid（中性）或 --danger
    （危险色）派生，四主题自动适配；圆形容器用 border-radius: 50%。
    ============================================================ */
 

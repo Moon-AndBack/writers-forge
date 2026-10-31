@@ -87,8 +87,8 @@
   background: transparent;
   border-radius: 50%;
   transition:
-    background 0.12s var(--ease),
-    color 0.12s var(--ease);
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 .wf-search__clear:hover {
   color: var(--text);
@@ -165,8 +165,8 @@
   background: color-mix(in srgb, var(--brand) 16%, var(--pane));
   border-radius: 50%;
   transition:
-    background 0.12s var(--ease),
-    color 0.12s var(--ease);
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 .wf-chipinput__chip-close:hover {
   color: #fff;
@@ -292,8 +292,8 @@
   background: transparent;
   border-radius: var(--r-xs);
   transition:
-    background 0.12s var(--ease),
-    color 0.12s var(--ease);
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 .wf-stepper__btn:hover:not(:disabled) {
   color: var(--text);
@@ -325,8 +325,8 @@
 .wf-stepper__value.is-editable {
   cursor: text;
   transition:
-    background 0.12s var(--ease),
-    color 0.12s var(--ease);
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 .wf-stepper__value.is-editable:hover {
   color: var(--text);

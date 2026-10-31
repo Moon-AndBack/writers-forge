@@ -20,7 +20,8 @@ import { useAiModels } from './ai/useAiModels'
 import { useBookProfile } from './ai/useBookProfile'
 import { AiControls } from './ai/AiControls'
 import { BuiltinPrompt } from './ai/BuiltinPrompt'
-import { AI_ERROR_TEXT_KEYS, ChatMessage } from './ai/ChatMessage'
+import { AI_ERROR_TEXT_KEYS } from './ai/aiErrorText'
+import { ChatMessage } from './ai/ChatMessage'
 
 /** 功能 → 文案 key（静态映射，避免拼接 key 丢类型）。 */
 const ACTION_LABEL_KEYS = {

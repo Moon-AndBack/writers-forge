@@ -1,5 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
-import type { ReactNode } from 'react'
+import { createContext, useCallback, useContext } from 'react'
 import type { Editor } from '@tiptap/core'
 
 /**
@@ -23,6 +22,8 @@ import type { Editor } from '@tiptap/core'
  * （`ChaptersView`）与右栏编辑器调用 `useRichTextEditor(slot).registerEditor`，剧情 / 设定库
  * 另调用 `reportEditing` → 标题栏动作组件 / 右栏 AI 面板调用 `useRichTextEditor(slot)` 读
  * `editor / editing / bookId`，并按需用 `readEditorSelection` 取选文本。
+ *
+ * 分工：本文件只放上下文本体与 hook；Provider 组件在 `richTextEditorProvider.tsx`。
  */
 export type RichTextEditorSlot = 'chapter' | 'plot' | 'dossier'
 
@@ -37,40 +38,15 @@ export interface RichTextEditorSlotSource {
 /** 槽位配置表：未提供的槽位按「未编辑 + 无编辑器」处理。 */
 export type RichTextEditorSlots = Partial<Record<RichTextEditorSlot, RichTextEditorSlotSource>>
 
-interface RichTextEditorContextValue {
+export interface RichTextEditorContextValue {
   bookId?: string
   slots: RichTextEditorSlots
   editors: Partial<Record<RichTextEditorSlot, Editor | null>>
   register: (slot: RichTextEditorSlot, editor: Editor | null) => void
 }
 
-const RichTextEditorContext = createContext<RichTextEditorContextValue | null>(null)
-
-export interface RichTextEditorProviderProps {
-  /** 归属书 id（插图按书隔离入库；空 / undefined → 插图入口禁用）。 */
-  bookId?: string
-  /** 各槽位的聚焦态与上报入口（应由调用方 `useMemo` 缓存，避免每次渲染换引用）。 */
-  slots: RichTextEditorSlots
-  children: ReactNode
-}
-
-/** 富文本编辑器注册表 Provider：包裹写作页三栏（置于 `Writer.tsx`）。 */
-export function RichTextEditorProvider({ bookId, slots, children }: RichTextEditorProviderProps) {
-  // 各槽位的编辑器实例：右栏编辑器挂载写实例、卸载写 null。
-  const [editors, setEditors] = useState<Partial<Record<RichTextEditorSlot, Editor | null>>>({})
-
-  // 引用稳定：同槽位重复登记同一实例时直接返回原 state，避免无意义重渲染。
-  const register = useCallback((slot: RichTextEditorSlot, editor: Editor | null): void => {
-    setEditors((prev) => (prev[slot] === editor ? prev : { ...prev, [slot]: editor }))
-  }, [])
-
-  const value = useMemo<RichTextEditorContextValue>(
-    () => ({ bookId, slots, editors, register }),
-    [bookId, slots, editors, register]
-  )
-
-  return <RichTextEditorContext.Provider value={value}>{children}</RichTextEditorContext.Provider>
-}
+/** 编辑器注册表上下文本体（Provider 见 `richTextEditorProvider.tsx`）。 */
+export const RichTextEditorContext = createContext<RichTextEditorContextValue | null>(null)
 
 /** 单槽位读写视图（供编辑器注册 / 标题栏动作读取）。 */
 export interface RichTextEditorSlotValue {

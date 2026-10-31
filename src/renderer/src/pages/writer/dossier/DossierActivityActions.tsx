@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconButton } from '../../../components/ui'
-import { useModuleLabel } from '../../../shell/activityBar'
+import { useModuleLabel } from '../../../shell/activityBarModules'
 import { useSetActivityActions } from '../../../shell/activityActions'
 import { EditorActionSep } from '../../../components/editor/EditorActionGroup'
 import { RichTextToolbar } from '../../../components/editor/RichTextToolbar'

@@ -5,10 +5,10 @@ import { IconButton } from '../../../components/ui'
 import { useSetActivityActions } from '../../../shell/activityActions'
 import { EditorActionGroup, EditorActionSep } from '../../../components/editor/EditorActionGroup'
 import {
-  CleanWordsDialog,
   setCleanWordsDialogOpen,
   useCleanWordsDialogOpen
-} from '../../../components/dialogs/CleanWordsDialog'
+} from '../../../components/dialogs/cleanWordsDialogStore'
+import { CleanWordsDialog } from '../../../components/dialogs/CleanWordsDialog'
 import { PlusIcon } from '../icons'
 
 /** 违禁词（盾牌 + 感叹号）：标题栏「违禁词库」。描边口径与共享操作图标一致。 */

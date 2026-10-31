@@ -115,9 +115,3 @@ export function CleanWordsDialog({ open, onClose }: CleanWordsDialogProps) {
     </Modal>
   )
 }
-
-/* 向后兼容：入口按钮 / 状态栏胶囊原本就从本路径取用这两个符号，改由模块级 store 承载后
-   在原路径 re-export，避免跨层消费点（`pages/writer/chapters/*`）跟着改 import。 */
-export { setCleanWordsDialogOpen, useCleanWordsDialogOpen } from './cleanWordsDialogStore'
-
-export default CleanWordsDialog

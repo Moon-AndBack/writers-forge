@@ -4,7 +4,7 @@ import { useSetModuleStatusBar } from '../../../shell/statusBarContext'
 import {
   setCleanWordsDialogOpen,
   useCleanWordsDialogOpen
-} from '../../../components/dialogs/CleanWordsDialog'
+} from '../../../components/dialogs/cleanWordsDialogStore'
 import { computeChapterPosition } from './chapterTree'
 import type { ChapterRow, VolumeRow } from './chapterTree'
 import { useChapterLabels } from './useChapterLabels'

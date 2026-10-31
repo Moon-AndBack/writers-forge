@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react'
 /* ---------- 弹窗开关 ----------
    两个入口（标题栏按钮 / 状态栏胶囊）分属不同组件树；本弹窗是唯一消费者，故用模块级
    订阅（`useSyncExternalStore`，同 `proofreadMark` 的计数范式）而非提升到页面级 state。
-   `CleanWordsDialog` 仍从原路径 re-export 这两个符号，消费点无需改动。 */
+   开关符号直接由本模块提供，消费点（标题栏按钮 / 状态栏胶囊）从此处导入。 */
 
 let dialogOpen = false
 const dialogListeners = new Set<() => void>()

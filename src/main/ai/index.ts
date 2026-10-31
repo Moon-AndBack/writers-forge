@@ -39,7 +39,7 @@ export { getAiConfig, setAiConfig } from './config'
 function getAdapter(provider: AiProviderId): AiProviderAdapter {
   const adapter = PROVIDERS[provider]
   if (!adapter) {
-    throw new AiFailure({ code: 'invalid_request', message: '未知的 AI 服务商' })
+    throw new AiFailure({ code: 'invalid_request', message: 'Unknown AI provider' })
   }
   return adapter
 }

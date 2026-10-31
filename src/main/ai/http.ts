@@ -34,16 +34,24 @@ export class AiFailure extends Error {
   }
 }
 
-/** 归一化错误提示语（固定文案，不含上游原文）。 */
+/**
+ * 归一化错误的技术描述（固定文案，不含上游原文）。
+ *
+ * 仅供日志 / 诊断；渲染层一律按 `code` 取 i18n 文案，不得展示本字段。
+ */
 const ERROR_MESSAGES: Record<AiError['code'], string> = {
-  network: '网络请求失败，请检查网络连接或 Base URL',
-  timeout: '请求超时，请稍后重试',
-  auth: '鉴权失败，请检查 API Key',
-  rate_limit: '请求过于频繁或额度不足，请稍后重试',
-  invalid_request: '请求参数无效，请检查模型与 Base URL',
-  upstream: '上游服务返回错误',
-  aborted: '请求已取消',
-  unknown: 'AI 请求失败'
+  network: 'Network request failed',
+  timeout: 'Request timed out',
+  auth: 'Authentication failed',
+  rate_limit: 'Rate limit or quota exceeded',
+  invalid_request: 'Invalid request parameters',
+  upstream: 'Upstream service error',
+  aborted: 'Request aborted',
+  unknown: 'Unknown AI failure',
+  plan_restricted: 'Request rejected by plan / tier restriction',
+  session_missing: 'Missing session identifier',
+  auth_missing: 'No credential configured',
+  auth_invalid: 'Credential invalid or expired'
 }
 
 function createAiError(code: AiError['code'], status?: number): AiError {
@@ -184,7 +192,7 @@ export interface AiClientContext {
  *
  * - 服务商差异（鉴权方式、baseURL 拼接、附加请求头）由适配器通过 `baseUrl` /
  *   `headers` 表达，本函数只负责组装 SDK 客户端；
- * - 密钥缺失时抛 `AiFailure { code: 'auth' }`。
+ * - 密钥缺失时抛 `AiFailure { code: 'auth_missing' }`。
  */
 export function createAiClient(
   provider: AiProviderId,
@@ -193,13 +201,13 @@ export function createAiClient(
   const connection = getProviderConnection(provider)
   const apiKey = overrides.apiKey !== undefined ? overrides.apiKey : connection.apiKey
   if (!apiKey) {
-    throw new AiFailure({ code: 'auth', message: '尚未配置 API Key' })
+    throw new AiFailure({ code: 'auth_missing', message: 'No API key configured' })
   }
 
   const timeoutMs = resolveTimeout(overrides.timeoutMs)
   const baseURL = normalizeBaseUrl(overrides.baseUrl ?? connection.baseUrl)
   if (!baseURL) {
-    throw new AiFailure({ code: 'invalid_request', message: 'Base URL 不能为空' })
+    throw new AiFailure({ code: 'invalid_request', message: 'Base URL is empty' })
   }
 
   const client = new OpenAI({

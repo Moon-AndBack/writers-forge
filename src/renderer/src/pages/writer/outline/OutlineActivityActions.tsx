@@ -90,12 +90,7 @@ export default function OutlineActivityActions({
   bookId
 }: OutlineActivityActionsProps) {
   const { t: tOutline } = useTranslation('outline')
-  // 注：`editor` **有意**不入依赖（`react-hooks/exhaustive-deps` 会就此告警，属预期）：
-  // `useEditor(options, [])` 的 deps 为空数组，实例在组件生命周期内恒定，`editor`
-  // 引用不会变化，故入依赖是恒等的、无收益。移除后 `node` 仅随真实可变的回调 / 状态重建。
-  // 格式按钮的激活 / 可用态由 `EditorFormatGroup` 内的 `useEditorState` 自行订阅
-  // editor.transaction 刷新；撤销 / 重做可用态经 `canUndo` / `canRedo` props 传入——
-  // 二者都与本处 `node` 的引用是否因 editor 重建无关。
+  // useEditor 的 deps 为空、实例恒定；保留该依赖以覆盖将来 immediatelyRender:false 的场景。
   const node = useMemo(
     () => (
       <>
@@ -147,6 +142,7 @@ export default function OutlineActivityActions({
       onAdd,
       onToggleTrash,
       trashOpen,
+      editor,
       bookId
     ]
   )

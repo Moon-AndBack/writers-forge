@@ -316,8 +316,8 @@
 
 /* hover / 键盘聚焦：底色加深一档增强反馈（仅颜色变化，无描边环、无位移 /
    缩放，遵循 AGENTS.md §8 卡片交互约束），白图标保持。
-   覆盖组件库 ghost / danger 的主题色 hover 底（--soft-hover / --pane 派生
-   在花色封面上不可控），改为封面场景专用的固定半透明暗色。 */
+   覆盖组件库 ghost / danger 的主题色 hover 底（该底色取自主题令牌、在花色
+   封面上不可控），改为封面场景专用的固定半透明暗色 rgba(0, 0, 0, 0.46)。 */
 .book-actions .wf-iconbtn:hover:not(:disabled),
 .book-actions .wf-iconbtn:focus-visible {
   color: #fff;

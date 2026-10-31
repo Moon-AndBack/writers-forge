@@ -17,7 +17,7 @@ type AiErrorCode = AiError['code']
 export const CUSTOM_MODEL_VALUE = '__custom_model__'
 
 /**
- * 错误码 → 文案 key 的静态映射：`satisfies` 强制覆盖 `AiErrorCode` 全部 8 个值，
+ * 错误码 → 文案 key 的静态映射：`satisfies` 强制覆盖 `AiErrorCode` 全部 12 个值，
  * 新增错误码时类型检查会失败，避免漏译。
  */
 export const ERROR_KEYS = {
@@ -28,7 +28,11 @@ export const ERROR_KEYS = {
   invalid_request: 'error.invalid_request',
   upstream: 'error.upstream',
   aborted: 'error.aborted',
-  unknown: 'error.unknown'
+  unknown: 'error.unknown',
+  plan_restricted: 'error.plan_restricted',
+  session_missing: 'error.session_missing',
+  auth_missing: 'error.auth_missing',
+  auth_invalid: 'error.auth_invalid'
 } as const satisfies Record<AiErrorCode, string>
 
 /**

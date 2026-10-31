@@ -22,8 +22,8 @@
   color: var(--text-dim);
   background: var(--pill-bg-solid);
   transition:
-    background 0.12s var(--ease),
-    color 0.12s;
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast);
 }
 
 .st-side-btn:hover:not(:disabled) {
@@ -84,8 +84,8 @@
   color: var(--text-dim);
   background: var(--pill-bg-solid);
   transition:
-    background 0.12s var(--ease),
-    color 0.12s;
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast);
   white-space: nowrap;
 }
 
@@ -175,8 +175,8 @@
   line-height: 1;
   font-weight: 600;
   transition:
-    background 0.12s var(--ease),
-    color 0.12s;
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast);
 }
 
 .st-zoom-btn:hover:not(:disabled) {

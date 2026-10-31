@@ -136,20 +136,20 @@
    主题缩影：卡面从「桌面渐变纯色块」改为「应用界面三栏缩影」
    ------------------------------------------------------------------
    三栏（左「图标条」/ 中「正文区」/ 右「信息栏」）用**该主题的固定色值**
-   渲染，因此任意当前主题下都能预览其余三个主题的样子。色值逐字取自
+   渲染，因此任意当前主题下都能预览其余三个主题的样子。色值取自
    styles/theme.css 同主题令牌，定义为 `.ts-card--{id}` 上的局部变量：
      --mini-pane     卡面底色 / 中栏「正文」底   = 该主题 --pane
-     --mini-surface  左右栏底                    = 该主题 --win-surface
+     --mini-surface  左右栏底                    = 该主题窗口侧栏色的硬编码镜像（无对应令牌）
      --mini-text     主题名 / 标题线             = 该主题 --text
      --mini-line     次要灰线条（正文段落）      = 该主题 --text-mute
      --mini-line-soft 更浅的灰线条（低透明近似） = 该主题 --text-dim
      --mini-hair     分栏细描边                  = 该主题 --line
      --mini-brand    强调（图标点 / 标题条 / 小块）  = 该主题 --brand
-   纯色（--pane / --win-surface）为逐字节选令牌值；带 alpha 的 --text-dim /
+   纯色（--pane 及左右栏底）为逐字节选固定色值；带 alpha 的 --text-dim /
    --line 原样引用（局部变量即为该主题令牌的等价静态值）。
    ------------------------------------------------------------------ */
 
-/* light：--pane #ffffff / --win-surface #fbfbfb / --text #1a1a1a /
+/* light：--pane #ffffff / --text #1a1a1a /
    --text-dim #5c5c5c / --text-mute #8a8a8a / --line rgba(0,0,0,.08) / --brand #5b4de8 */
 .ts-card--light {
   --mini-pane: #ffffff;
@@ -161,7 +161,7 @@
   --mini-brand: #5b4de8;
 }
 
-/* dark：--pane #202020 / --win-surface #2b2b2e / --text #ffffff /
+/* dark：--pane #202020 / --text #ffffff /
    --text-dim #c8c8c8 / --text-mute #909090 / --line rgba(255,255,255,.1) / --brand #8b7ff0 */
 .ts-card--dark {
   --mini-pane: #202020;
@@ -173,7 +173,7 @@
   --mini-brand: #8b7ff0;
 }
 
-/* sage：--pane #fcfffc / --win-surface #fafdfa / --text #1a2a1e /
+/* sage：--pane #fcfffc / --text #1a2a1e /
    --text-dim #4e6254 / --text-mute #7e8f83 / --line rgba(20,60,30,.1) / --brand #4a9d5f */
 .ts-card--sage {
   --mini-pane: #fcfffc;
@@ -185,7 +185,7 @@
   --mini-brand: #4a9d5f;
 }
 
-/* honey：--pane #fffef9 / --win-surface #fffdf6 / --text #2b2415 /
+/* honey：--pane #fffef9 / --text #2b2415 /
    --text-dim #6a5c3c / --text-mute #96886c / --line rgba(80,60,10,.12) / --brand #c99426 */
 .ts-card--honey {
   --mini-pane: #fffef9;

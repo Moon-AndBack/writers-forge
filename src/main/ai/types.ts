@@ -21,7 +21,15 @@ export interface AiChatMessage {
   content: string
 }
 
-/** 归一化错误码。 */
+/**
+ * 归一化错误码。
+ *
+ * 细分说明（同一 HTTP 状态含义不同，必须分开，否则 UI 给出误导性指引）：
+ * - `auth` 为历史粗粒度值（保留兼容），新代码优先用下面三个细分值；
+ * - `plan_restricted`：403 档位 / 套餐限制（换模型或升级档位，而非查密钥）；
+ * - `auth_missing`：401 未配置凭据（去填写 Key）；
+ * - `auth_invalid`：401 凭据无效 / 过期（去重新填写 Key）。
+ */
 export type AiErrorCode =
   | 'network'
   | 'timeout'
@@ -31,6 +39,10 @@ export type AiErrorCode =
   | 'upstream'
   | 'aborted'
   | 'unknown'
+  | 'plan_restricted'
+  | 'session_missing'
+  | 'auth_missing'
+  | 'auth_invalid'
 
 /** 结构化错误（脱敏，不含上游原始响应体）。 */
 export interface AiError {
@@ -38,7 +50,7 @@ export interface AiError {
   code: AiErrorCode
   /** 上游 HTTP 状态（无则省略）。 */
   status?: number
-  /** 简短描述（不含密钥、不含用户正文）。 */
+  /** 仅供日志与诊断的英文技术描述；UI 禁止渲染（界面文案一律按 code 走 i18n）。 */
   message: string
 }
 

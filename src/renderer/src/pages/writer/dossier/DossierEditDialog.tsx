@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, FormField, Input, Modal } from '../../../components/ui'
-import { useModuleLabel } from '../../../shell/activityBar'
+import { useModuleLabel } from '../../../shell/activityBarModules'
 import AliasEditor from './AliasEditor'
 import SubTypeSelect from './SubTypeSelect'
 import type { DossierModule, DossierRow, DossierUpdatePatch } from './dossierTree'

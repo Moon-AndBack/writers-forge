@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useModuleLabel } from '../../../shell/activityBar'
+import { useModuleLabel } from '../../../shell/activityBarModules'
 import SaveBar from '../SaveBar'
 import {
   buildDossierPatch,

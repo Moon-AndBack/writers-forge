@@ -24,7 +24,7 @@ span.entity-highlight {
   padding: 1px 0.16em 1px 0;
   margin: 0 -0.16em 0 -1px;
   cursor: default;
-  transition: background 0.12s var(--ease);
+  transition: background var(--dur-fast) var(--ease);
 }
 
 /* 统一设定库五类：只绑定模块基色，用 `:where(span.entity-highlight)` 把元素部分

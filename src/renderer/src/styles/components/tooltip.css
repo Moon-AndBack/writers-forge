@@ -32,7 +32,7 @@
 
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.12s var(--ease);
+  transition: opacity var(--dur-fast) var(--ease);
 }
 
 /* 位置测量完成后再显形，避免首帧从默认坐标闪现 */

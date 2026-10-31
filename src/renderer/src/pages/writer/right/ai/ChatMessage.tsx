@@ -3,26 +3,8 @@ import Markdown from 'react-markdown'
 import type { Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Button } from '../../../../components/ui'
-import type { AiError } from '../../../../../../preload/types/ai'
+import { AI_ERROR_TEXT_KEYS } from './aiErrorText'
 import type { AiConversationMessage } from './chatRuntime'
-
-/**
- * 错误码 → 文案 key 的静态映射（`ai` ns）。
- *
- * 与设置页 `AiSection` 同款：`satisfies` 强制覆盖 `AiErrorCode` 全部 8 个值，
- * 主进程新增错误码时类型检查会失败，避免面板漏译。AI 面板（模型拉取失败 /
- * 快捷结果失败）复用同一张表，保证同一错误在两处措辞一致。
- */
-export const AI_ERROR_TEXT_KEYS = {
-  network: 'error.network',
-  timeout: 'error.timeout',
-  auth: 'error.auth',
-  rate_limit: 'error.rate_limit',
-  invalid_request: 'error.invalid_request',
-  upstream: 'error.upstream',
-  aborted: 'error.aborted',
-  unknown: 'error.unknown'
-} as const satisfies Record<AiError['code'], string>
 
 /**
  * Markdown 元素覆写：全部只挂类名（样式见 `styles/writer-ai.css`），

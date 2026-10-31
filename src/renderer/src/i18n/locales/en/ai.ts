@@ -69,7 +69,12 @@ const ai = {
     invalid_request: 'Invalid request parameters, please check the Base URL and model ID',
     upstream: 'The provider returned an error, please retry later',
     aborted: 'Request cancelled',
-    unknown: 'Unknown error, please retry later'
+    unknown: 'Unknown error, please retry later',
+    plan_restricted:
+      'The current plan does not support this model; switch models or upgrade your plan',
+    session_missing: 'The conversation identifier is missing; reopen the conversation and retry',
+    auth_missing: 'No API key configured yet',
+    auth_invalid: 'The API key is invalid or expired, please enter it again'
   },
   panel: {
     model: {

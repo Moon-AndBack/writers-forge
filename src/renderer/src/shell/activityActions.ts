@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect } from 'react'
 import type { ReactNode } from 'react'
-import type { WriterModule } from './activityBar'
+import type { WriterModule } from './activityBarModules'
 
 /**
  * 模块级「页面动作」插槽：写作页各模块的标题栏操作区（如章节视图的
@@ -15,34 +15,13 @@ import type { WriterModule } from './activityBar'
  */
 export type ActivityActionMap = Partial<Record<WriterModule, ReactNode>>
 
-interface ActivityActionsContextValue {
+export interface ActivityActionsContextValue {
   actions: ActivityActionMap
   setAction: (module: WriterModule, node: ReactNode) => void
 }
 
-const ActivityActionsContext = createContext<ActivityActionsContextValue | null>(null)
-
-/** 模块级动作 Provider：包裹窗口外壳（置于 ActivityBarProvider 内层）。 */
-export function ActivityActionsProvider({ children }: { children: ReactNode }) {
-  const [actions, setActions] = useState<ActivityActionMap>({})
-
-  const setAction = useCallback((module: WriterModule, node: ReactNode): void => {
-    setActions((prev) => {
-      if (prev[module] === node) return prev
-      const next: ActivityActionMap = { ...prev }
-      if (node === null || node === undefined) delete next[module]
-      else next[module] = node
-      return next
-    })
-  }, [])
-
-  const value = useMemo<ActivityActionsContextValue>(
-    () => ({ actions, setAction }),
-    [actions, setAction]
-  )
-
-  return <ActivityActionsContext.Provider value={value}>{children}</ActivityActionsContext.Provider>
-}
+/** 动作插槽上下文本体（Provider 见 `activityActionsProvider.tsx`）。 */
+export const ActivityActionsContext = createContext<ActivityActionsContextValue | null>(null)
 
 /** 读取指定模块注册的动作节点（无 Provider / 未注册时为 null）。 */
 export function useActivityActions(module: WriterModule): ReactNode {

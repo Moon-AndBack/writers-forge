@@ -4,7 +4,7 @@
   border-radius: var(--r-xs);
   background: var(--soft-solid);
   margin-bottom: 8px;
-  transition: background 0.12s var(--ease);
+  transition: background var(--dur-fast) var(--ease);
 }
 
 .outline-block:hover {
@@ -105,8 +105,8 @@
   overflow: hidden;
   cursor: pointer;
   transition:
-    background 0.12s var(--ease),
-    box-shadow 0.12s var(--ease);
+    background var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
 }
 
 /* hover：不位移，改为品牌色边缘光晕（描边环 + 外发光），与书籍卡一致 */

@@ -45,11 +45,11 @@ const CHAT_BASE_PATH = '/openai/v1'
 /** 上游响应体仅用于关键字分诊，截断后不再外泄（不入日志、不进 `AiError`）。 */
 const DETAIL_LIMIT = 2_000
 
-/** 对外固定的分诊提示语（不含上游原文，避免泄漏响应体）。 */
-const MISSING_SESSION_MESSAGE = '缺少会话标识（x-opencode-session），请重新打开对话后重试'
-const NO_CREDENTIAL_MESSAGE = '尚未配置 OpenCode Go 凭据'
-const INVALID_CREDENTIAL_MESSAGE = 'OpenCode Go 凭据无效或已过期，请重新填写'
-const FREE_TIER_MESSAGE = 'OpenCode Go 拒绝该请求：所选模型可能不在当前档位可用范围内'
+/** 对外固定的分诊描述（英文技术串，不含上游原文，避免泄漏响应体）。 */
+const MISSING_SESSION_MESSAGE = 'Missing x-opencode-session header'
+const NO_CREDENTIAL_MESSAGE = 'No OpenCode Go credential configured'
+const INVALID_CREDENTIAL_MESSAGE = 'OpenCode Go credential invalid or expired'
+const FREE_TIER_MESSAGE = 'OpenCode Go rejected the request: plan-restricted model'
 
 /** 请求头 `User-Agent`：自报产品名 + 运行时版本（不硬编码版本号）。 */
 function buildUserAgent(): string {
@@ -96,19 +96,19 @@ async function readSnippet(response: Response): Promise<string> {
  */
 function mapStatusError(status: number, detail: string, hasKey: boolean): AiError | undefined {
   if (status === 400 && detail.includes('MissingSessionID')) {
-    return { code: 'invalid_request', status, message: MISSING_SESSION_MESSAGE }
+    return { code: 'session_missing', status, message: MISSING_SESSION_MESSAGE }
   }
   if (status === 401) {
     if (detail.includes('Invalid credential')) {
-      return { code: 'auth', status, message: INVALID_CREDENTIAL_MESSAGE }
+      return { code: 'auth_invalid', status, message: INVALID_CREDENTIAL_MESSAGE }
     }
     if (detail.includes('Go requires a credential') || !hasKey) {
-      return { code: 'auth', status, message: NO_CREDENTIAL_MESSAGE }
+      return { code: 'auth_missing', status, message: NO_CREDENTIAL_MESSAGE }
     }
-    return { code: 'auth', status, message: INVALID_CREDENTIAL_MESSAGE }
+    return { code: 'auth_invalid', status, message: INVALID_CREDENTIAL_MESSAGE }
   }
   if (status === 403) {
-    return { code: 'auth', status, message: FREE_TIER_MESSAGE }
+    return { code: 'plan_restricted', status, message: FREE_TIER_MESSAGE }
   }
   return undefined
 }
@@ -140,7 +140,7 @@ async function listModels(options: AiListModelsOptions = {}): Promise<string[]> 
   const connection = getProviderConnection('opencode')
   const baseUrl = normalizeBaseUrl(connection.baseUrl)
   if (!baseUrl) {
-    throw new AiFailure({ code: 'invalid_request', message: 'Base URL 不能为空' })
+    throw new AiFailure({ code: 'invalid_request', message: 'Base URL is empty' })
   }
 
   const timeoutMs = resolveTimeout(options.timeoutMs)
@@ -232,7 +232,7 @@ async function streamChat(
     onEvent({
       type: 'error',
       requestId,
-      error: { code: 'invalid_request', message: '对话消息不能为空' }
+      error: { code: 'invalid_request', message: 'Chat messages are empty' }
     })
     return
   }
@@ -243,7 +243,7 @@ async function streamChat(
     onEvent({
       type: 'error',
       requestId,
-      error: { code: 'invalid_request', message: '尚未选择模型' }
+      error: { code: 'invalid_request', message: 'No model selected' }
     })
     return
   }
@@ -253,7 +253,7 @@ async function streamChat(
     onEvent({
       type: 'error',
       requestId,
-      error: { code: 'invalid_request', message: 'Base URL 不能为空' }
+      error: { code: 'invalid_request', message: 'Base URL is empty' }
     })
     return
   }

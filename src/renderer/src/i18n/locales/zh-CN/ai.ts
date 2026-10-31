@@ -2,7 +2,7 @@
  * AI 文案命名空间（`ai`）：设置页 AI 配置分区，以及后续右栏 AI 对话面板。
  *
  * 约定：
- * - 错误码文案与主进程 `AiErrorCode` 的 8 个值一一对应（`error.*`），供设置页与
+ * - 错误码文案与主进程 `AiErrorCode` 的 12 个值一一对应（`error.*`），供设置页与
  *   对话面板共用；渲染层以静态映射取用，不做字符串拼接 key。
  * - 服务商展示名（DeepSeek / opencode）为品牌标识，保持原文。
  */
@@ -67,7 +67,11 @@ const ai = {
     invalid_request: '请求参数有误，请检查 Base URL 与模型 ID',
     upstream: '服务商返回错误，请稍后重试',
     aborted: '请求已取消',
-    unknown: '未知错误，请稍后重试'
+    unknown: '未知错误，请稍后重试',
+    plan_restricted: '当前档位不支持该模型，请更换模型或升级档位',
+    session_missing: '会话标识缺失，请重新打开对话后重试',
+    auth_missing: '尚未配置 API Key',
+    auth_invalid: 'API Key 无效或已过期，请重新填写'
   },
   panel: {
     model: {

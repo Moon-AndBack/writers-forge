@@ -52,7 +52,11 @@ const AI_ERROR_CODES: readonly string[] = [
   'invalid_request',
   'upstream',
   'aborted',
-  'unknown'
+  'unknown',
+  'plan_restricted',
+  'session_missing',
+  'auth_missing',
+  'auth_invalid'
 ]
 
 function isAiErrorCode(value: unknown): value is AiError['code'] {
