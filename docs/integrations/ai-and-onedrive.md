@@ -117,33 +117,39 @@ ai:chat:start(input)
 
 ## 4. 错误契约
 
-`AiError { code, status?, message }`（`ai/types.ts:36-43`）是跨进程唯一错误形状。上游响应体、请求头、密钥一律不进错误对象。
+`AiError { code, status?, message }`（`ai/types.ts:52-59`）是跨进程唯一错误形状。上游响应体、请求头、密钥一律不进错误对象。
 
-| code              | 触发条件                                                 | status    |
-| ----------------- | -------------------------------------------------------- | --------- |
-| `network`         | `APIConnectionError`、`TypeError`（fetch 连接失败）      | —         |
-| `timeout`         | 本地定时器触发、408、`APIConnectionTimeoutError`         | 可能 408  |
-| `auth`            | 401 / 403（含 OpenCode 凭据 / 档位分诊）                 | 401 / 403 |
-| `rate_limit`      | 402 / 429                                                | 402 / 429 |
-| `invalid_request` | 其余 4xx、空消息、未选模型、Base URL 为空、未知 provider | 可能 4xx  |
-| `upstream`        | ≥ 500、无 status 的 `APIError`                           | 5xx       |
-| `aborted`         | `APIUserAbortError`、`AbortError`、本地取消              | —         |
-| `unknown`         | 其余异常                                                 | —         |
+`AiErrorCode` 共 **14 个**（`ai/types.ts:35-49`）。状态码 → code 的通用映射只有一处真源 `codeFromStatus`（`ai/http.ts:66-75`），OpenCode 的原生 fetch 分支复用 `aiErrorFromStatus`（`ai/http.ts:83-85`）；opencode 适配器在回退通用映射前，先按状态码 + 响应关键字做上游分诊（`providers/opencode.ts:97-114`）。
 
-状态码 → code 的映射只有一处真源 `codeFromStatus`（`ai/http.ts:56-63`），OpenCode 的原生 fetch 分支复用 `aiErrorFromStatus`（`ai/http.ts:71-73`）。
+| code                 | 触发条件                                                                             | 用户可见文案（zh-CN 摘要）                                         |
+| -------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| `network`            | `APIConnectionError`、`TypeError`（fetch 连接失败）                                  | 网络错误，请检查网络连接或 Base URL                                |
+| `timeout`            | 本地定时器触发、408、`APIConnectionTimeoutError`、原生 `TimeoutError`                | 请求超时，请稍后重试                                               |
+| `auth`               | **历史兼容值**，当前通用映射与 opencode 分诊都不再产生                               | 鉴权失败，请检查 API Key（仅存量）                                 |
+| `rate_limit`         | 429（`codeFromStatus`）                                                              | 请求过于频繁，请稍后重试                                           |
+| `invalid_request`    | 其余 4xx（401/402/403/408/429 之外）、空消息、未选模型、Base URL 为空、未知 provider | 请求参数有误，请检查 Base URL 与模型 ID                            |
+| `upstream`           | ≥ 500、无 status 的 `APIError`（按 500 处理）、非 4xx 的其余状态                     | 服务商返回错误，请稍后重试                                         |
+| `aborted`            | `APIUserAbortError`、`AbortError`、本地取消                                          | 请求已取消                                                         |
+| `unknown`            | 其余异常                                                                             | 未知错误，请稍后重试                                               |
+| `plan_restricted`    | **仅 opencode**：403（档位 / 套餐不支持所选模型）                                    | 当前档位不支持该模型，请更换模型或升级档位                         |
+| `session_missing`    | **仅 opencode**：400 且响应含 `MissingSessionID`                                     | 会话标识缺失，请重新打开对话后重试                                 |
+| `auth_missing`       | 401 且上游提示缺少凭据 / 本地无 Key（`createAiClient` 直接抛）                       | 尚未配置 API Key                                                   |
+| `auth_invalid`       | 401 的其余情况（凭据无效 / 过期，opencode 明确报 `Invalid credential` 亦然）         | API Key 无效或已过期，请重新填写                                   |
+| `forbidden`          | **通用 403**（地区 / 账号权限限制；DeepSeek 等走 SDK 通用映射的路径）                | 无权访问该模型（地区限制或账号权限不足），请更换模型或检查账号权限 |
+| `insufficient_quota` | 402（如 DeepSeek 余额不足）                                                          | 账户余额不足，请充值后重试                                         |
 
-**为什么 message 不渲染**：`createAiError` 的 message 取自 `ERROR_MESSAGES`——一份**中文**固定文案（`ai/http.ts:38-47`）。渲染层从不展示它，而是用 `ERROR_KEYS` 把 code 映射到 `ai.error.<code>`：
+四类容易混淆的边界，按代码口径固定如下：
 
-```ts
-export const ERROR_KEYS = {
-  network: 'error.network'
-  // …共 8 项
-} as const satisfies Record<AiErrorCode, string>
-```
+- `auth` 为历史粗粒度值（`ai/types.ts:28`）：union、`ERROR_MESSAGES`、preload 白名单与 i18n 中仍保留，但通用映射（`codeFromStatus`）与 opencode 分诊都不会再产出，新代码一律用细分值。
+- `plan_restricted` 是 **opencode 档位语义**：opencode 的 403 专指「所选模型不在当前档位可用范围」（`providers/opencode.ts:110-112`）；`forbidden` 才是通用 403（地区 / 账号权限）。
+- `insufficient_quota` 对应 **402**：余额 / 配额不足，充值前重试无意义（与可重试的 `rate_limit`（429）刻意分开）。
+- 401 的三态已被拆开：`auth_missing`（未配置凭据）/ `auth_invalid`（凭据无效）/ `session_missing`（opencode 缺会话头，实为 400），不再靠单一 `auth` 笼统提示。
 
-`satisfies Record<AiErrorCode, string>` 的作用是**编译期强制全覆盖**：新增错误码时类型检查直接失败，逼你同步 zh-CN / en 双端文案，避免漏译（`pages/settings/aiSectionSupport.ts:23-32`）。对话面板另有一份同构映射（`pages/writer/right/ai/ChatMessage.tsx:17-24`），同样只读 code。
+**为什么 message 不渲染**：`message` 是**英文技术串**，仅供日志与诊断。`createAiError` 取自 `ERROR_MESSAGES`（`ai/http.ts:42-57`，完整覆盖 14 个 code），opencode 分诊用固定英文描述（`providers/opencode.ts:49-52`，不含上游原文，避免泄漏响应体）；类型注释亦明确「UI 禁止渲染」（`ai/types.ts:57-58`）。
 
-因此主进程的 `message` 目前是**只写不读的死字段**（中文，双语项目里口径错误），见 §10。
+渲染层一律按 `code` 取 i18n：设置页 `ERROR_KEYS`（`pages/settings/aiSectionSupport.ts:23-38`）与对话面板 `AI_ERROR_TEXT_KEYS`（`pages/writer/right/ai/aiErrorText.ts:13-28`）是同构的两张映射表，均以 `satisfies Record<AiErrorCode, string>` **编译期强制全覆盖**——新增错误码时类型检查直接失败，逼你同步 zh-CN / en 双端文案，避免漏译。
+
+preload 侧的白名单 `AI_ERROR_CODES` 已改为对象 + `satisfies Record<AiError['code'], true>`（`preload/api/ai.ts:52-67`）：漏加新 code 即编译失败，避免它被 `readAiError` 判为非法载荷而静默丢弃（表现为 UI 卡在「生成中」）。
 
 ## 5. 对话持久化
 
@@ -309,12 +315,9 @@ const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
 
 ## 10. 已知技术债
 
-- **`AiError.message` 是中文死字段**。主进程按 `ERROR_MESSAGES` 生成中文文案（`ai/http.ts:38-47`），但渲染层只按 code 取 i18n，从不渲染 message；项目又是 zh-CN / en 双语，这条中文串既无用也不合口径。OneDrive 侧则用英文技术描述，两域口径不一致。后续应统一为英文技术描述（对齐 `onedrive/types.ts` 约定）或直接移除。
-- **403 档位限制被压成 `auth`**。OpenCode 返回 403 时映射为 `{ code: 'auth' }`（`providers/opencode.ts:110-112`），渲染层只能显示「鉴权失败，请检查 API Key」，而真实原因可能是「所选模型不在当前档位可用范围」。AI 域也**没有 `forbidden` 一档**（SDK 的 401 / 403 统一归 `auth`），粒度与 OneDrive 域的 21 码不对称；需要独立 code（如 `tier_restricted`）或至少独立文案键。
-- **401 的三态无法在 UI 区分**：未配置凭据 / 凭据无效 / 缺少会话标识在上游是不同校验阶段（`providers/opencode.ts:94-114` 用关键字分诊），但落到 `auth` / `invalid_request` 后，用户只能看到笼统提示。
 - **60 s 预算不随 delta 重置**：长回复可能在流式途中被本地定时器直接 abort（§3.5）。当前未按「首字节超时 + 空闲超时」建模。
 - **`touchAiSession` 无调用方**：schema 注释称 `updated_at` 在「流式结束」刷新，但实际只有 `appendAiMessage` 事务内刷新；该导出函数目前是死代码，注释与实现需对齐。
 - **OneDrive `configured` 恒为 `true`**：因为默认 clientId 始终存在，该字段已无法区分「用户是否自定义过」，需要比较原始 settings 值（`credentials.ts:217-225` 已注明）。
 - **`unsupported_provider` 为历史值**：`AiKeyWriteError` 保留它仅为兼容旧 IPC 载荷，当前流程不会再产生（`ai/types.ts:88-94`）。
 
-最后核对：2026-10-31
+最后核对：2026-11-01
