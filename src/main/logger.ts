@@ -35,7 +35,7 @@ let initialized = false
  * 初始化并配置日志系统（幂等）。
  *
  * 调用时机约束：必须在 `configureAppPaths()` **之后**（这样 `userData` 已被
- * 固定为「Writer's Forge」/「Writer's Forge Dev」），且在任何 `getDb()` 之前。
+ * 固定为 AppData 下的「Writer's Forge」/ 项目根下的 `user_data`），且在任何 `getDb()` 之前。
  * 本函数是首次读取 `app.getPath('userData')` 的地方，读取到的即最终路径。
  */
 export function configureLogger(): void {

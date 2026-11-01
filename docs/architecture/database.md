@@ -24,7 +24,7 @@ instance.pragma('foreign_keys = ON')
 
 关键点：
 
-- **路径固定**：`userData/writers-forge.db`。`userData` 在 app ready 之前由 `src/main/appPaths.ts` 的 `configureAppPaths()` 固定，打包态目录名 `Writer's Forge`、开发态 `Writer's Forge Dev`，两套数据互不干扰。
+- **路径固定**：`userData/writers-forge.db`。`userData` 在 app ready 之前由 `src/main/appPaths.ts` 的 `configureAppPaths()` 固定：打包态为系统 AppData 下的 `Writer's Forge`，开发态为项目根下的 `user_data/`，两套数据互不干扰。
 - **WAL 模式**：读写并发更好，但运行期会额外产生 `writers-forge.db-wal` / `writers-forge.db-shm`。备份不能直接复制主文件，必须用 `db.backup()`（见 §9）。
 - **外键显式开启**：SQLite 默认关闭外键，`foreign_keys = ON` 必须在任何 DDL / DML 之前执行，`books → volumes / chapters / outline_items` 等 `ON DELETE CASCADE` 才生效。
 - **无连接池**：better-sqlite3 为同步 API，所有数据访问模块共享 `getDb()` 返回的同一连接；IPC handler 在主进程串行执行，不存在多连接写冲突。
@@ -278,7 +278,7 @@ ON CONFLICT(id) DO NOTHING
 | 备份临时快照 | `<系统临时目录>/writers-forge-backups/writers-forge-YYYYMMDD-HHmmss.db` |
 | 云端备份     | OneDrive 应用专属目录 `backups/` 下同名 `.db` 文件                      |
 
-`userData` 目录名：打包安装态 `Writer's Forge`，本地开发态 `Writer's Forge Dev`（`src/main/appPaths.ts`）。排查前先确认当前是哪个目录，两者数据完全独立。
+`userData` 目录：打包安装态为系统 AppData 下的 `Writer's Forge`，本地开发态为项目根下的 `user_data/`（`src/main/appPaths.ts`）。排查前先确认当前是哪个目录，两者数据完全独立。
 
 备份入口：设置弹窗「OneDrive 云备份」分区（`onedrive:backup` IPC）。流程为 `getDb().backup()` 生成一致性快照 → 上传到 OneDrive approot 的 `backups/`；快照生成在 WAL 模式下是安全的，**不要**用文件复制替代。当前没有本地手动导出入口，「数据与备份」分区仍是禁用占位。
 

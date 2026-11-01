@@ -44,6 +44,7 @@ wf-*.png
 *.sqlite
 *.sqlite3
 .tmp-diag/
+user_data/
 
 # 工具运行时目录
 .graymatter/

@@ -86,12 +86,12 @@
 
 ## 数据目录
 
-用户数据（SQLite 数据库、日志、缓存）位于系统 `appData` 下的应用目录，目录名由 `src/main/appPaths.ts:9` 决定：
+用户数据（SQLite 数据库、日志、缓存）位置由 `src/main/appPaths.ts` 的 `configureAppPaths()` 决定：
 
-- 打包安装态：`Writer's Forge`
-- 本地开发态：`Writer's Forge Dev`
+- 打包安装态：系统 `appData` 下的 `Writer's Forge`
+- 本地开发态：项目根目录下的 `user_data/`（由 `.gitignore` 忽略）
 
-入口在 app ready 之前调用 `configureAppPaths()` 固定 `userData`（`src/main/appPaths.ts:18`），因此开发与正式数据互不干扰；排查问题前先确认自己看的是哪个目录。
+入口在 app ready 之前调用 `configureAppPaths()` 固定 `userData`，因此开发与正式数据互不干扰；排查问题前先确认自己看的是哪个目录。
 
 ## 首次克隆
 

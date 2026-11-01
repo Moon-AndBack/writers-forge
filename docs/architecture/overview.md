@@ -172,14 +172,14 @@ settings 敏感键过滤（`src/main/ipc/settings.ts:8-24`）：`ai:`（加密�
 
 ### 7.1 数据目录
 
-`configureAppPaths()` 显式 `setPath('userData', …)`，不依赖 `setName` 的隐式推导（`src/main/appPaths.ts:12-21`）：
+`configureAppPaths()` 显式 `setPath('userData', …)`，不依赖 `setName` 的隐式推导（`src/main/appPaths.ts`）：
 
-| 环境       | 目录名               | 依据                     |
-| ---------- | -------------------- | ------------------------ |
-| 打包安装态 | `Writer's Forge`     | `src/main/appPaths.ts:9` |
-| 本地开发态 | `Writer's Forge Dev` | `src/main/appPaths.ts:9` |
+| 环境       | 目录                                 | 依据                                     |
+| ---------- | ------------------------------------ | ---------------------------------------- |
+| 打包安装态 | `<系统 AppData>/Writer's Forge`      | `src/main/appPaths.ts`（`isPackaged`）   |
+| 本地开发态 | `<项目根>/user_data`（`.gitignore`） | `src/main/appPaths.ts`（`getAppPath()`） |
 
-最终 `userData = appData/<目录名>`（`src/main/appPaths.ts:20`）。其下关键文件：
+开发态目录取 `app.getAppPath()` 而非 `process.cwd()`：electron-vite dev 的应用目录即仓库根，ready 前可读且不随 cwd 漂移。其下关键文件：
 
 - 数据库：`writers-forge.db`（`src/main/database/index.ts:65`），连接开启 `journal_mode = WAL` 与 `foreign_keys = ON`（`src/main/database/index.ts:73,75`）。
 - 日志：`userData/logs/main.log`（`src/main/logger.ts:47,51`）。
