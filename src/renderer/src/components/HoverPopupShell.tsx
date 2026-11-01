@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
-import type { CSSProperties, ReactElement, ReactNode } from 'react'
+import type { CSSProperties, MouseEventHandler, ReactElement, ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { CARD_WIDTH, computeCardPosition, computeMorePosition } from './popoverGeometry'
 
@@ -33,8 +33,8 @@ export interface HoverPopupShellProps {
   role?: string
   /** 浮层内容变化时触发重新定位（如「+N」浮窗条目变化会改变高度）。 */
   contentKey?: unknown
-  onPointerEnter?: () => void
-  onPointerLeave?: () => void
+  onPointerEnter?: MouseEventHandler<HTMLDivElement>
+  onPointerLeave?: MouseEventHandler<HTMLDivElement>
   /**
    * 浮层根节点回调 ref（可选）：调用方若需在浮层上做额外测量（如悬停卡用
    * ResizeObserver 取内容宽），经此拿到同一个 DOM 节点，无需再套一层包裹元素。

@@ -35,6 +35,7 @@ const timeline = {
     placeholder: 'Select timeline'
   },
   plotEmpty: 'No plot scenes yet',
+  sceneBodyEmpty: 'This scene has no body yet',
   /* Status bar “card size” control (4 levels; numeric levels show their literal value, only “unlimited” is translated). */
   cardSize: {
     minWidth: 'Min width',

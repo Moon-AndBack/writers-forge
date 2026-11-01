@@ -5,6 +5,7 @@ import Bookshelf from './pages/Bookshelf'
 import Welcome from './pages/Welcome'
 import Writer from './pages/Writer'
 import { TimelineCardSizeProvider } from './pages/writer/timeline/TimelineCardSizeProvider'
+import { DossierFilterProvider } from './pages/writer/dossier/DossierFilterProvider'
 import { ActivityBar, ActivityBarProvider } from './shell/activityBar'
 import { useActivityBar } from './shell/activityBarContext'
 import { ActivityActionsProvider } from './shell/activityActionsProvider'
@@ -21,6 +22,7 @@ import ZoomControls from './shell/statusBarWidgets/ZoomControls'
 import { TypographyProvider } from './shell/statusBarWidgets/TypographyProvider'
 import { useTitleBarOverlay } from './theme/useTitleBarOverlay'
 import './styles/shell.css'
+import './styles/shell-activity-filter.css'
 import './styles/acrylic.css'
 
 /**
@@ -124,48 +126,56 @@ export default function App({ initialActivityPinned }: { initialActivityPinned?:
                   需与时间线视图共享同一份尺寸状态；口径同 TypographyProvider）。 */}
               <TimelineCardSizeProvider>
                 <ActivityBarProvider>
-                  <ActivityActionsProvider>
-                    <div className="shell">
-                      <TitleBar settingsLocked={status !== 'done'} />
+                  {/* 设定档案筛选条件：入口在活动栏、消费在中栏，Provider 挂在两者共同祖先
+                      （口径同 TimelineCardSizeProvider）；bookId 由 pathname 解析，唯一真源。 */}
+                  <DossierFilterProvider>
+                    <ActivityActionsProvider>
+                      <div className="shell">
+                        <TitleBar settingsLocked={status !== 'done'} />
 
-                      <ActivityBarSlot />
+                        <ActivityBarSlot />
 
-                      <main className="app-viewport">
-                        {status === 'loading' ? (
-                          <div className="viewport-placeholder" aria-busy="true" />
-                        ) : (
-                          <Routes>
-                            <Route
-                              path="/"
-                              element={
-                                status === 'required' ? (
-                                  <Welcome onFinish={complete} />
-                                ) : (
-                                  <Bookshelf />
-                                )
-                              }
-                            />
-                            <Route
-                              path="/write/:bookId"
-                              element={
-                                status === 'required' ? <Navigate to="/" replace /> : <WriteRoute />
-                              }
-                            />
-                            {/* 设置已改为标题栏齿轮唤起的弹窗（`SettingsDialog`），
-                                不再占用路由；未匹配路径一律回首页。 */}
-                            <Route path="*" element={<Navigate to="/" replace />} />
-                          </Routes>
-                        )}
-                      </main>
+                        <main className="app-viewport">
+                          {status === 'loading' ? (
+                            <div className="viewport-placeholder" aria-busy="true" />
+                          ) : (
+                            <Routes>
+                              <Route
+                                path="/"
+                                element={
+                                  status === 'required' ? (
+                                    <Welcome onFinish={complete} />
+                                  ) : (
+                                    <Bookshelf />
+                                  )
+                                }
+                              />
+                              <Route
+                                path="/write/:bookId"
+                                element={
+                                  status === 'required' ? (
+                                    <Navigate to="/" replace />
+                                  ) : (
+                                    <WriteRoute />
+                                  )
+                                }
+                              />
+                              {/* 设置已改为标题栏齿轮唤起的弹窗（`SettingsDialog`），
+                                  不再占用路由；未匹配路径一律回首页。 */}
+                              <Route path="*" element={<Navigate to="/" replace />} />
+                            </Routes>
+                          )}
+                        </main>
 
-                      <StatusBar
-                        className={isWriter ? 'is-writer' : undefined}
-                        leading={isWriter ? <StatusBarLeading /> : undefined}
-                      >
-                        <StatusBarWidgets />
-                      </StatusBar>
-                    </div>
-                  </ActivityActionsProvider>
+                        <StatusBar
+                          className={isWriter ? 'is-writer' : undefined}
+                          leading={isWriter ? <StatusBarLeading /> : undefined}
+                        >
+                          <StatusBarWidgets />
+                        </StatusBar>
+                      </div>
+                    </ActivityActionsProvider>
+                  </DossierFilterProvider>
                   {/* 数据健康自检：启动拉取一次，发现问题即弹 Modal（跨路由恒定，位于 Provider 层内） */}
                   <DiagnosticsGate />
                 </ActivityBarProvider>

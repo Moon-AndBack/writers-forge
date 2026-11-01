@@ -125,8 +125,8 @@ export function useDossierWorkspace(module: WriterModule, bookId: string): Dossi
     [selectionApi, patchRow]
   )
 
-  const { create, update, remove, deleteBySubType, addRelation, updateRelation, removeRelation } =
-    useDossierMutations({ active, bookId, currentRows, reload, flushDraft, writeBack })
+  const { create, update, remove, addRelation, updateRelation, removeRelation } =
+    useDossierMutations({ active, bookId, reload, flushDraft, writeBack })
 
   // 切书时清空详情缓存：id 全库唯一不会串数据，但每条缓存含正文全文，跨书白占内存。
   useEffect(() => clearEntityDetailCache(), [bookId])
@@ -150,7 +150,6 @@ export function useDossierWorkspace(module: WriterModule, bookId: string): Dossi
     create,
     update,
     remove,
-    deleteBySubType,
     addRelation,
     updateRelation,
     removeRelation

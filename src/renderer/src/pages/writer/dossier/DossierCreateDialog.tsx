@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, FormField, Input, Modal } from '../../../components/ui'
 import { useModuleLabel } from '../../../shell/activityBarModules'
-import type { DossierCreateInput, DossierModule, DossierRow } from './dossierTree'
+import type { DossierCreateInput, DossierModule } from './dossierTree'
 import { MODULE_ENTITY_TYPE, MODULE_HAS_SUBTYPE } from './dossierTree'
 import SubTypeSelect from './SubTypeSelect'
 
@@ -11,10 +11,6 @@ export interface DossierCreateDialogProps {
   module: DossierModule
   /** 当前书 id（子类分类按书隔离）。 */
   bookId: string
-  /** 同域未删除列表行（用于同子类条目数提示）。 */
-  rows?: DossierRow[]
-  /** 删除自定义子类回调（子类选择器使用）。 */
-  onDeleteSubType?: (subtypeId: number) => void | Promise<void>
   /** 关闭（取消 / 遮罩 / Esc / 关闭按钮）。 */
   onClose: () => void
   /** 提交新建（名称必填；返回新行 id 供调用方决定是否进入编辑器）。 */
@@ -29,8 +25,6 @@ export interface DossierCreateDialogProps {
 export default function DossierCreateDialog({
   module,
   bookId,
-  rows = [],
-  onDeleteSubType,
   onClose,
   onSubmit
 }: DossierCreateDialogProps) {
@@ -93,8 +87,6 @@ export default function DossierCreateDialog({
               entityType={MODULE_ENTITY_TYPE[module]}
               value={subtypeId}
               onChange={setSubtypeId}
-              onDeleteSubType={onDeleteSubType}
-              affectedCount={rows.filter((row) => row.subtypeId === subtypeId).length}
             />
           </FormField>
         ) : null}

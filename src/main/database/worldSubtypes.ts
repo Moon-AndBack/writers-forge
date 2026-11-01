@@ -333,27 +333,61 @@ export function updateWorldSubtype(
   return Number(result.changes) > 0 ? getWorldSubtype(id) : null
 }
 
+/** 删除子类结果：被条目占用时回传**占用条数**；非自定义 / 不存在给出原因（文案由渲染层渲染）。 */
+export type WorldSubtypeDeleteResult =
+  | { ok: true }
+  | { ok: false; reason: 'inUse'; usageCount: number }
+  | { ok: false; reason: 'notCustom' }
+  | { ok: false; reason: 'notFound' }
+
 /**
- * 软删除子类（置 `deleted_at`）并解除其下实体的子类归属；命中返回 true。
- *
- * 同一事务内把 `world_entities.subtype_id` 置空（归为「未分类」），避免实体继续指向
- * 已删分类：删除即终态，不做还原，故无需保留归属。属被动归属清理，不改动实体
- * `updated_at` / `revision`（非内容变更，且读路径重新 JOIN 取分类，无缓存失效需求）。
+ * IPC 通道 `worldSubtype:delete` 的返回契约：数据层判定原样透传，另加未预期异常的
+ * `failed` 兜底（本模块约定不向渲染层抛错，见 `ipc/worldSubtypes.ts`）。
  */
-export function deleteWorldSubtype(id: number): boolean {
+export type WorldSubtypeDeleteOutcome = WorldSubtypeDeleteResult | { ok: false; reason: 'failed' }
+
+/**
+ * 删除子类（软删）：**先查占用，非空拒绝**；仅空分类执行软删。
+ *
+ * 删除语义已由「连带删除条目」改为「拒绝并提示」，避免误删：
+ * - 不存在 / 已软删 → `notFound`；预设分类（`is_custom !== 1`）→ `notCustom`；
+ * - 该分类下仍有**未软删**条目 → `inUse`（排除回收站行，否则有历史的分类永远删不掉）；
+ * - 空分类才软删并返回 `{ ok: true }`。
+ *
+ * 同一事务内把 `world_entities.subtype_id` 置空：因非空已在上方拒绝，此处**只会命中
+ * 回收站（软删）行**，置空是为避免遗留悬空引用（schema 另有 `ON DELETE SET NULL` 兜底）。
+ * 属被动归属清理，不改动实体 `updated_at` / `revision`（非内容变更）。
+ */
+export function deleteWorldSubtype(id: number): WorldSubtypeDeleteResult {
   const db = getDb()
-  const markDeleted = db.prepare(
-    `UPDATE world_subtypes SET deleted_at = ${NOW}, updated_at = ${NOW}
-     WHERE id = ? AND deleted_at IS NULL`
-  )
   const detachEntities = db.prepare(
     'UPDATE world_entities SET subtype_id = NULL WHERE subtype_id = ?'
   )
-  return db.transaction((): boolean => {
-    const result = markDeleted.run(id)
-    if (Number(result.changes) === 0) return false
+  return db.transaction((): WorldSubtypeDeleteResult => {
+    const probe = db
+      .prepare(
+        `SELECT is_custom AS isCustom FROM world_subtypes
+         WHERE id = ? AND deleted_at IS NULL`
+      )
+      .get(id) as { isCustom: number } | undefined
+    if (!probe) return { ok: false, reason: 'notFound' }
+    if (probe.isCustom !== 1) return { ok: false, reason: 'notCustom' }
+
+    const usage = db
+      .prepare(
+        `SELECT COUNT(*) AS count FROM world_entities
+         WHERE subtype_id = ? AND deleted_at IS NULL`
+      )
+      .get(id) as { count: number }
+    if (usage.count > 0) return { ok: false, reason: 'inUse', usageCount: usage.count }
+
+    db.prepare(
+      `UPDATE world_subtypes SET deleted_at = ${NOW}, updated_at = ${NOW}
+       WHERE id = ? AND deleted_at IS NULL`
+    ).run(id)
+    // 仅剩回收站行（见函数头注释）：置空避免悬空引用。
     detachEntities.run(id)
-    return true
+    return { ok: true }
   })()
 }
 

@@ -14,10 +14,6 @@ export interface DossierEditDialogProps {
   bookId: string
   /** 待编辑行（名字 / 别名 / 子类初值）。 */
   row: DossierRow
-  /** 同域未删除列表行（类别删除条目数提示）。 */
-  rows?: DossierRow[]
-  /** 删除自定义类别回调（类别选择器使用）。 */
-  onDeleteSubType?: (subtypeId: number) => void | Promise<void>
   /** 关闭（取消 / 遮罩 / Esc / 关闭按钮）。 */
   onClose: () => void
   /** 提交更新补丁（仅名字 / 别名 / 类别）。 */
@@ -35,8 +31,6 @@ export default function DossierEditDialog({
   module,
   bookId,
   row,
-  rows = [],
-  onDeleteSubType,
   onClose,
   onSubmit
 }: DossierEditDialogProps) {
@@ -117,8 +111,7 @@ export default function DossierEditDialog({
               entityType={MODULE_ENTITY_TYPE[module]}
               value={subtypeId}
               onChange={setSubtypeId}
-              onDeleteSubType={onDeleteSubType}
-              affectedCount={rows.filter((item) => item.subtypeId === subtypeId).length}
+              deleteLockedSubtypeId={row.subtypeId}
             />
           </FormField>
         ) : null}

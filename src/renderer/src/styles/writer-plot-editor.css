@@ -207,3 +207,14 @@
 .rp-view[data-view='timeline'] .timeline-scene-detail {
   animation: wf-enter-fade var(--dur-base) var(--ease) backwards;
 }
+
+/* 时间线只读详情里的富文本正文：父链是「自动高度 flex 列」
+   （`.timeline-scene-detail` 不拉高、滚动由 `.rp-body` 承担），不能沿用大纲右栏
+   `.rp-read` 的「定高父容器 + 内部滚动」假设，否则会塌成 0 高或出现双重滚动条。
+   这里按内容自然撑高、取消内滚；内衬归零以与上方标题 / 时间值左对齐。
+   仅命中时间线视图，不影响大纲右栏的 `.rp-read`。 */
+.rp-view[data-view='timeline'] .timeline-scene-detail .rp-read {
+  flex: none;
+  overflow: visible;
+  padding: 0;
+}

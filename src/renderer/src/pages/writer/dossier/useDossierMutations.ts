@@ -1,6 +1,6 @@
 /**
  * 设定档案写动作装配（自 `useDossierWorkspace.ts` 拆出，§3 ≤500 行）：
- * 新建 / 更新 / 删除 / 按子类删除 + 关系增删改。
+ * 新建 / 更新 / 删除 + 关系增删改。
  *
  * 写操作串行化：右栏「失焦提交 / 关系增删」可能先后触发，用 promise 链保证落库顺序。
  * 依赖（`reload` / `flushDraft` / 写后回填）一律由组合层**显式传入**，不靠闭包捕获，
@@ -34,8 +34,6 @@ export interface DossierMutationsOptions {
   active: DossierModule | null
   /** 当前书籍 id（写入需要；空串表示未选书）。 */
   bookId: string
-  /** 当前域列表（按子类批量删除用）。 */
-  currentRows: DossierRow[]
   /** 重新拉取列表（组合层提供）。 */
   reload: () => Promise<void>
   /** 立即落库当前草稿（有脏才写；新建前调用）。 */
@@ -48,7 +46,6 @@ export interface DossierMutations {
   create: (input: DossierCreateInput) => Promise<number | null>
   update: (id: number, patch: DossierUpdatePatch) => Promise<void>
   remove: (id: number) => Promise<void>
-  deleteBySubType: (subtypeId: number) => Promise<void>
   addRelation: (id: number, input: DossierRelationInput) => Promise<void>
   updateRelation: (id: number, refId: number, patch: DossierRelationPatch) => Promise<void>
   removeRelation: (id: number, refId: number) => Promise<void>
@@ -57,7 +54,6 @@ export interface DossierMutations {
 export function useDossierMutations({
   active,
   bookId,
-  currentRows,
   reload,
   flushDraft,
   writeBack
@@ -150,25 +146,6 @@ export function useDossierMutations({
     [active, reload, writeBack]
   )
 
-  const deleteBySubType = useCallback(
-    async (subtypeId: number): Promise<void> => {
-      if (!active || bookId === '') return
-      const api = window.api?.worldEntity
-      if (!api) return
-      const targets = currentRows.filter((row) => row.subtypeId === subtypeId)
-      try {
-        for (const row of targets) {
-          await api.delete(row.id)
-        }
-      } catch (error) {
-        log.warn('删除分类失败', error)
-      } finally {
-        await reload() // 中途失败也要刷新，避免已删实体的缓存残留。
-      }
-    },
-    [active, bookId, currentRows, reload]
-  )
-
   const addRelation = useCallback(
     async (id: number, input: DossierRelationInput): Promise<void> => {
       if (!active || bookId === '') return
@@ -244,7 +221,6 @@ export function useDossierMutations({
     create,
     update,
     remove,
-    deleteBySubType,
     addRelation,
     updateRelation,
     removeRelation

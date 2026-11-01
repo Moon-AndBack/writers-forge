@@ -38,7 +38,6 @@ export function useDossierBundle(
     create,
     update,
     remove,
-    deleteBySubType,
     addRelation,
     updateRelation,
     removeRelation
@@ -76,7 +75,6 @@ export function useDossierBundle(
       onDelete: (id) => {
         void remove(id)
       },
-      onDeleteSubType: (subtypeId) => deleteBySubType(subtypeId),
       // 关系写入一律按**调用方显式给出的实体 id** 落库（卡片编辑弹窗的目标行
       // 不一定等于右栏选中行）；返回写链 promise，供弹窗写后重拉该行关系。
       onAddRelation: (id, input) => addRelation(id, input),
@@ -102,7 +100,6 @@ export function useDossierBundle(
     create,
     update,
     remove,
-    deleteBySubType,
     addRelation,
     updateRelation,
     removeRelation

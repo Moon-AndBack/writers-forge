@@ -10,6 +10,7 @@ import {
 import type {
   CreateWorldSubtypeInput,
   UpdateWorldSubtypePatch,
+  WorldSubtypeDeleteOutcome,
   WorldSubtypeRow
 } from '../database/worldSubtypes'
 import { WORLD_ENTITY_TYPES } from '../database/worldEntityTypes'
@@ -117,7 +118,8 @@ function parseUpdatePatch(input: unknown): UpdateWorldSubtypePatch | null {
  * - worldSubtype:list          (bookId, entityType?) → WorldSubtypeRow[]
  * - worldSubtype:create        (input)              → WorldSubtypeRow | null
  * - worldSubtype:update        (id, patch)          → WorldSubtypeRow | null
- * - worldSubtype:delete        (id)                 → boolean（软删）
+ * - worldSubtype:delete        (id)                 → WorldSubtypeDeleteOutcome
+ *   （`{ ok: true }` / `inUse` 占用条数 / `notCustom` / `notFound` / `failed`）
  * - worldSubtype:ensurePresets (bookId)             → boolean（是否新建了预设行）
  */
 export function registerWorldSubtypesIpc(): void {
@@ -156,9 +158,21 @@ export function registerWorldSubtypesIpc(): void {
     )
   })
 
-  ipcMain.handle('worldSubtype:delete', (_event, id: unknown) => {
-    if (!isPositiveInt(id)) return false
-    return runWrite('worldSubtype:delete', { id }, () => deleteWorldSubtype(id), false)
+  ipcMain.handle('worldSubtype:delete', (_event, id: unknown): WorldSubtypeDeleteOutcome => {
+    if (!isPositiveInt(id)) {
+      log.warn('worldSubtype:delete 入参非法', { id })
+      return { ok: false, reason: 'notFound' }
+    }
+    try {
+      const result = deleteWorldSubtype(id)
+      if (result.ok) log.debug('worldSubtype:delete 成功', { id })
+      else log.warn('worldSubtype:delete 未删除', { id, reason: result.reason })
+      return result
+    } catch (error) {
+      // 本模块惯例：不向渲染层抛错，未预期异常收敛为 `failed`（渲染层给通用失败提示）。
+      log.error('worldSubtype:delete 失败', { id, error })
+      return { ok: false, reason: 'failed' }
+    }
   })
 
   ipcMain.handle('worldSubtype:ensurePresets', (_event, bookId: unknown) => {

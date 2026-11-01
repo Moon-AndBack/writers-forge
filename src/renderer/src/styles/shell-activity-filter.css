@@ -1,0 +1,126 @@
+/* ============================================================
+   活动栏「模块筛选浮层」样式
+   ------------------------------------------------------------------
+   自 shell.css 拆出（单文件 500 行上限，AGENTS §3）。
+   供 shell/ActivityBarFilterPopover.tsx 使用：五个实体模块图标 hover 触发的
+   可交互浮层（搜索框 + 结果计数 + 列表），视觉与 `.wf-tooltip` 同源，定位由
+   HoverPopupShell 以 fixed + 视口避让内联写入。由 App.tsx 在 shell.css 之后导入。
+   ============================================================ */
+
+/* ---------- 活动栏模块筛选浮层（五个实体模块图标 hover 触发） ----------
+   视觉与 `.wf-tooltip` 同源（--pane 底 + --sh-popup + 单环描边 + --r-xs），
+   区别是**可交互**（含搜索框、结果计数与列表）且定宽；定位由 HoverPopupShell 以
+   fixed + 视口避让内联写入，此处只管外观。层级低于 tooltip（990），高于内容与下拉（60）。
+   宽度收窄到 204px（原 236px）：浮层贴着活动栏右侧，过宽会整列盖住中栏首列 250px 卡片。 */
+.act-filter {
+  position: fixed;
+  z-index: 980;
+  box-sizing: border-box;
+  width: 204px;
+  max-height: min(60vh, 420px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: var(--pane);
+  border-radius: var(--r-xs);
+  box-shadow:
+    var(--sh-popup),
+    0 0 0 1px var(--line);
+  animation: act-filter-in var(--dur-fast) var(--ease) both;
+}
+
+@keyframes act-filter-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 模块名：说明筛选作用于哪个实体域。 */
+.act-filter__head {
+  padding: 0 2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-mute);
+}
+
+/* 搜索框：通用 `.wf-search` 已是 100% 宽，此处固定其纵向尺寸不被压缩，
+   并收紧内衬（浮层收窄后避免输入区被挤得过短）。选择器多带一层 `.act-filter`
+   提高权重，压过 form-extras 的 `.wf-search` 默认内衬。 */
+.act-filter .act-filter__search {
+  flex: none;
+  gap: 6px;
+  padding: 5px 8px;
+}
+
+/* 结果计数（搜索框下方）：与中栏网格同一过滤口径，只报数不列条目；
+   浮层模块不是当前模块时提示切换后生效。预留一行高度避免计数出现时列表跳动。 */
+.act-filter__status {
+  min-height: 15px;
+  margin: 0;
+  padding: 0 2px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-mute);
+}
+
+/* 列表：高度由浮层 max-height 收口，超出滚动。 */
+.act-filter__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.act-filter__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: transparent;
+
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.act-filter__item:hover {
+  background: var(--soft-hover-solid);
+}
+
+.act-filter__item.is-active {
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+.act-filter__item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.act-filter__check {
+  flex: none;
+  font-size: 11px;
+  color: var(--brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .act-filter {
+    animation: none;
+  }
+}

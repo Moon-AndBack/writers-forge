@@ -31,6 +31,7 @@ const timeline = {
     placeholder: '选择时间线'
   },
   plotEmpty: '暂无剧情节点',
+  sceneBodyEmpty: '该节点暂无正文',
   /* 状态栏「卡片尺寸」控件（4 档；数值档展示名直接取字面值，仅「不限制」可译）。 */
   cardSize: {
     minWidth: '最小宽度',

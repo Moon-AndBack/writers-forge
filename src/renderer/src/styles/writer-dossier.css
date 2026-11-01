@@ -237,6 +237,19 @@
   justify-self: stretch;
 }
 
+/* 删除分类的失败提示 / 编辑态锁定提示：根节点为两列网格，提示跨满整行。 */
+.dossier-subtype__notice {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.dossier-subtype__notice.is-error {
+  color: var(--danger);
+}
+
 /* ---------- 右栏详情 ---------- */
 .dossier-detail {
   display: flex;

@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactElement, ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { MouseEvent as ReactMouseEvent, ReactElement, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MorphIcon } from 'morphicons/react'
 import { IconButton } from '../components/ui'
 import { useTooltip } from '../components/ui'
+import { POPOVER_SHOW_DELAY } from '../components/popoverTiming'
 import { ActivityBarContext, useActivityBar } from './activityBarContext'
 import type { ActivityBarContextValue } from './activityBarContext'
-import { WRITER_MODULES } from './activityBarModules'
-import type { WriterModule } from './activityBarModules'
+import ActivityBarFilterPopover from './ActivityBarFilterPopover'
+import { WRITER_MODULES, isDossierModule } from './activityBarModules'
+import type { DossierModule, WriterModule } from './activityBarModules'
 import { useActivityPinned } from './activityPinned'
 import { MODULE_MORPH_ICONS } from './moduleIcons'
 
@@ -16,6 +18,9 @@ export type { WriterModule } from './activityBarModules'
 /** 悬浮胶囊展开延迟（ms）与收起延迟（ms），与 template/index.html 原型一致。 */
 const SHOW_DELAY = 180
 const HIDE_DELAY = 800
+
+/** 模块筛选浮层收起延迟（ms）：给「图标 → portal 浮层」的鼠标穿行留余量。 */
+const FILTER_POPOVER_HIDE_DELAY = 300
 
 /**
  * 活动栏 Provider：包裹窗口外壳，维护「当前模块」与「注册页计数」。
@@ -43,6 +48,14 @@ function cn(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(' ')
 }
 
+/** 判定事件落点是否落在实体模块图标上（`IconButton` 的 `data-module` 钩子）。 */
+function isDossierIconTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false
+  const host = target.closest<HTMLElement>('[data-module]')
+  const id = host?.dataset.module
+  return id !== undefined && isDossierModule(id as WriterModule)
+}
+
 /**
  * 活动栏视图：悬浮胶囊 `.act-pill` + 模块栏 `.activitybar`，两态可切换。
  *
@@ -57,9 +70,30 @@ export function ActivityBar(): ReactElement {
   const { active, setActive } = useActivityBar()
   const { pinned } = useActivityPinned()
   const [shown, setShown] = useState(false)
+  // 模块筛选浮层：目标模块 + 锚点（活元素优先，快照兜底）。
+  const [filterTarget, setFilterTarget] = useState<{
+    module: DossierModule
+    anchorEl: HTMLElement
+    anchorRect: DOMRect
+  } | null>(null)
   const showTimer = useRef<number | null>(null)
   const hideTimer = useRef<number | null>(null)
+  const filterShowTimer = useRef<number | null>(null)
+  const filterHideTimer = useRef<number | null>(null)
   const barRef = useRef<HTMLElement | null>(null)
+  /** 浮层根节点（body portal）：焦点 / 指针是否仍在浮层内只能按节点包含关系判断。 */
+  const filterNodeRef = useRef<HTMLDivElement | null>(null)
+  /**
+   * 浮层「保持打开」状态：由浮层 mouseenter / focusin 置 true，
+   * mouseleave / focusout（relatedTarget 已离开浮层）置 false。
+   * 两处收起计时器在回调开头都读它，指针或焦点仍在浮层内时一律不收起。
+   */
+  const filterEngagedRef = useRef(false)
+
+  /** 浮层根节点回调 ref（HoverPopupShell 的 `elementRef`）。 */
+  const setFilterNode = useCallback((node: HTMLDivElement | null): void => {
+    filterNodeRef.current = node
+  }, [])
   const {
     anchorRef: pillRef,
     anchorProps: pillAnchor,
@@ -89,6 +123,8 @@ export function ActivityBar(): ReactElement {
     () => () => {
       if (showTimer.current !== null) window.clearTimeout(showTimer.current)
       if (hideTimer.current !== null) window.clearTimeout(hideTimer.current)
+      if (filterShowTimer.current !== null) window.clearTimeout(filterShowTimer.current)
+      if (filterHideTimer.current !== null) window.clearTimeout(filterHideTimer.current)
     },
     []
   )
@@ -100,18 +136,164 @@ export function ActivityBar(): ReactElement {
     showTimer.current = window.setTimeout(() => setShown(true), delay)
   }
 
-  const scheduleHide = (): void => {
-    if (pinned) return
-    if (showTimer.current !== null) window.clearTimeout(showTimer.current)
-    if (hideTimer.current !== null) window.clearTimeout(hideTimer.current)
-    hideTimer.current = window.setTimeout(() => setShown(false), HIDE_DELAY)
-  }
+  /**
+   * 焦点是否仍在浮层内（浮层是 body portal，只能按节点包含关系判断）。
+   * 用于在鼠标离开 / 焦点离开时重算「保持打开」这一单一布尔状态。
+   */
+  const isFilterFocused = useCallback((): boolean => {
+    const node = filterNodeRef.current
+    const focused = document.activeElement
+    return node !== null && focused !== null && node.contains(focused)
+  }, [])
 
-  const cancelHide = (): void => {
+  /**
+   * 浮层是否仍被指针或焦点占用。
+   *
+   * 浮层 portal 到 body，`barRef.matches(':hover')` 覆盖不到它，必须单独判断：
+   * ref 布尔由浮层 mouseenter / focusin / mouseleave / focusout 驱动，
+   * `document.activeElement` 兜底（事件丢失时仍能识别「光标停在搜索框里」）。
+   */
+  const isFilterEngaged = useCallback((): boolean => {
+    if (filterEngagedRef.current) return true
+    return isFilterFocused()
+  }, [isFilterFocused])
+
+  const cancelHide = useCallback((): void => {
     if (hideTimer.current !== null) {
       window.clearTimeout(hideTimer.current)
       hideTimer.current = null
     }
+  }, [])
+
+  const scheduleHide = useCallback((): void => {
+    if (pinned) return
+    if (showTimer.current !== null) window.clearTimeout(showTimer.current)
+    if (hideTimer.current !== null) window.clearTimeout(hideTimer.current)
+    hideTimer.current = window.setTimeout(() => {
+      // 守卫：指针或焦点仍在筛选浮层内时不得收起活动栏 —— 浮层是 body portal，
+      // 下面的 `matches(':hover')` 判据覆盖不到它，否则会「浮层关掉顺带收起整栏」。
+      if (isFilterEngaged()) return
+      setShown(false)
+      // 栏收起时浮层不得悬空；一并清掉目标（计时器随浮层卸载即无意义）。
+      setFilterTarget(null)
+    }, HIDE_DELAY)
+  }, [isFilterEngaged, pinned])
+
+  // ---------- 模块筛选浮层（五个实体模块图标 hover） ----------
+
+  const cancelFilterHide = useCallback((): void => {
+    if (filterHideTimer.current !== null) {
+      window.clearTimeout(filterHideTimer.current)
+      filterHideTimer.current = null
+    }
+  }, [])
+
+  /** 挂起收起浮层：延迟结束再判「指针 / 焦点是否仍在浮层内」，避免栏永久展开。 */
+  const scheduleFilterHide = useCallback((): void => {
+    if (filterShowTimer.current !== null) {
+      window.clearTimeout(filterShowTimer.current)
+      filterShowTimer.current = null
+    }
+    cancelFilterHide()
+    filterHideTimer.current = window.setTimeout(() => {
+      filterHideTimer.current = null
+      // 核心守卫：指针或焦点仍在浮层内（典型：点进搜索框后鼠标移出再继续打字）
+      // 时，任何 hover 计时都不允许卸载浮层 —— 否则输入框会随之失焦。
+      if (isFilterEngaged()) return
+      setFilterTarget(null)
+      if (!barRef.current?.matches(':hover')) scheduleHide()
+    }, FILTER_POPOVER_HIDE_DELAY)
+  }, [cancelFilterHide, isFilterEngaged, scheduleHide])
+
+  /** 指针 / 焦点进入浮层：置「保持打开」并取消两处收起计时。 */
+  const engageFilter = useCallback((): void => {
+    filterEngagedRef.current = true
+    cancelFilterHide()
+    cancelHide()
+  }, [cancelFilterHide, cancelHide])
+
+  /** 指针离开浮层：落点仍在浮层内 / 实体图标上时不算离开；否则重算 engaged 并排计时。 */
+  const releaseFilter = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>): void => {
+      const next: EventTarget | null = event.relatedTarget
+      if (next instanceof Node) {
+        if (filterNodeRef.current?.contains(next)) return
+        if (isDossierIconTarget(next)) return
+      }
+      // 指针已离开：仅当焦点仍在浮层内时保持「保持打开」，计时器守卫据此放行或拦截。
+      filterEngagedRef.current = isFilterFocused()
+      scheduleFilterHide()
+    },
+    [isFilterFocused, scheduleFilterHide]
+  )
+
+  /** 指针离开实体模块图标：只有落点既不在浮层内、也不在实体图标上时才排收起。 */
+  const handleIconLeave = useCallback(
+    (event: ReactMouseEvent<HTMLButtonElement>): void => {
+      const next: EventTarget | null = event.relatedTarget
+      if (next instanceof Node) {
+        if (filterNodeRef.current?.contains(next)) return
+        if (isDossierIconTarget(next)) return
+      }
+      filterEngagedRef.current = isFilterFocused()
+      scheduleFilterHide()
+    },
+    [isFilterFocused, scheduleFilterHide]
+  )
+
+  /** 指针离开活动栏：落点在浮层内时视为仍在同一 hover 区域，不收起活动栏。 */
+  const handleBarLeave = (event: ReactMouseEvent<HTMLElement>): void => {
+    const next: EventTarget | null = event.relatedTarget
+    if (next instanceof Node && filterNodeRef.current?.contains(next)) return
+    scheduleHide()
+  }
+
+  /**
+   * 焦点驱动：浮层是 body portal，React 合成事件无法从活动栏冒泡覆盖到它，
+   * 故在浮层根节点上直接监听 focusin / focusout，与 hover 一起驱动同一个
+   * `filterEngagedRef`。
+   */
+  useEffect(() => {
+    if (filterTarget === null) return
+    const node = filterNodeRef.current
+    if (node === null) return
+    const handleFocusIn = (): void => {
+      filterEngagedRef.current = true
+      cancelFilterHide()
+      cancelHide()
+    }
+    const handleFocusOut = (event: FocusEvent): void => {
+      const next = event.relatedTarget
+      // 焦点只在浮层内部移动（搜索框 → 列表项）：仍保持打开。
+      if (next instanceof Node && node.contains(next)) return
+      // 焦点已离开：仅当指针仍在浮层内时保持「保持打开」，否则开始收起计时。
+      const pointerInside = node.matches(':hover')
+      filterEngagedRef.current = pointerInside
+      if (!pointerInside) scheduleFilterHide()
+    }
+    node.addEventListener('focusin', handleFocusIn)
+    node.addEventListener('focusout', handleFocusOut)
+    return () => {
+      node.removeEventListener('focusin', handleFocusIn)
+      node.removeEventListener('focusout', handleFocusOut)
+    }
+  }, [cancelFilterHide, cancelHide, filterTarget, scheduleFilterHide])
+
+  // 浮层卸载后清掉「保持打开」残留，避免下次打开被旧状态挡住计时器。
+  useEffect(() => {
+    if (filterTarget !== null) return
+    filterEngagedRef.current = false
+  }, [filterTarget])
+
+  /** 在图标上停留 `POPOVER_SHOW_DELAY` 后展开该模块的筛选浮层。 */
+  const openFilter = (module: DossierModule, anchorEl: HTMLElement): void => {
+    if (filterShowTimer.current !== null) window.clearTimeout(filterShowTimer.current)
+    cancelFilterHide()
+    filterShowTimer.current = window.setTimeout(() => {
+      filterShowTimer.current = null
+      if (!anchorEl.isConnected) return
+      setFilterTarget({ module, anchorEl, anchorRect: anchorEl.getBoundingClientRect() })
+    }, POPOVER_SHOW_DELAY)
   }
 
   return (
@@ -142,20 +324,37 @@ export function ActivityBar(): ReactElement {
         className={cn('activitybar', shown && 'is-shown')}
         aria-label={t('moduleBarAria')}
         onMouseEnter={cancelHide}
-        onMouseLeave={scheduleHide}
+        onMouseLeave={handleBarLeave}
       >
         {WRITER_MODULES.map((id) => {
           const icons = MODULE_MORPH_ICONS[id]
           const isActive = active === id
+          // 实体模块（五域）额外挂「模块筛选」hover 浮层；`data-module` 供状态定位 / 样式钩子。
+          const dossier = isDossierModule(id)
           return (
             <IconButton
               key={id}
               variant="ghost"
               className={cn('act-btn', isActive && 'is-active')}
               label={tModule(id)}
+              // 实体模块的自绘 tooltip 让位给筛选浮层，避免两层浮层在同一锚点重叠。
+              tooltip={dossier ? '' : undefined}
               tooltipPlacement="right"
               aria-pressed={isActive}
+              data-module={id}
               onClick={() => setActive(id)}
+              onMouseEnter={dossier ? (event) => openFilter(id, event.currentTarget) : undefined}
+              onMouseLeave={dossier ? handleIconLeave : undefined}
+              onFocus={
+                dossier
+                  ? (event) => {
+                      // 仅键盘聚焦（`:focus-visible`）展开，指针路径交给 hover。
+                      if (event.currentTarget.matches(':focus-visible')) {
+                        openFilter(id, event.currentTarget)
+                      }
+                    }
+                  : undefined
+              }
             >
               {/* 形变图标：新选中模块 idle → active，取消选中的模块反向形变；
                   形变由 SVG 路径插值完成（非 CSS transform），尺寸 / 颜色仍由
@@ -170,6 +369,21 @@ export function ActivityBar(): ReactElement {
           )
         })}
       </aside>
+
+      {/* 模块筛选浮层（portal 到 body）：指针移入浮层时必须取消活动栏自身的收起计时，
+          否则 `<aside>` 的 mouseleave 会在 800ms 后把整栏收起、浮层悬空。
+          `key` 绑定模块：切换模块时重挂载，搜索框以该模块已有 query 重新初始化。 */}
+      {filterTarget !== null ? (
+        <ActivityBarFilterPopover
+          key={filterTarget.module}
+          module={filterTarget.module}
+          anchorEl={filterTarget.anchorEl}
+          anchorRect={filterTarget.anchorRect}
+          shellRef={setFilterNode}
+          onKeepOpen={engageFilter}
+          onLeave={releaseFilter}
+        />
+      ) : null}
     </>
   )
 }

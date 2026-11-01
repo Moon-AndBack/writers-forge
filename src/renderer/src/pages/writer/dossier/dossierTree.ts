@@ -2,9 +2,10 @@
  * 设定档案五域（世界观 / 角色 / 势力 / 境界体系 / 物品功法）前端**域描述符**与共享类型。
  *
  * 数据层统一走 `window.api.worldEntity`（`entity_type` 映射：worldview / character /
- * faction / power_system / item）。本文件把五域差异收敛为 `DossierModule → entity_type`
- * 映射与 `DossierBundle`，供中栏卡片视图 / 右栏详情 / 新建弹窗**按 module 参数化复用**
- * （§9 通用组件优先，禁止为五域复制平行实现）。
+ * faction / power_system / item）。`DossierModule → entity_type` 映射的**真源**已收敛到
+ * `shell/activityBarModules`（活动栏筛选面板与页面共用，避免 shell 反向依赖 pages），
+ * 本文件按原路径转出它并承载 `DossierBundle`，供中栏卡片视图 / 右栏详情 / 新建弹窗
+ * **按 module 参数化复用**（§9 通用组件优先，禁止为五域复制平行实现）。
  *
  * 境界体系（`power_system`）与其他四域同构：中栏为卡片网格，点卡在**右栏**详情面板
  * 编辑（上段「体系类型」+ 下段富文本正文），名称 / 别名走卡片铅笔弹窗，删除走卡片垃圾桶；
@@ -21,7 +22,12 @@ import type {
   WorldRefRow,
   WorldSemanticCodeRow
 } from '../../../../../preload/types/worldEntity'
-import type { WriterModule } from '../../../shell/activityBar'
+import {
+  DOSSIER_MODULES,
+  MODULE_ENTITY_TYPE,
+  isDossierModule,
+  type DossierModule
+} from '../../../shell/activityBarModules'
 
 export type {
   WorldCustomField,
@@ -44,26 +50,11 @@ export {
   WORLDVIEW_SUBTYPE_FIELDS
 } from '../../../../../shared/worldSubtypeFields'
 
-/** 设定档案模块 id（与 `WriterModule` 子集一致）。 */
-export type DossierModule = 'worldview' | 'characters' | 'factions' | 'power_system' | 'items'
-
-/** 五域模块清单（顺序即模块栏顺序）。 */
-export const DOSSIER_MODULES: readonly DossierModule[] = [
-  'worldview',
-  'characters',
-  'factions',
-  'power_system',
-  'items'
-]
-
-/** 模块 → 统一设定库实体类型。 */
-export const MODULE_ENTITY_TYPE: Record<DossierModule, WorldEntityType> = {
-  worldview: 'worldview',
-  characters: 'character',
-  factions: 'faction',
-  power_system: 'power_system',
-  items: 'item'
-}
+/* 五域域描述（模块清单 / 模块 → 实体类型 / 类型守卫）真源见顶部 import：
+   `shell/activityBarModules`（活动栏浮层与页面共用同一份）。此处扩大导出面，
+   既有 `from './dossierTree'` 引用全部不变。 */
+export { DOSSIER_MODULES, MODULE_ENTITY_TYPE, isDossierModule }
+export type { DossierModule }
 
 /**
  * 关系「关联对象」可选模块（顺序同模块栏）：世界观 / 角色 / 势力 / 境界体系 /
@@ -129,11 +120,6 @@ export function isReverseRelation(
   toType: WorldEntityType | null
 ): boolean {
   return fromType === 'character' && toType === 'item'
-}
-
-/** 判定模块是否属设定档案五域。 */
-export function isDossierModule(module: WriterModule): module is DossierModule {
-  return (DOSSIER_MODULES as readonly WriterModule[]).includes(module)
 }
 
 /**
@@ -282,8 +268,6 @@ export interface DossierWorkspace {
   update: (id: number, patch: DossierUpdatePatch) => Promise<void>
   /** 软删除某行。 */
   remove: (id: number) => Promise<void>
-  /** 软删除某子类分类下的全部条目（分类行由选择器负责）。 */
-  deleteBySubType: (subtypeId: number) => Promise<void>
   /** 新增出边关系（关系类型取语义码；目标可跨模块）。 */
   addRelation: (id: number, input: DossierRelationInput) => Promise<void>
   /** 更新某实体的关系（出边 / 入边共用，按 `world_refs.id` 落库；类型 / 备注）。 */
@@ -335,8 +319,6 @@ export interface DossierBundle {
   onUpdate: (id: number, patch: DossierUpdatePatch) => void | Promise<void>
   /** 软删除某行。 */
   onDelete: (id: number) => void
-  /** 软删除某自定义子类下的全部条目（分类行本身由子类选择器另行软删）。 */
-  onDeleteSubType: (subtypeId: number) => void | Promise<void>
   /**
    * 新增出边关系（关系类型取语义码；目标可跨模块）。
    * 显式带源实体 id：卡片铅笔弹窗内编辑关系时，弹窗目标行不一定等于右栏选中行。

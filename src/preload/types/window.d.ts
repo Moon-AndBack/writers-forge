@@ -94,6 +94,7 @@ import type {
 import type {
   CreateWorldSubtypeInput,
   UpdateWorldSubtypePatch,
+  WorldSubtypeDeleteOutcome,
   WorldSubtypeRow
 } from './worldSubtype'
 
@@ -242,8 +243,8 @@ export interface Api {
     create: (input: CreateWorldSubtypeInput) => Promise<WorldSubtypeRow | null>
     /** 更新名称 / 排序 / 路由键；不存在 / 已软删 / 空补丁 → null */
     update: (id: number, patch: UpdateWorldSubtypePatch) => Promise<WorldSubtypeRow | null>
-    /** 软删除，命中返回 true */
-    delete: (id: number) => Promise<boolean>
+    /** 删除子类（软删）；非空拒绝 → `inUse`，预设分类 → `notCustom`，异常 → `failed` */
+    delete: (id: number) => Promise<WorldSubtypeDeleteOutcome>
     /** 幂等补齐 23 条预设，返回是否新建了至少一行 */
     ensurePresets: (bookId: string) => Promise<boolean>
   }

@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useStableMeasure } from '../../../components/useStableMeasure'
 import type { OverflowPopupControl } from '../../../components/useOverflowPopup'
 import { POPOVER_HIDE_DELAY, POPOVER_SHOW_DELAY } from '../../../components/popoverTiming'
 import { useModuleLabel } from '../../../shell/activityBarModules'
+import type { DossierModule } from '../../../shell/activityBarModules'
 import { HoverCard } from '../entities/HoverCard'
 import type { HoverAnchor } from '../entities/HoverCard'
 import ConfirmDialog from '../ConfirmDialog'
@@ -12,6 +13,8 @@ import DossierActivityActions from './DossierActivityActions'
 import DossierCard from './DossierCard'
 import DossierCreateDialog from './DossierCreateDialog'
 import DossierEditDialog from './DossierEditDialog'
+import { useDossierFilters } from './dossierFilterContext'
+import { filterDossierRows } from './dossierFilterMatch'
 import DossierRelationsDialog from './DossierRelationsDialog'
 import type { DossierBundle } from './dossierTree'
 
@@ -245,14 +248,48 @@ export default function DossierView({ bundle }: DossierViewProps) {
     onCreate,
     onUpdate,
     onDelete,
-    onDeleteSubType,
     onAddRelation,
     onUpdateRelation,
     onRemoveRelation
   } = bundle
 
-  // 关系行布局签名：单卡内容可用宽（网格列宽 − 卡片左右内边距）。无卡片时不观察。
-  const layoutKey = useStableMeasure(gridRef, rows.length > 0, readGridCardWidth)
+  // 中栏筛选：条件来自活动栏模块浮层（`DossierFilterProvider`，按模块分桶、切模块各自保留）。
+  // `rows` 始终保持全量——选中回退（`useDossierSelection` 取 `currentRows[0]`）依赖全量，
+  // 故只把 `visibleRows` 喂给网格渲染。
+  const { bookId, filters, setSummary } = useDossierFilters()
+  const filterEntry = filters[module]
+  const visibleRows = useMemo(
+    () => filterDossierRows(rows, filterEntry.subtype, filterEntry.query),
+    [rows, filterEntry]
+  )
+
+  // 匹配汇总上报：浮层里的「匹配 N 项」与网格同一口径（直接取入参 / 出参长度），
+  // 不在浮层另写一套过滤。值比较守卫避免 effect → Context → 重渲染的自激循环。
+  const reportedSummary = useRef<{
+    bookId: string
+    module: DossierModule
+    total: number
+    matched: number
+  } | null>(null)
+  useEffect(() => {
+    const total = rows.length
+    const matched = visibleRows.length
+    const previous = reportedSummary.current
+    if (
+      previous !== null &&
+      previous.bookId === bookId &&
+      previous.module === module &&
+      previous.total === total &&
+      previous.matched === matched
+    ) {
+      return
+    }
+    reportedSummary.current = { bookId, module, total, matched }
+    setSummary(module, { total, matched })
+  }, [bookId, module, rows, setSummary, visibleRows])
+
+  // 关系行布局签名：单卡内容可用宽（网格列宽 − 卡片左右内边距）。无可见卡片时不观察。
+  const layoutKey = useStableMeasure(gridRef, visibleRows.length > 0, readGridCardWidth)
 
   // 关系入口开关：境界体系仍无卡片关系入口（其余四域，含世界观，卡片挂入口）。
   const relationsEnabled = module !== 'power_system'
@@ -282,13 +319,19 @@ export default function DossierView({ bundle }: DossierViewProps) {
               <div className="placeholder-title">{t('emptyTitle', { module: moduleLabel })}</div>
               <div className="placeholder-desc">{t('emptyDesc')}</div>
             </div>
+          ) : visibleRows.length === 0 ? (
+            /* 有数据但被筛选条件全部滤掉：与「模块还没有条目」的空态文案区分。 */
+            <div className="placeholder-view" role="note">
+              <div className="placeholder-title">{t('filter.emptyTitle')}</div>
+              <div className="placeholder-desc">{t('filter.emptyDesc')}</div>
+            </div>
           ) : (
             <div
               className="dossier-grid"
               ref={gridRef}
               aria-label={t('gridAria', { module: moduleLabel })}
             >
-              {rows.map((row) => (
+              {visibleRows.map((row) => (
                 <DossierCard
                   key={row.id}
                   row={row}
@@ -315,8 +358,6 @@ export default function DossierView({ bundle }: DossierViewProps) {
         <DossierCreateDialog
           module={module}
           bookId={bundle.bookId}
-          rows={bundle.rows}
-          onDeleteSubType={bundle.onDeleteSubType}
           onClose={() => setCreateOpen(false)}
           onSubmit={onCreate}
         />
@@ -327,8 +368,6 @@ export default function DossierView({ bundle }: DossierViewProps) {
           module={module}
           bookId={bundle.bookId}
           row={editRow}
-          rows={bundle.rows}
-          onDeleteSubType={onDeleteSubType}
           onClose={() => setEditId(null)}
           onSubmit={(patch) => onUpdate(editRow.id, patch)}
         />

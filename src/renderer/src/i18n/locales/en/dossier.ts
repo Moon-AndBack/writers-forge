@@ -7,12 +7,22 @@ import type { ZhCNResources } from '../zh-CN'
 
 const dossier = {
   gridAria: '{{module}} cards',
-  countLabel: '{{total}} in total',
   unnamed: 'Untitled',
   subTypeUncategorized: 'Uncategorized',
   subTypeRequired: 'Please select a category',
   emptyTitle: 'No {{module}} yet',
   emptyDesc: 'Click the plus at the top-left of the title bar to create the first one',
+  filter: {
+    all: 'All',
+    subtypeAria: 'Filter by subtype',
+    searchPlaceholder: 'Search names or aliases',
+    searchAria: 'Search names or aliases',
+    emptyTitle: 'No matching results',
+    emptyDesc: 'Try a different keyword or subtype',
+    matchCount: '{{count}} matches',
+    noMatch: 'No matches',
+    applyOnSwitch: 'Takes effect after switching to “{{module}}”'
+  },
   createAction: 'New {{module}}',
   createDialog: {
     title: 'New {{module}}',
@@ -25,8 +35,12 @@ const dossier = {
     deleteSubType: 'Delete category',
     deleteSubTypeTitle: 'Delete category',
     deleteSubTypeMessage:
-      'Delete custom category “{{name}}”? The {{count}} entries under it will be removed.',
-    deleteSubTypeDisabled: 'Default categories cannot be deleted'
+      'Delete the custom category “{{name}}”? It cannot be deleted while entries still belong to it.',
+    deleteSubTypeDisabled: 'Preset categories cannot be deleted',
+    deleteSubTypeInUse: 'This category still has {{count}} entries and cannot be deleted',
+    deleteSubTypeFailed: 'Failed to delete the category. Please try again.',
+    deleteSubTypeLockedEditHint:
+      'The entry being edited belongs to this category. Move it to another category first.'
   },
   cardEmptyDesc: 'No summary',
   editAction: 'Edit',
@@ -42,9 +56,6 @@ const dossier = {
   },
   relationsDialog: {
     title: 'Relations'
-  },
-  view: {
-    uncategorized: 'Uncategorized'
   },
   dialog: {
     unsavedSwitch: {

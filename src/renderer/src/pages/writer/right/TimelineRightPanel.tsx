@@ -1,5 +1,7 @@
 import type { ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
+import ReadonlyRichText from '../../../components/editor/ReadonlyRichText'
+import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
 import TimelineOriginPanel from '../timeline/TimelineOriginPanel'
 import { plotSceneTime, plotSceneTitle, type PlotSceneRow } from '../plot/plotTree'
 
@@ -21,6 +23,14 @@ function TimelineSceneDetail({ scene }: { scene: PlotSceneRow | null }): ReactEl
     ad: t('timeEra.ad'),
     yearUnit: t('timeYearUnit')
   }
+  // 正文以块级 JSON 为准；老数据 `descriptionJson` 为空（null / ''）时按派生纯文本兜底，
+  // 转换复用共享纯函数（§9），避免在组件里重复实现。
+  const bodyJson =
+    typeof scene.descriptionJson === 'string' && scene.descriptionJson.trim() !== ''
+      ? scene.descriptionJson
+      : scene.description.trim() !== ''
+        ? plainTextToDocJson(scene.description)
+        : null
   return (
     // key 随选中场景变化：同一 `<div>` 复用时只换文本不会重播进场动画，按场景重建即可。
     <div key={scene.id} className="plot-editor timeline-scene-detail pane-region">
@@ -35,12 +45,11 @@ function TimelineSceneDetail({ scene }: { scene: PlotSceneRow | null }): ReactEl
             {plotSceneTime(scene, t('undatedScene'), eraLabels)}
           </div>
         </div>
-        {scene.description.trim() !== '' ? (
-          <div className="plot-field">
-            <span className="plot-field-label">{t('editor.fieldContent')}</span>
-            <div className="plot-scene-desc">{scene.description}</div>
-          </div>
-        ) : null}
+        {/* 剧情内容：只读富文本正文（替换原纯文本；空正文由组件统一显示占位）。 */}
+        <div className="plot-field">
+          <span className="plot-field-label">{t('editor.fieldContent')}</span>
+          <ReadonlyRichText json={bodyJson} emptyText={tTimeline('sceneBodyEmpty')} />
+        </div>
       </div>
       <div className="plot-scene-desc">{tTimeline('readonlyNote')}</div>
     </div>

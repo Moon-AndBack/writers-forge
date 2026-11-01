@@ -11,7 +11,6 @@
  */
 const dossier = {
   gridAria: '{{module}}卡片列表',
-  countLabel: '共 {{total}} 条',
   unnamed: '未命名',
   /** 历史未分类数据（`subtype_id = NULL`）的占位文案；不提供回选入口。 */
   subTypeUncategorized: '未分类',
@@ -19,6 +18,24 @@ const dossier = {
   subTypeRequired: '请选择类别',
   emptyTitle: '还没有{{module}}',
   emptyDesc: '点标题栏左上角的加号新建第一条',
+  /**
+   * 活动栏「模块筛选」浮层（五个实体模块图标 hover 触发）：条件按模块分桶、
+   * 浮层收起后仍生效；搜索只模糊匹配名称与别名（不含正文）。
+   */
+  filter: {
+    /** 列表项：全部。 */
+    all: '全部',
+    subtypeAria: '按子类筛选',
+    searchPlaceholder: '搜索名称或别名',
+    searchAria: '搜索名称或别名',
+    emptyTitle: '无匹配结果',
+    emptyDesc: '换个关键词或子类再试',
+    /** 搜索结果计数（浮层内只报数，不列条目）；0 条时用 `noMatch`。 */
+    matchCount: '匹配 {{count}} 项',
+    noMatch: '无匹配',
+    /** 浮层所属模块不是当前活动模块：关键词要切过去才生效。 */
+    applyOnSwitch: '切换到「{{module}}」后生效'
+  },
   createAction: '新建{{module}}',
   createDialog: {
     title: '新建{{module}}',
@@ -30,8 +47,15 @@ const dossier = {
     addSubTypePlaceholder: '输入新分类名',
     deleteSubType: '删除分类',
     deleteSubTypeTitle: '删除分类',
-    deleteSubTypeMessage: '确定删除自定义分类「{{name}}」？该分类下的 {{count}} 条条目将被删除。',
-    deleteSubTypeDisabled: '默认分类不可删除'
+    deleteSubTypeMessage: '确定删除自定义分类「{{name}}」？该分类下仍有条目时将无法删除。',
+    /** 预设分类删除被拒（数据层 `notCustom`）。 */
+    deleteSubTypeDisabled: '预设分类不可删除',
+    /** 分类下仍有条目删除被拒（数据层 `inUse`），`count` 为未删除条目数。 */
+    deleteSubTypeInUse: '该分类下仍有 {{count}} 个条目，无法删除',
+    /** 其余失败（含未预期异常）。 */
+    deleteSubTypeFailed: '删除分类失败，请重试',
+    /** 编辑弹窗内：正在编辑的条目所属分类不可删。 */
+    deleteSubTypeLockedEditHint: '正在编辑的条目属于该分类，请先把条目改到其他分类再删除'
   },
   cardEmptyDesc: '暂无简介',
   editAction: '编辑',
@@ -49,9 +73,6 @@ const dossier = {
   /** 关联关系独立弹窗（标题 + 分区标题）。 */
   relationsDialog: {
     title: '关联关系'
-  },
-  view: {
-    uncategorized: '未分类'
   },
   dialog: {
     /** 右栏有未保存改动时切换条目：两态确认（保存并切换 / 不保存）。 */

@@ -9,6 +9,8 @@ import type {
   CreateWorldSubtypeInput,
   PresetWorldSubtype,
   UpdateWorldSubtypePatch,
+  WorldSubtypeDeleteOutcome,
+  WorldSubtypeDeleteResult,
   WorldSubtypeRow
 } from '../../main/database/worldSubtypes'
 
@@ -16,5 +18,7 @@ export type {
   CreateWorldSubtypeInput,
   PresetWorldSubtype,
   UpdateWorldSubtypePatch,
+  WorldSubtypeDeleteOutcome,
+  WorldSubtypeDeleteResult,
   WorldSubtypeRow
 }

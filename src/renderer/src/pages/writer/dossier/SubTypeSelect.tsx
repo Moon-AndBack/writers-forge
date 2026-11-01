@@ -18,15 +18,20 @@ export interface SubTypeSelectProps {
   value: number | null
   /** 选中 / 新建后回调（回传分类 id；null 仅用于删除当前分类后的复位）。 */
   onChange: (value: number | null) => void
-  /** 删除当前自定义分类（软删该分类下条目 + 分类行）。 */
-  onDeleteSubType?: (subtypeId: number) => void | Promise<void>
-  /** 当前子类下的条目数（用于确认文案）。 */
-  affectedCount?: number
+  /**
+   * 正在编辑的实体所属分类 id（编辑弹窗传入）：该分类必然被占用、删除必被拒绝，
+   * 故禁用其删除按钮并给出内联提示，避免反复点击失败。新建弹窗不传。
+   */
+  deleteLockedSubtypeId?: number | null
   /** Select 占位文案。 */
   selectPlaceholder?: string
   /** 新增分类输入占位文案。 */
   addPlaceholder?: string
 }
+
+/** 删除失败原因（`failed` 兼收 `notFound` 与未预期异常，统一给通用失败提示）。 */
+type DeleteFailure =
+  { reason: 'inUse'; usageCount: number } | { reason: 'notCustom' } | { reason: 'failed' }
 
 /**
  * 子类选择器（第 4 批）：选项来自 `worldSubtype:list`（当前书 + 当前实体类型），
@@ -34,7 +39,8 @@ export interface SubTypeSelectProps {
  * 数据仅以占位文案展示，无法回选 `null`。
  *
  * 底部「新增分类」输入回车即调用 `worldSubtype:create`（`isCustom: 1`）建行并选中；
- * 仅自定义分类（`isCustom = 1`）可删除，删除前二次确认（同分类下条目一并软删）。
+ * 仅自定义分类（`isCustom = 1`）可删除，删除前二次确认；**分类下仍有条目时主进程
+ * 拒绝删除**，本组件按原因给出内联提示（不再连带删除条目）。
  * 通用组件：世界观 / 势力 / 物品功法三域共用，差异全部经 props 表达（§9）。
  */
 export default function SubTypeSelect({
@@ -42,8 +48,7 @@ export default function SubTypeSelect({
   entityType,
   value,
   onChange,
-  onDeleteSubType,
-  affectedCount,
+  deleteLockedSubtypeId,
   selectPlaceholder,
   addPlaceholder
 }: SubTypeSelectProps) {
@@ -53,6 +58,7 @@ export default function SubTypeSelect({
   const [custom, setCustom] = useState('')
   const [creating, setCreating] = useState(false)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteError, setDeleteError] = useState<DeleteFailure | null>(null)
 
   // 换书 / 换域时重新拉取分类；卸载后丢弃回包（避免对已卸载组件 setState）。
   useEffect(() => {
@@ -78,6 +84,8 @@ export default function SubTypeSelect({
 
   const selected = useMemo(() => rows.find((row) => row.id === value) ?? null, [rows, value])
   const isCustom = selected !== null && selected.isCustom === 1
+  // 编辑中的条目所属分类：必然被该条目占用，删除必被拒绝 → 直接禁用。
+  const deleteLocked = selected !== null && selected.id === deleteLockedSubtypeId
 
   const options = useMemo(
     () => rows.map((row) => ({ value: String(row.id), label: row.name })),
@@ -87,6 +95,7 @@ export default function SubTypeSelect({
   const handleSelect = (next: string): void => {
     // 选项全部来自分类表（非空 id）；不再提供清空为 `null` 的入口。
     if (next === '') return
+    setDeleteError(null)
     onChange(Number(next))
   }
 
@@ -122,15 +131,31 @@ export default function SubTypeSelect({
   const handleDeleteConfirm = async (): Promise<void> => {
     const target = selected
     setDeleteConfirmOpen(false)
+    setDeleteError(null)
     if (!target || target.isCustom !== 1) return
     const api = window.api?.worldSubtype
+    if (!api) {
+      setDeleteError({ reason: 'failed' })
+      return
+    }
     try {
-      await onDeleteSubType?.(target.id)
-      await api?.delete(target.id)
+      const result = await api.delete(target.id)
+      if (!result.ok) {
+        // 失败不移除本地行、不复位选中：分类仍在，选择保持原状。
+        if (result.reason === 'inUse') {
+          setDeleteError({ reason: 'inUse', usageCount: result.usageCount })
+        } else if (result.reason === 'notCustom') {
+          setDeleteError({ reason: 'notCustom' })
+        } else {
+          setDeleteError({ reason: 'failed' })
+        }
+        return
+      }
       setRows((prev) => prev.filter((row) => row.id !== target.id))
       onChange(null)
     } catch (error) {
       log.warn('删除子类失败', error)
+      setDeleteError({ reason: 'failed' })
     }
   }
 
@@ -150,12 +175,27 @@ export default function SubTypeSelect({
         <Button
           variant="danger"
           size="sm"
-          disabled={!isCustom}
-          onClick={() => setDeleteConfirmOpen(true)}
+          disabled={!isCustom || deleteLocked}
+          onClick={() => {
+            setDeleteError(null)
+            setDeleteConfirmOpen(true)
+          }}
         >
           {t('createDialog.deleteSubType')}
         </Button>
       </div>
+      {deleteLocked ? (
+        <p className="dossier-subtype__notice">{t('createDialog.deleteSubTypeLockedEditHint')}</p>
+      ) : null}
+      {deleteError ? (
+        <p className="dossier-subtype__notice is-error" role="alert">
+          {deleteError.reason === 'inUse'
+            ? t('createDialog.deleteSubTypeInUse', { count: deleteError.usageCount })
+            : deleteError.reason === 'notCustom'
+              ? t('createDialog.deleteSubTypeDisabled')
+              : t('createDialog.deleteSubTypeFailed')}
+        </p>
+      ) : null}
       <div className="dossier-subtype__add">
         <Input
           value={custom}
@@ -185,8 +225,7 @@ export default function SubTypeSelect({
         onConfirm={() => void handleDeleteConfirm()}
         title={t('createDialog.deleteSubTypeTitle')}
         message={t('createDialog.deleteSubTypeMessage', {
-          name: selected?.name ?? '',
-          count: affectedCount ?? 0
+          name: selected?.name ?? ''
         })}
         confirmText={tCommon('confirm')}
         cancelText={tCommon('cancel')}
