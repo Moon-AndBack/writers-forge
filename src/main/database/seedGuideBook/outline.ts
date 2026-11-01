@@ -238,7 +238,7 @@ export const GUIDE_OUTLINE: readonly SeedOutlineGroup[] = [
         doc: seedOutlineDoc([
           seedHeading('要点'),
           seedParagraph(
-            '四档主题加跟随系统；亮色 / 暗色的品牌色跟随 Windows 系统强调色（改系统颜色即即时更新），浅绿 / 浅黄保留静态品牌色。状态栏排版胶囊调字体 / 行距 / 字距 / 页宽，缩放 80%–200% 九档。'
+            '四档主题加跟随系统；亮色 / 暗色的品牌色跟随 Windows 系统强调色（改系统颜色即即时更新），浅绿 / 浅黄保留静态品牌色。状态栏排版胶囊调字体 / 行距 / 字距 / 页宽（页宽只在章节 / 大纲模块显示），缩放 80%–200% 九档。'
           )
         ])
       },

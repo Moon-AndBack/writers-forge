@@ -45,6 +45,9 @@ function ActivityBarSlot() {
  *
  * 去重：若当前活动模块已自带右下角插槽（`right`，如时间线页的卡片尺寸控件），
  * 则跳过本全局组，避免出现两组控件 / 页宽残留；未注册模块行为不变。
+ *
+ * 页宽只作用于中栏版心（章节 / 大纲）；其余模块的右栏正文不吃 `--page-width`
+ * 入口，故按模块 id 省略该项，字体 / 行距 / 字距 仍在所有模块照常显示。
  */
 function StatusBarWidgets() {
   const { pathname } = useLocation()
@@ -54,9 +57,12 @@ function StatusBarWidgets() {
   if (!pathname.startsWith('/write/')) return null
   if (right != null) return null
 
+  // 模块 id 逐字取自 `WRITER_MODULES`；非章节 / 大纲（含无 Provider 回退态）都不显示页宽。
+  const showPageWidth = active === 'chapters' || active === 'outline'
+
   return (
     <div className="st-right">
-      <TypographyControls />
+      <TypographyControls showPage={showPageWidth} />
       <ZoomControls />
     </div>
   )

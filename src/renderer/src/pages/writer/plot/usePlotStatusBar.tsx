@@ -24,7 +24,7 @@ export function usePlotStatusBar(editing: boolean): void {
         ? {
             right: (
               <div className="st-right">
-                <TypographyControls omit={['page']} />
+                <TypographyControls showPage={false} />
                 <ZoomControls />
               </div>
             )

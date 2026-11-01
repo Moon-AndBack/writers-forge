@@ -99,6 +99,70 @@
   color: var(--text);
 }
 
+/* ---------- 页宽胶囊的显隐过渡（.st-pill-swap） ----------
+   页宽胶囊在「显示 / 隐藏」间切换时不再整体卸载 / 挂载，而是保留元素、
+   以「胶囊自身收窄 + 淡出」过渡，使排版组右端（含缩放控件）平滑位移。
+
+   裁剪放在按钮上（`overflow: hidden`），**不放在本包装容器上**：
+   `.st-popup` 是 `.st-pill-wrap` 内向上弹出的绝对定位层，容器一旦
+   overflow: hidden 会把弹窗裁掉（同 statusbar.css 顶部既有约定）。
+
+   收起后占位归零：按钮 min-width / padding-inline / max-width 收到 0，
+   `.st-pill-wrap` 随之收为 0 宽；再以 margin-inline: -2.5px 抵消
+   `.st-right` 的 5px gap 在左右各留的一次间隔（5 - 2.5 + 0 - 2.5 + 5 = 5px），
+   与「原先未渲染」时的最终间距完全一致，无残留空档 / 描边。 */
+.st-pill-swap {
+  display: inline-flex;
+  flex: none;
+  transition: margin 180ms var(--ease);
+}
+
+.st-pill-swap .st-pill-btn {
+  /* 上限只是收窄插值的起点（必须略大于真实宽度，否则展开态会被裁）。
+     页宽最宽档位为 en「Medium」≈ 62px，取 72px 留 10px 余量；
+     该值需真实渲染核对（见交付说明）。 */
+  max-width: 72px;
+  overflow: hidden;
+  transition:
+    max-width 180ms var(--ease),
+    min-width 180ms var(--ease),
+    padding 180ms var(--ease),
+    opacity 140ms var(--ease),
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast);
+}
+
+/* 收起态。visibility 不参与插值（不写进 base 过渡，故展开即时可见）：
+   延迟到收窄结束（180ms）再隐藏，既保留完整淡出，又让内部按钮退出 Tab 序列；
+   pointer-events: none 兜住过渡期间的误点。 */
+.st-pill-swap[data-hidden='true'] {
+  margin-inline: -2.5px;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    margin 180ms var(--ease),
+    visibility 0s linear 180ms;
+}
+
+.st-pill-swap[data-hidden='true'] .st-pill-btn {
+  min-width: 0;
+  max-width: 0;
+  padding-inline: 0;
+  opacity: 0;
+}
+
+/* 减动效：直接落到终态（不做收窄 / 淡出，立即退出 Tab 序列）。
+   base.css 已全局把 transition-duration 压到 0.01ms，但不会清 delay，
+   故此处显式清掉 delay（否则 visibility 仍会延迟 180ms 才隐藏）。 */
+@media (prefers-reduced-motion: reduce) {
+  .st-pill-swap,
+  .st-pill-swap .st-pill-btn,
+  .st-pill-swap[data-hidden='true'] {
+    transition: none !important;
+    transition-delay: 0s !important;
+  }
+}
+
 /* ---------- 胶囊弹窗（.st-popup*，原型 L746–763） ---------- */
 .st-popup {
   position: absolute;
@@ -169,6 +233,9 @@
   height: 22px;
   display: grid;
   place-items: center;
+  /* 抵消数学符号（− / +）墨迹偏下与 Segoe 行布局偏置：border-box 下
+     content 区上移 → 字形墨迹中心上移 1.5px，与百分比数字对齐。 */
+  padding-bottom: 3px;
   border-radius: 2px;
   color: var(--text-dim);
   font-size: 13px;
@@ -189,11 +256,18 @@
   cursor: default;
 }
 
+/* 百分比与左右按钮同高同口径居中：三者均为 22px 高 + line-height:1，
+   消除原先继承 body line-height:1.55 造成的行盒高度差（错位根因）。
+   font-size 与 .wf-stepper__value 同口径（11.5px）。 */
 .st-zoom-val {
+  display: grid;
+  place-items: center;
+  height: 22px;
   min-width: 42px;
   text-align: center;
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 11.5px;
+  line-height: 1;
   font-weight: 600;
   color: var(--text-dim);
   user-select: none;
