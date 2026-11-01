@@ -74,7 +74,10 @@ const ai = {
       'The current plan does not support this model; switch models or upgrade your plan',
     session_missing: 'The conversation identifier is missing; reopen the conversation and retry',
     auth_missing: 'No API key configured yet',
-    auth_invalid: 'The API key is invalid or expired, please enter it again'
+    auth_invalid: 'The API key is invalid or expired, please enter it again',
+    forbidden:
+      'Access denied for this model (region restriction or insufficient account permissions); switch models or check your account permissions',
+    insufficient_quota: 'Insufficient balance in your provider account; please top up and retry'
   },
   panel: {
     model: {

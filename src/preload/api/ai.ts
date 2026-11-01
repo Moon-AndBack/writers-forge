@@ -43,24 +43,31 @@ function readUsage(value: unknown): AiUsage | undefined {
   return usage
 }
 
-/** 归一化错误码全集（与 `main/ai/types` 的 `AiErrorCode` 同步）。 */
-const AI_ERROR_CODES: readonly string[] = [
-  'network',
-  'timeout',
-  'auth',
-  'rate_limit',
-  'invalid_request',
-  'upstream',
-  'aborted',
-  'unknown',
-  'plan_restricted',
-  'session_missing',
-  'auth_missing',
-  'auth_invalid'
-]
+/**
+ * 归一化错误码全集（与 `main/ai/types` 的 `AiErrorCode` 同步）。
+ *
+ * 用对象 + `satisfies` 而非字符串数组：漏加新 code 会编译报错，
+ * 否则该 code 会被 `readAiError` 判为非法载荷而静默丢弃，UI 卡在「生成中」。
+ */
+const AI_ERROR_CODES = {
+  network: true,
+  timeout: true,
+  auth: true,
+  rate_limit: true,
+  invalid_request: true,
+  upstream: true,
+  aborted: true,
+  unknown: true,
+  plan_restricted: true,
+  session_missing: true,
+  auth_missing: true,
+  auth_invalid: true,
+  forbidden: true,
+  insufficient_quota: true
+} satisfies Record<AiError['code'], true>
 
 function isAiErrorCode(value: unknown): value is AiError['code'] {
-  return typeof value === 'string' && AI_ERROR_CODES.includes(value)
+  return typeof value === 'string' && Object.hasOwn(AI_ERROR_CODES, value)
 }
 
 /** 读取脱敏错误对象；缺字段视为非法载荷，直接丢弃。 */

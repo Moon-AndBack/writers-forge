@@ -51,7 +51,9 @@ const ERROR_MESSAGES: Record<AiError['code'], string> = {
   plan_restricted: 'Request rejected by plan / tier restriction',
   session_missing: 'Missing session identifier',
   auth_missing: 'No credential configured',
-  auth_invalid: 'Credential invalid or expired'
+  auth_invalid: 'Credential invalid or expired',
+  forbidden: 'Access forbidden by provider (model / region / account permission)',
+  insufficient_quota: 'Provider account has insufficient quota or balance'
 }
 
 function createAiError(code: AiError['code'], status?: number): AiError {
@@ -62,8 +64,10 @@ function createAiError(code: AiError['code'], status?: number): AiError {
 
 /** 将 HTTP 状态映射为错误码。 */
 function codeFromStatus(status: number): AiError['code'] {
-  if (status === 401 || status === 403) return 'auth'
-  if (status === 402 || status === 429) return 'rate_limit'
+  if (status === 401) return 'auth_invalid'
+  if (status === 402) return 'insufficient_quota'
+  if (status === 403) return 'forbidden'
+  if (status === 429) return 'rate_limit'
   if (status === 408) return 'timeout'
   if (status >= 500) return 'upstream'
   if (status >= 400) return 'invalid_request'

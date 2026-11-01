@@ -6,7 +6,7 @@
  * 快捷结果失败）与消息气泡需要共用同一张表，保证同一错误在两处措辞一致。
  *
  * 与设置页 `aiSectionSupport.ts` 的 `ERROR_KEYS` 同款：`satisfies` 强制覆盖
- * `AiErrorCode` 全部 12 个值，主进程新增错误码时类型检查会失败，避免漏译。
+ * `AiErrorCode` 全部 14 个值，主进程新增错误码时类型检查会失败，避免漏译。
  */
 import type { AiError } from '../../../../../../preload/types/ai'
 
@@ -22,5 +22,7 @@ export const AI_ERROR_TEXT_KEYS = {
   plan_restricted: 'error.plan_restricted',
   session_missing: 'error.session_missing',
   auth_missing: 'error.auth_missing',
-  auth_invalid: 'error.auth_invalid'
+  auth_invalid: 'error.auth_invalid',
+  forbidden: 'error.forbidden',
+  insufficient_quota: 'error.insufficient_quota'
 } as const satisfies Record<AiError['code'], string>
