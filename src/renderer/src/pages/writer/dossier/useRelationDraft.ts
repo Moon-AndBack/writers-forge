@@ -17,11 +17,7 @@ import {
   relationSemanticReverseLabel
 } from '../../../../../shared/worldRelationCodes'
 import type { RelationDirection, RelationTypeOption } from './RelationList'
-import {
-  MODULE_ENTITY_TYPE,
-  isReverseRelation,
-  relationCodesForPair
-} from './dossierTree'
+import { MODULE_ENTITY_TYPE, isReverseRelation, relationCodesForPair } from './dossierTree'
 import type {
   DossierRelationInput,
   RelationTargetModule,
@@ -176,10 +172,7 @@ export function useRelationDraft({
    * 端点在方向间对调：出边 `from = 当前实体`、`to = 对端`；入边 `from = 对端`、
    * `to = 当前实体`。对端类型查不到时回退「未选目标」的宽松候选（全部四码）。
    */
-  const optionsFor = (
-    rel: WorldRefRow,
-    direction: RelationDirection
-  ): RelationTypeOption[] => {
+  const optionsFor = (rel: WorldRefRow, direction: RelationDirection): RelationTypeOption[] => {
     const peerId = direction === 'out' ? rel.toId : rel.fromId
     const peerType = targets.find((row) => row.id === peerId)?.entityType ?? null
     const codes =

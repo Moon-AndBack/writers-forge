@@ -37,39 +37,221 @@ export type ChipColorSeed = ChipColorRow
  */
 export const CHIP_COLOR_SEEDS: readonly ChipColorSeed[] = [
   // 世界观（6）
-  { scope: 'preset', module: 'worldview', presetKey: 'overview', bg: '#326467', fg: '#ffffff', sortOrder: 0 },
-  { scope: 'preset', module: 'worldview', presetKey: 'geography', bg: '#437b7c', fg: '#ffffff', sortOrder: 1 },
-  { scope: 'preset', module: 'worldview', presetKey: 'culture', bg: '#54a0a0', fg: '#1a1a1a', sortOrder: 2 },
-  { scope: 'preset', module: 'worldview', presetKey: 'race', bg: '#6db6b3', fg: '#1a1a1a', sortOrder: 3 },
-  { scope: 'preset', module: 'worldview', presetKey: 'economy', bg: '#8dc8c3', fg: '#1a1a1a', sortOrder: 4 },
-  { scope: 'preset', module: 'worldview', presetKey: 'ruleset', bg: '#b0d8d3', fg: '#1a1a1a', sortOrder: 5 },
+  {
+    scope: 'preset',
+    module: 'worldview',
+    presetKey: 'overview',
+    bg: '#326467',
+    fg: '#ffffff',
+    sortOrder: 0
+  },
+  {
+    scope: 'preset',
+    module: 'worldview',
+    presetKey: 'geography',
+    bg: '#437b7c',
+    fg: '#ffffff',
+    sortOrder: 1
+  },
+  {
+    scope: 'preset',
+    module: 'worldview',
+    presetKey: 'culture',
+    bg: '#54a0a0',
+    fg: '#1a1a1a',
+    sortOrder: 2
+  },
+  {
+    scope: 'preset',
+    module: 'worldview',
+    presetKey: 'race',
+    bg: '#6db6b3',
+    fg: '#1a1a1a',
+    sortOrder: 3
+  },
+  {
+    scope: 'preset',
+    module: 'worldview',
+    presetKey: 'economy',
+    bg: '#8dc8c3',
+    fg: '#1a1a1a',
+    sortOrder: 4
+  },
+  {
+    scope: 'preset',
+    module: 'worldview',
+    presetKey: 'ruleset',
+    bg: '#b0d8d3',
+    fg: '#1a1a1a',
+    sortOrder: 5
+  },
   // 物品功法 / 天赋（6）
-  { scope: 'preset', module: 'item', presetKey: 'weapon', bg: '#583267', fg: '#ffffff', sortOrder: 0 },
-  { scope: 'preset', module: 'item', presetKey: 'skill', bg: '#77428d', fg: '#ffffff', sortOrder: 1 },
-  { scope: 'preset', module: 'item', presetKey: 'pill', bg: '#9554ab', fg: '#ffffff', sortOrder: 2 },
-  { scope: 'preset', module: 'item', presetKey: 'talent', bg: '#a574b4', fg: '#1a1a1a', sortOrder: 3 },
-  { scope: 'preset', module: 'item', presetKey: 'equipment', bg: '#b893c2', fg: '#1a1a1a', sortOrder: 4 },
-  { scope: 'preset', module: 'item', presetKey: 'material', bg: '#cdb5d4', fg: '#1a1a1a', sortOrder: 5 },
+  {
+    scope: 'preset',
+    module: 'item',
+    presetKey: 'weapon',
+    bg: '#583267',
+    fg: '#ffffff',
+    sortOrder: 0
+  },
+  {
+    scope: 'preset',
+    module: 'item',
+    presetKey: 'skill',
+    bg: '#77428d',
+    fg: '#ffffff',
+    sortOrder: 1
+  },
+  {
+    scope: 'preset',
+    module: 'item',
+    presetKey: 'pill',
+    bg: '#9554ab',
+    fg: '#ffffff',
+    sortOrder: 2
+  },
+  {
+    scope: 'preset',
+    module: 'item',
+    presetKey: 'talent',
+    bg: '#a574b4',
+    fg: '#1a1a1a',
+    sortOrder: 3
+  },
+  {
+    scope: 'preset',
+    module: 'item',
+    presetKey: 'equipment',
+    bg: '#b893c2',
+    fg: '#1a1a1a',
+    sortOrder: 4
+  },
+  {
+    scope: 'preset',
+    module: 'item',
+    presetKey: 'material',
+    bg: '#cdb5d4',
+    fg: '#1a1a1a',
+    sortOrder: 5
+  },
   // 势力（6）
-  { scope: 'preset', module: 'faction', presetKey: 'sect', bg: '#8a6410', fg: '#ffffff', sortOrder: 0 },
-  { scope: 'preset', module: 'faction', presetKey: 'family', bg: '#a87c10', fg: '#1a1a1a', sortOrder: 1 },
-  { scope: 'preset', module: 'faction', presetKey: 'dynasty', bg: '#f8b500', fg: '#1a1a1a', sortOrder: 2 },
-  { scope: 'preset', module: 'faction', presetKey: 'guild', bg: '#c79a2e', fg: '#1a1a1a', sortOrder: 3 },
-  { scope: 'preset', module: 'faction', presetKey: 'alliance', bg: '#f2c85a', fg: '#1a1a1a', sortOrder: 4 },
-  { scope: 'preset', module: 'faction', presetKey: 'demonic', bg: '#5c4300', fg: '#ffffff', sortOrder: 5 },
+  {
+    scope: 'preset',
+    module: 'faction',
+    presetKey: 'sect',
+    bg: '#8a6410',
+    fg: '#ffffff',
+    sortOrder: 0
+  },
+  {
+    scope: 'preset',
+    module: 'faction',
+    presetKey: 'family',
+    bg: '#a87c10',
+    fg: '#1a1a1a',
+    sortOrder: 1
+  },
+  {
+    scope: 'preset',
+    module: 'faction',
+    presetKey: 'dynasty',
+    bg: '#f8b500',
+    fg: '#1a1a1a',
+    sortOrder: 2
+  },
+  {
+    scope: 'preset',
+    module: 'faction',
+    presetKey: 'guild',
+    bg: '#c79a2e',
+    fg: '#1a1a1a',
+    sortOrder: 3
+  },
+  {
+    scope: 'preset',
+    module: 'faction',
+    presetKey: 'alliance',
+    bg: '#f2c85a',
+    fg: '#1a1a1a',
+    sortOrder: 4
+  },
+  {
+    scope: 'preset',
+    module: 'faction',
+    presetKey: 'demonic',
+    bg: '#5c4300',
+    fg: '#ffffff',
+    sortOrder: 5
+  },
   // 角色（4）
-  { scope: 'preset', module: 'character', presetKey: 'character-lead', bg: '#b7282e', fg: '#ffffff', sortOrder: 0 },
-  { scope: 'preset', module: 'character', presetKey: 'character-support', bg: '#bf4a54', fg: '#ffffff', sortOrder: 1 },
-  { scope: 'preset', module: 'character', presetKey: 'character-extra', bg: '#d19fa7', fg: '#1a1a1a', sortOrder: 2 },
-  { scope: 'preset', module: 'character', presetKey: 'character-villain', bg: '#772237', fg: '#ffffff', sortOrder: 3 },
+  {
+    scope: 'preset',
+    module: 'character',
+    presetKey: 'character-lead',
+    bg: '#b7282e',
+    fg: '#ffffff',
+    sortOrder: 0
+  },
+  {
+    scope: 'preset',
+    module: 'character',
+    presetKey: 'character-support',
+    bg: '#bf4a54',
+    fg: '#ffffff',
+    sortOrder: 1
+  },
+  {
+    scope: 'preset',
+    module: 'character',
+    presetKey: 'character-extra',
+    bg: '#d19fa7',
+    fg: '#1a1a1a',
+    sortOrder: 2
+  },
+  {
+    scope: 'preset',
+    module: 'character',
+    presetKey: 'character-villain',
+    bg: '#772237',
+    fg: '#ffffff',
+    sortOrder: 3
+  },
   // 境界体系（1）
-  { scope: 'preset', module: 'power_system', presetKey: 'power_system', bg: '#1e50a2', fg: '#ffffff', sortOrder: 0 },
+  {
+    scope: 'preset',
+    module: 'power_system',
+    presetKey: 'power_system',
+    bg: '#1e50a2',
+    fg: '#ffffff',
+    sortOrder: 0
+  },
   // 模块兜底（自定义分类用，5）
-  { scope: 'module', module: 'worldview', presetKey: '', bg: '#7e9aa0', fg: '#1a1a1a', sortOrder: 0 },
+  {
+    scope: 'module',
+    module: 'worldview',
+    presetKey: '',
+    bg: '#7e9aa0',
+    fg: '#1a1a1a',
+    sortOrder: 0
+  },
   { scope: 'module', module: 'item', presetKey: '', bg: '#94849b', fg: '#1a1a1a', sortOrder: 1 },
   { scope: 'module', module: 'faction', presetKey: '', bg: '#a5956c', fg: '#1a1a1a', sortOrder: 2 },
-  { scope: 'module', module: 'character', presetKey: '', bg: '#a89494', fg: '#1a1a1a', sortOrder: 3 },
-  { scope: 'module', module: 'power_system', presetKey: '', bg: '#94adc7', fg: '#1a1a1a', sortOrder: 4 }
+  {
+    scope: 'module',
+    module: 'character',
+    presetKey: '',
+    bg: '#a89494',
+    fg: '#1a1a1a',
+    sortOrder: 3
+  },
+  {
+    scope: 'module',
+    module: 'power_system',
+    presetKey: '',
+    bg: '#94adc7',
+    fg: '#1a1a1a',
+    sortOrder: 4
+  }
 ]
 
 const SELECT_COLUMNS = `scope, module, preset_key AS presetKey, bg, fg, sort_order AS sortOrder`

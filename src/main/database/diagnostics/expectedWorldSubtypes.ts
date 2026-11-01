@@ -26,6 +26,4 @@ export const EXPECTED_WORLD_SUBTYPE_TABLES: readonly ExpectedTable[] = [
 ]
 
 /** `world_subtypes` 命名索引（按书 + 实体类型查询）。 */
-export const EXPECTED_WORLD_SUBTYPE_INDEXES: readonly string[] = [
-  'idx_world_subtypes_book_type'
-]
+export const EXPECTED_WORLD_SUBTYPE_INDEXES: readonly string[] = ['idx_world_subtypes_book_type']

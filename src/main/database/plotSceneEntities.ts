@@ -115,10 +115,7 @@ export function setPlotSceneEntities(
         `SELECT id FROM world_entities
          WHERE book_id = ? AND deleted_at IS NULL AND id IN (${placeholders})`
       )
-      .all(
-        scene.bookId,
-        ...picked.map((row) => row.entityId)
-      ) as Array<{ id: number }>
+      .all(scene.bookId, ...picked.map((row) => row.entityId)) as Array<{ id: number }>
     for (const row of found) valid.add(row.id)
   }
 

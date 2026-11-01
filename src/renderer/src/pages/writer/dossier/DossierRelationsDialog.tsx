@@ -22,11 +22,7 @@ export interface DossierRelationsDialogProps {
   /** 新增出边关系（即时生效，不进弹窗草稿 / 未保存守卫）。 */
   onAddRelation: (id: number, input: DossierRelationInput) => void | Promise<void>
   /** 更新关系（出边 / 入边共用；类型 / 备注，即时生效）。 */
-  onUpdateRelation: (
-    id: number,
-    refId: number,
-    patch: DossierRelationPatch
-  ) => void | Promise<void>
+  onUpdateRelation: (id: number, refId: number, patch: DossierRelationPatch) => void | Promise<void>
   /** 删除关系（出边 / 入边共用，即时生效）。 */
   onRemoveRelation: (id: number, refId: number) => void | Promise<void>
   /** 关闭（遮罩 / Esc / 关闭按钮 / 底部按钮）。 */

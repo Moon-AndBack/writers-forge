@@ -165,7 +165,18 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
   },
   {
     name: 'plot_lines',
-    columns: ['id', 'book_id', 'name', 'line_type', 'line_color', 'timeline_id', 'default_origin', 'sort_order', 'created_at', 'deleted_at']
+    columns: [
+      'id',
+      'book_id',
+      'name',
+      'line_type',
+      'line_color',
+      'timeline_id',
+      'default_origin',
+      'sort_order',
+      'created_at',
+      'deleted_at'
+    ]
   },
   {
     name: 'plot_scenes',
@@ -214,16 +225,7 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
   // 胶囊配色（全局配置表，无外键）：见 `schema/chipColors.ts`
   {
     name: 'chip_colors',
-    columns: [
-      'id',
-      'scope',
-      'module',
-      'preset_key',
-      'bg',
-      'fg',
-      'sort_order',
-      'updated_at'
-    ]
+    columns: ['id', 'scope', 'module', 'preset_key', 'bg', 'fg', 'sort_order', 'updated_at']
   },
   // AI 对话（按章归属的会话 + 多轮消息）：见 `schema/aiChat.ts`
   {

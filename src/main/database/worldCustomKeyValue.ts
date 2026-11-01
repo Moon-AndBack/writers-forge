@@ -62,9 +62,7 @@ function markMigrationDone(instance: Database.Database): void {
 
 /** 执行迁移（幂等）。 */
 export function migrateWorldCustomToKeyValue(instance: Database.Database): void {
-  const done = instance
-    .prepare('SELECT 1 FROM settings WHERE key = ?')
-    .get(KEY_VALUE_MIGRATION_KEY)
+  const done = instance.prepare('SELECT 1 FROM settings WHERE key = ?').get(KEY_VALUE_MIGRATION_KEY)
   if (done) return
 
   const exists = hasTable(instance, CUSTOM_TABLE)

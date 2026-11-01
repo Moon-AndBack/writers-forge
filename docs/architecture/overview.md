@@ -8,21 +8,21 @@ Writer's Forge 是单仓库、三进程层的 Electron 桌面应用：主进程�
 
 版本取自 `package.json` 的 `dependencies` / `devDependencies`：
 
-| 依赖 | 版本 | 职责 | 依据 |
-| --- | --- | --- | --- |
-| Electron | ^44.6.0 | 桌面运行时、主进程与窗口 | `package.json:56` |
-| electron-vite | ^5.0.0 | 主进程 / preload / 渲染层三端构建 | `package.json:58` |
-| Vite | ^7.3.7 | 渲染层开发服务器与产物构建 | `package.json:67` |
-| TypeScript | ^5.9.3 | 全项目类型检查（node / web 双 tsconfig） | `package.json:65` |
-| React / React DOM | ^19.3.0 | 渲染层 UI 与挂载 | `package.json:42-43` |
-| react-router-dom | ^7.18.4 | 页面路由 | `package.json:46` |
-| better-sqlite3 | ^13.0.3 | 本地 SQLite 持久化（同步 API） | `package.json:36` |
-| electron-log | ^5.4.4 | 主进程日志、崩溃与 Electron 事件落盘 | `package.json:37` |
-| i18next / react-i18next | ^26.4.3 / ^17.0.16 | 国际化（zh-CN / en） | `package.json:38,44` |
-| TipTap | ^3.31.4 | 正文与大纲的富文本编辑 | `package.json:27-35` |
-| openai | ^7.45.1 | AI 服务商客户端（仅主进程调用） | `package.json:41` |
-| electron-builder | ^26.15.3 | 安装包构建 | `package.json:57` |
-| ESLint / Prettier | ^10.12.0 / ^3.9.9 | 静态检查与格式化 | `package.json:59,64` |
+| 依赖                    | 版本               | 职责                                     | 依据                 |
+| ----------------------- | ------------------ | ---------------------------------------- | -------------------- |
+| Electron                | ^44.6.0            | 桌面运行时、主进程与窗口                 | `package.json:56`    |
+| electron-vite           | ^5.0.0             | 主进程 / preload / 渲染层三端构建        | `package.json:58`    |
+| Vite                    | ^7.3.7             | 渲染层开发服务器与产物构建               | `package.json:67`    |
+| TypeScript              | ^5.9.3             | 全项目类型检查（node / web 双 tsconfig） | `package.json:65`    |
+| React / React DOM       | ^19.3.0            | 渲染层 UI 与挂载                         | `package.json:42-43` |
+| react-router-dom        | ^7.18.4            | 页面路由                                 | `package.json:46`    |
+| better-sqlite3          | ^13.0.3            | 本地 SQLite 持久化（同步 API）           | `package.json:36`    |
+| electron-log            | ^5.4.4             | 主进程日志、崩溃与 Electron 事件落盘     | `package.json:37`    |
+| i18next / react-i18next | ^26.4.3 / ^17.0.16 | 国际化（zh-CN / en）                     | `package.json:38,44` |
+| TipTap                  | ^3.31.4            | 正文与大纲的富文本编辑                   | `package.json:27-35` |
+| openai                  | ^7.45.1            | AI 服务商客户端（仅主进程调用）          | `package.json:41`    |
+| electron-builder        | ^26.15.3           | 安装包构建                               | `package.json:57`    |
+| ESLint / Prettier       | ^10.12.0 / ^3.9.9  | 静态检查与格式化                         | `package.json:59,64` |
 
 构建配置在 `electron.vite.config.ts:5-19`：`main` / `preload` 使用 `externalizeDepsPlugin()`（依赖不打包，走 `node_modules`），`renderer` 启用 React 插件并把 `@renderer` 指向 `src/renderer/src`（`electron.vite.config.ts:14-16`）。
 
@@ -53,12 +53,12 @@ renderer（Chromium · React 19）
         └── src/shared/（纯常量 / 纯函数，主 / 渲染双侧引用）
 ```
 
-| 层 | 职责 | 边界约束 | 依据 |
-| --- | --- | --- | --- |
-| main | 应用生命周期、窗口、SQLite、IPC、日志、安全策略、外部网络请求 | 不放界面逻辑；入口只装配 | `src/main/index.ts:11-57` |
-| preload | 把 IPC 包装成 `window.api`，隔离渲染层与 Electron 内部对象 | 只暴露白名单方法，不暴露 `ipcRenderer` | `src/preload/index.ts:376-378` |
-| renderer | React 界面、路由、主题、i18n | 不直接访问文件系统 / 数据库，一律经 `window.api` | `src/renderer/src/main.tsx:34-39` |
-| shared | 主 / 渲染共用常量与纯函数（关系语义码、子类字段、富文本转换） | 无副作用、不依赖 Electron | `src/shared/worldRelationCodes.ts`、`src/shared/richTextDoc.ts` |
+| 层       | 职责                                                          | 边界约束                                         | 依据                                                            |
+| -------- | ------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------------------- |
+| main     | 应用生命周期、窗口、SQLite、IPC、日志、安全策略、外部网络请求 | 不放界面逻辑；入口只装配                         | `src/main/index.ts:11-57`                                       |
+| preload  | 把 IPC 包装成 `window.api`，隔离渲染层与 Electron 内部对象    | 只暴露白名单方法，不暴露 `ipcRenderer`           | `src/preload/index.ts:376-378`                                  |
+| renderer | React 界面、路由、主题、i18n                                  | 不直接访问文件系统 / 数据库，一律经 `window.api` | `src/renderer/src/main.tsx:34-39`                               |
+| shared   | 主 / 渲染共用常量与纯函数（关系语义码、子类字段、富文本转换） | 无副作用、不依赖 Electron                        | `src/shared/worldRelationCodes.ts`、`src/shared/richTextDoc.ts` |
 
 preload 的入口是一个 `api` 对象（`src/preload/index.ts:77`），类型经 `export type Api = typeof api`（`src/preload/index.ts:376`）导出，再由 `contextBridge.exposeInMainWorld('api', api)`（`src/preload/index.ts:378`）挂到渲染层。事件订阅不把 `ipcRenderer` 交给页面：例如 `onAccentChange` 内部注册监听并返回取消函数（`src/preload/index.ts:366-372`）。
 
@@ -87,15 +87,15 @@ src/
   shared/                        # worldRelationCodes / worldSubtypeFields / richTextDoc
 ```
 
-| 目标分层（`AGENTS.md` §2） | 当前状态 | 依据 |
-| --- | --- | --- |
-| `main/index.ts` 只做生命周期装配 | 已对齐：入口只串联启动步骤，无业务分支 | `src/main/index.ts:11-57` |
-| 窗口管理独立为 `window.ts` | 已建；另拆出尺寸 / 材质 / 磁吸 / 安全四个模块 | `src/main/window.ts:61-138` |
-| 数据访问收敛到 `database/` | 已建；`schema/` 下按域拆 DDL，迁移与种子同层 | `src/main/database/index.ts:17-54` |
-| IPC 通道收敛到 `ipc/` | 已建；`registerIpc()` 逐个注册 20 个域 | `src/main/ipc/index.ts:29-45` |
-| preload 最小暴露 | 已对齐；单一 `api` 对象 | `src/preload/index.ts:378` |
-| 渲染层 `pages/` + `components/` | 均已建立；`components/` 不再是预留目录 | `src/renderer/src/App.tsx:130-150` |
-| 跨层共享放 `shared/` | 已建 3 个纯模块，双端引用 | `src/shared/worldRelationCodes.ts:1` |
+| 目标分层（`AGENTS.md` §2）       | 当前状态                                      | 依据                                 |
+| -------------------------------- | --------------------------------------------- | ------------------------------------ |
+| `main/index.ts` 只做生命周期装配 | 已对齐：入口只串联启动步骤，无业务分支        | `src/main/index.ts:11-57`            |
+| 窗口管理独立为 `window.ts`       | 已建；另拆出尺寸 / 材质 / 磁吸 / 安全四个模块 | `src/main/window.ts:61-138`          |
+| 数据访问收敛到 `database/`       | 已建；`schema/` 下按域拆 DDL，迁移与种子同层  | `src/main/database/index.ts:17-54`   |
+| IPC 通道收敛到 `ipc/`            | 已建；`registerIpc()` 逐个注册 20 个域        | `src/main/ipc/index.ts:29-45`        |
+| preload 最小暴露                 | 已对齐；单一 `api` 对象                       | `src/preload/index.ts:378`           |
+| 渲染层 `pages/` + `components/`  | 均已建立；`components/` 不再是预留目录        | `src/renderer/src/App.tsx:130-150`   |
+| 跨层共享放 `shared/`             | 已建 3 个纯模块，双端引用                     | `src/shared/worldRelationCodes.ts:1` |
 
 规模基线：渲染层 `src/renderer/src` 下共 331 个 TS/TSX（`.tsx` 171 个、`.ts` 160 个），另 67 个 CSS；`pages/` 共 171 个文件，按域分为 `writer` 140、`settings` 17、`bookshelf` 10、`welcome` 1，另有 `Bookshelf.tsx` / `Welcome.tsx` / `Writer.tsx` 3 个根级页面。主进程根目录 9 个模块，`database/` 117 个 `.ts`，`ipc/` 27 个 `.ts`，preload 22 个文件。
 
@@ -151,16 +151,16 @@ registerResizeSnap(win)  src/main/index.ts:48  → resizeSnap.ts
 
 窗口安全参数集中在 `createMainWindow()` 的 `webPreferences`（`src/main/window.ts:93-98`）：
 
-| 边界 | 现状 | 依据 |
-| --- | --- | --- |
-| `contextIsolation` | `true`：页面 JS 与 preload 上下文隔离 | `src/main/window.ts:95` |
-| `sandbox` | `false`：preload 不受沙箱限制，因此暴露面必须靠白名单约束 | `src/main/window.ts:96` |
-| `nodeIntegration` | `false`：渲染层无 `require` / `process` 直通 | `src/main/window.ts:97` |
-| 生产 CSP | 9 条指令，经响应头注入，不用 `<meta>` | `src/main/security.ts:30-40,55-69` |
-| 导航守卫 | `will-navigate` 只放行应用自身来源 | `src/main/security.ts:80-104` |
-| 外链 | 新窗口一律 `deny` 并交给系统浏览器 | `src/main/window.ts:115-119` |
-| DevTools | 仅开发模式注册快捷键，生产不暴露入口 | `src/main/window.ts:39-51,128-130` |
-| settings 敏感键 | 按前缀过滤，四条通道共用同一判定 | `src/main/ipc/settings.ts:19-24` |
+| 边界               | 现状                                                      | 依据                               |
+| ------------------ | --------------------------------------------------------- | ---------------------------------- |
+| `contextIsolation` | `true`：页面 JS 与 preload 上下文隔离                     | `src/main/window.ts:95`            |
+| `sandbox`          | `false`：preload 不受沙箱限制，因此暴露面必须靠白名单约束 | `src/main/window.ts:96`            |
+| `nodeIntegration`  | `false`：渲染层无 `require` / `process` 直通              | `src/main/window.ts:97`            |
+| 生产 CSP           | 9 条指令，经响应头注入，不用 `<meta>`                     | `src/main/security.ts:30-40,55-69` |
+| 导航守卫           | `will-navigate` 只放行应用自身来源                        | `src/main/security.ts:80-104`      |
+| 外链               | 新窗口一律 `deny` 并交给系统浏览器                        | `src/main/window.ts:115-119`       |
+| DevTools           | 仅开发模式注册快捷键，生产不暴露入口                      | `src/main/window.ts:39-51,128-130` |
+| settings 敏感键    | 按前缀过滤，四条通道共用同一判定                          | `src/main/ipc/settings.ts:19-24`   |
 
 CSP 要点（`src/main/security.ts:30-40`）：`default-src 'self'`、`script-src 'self'`（不放 `unsafe-inline` / `unsafe-eval`）；`style-src` 额外允许 `unsafe-inline`，因为 React 内联样式与 TipTap 运行期写入大量存在（`security.ts:15-17`）；`img-src` 放行 `data:` / `blob:` 及 http(s) 外链图（`security.ts:18-23`）；`connect-src 'self'`，AI 与 OneDrive 的网络请求全在主进程，CSP 不约束主进程（`security.ts:24-26`）。CSP **只在生产**挂载（`src/main/window.ts:132-134`），开发模式跳过以免阻断 HMR 的 ws 与内联脚本（`security.ts:51-53`）。
 
@@ -174,9 +174,9 @@ settings 敏感键过滤（`src/main/ipc/settings.ts:8-24`）：`ai:`（加密�
 
 `configureAppPaths()` 显式 `setPath('userData', …)`，不依赖 `setName` 的隐式推导（`src/main/appPaths.ts:12-21`）：
 
-| 环境 | 目录名 | 依据 |
-| --- | --- | --- |
-| 打包安装态 | `Writer's Forge` | `src/main/appPaths.ts:9` |
+| 环境       | 目录名               | 依据                     |
+| ---------- | -------------------- | ------------------------ |
+| 打包安装态 | `Writer's Forge`     | `src/main/appPaths.ts:9` |
 | 本地开发态 | `Writer's Forge Dev` | `src/main/appPaths.ts:9` |
 
 最终 `userData = appData/<目录名>`（`src/main/appPaths.ts:20`）。其下关键文件：
@@ -190,16 +190,16 @@ settings 敏感键过滤（`src/main/ipc/settings.ts:8-24`）：`ai:`（加密�
 
 日志直接复用 electron-log 默认单例（`electron-log/main`，id = `default`），不自建实例——渲染进程转发只带 `logId: 'default'`，只有默认实例能接住（`src/main/logger.ts:3,10-13,102`）。
 
-| 配置项 | 值 | 依据 |
-| --- | --- | --- |
-| 落盘路径 | `userData/logs/main.log`（显式覆盖 macOS 默认 `~/Library/Logs`） | `src/main/logger.ts:15-16,47-51` |
-| 文件级别 | 开发 `debug`，生产 `info` | `src/main/logger.ts:52-53` |
-| 单文件上限 | 5 MiB | `src/main/logger.ts:29-30,55` |
-| 轮转 | 超出后归档为 `main.old.log`，仅保留 1 份 | `src/main/logger.ts:29,54` |
-| 行格式 | 时间戳 + 级别 + 进程标记 + scope + 正文 | `src/main/logger.ts:23-27,56` |
-| 控制台 | 开发 `debug`，生产 `warn` | `src/main/logger.ts:58-61` |
-| 主→渲染 IPC 传输 | 仅开发开启 | `src/main/logger.ts:63-64` |
-| 崩溃捕获 | `errorHandler`（未捕获异常 / Promise 拒绝）+ `eventLogger`（render-process-gone、preload-error 等） | `src/main/logger.ts:70-91` |
+| 配置项           | 值                                                                                                  | 依据                             |
+| ---------------- | --------------------------------------------------------------------------------------------------- | -------------------------------- |
+| 落盘路径         | `userData/logs/main.log`（显式覆盖 macOS 默认 `~/Library/Logs`）                                    | `src/main/logger.ts:15-16,47-51` |
+| 文件级别         | 开发 `debug`，生产 `info`                                                                           | `src/main/logger.ts:52-53`       |
+| 单文件上限       | 5 MiB                                                                                               | `src/main/logger.ts:29-30,55`    |
+| 轮转             | 超出后归档为 `main.old.log`，仅保留 1 份                                                            | `src/main/logger.ts:29,54`       |
+| 行格式           | 时间戳 + 级别 + 进程标记 + scope + 正文                                                             | `src/main/logger.ts:23-27,56`    |
+| 控制台           | 开发 `debug`，生产 `warn`                                                                           | `src/main/logger.ts:58-61`       |
+| 主→渲染 IPC 传输 | 仅开发开启                                                                                          | `src/main/logger.ts:63-64`       |
+| 崩溃捕获         | `errorHandler`（未捕获异常 / Promise 拒绝）+ `eventLogger`（render-process-gone、preload-error 等） | `src/main/logger.ts:70-91`       |
 
 `log.initialize()` 注入渲染进程转发用的内置 preload，必须在窗口创建前调用（`src/main/logger.ts:66-68`）。日志初始化时只记录目录名，经 `safePath` 去掉含用户名的绝对路径（`src/main/logger.ts:93-97`）。业务代码通过 `logger.scope('xxx')` 取子 scope，如 `app` / `window` / `security`（`src/main/logger.ts:18`、`src/main/window.ts:14`、`src/main/security.ts:7`）。
 
@@ -207,14 +207,14 @@ settings 敏感键过滤（`src/main/ipc/settings.ts:8-24`）：`ai:`（加密�
 
 以下为硬约束，新增功能与评审均按此执行：
 
-| 约束 | 要求 | 依据 |
-| --- | --- | --- |
-| 单文件 500 行 | 达到或接近 500 行必须按职责拆分，拆分后不得复制粘贴 | `AGENTS.md:61-64` |
-| 文案国际化 | 所有用户可见文本走 `t()`，禁止硬编码中文；新增 ns 须 zh-CN / en 双端注册 | `AGENTS.md:117,120-121` |
-| 通用组件 | 同类组件上提共享，差异用 props / 插槽 / CSS 变量表达 | `AGENTS.md:109-113` |
-| 教学书种子同步 | 新增功能或不兼容变更必须同步 `seedGuideBook/`，文案与实际交互逐条一致 | `AGENTS.md:97-100` |
-| 卡片 hover | 禁用位移 / 缩放，只允许颜色 / 描边 / 阴影，统一边缘光晕 | `AGENTS.md:104-105` |
-| 验证方式 | 日常验收只做静态检查与代码审查，完成后不写冒烟测试 | `AGENTS.md:90-93` |
+| 约束           | 要求                                                                     | 依据                    |
+| -------------- | ------------------------------------------------------------------------ | ----------------------- |
+| 单文件 500 行  | 达到或接近 500 行必须按职责拆分，拆分后不得复制粘贴                      | `AGENTS.md:61-64`       |
+| 文案国际化     | 所有用户可见文本走 `t()`，禁止硬编码中文；新增 ns 须 zh-CN / en 双端注册 | `AGENTS.md:117,120-121` |
+| 通用组件       | 同类组件上提共享，差异用 props / 插槽 / CSS 变量表达                     | `AGENTS.md:109-113`     |
+| 教学书种子同步 | 新增功能或不兼容变更必须同步 `seedGuideBook/`，文案与实际交互逐条一致    | `AGENTS.md:97-100`      |
+| 卡片 hover     | 禁用位移 / 缩放，只允许颜色 / 描边 / 阴影，统一边缘光晕                  | `AGENTS.md:104-105`     |
+| 验证方式       | 日常验收只做静态检查与代码审查，完成后不写冒烟测试                       | `AGENTS.md:90-93`       |
 
 当前 i18n 共 19 个命名空间，由 `zh-CN` 汇总文件登记并作为 key 真源（`src/renderer/src/i18n/locales/zh-CN/index.ts:27-47`）；支持语言固定 `zh-CN` / `en`（`src/renderer/src/i18n/config.ts:12-17`）。
 

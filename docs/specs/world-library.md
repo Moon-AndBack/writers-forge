@@ -49,18 +49,18 @@ Writer's Forge 的「世界观 / 角色 / 物品功法 / 势力 / 境界体系�
 
 DDL 由 `worldEntitiesTableDdl('world_entities')` 生成，新库建表与两处老库重建迁移共用同一个模板函数，保证列定义逐字一致。
 
-| 列 | 类型 / 约束 | 含义 |
-| --- | --- | --- |
-| `id` | `INTEGER PRIMARY KEY AUTOINCREMENT` | 全库统一实体 id（关系、附属表、界面均以此寻址） |
-| `uuid` | `TEXT NOT NULL UNIQUE` | 稳定外部标识，创建时 `randomUUID()` 生成 |
-| `book_id` | `TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE` | 归属书；删书级联删实体 |
-| `entity_type` | `TEXT NOT NULL CHECK (...)` | 类型判别列，五值 `worldview` / `character` / `item` / `faction` / `power_system` |
-| `subtype_id` | `INTEGER REFERENCES world_subtypes(id) ON DELETE SET NULL` | 子类外键；`NULL` 仅用于历史数据读取兼容（见 §10） |
-| `name` | `TEXT NOT NULL` | 名称；**不设库级唯一约束**，同书允许重名实体 |
-| `revision` | `INTEGER NOT NULL DEFAULT 1` | 版本号；任何字段变更（含仅改别名 / 标签 / 正文）`+1`，供匹配缓存失效 |
-| `created_at` | `TEXT NOT NULL DEFAULT (datetime('now'))` | 创建时间 |
-| `updated_at` | `TEXT NOT NULL DEFAULT (datetime('now'))` | 更新时间；写路径用毫秒精度 `strftime('%Y-%m-%d %H:%M:%f','now')` |
-| `deleted_at` | `TEXT` | 非空 = 已软删；所有读路径过滤 `deleted_at IS NULL` |
+| 列            | 类型 / 约束                                                | 含义                                                                             |
+| ------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `id`          | `INTEGER PRIMARY KEY AUTOINCREMENT`                        | 全库统一实体 id（关系、附属表、界面均以此寻址）                                  |
+| `uuid`        | `TEXT NOT NULL UNIQUE`                                     | 稳定外部标识，创建时 `randomUUID()` 生成                                         |
+| `book_id`     | `TEXT NOT NULL REFERENCES books(id) ON DELETE CASCADE`     | 归属书；删书级联删实体                                                           |
+| `entity_type` | `TEXT NOT NULL CHECK (...)`                                | 类型判别列，五值 `worldview` / `character` / `item` / `faction` / `power_system` |
+| `subtype_id`  | `INTEGER REFERENCES world_subtypes(id) ON DELETE SET NULL` | 子类外键；`NULL` 仅用于历史数据读取兼容（见 §10）                                |
+| `name`        | `TEXT NOT NULL`                                            | 名称；**不设库级唯一约束**，同书允许重名实体                                     |
+| `revision`    | `INTEGER NOT NULL DEFAULT 1`                               | 版本号；任何字段变更（含仅改别名 / 标签 / 正文）`+1`，供匹配缓存失效             |
+| `created_at`  | `TEXT NOT NULL DEFAULT (datetime('now'))`                  | 创建时间                                                                         |
+| `updated_at`  | `TEXT NOT NULL DEFAULT (datetime('now'))`                  | 更新时间；写路径用毫秒精度 `strftime('%Y-%m-%d %H:%M:%f','now')`                 |
+| `deleted_at`  | `TEXT`                                                     | 非空 = 已软删；所有读路径过滤 `deleted_at IS NULL`                               |
 
 合计 **10 列**（自增主键 `id` + 9 条业务列）；`summary`、`sub_type` 文本列、`status` / `source` / `visibility` / `parent_id` 均已从 DDL 删除。
 
@@ -74,31 +74,31 @@ DDL 由 `worldEntitiesTableDdl('world_entities')` 生成，新库建表与两处
 
 **23 条预设子类**（`PRESET_WORLD_SUBTYPES`，`is_custom = 0`，`sort_order` 各模块内独立从 0 递增）：
 
-| 模块 | 名称 | `preset_key` | 序 |
-| --- | --- | --- | --- |
-| 世界观 | 世界概况 | `overview` | 0 |
-| 世界观 | 地理环境 | `geography` | 1 |
-| 世界观 | 文化背景 | `culture` | 2 |
-| 世界观 | 种族生物 | `race` | 3 |
-| 世界观 | 经济体系 | `economy` | 4 |
-| 世界观 | 世界规则 | `ruleset` | 5 |
-| 物品 | 武器 | `weapon` | 0 |
-| 物品 | 功法 | `skill` | 1 |
-| 物品 | 丹药 | `pill` | 2 |
-| 物品 | 天赋 | `talent` | 3 |
-| 物品 | 装备 | `equipment` | 4 |
-| 物品 | 材料 | `material` | 5 |
-| 势力 | 宗门 | `sect` | 0 |
-| 势力 | 家族 | `family` | 1 |
-| 势力 | 王朝 | `dynasty` | 2 |
-| 势力 | 商会 | `guild` | 3 |
-| 势力 | 散修联盟 | `alliance` | 4 |
-| 势力 | 魔教 | `demonic` | 5 |
-| 角色 | 主角 | `character-lead` | 0 |
-| 角色 | 配角 | `character-support` | 1 |
-| 角色 | 龙套 | `character-extra` | 2 |
-| 角色 | 反派 | `character-villain` | 3 |
-| 境界体系 | 境界体系 | `power_system` | 0 |
+| 模块     | 名称     | `preset_key`        | 序  |
+| -------- | -------- | ------------------- | --- |
+| 世界观   | 世界概况 | `overview`          | 0   |
+| 世界观   | 地理环境 | `geography`         | 1   |
+| 世界观   | 文化背景 | `culture`           | 2   |
+| 世界观   | 种族生物 | `race`              | 3   |
+| 世界观   | 经济体系 | `economy`           | 4   |
+| 世界观   | 世界规则 | `ruleset`           | 5   |
+| 物品     | 武器     | `weapon`            | 0   |
+| 物品     | 功法     | `skill`             | 1   |
+| 物品     | 丹药     | `pill`              | 2   |
+| 物品     | 天赋     | `talent`            | 3   |
+| 物品     | 装备     | `equipment`         | 4   |
+| 物品     | 材料     | `material`          | 5   |
+| 势力     | 宗门     | `sect`              | 0   |
+| 势力     | 家族     | `family`            | 1   |
+| 势力     | 王朝     | `dynasty`           | 2   |
+| 势力     | 商会     | `guild`             | 3   |
+| 势力     | 散修联盟 | `alliance`          | 4   |
+| 势力     | 魔教     | `demonic`           | 5   |
+| 角色     | 主角     | `character-lead`    | 0   |
+| 角色     | 配角     | `character-support` | 1   |
+| 角色     | 龙套     | `character-extra`   | 2   |
+| 角色     | 反派     | `character-villain` | 3   |
+| 境界体系 | 境界体系 | `power_system`      | 0   |
 
 - **`preset_key` 稳定键**：名称为数据常量（中文原文、不译），但**路由与配色一律按 `preset_key`**，用户改名不影响字段落表与配色；字段白名单、L3 子表选择、`.chip-p-*` 类名全部以它为准。
 - **自定义子类**：`is_custom = 1`、`preset_key = ''`，由用户在界面新增（`worldSubtype:create`）。名称为空或同书同类型重名时被拒（唯一约束，IPC 收敛为 `null`）；同名分类若已软删则直接复活该行。
@@ -111,36 +111,36 @@ DDL 由 `worldEntitiesTableDdl('world_entities')` 生成，新库建表与两处
 
 字段白名单真源为 `src/shared/worldSubtypeFields.ts`（纯数据常量，主进程与渲染层共用，经 `worldEntityTypes.ts` 再导出）。路由规则：`subtype_id = null` → 不读写任何子表；`preset_key` 非空且命中预设 → 只读写对应 L3 子表；`preset_key = ''` → 只读写 `world_custom`，两者互斥。
 
-| 模块 | `preset_key` | 允许的字段（4 个） |
-| --- | --- | --- |
-| 世界观 | `overview` | `era` · `scale` · `population` · `epoch` |
-| 世界观 | `geography` | `coordinates` · `climate` · `area` · `terrain` |
-| 世界观 | `culture` | `language` · `customs` · `religion` · `art` |
-| 世界观 | `race` | `lifespan` · `body_size` · `reproduction` · `habits` |
-| 世界观 | `economy` | `currency` · `tax_rate` · `trade_routes` · `resources` |
-| 世界观 | `ruleset` | `physics` · `magic` · `taboo` · `boundary` |
-| 物品 | `weapon` | `attack` · `durability` · `weight` · `material` |
-| 物品 | `skill` | `tier` · `practice` · `cost` · `requirement` |
-| 物品 | `pill` | `effect` · `side_effect` · `difficulty` · `shelf_life` |
-| 物品 | `talent` | `talent_type` · `awaken_condition` · `growth` · `limitation` |
-| 物品 | `equipment` | `defense` · `slot` · `set_bonus` · `durability` |
-| 物品 | `material` | `usage` · `grade_label` · `origin` · `reserve` |
-| 势力 | `sect` | `gate` · `disciples` · `heritage` · `precepts` |
-| 势力 | `family` | `patriarch` · `family_rules` · `bloodline` · `ancestral_teaching` |
-| 势力 | `dynasty` | `territory` · `law` · `army` · `capital` |
-| 势力 | `guild` | `business` · `funds` · `branches` · `reputation` |
-| 势力 | `alliance` | `form` · `members` · `goal` · `freedom` |
-| 势力 | `demonic` | `doctrine` · `ritual` · `taboo` · `sphere` |
+| 模块   | `preset_key` | 允许的字段（4 个）                                                |
+| ------ | ------------ | ----------------------------------------------------------------- |
+| 世界观 | `overview`   | `era` · `scale` · `population` · `epoch`                          |
+| 世界观 | `geography`  | `coordinates` · `climate` · `area` · `terrain`                    |
+| 世界观 | `culture`    | `language` · `customs` · `religion` · `art`                       |
+| 世界观 | `race`       | `lifespan` · `body_size` · `reproduction` · `habits`              |
+| 世界观 | `economy`    | `currency` · `tax_rate` · `trade_routes` · `resources`            |
+| 世界观 | `ruleset`    | `physics` · `magic` · `taboo` · `boundary`                        |
+| 物品   | `weapon`     | `attack` · `durability` · `weight` · `material`                   |
+| 物品   | `skill`      | `tier` · `practice` · `cost` · `requirement`                      |
+| 物品   | `pill`       | `effect` · `side_effect` · `difficulty` · `shelf_life`            |
+| 物品   | `talent`     | `talent_type` · `awaken_condition` · `growth` · `limitation`      |
+| 物品   | `equipment`  | `defense` · `slot` · `set_bonus` · `durability`                   |
+| 物品   | `material`   | `usage` · `grade_label` · `origin` · `reserve`                    |
+| 势力   | `sect`       | `gate` · `disciples` · `heritage` · `precepts`                    |
+| 势力   | `family`     | `patriarch` · `family_rules` · `bloodline` · `ancestral_teaching` |
+| 势力   | `dynasty`    | `territory` · `law` · `army` · `capital`                          |
+| 势力   | `guild`      | `business` · `funds` · `branches` · `reputation`                  |
+| 势力   | `alliance`   | `form` · `members` · `goal` · `freedom`                           |
+| 势力   | `demonic`    | `doctrine` · `ritual` · `taboo` · `sphere`                        |
 
 五类的其余专属字段：
 
-| 模块 | 落表 | 字段 |
-| --- | --- | --- |
-| 角色 | `world_character`（模块子表） | `role`（自由文本） |
-| 境界体系 | `world_power_system`（模块子表） | `kind`（体系类型，自由文本，无 CHECK） |
-| 物品预设 5 类 | 对应 L3 子表 | `grade`（显示标签）+ `rank`（可比较档位，0 = 未定级）；材料沿用 `grade_label`，无 `rank` |
-| 物品 / 势力自定义子类 | `world_custom`（键值行） | 字段名与值均由用户填写 |
-| 世界观自定义子类 | 无 | 无专属字段存储，只可写正文 / 别名 / 标签 / 关系 |
+| 模块                  | 落表                             | 字段                                                                                     |
+| --------------------- | -------------------------------- | ---------------------------------------------------------------------------------------- |
+| 角色                  | `world_character`（模块子表）    | `role`（自由文本）                                                                       |
+| 境界体系              | `world_power_system`（模块子表） | `kind`（体系类型，自由文本，无 CHECK）                                                   |
+| 物品预设 5 类         | 对应 L3 子表                     | `grade`（显示标签）+ `rank`（可比较档位，0 = 未定级）；材料沿用 `grade_label`，无 `rank` |
+| 物品 / 势力自定义子类 | `world_custom`（键值行）         | 字段名与值均由用户填写                                                                   |
+| 世界观自定义子类      | 无                               | 无专属字段存储，只可写正文 / 别名 / 标签 / 关系                                          |
 
 **自定义字段边界**（`CUSTOM_FIELD_LIMITS`）：单实体最多 **64** 行；字段名去首尾空白后 1–64 字符（`keyMaxLength = 64`）；字段值 ≤2000 字符（`valueMaxLength = 2000`）。写入语义为**整体替换**（先删后插），空数组即清空；空白键 / 重复键跳过，按 `sort_order, field_key` 读取。
 
@@ -156,12 +156,12 @@ DDL 由 `worldEntitiesTableDdl('world_entities')` 生成，新库建表与两处
 
 **4 个语义码**（`HIERARCHY_SEMANTIC_CODES` / `RELATION_SEMANTIC_LABELS`，`from_type` / `to_type` 全为 `NULL`，字典不按模块收窄）：
 
-| 码 | 展示名 | 方向语义 | 可选组合（渲染层过滤） |
-| --- | --- | --- | --- |
-| `superior` | 上级 | `from` 是 `to` 的上级 | 世界观 / 势力 → 世界观 / 势力 |
-| `subordinate` | 下级 | `from` 是 `to` 的下级 | 同上 |
-| `peer` | 平级 | 两端互不统属 | 同上 |
-| `belongs_to` | 属于 | `from` 属于 `to` | 其余任意模块组合 |
+| 码            | 展示名 | 方向语义              | 可选组合（渲染层过滤）        |
+| ------------- | ------ | --------------------- | ----------------------------- |
+| `superior`    | 上级   | `from` 是 `to` 的上级 | 世界观 / 势力 → 世界观 / 势力 |
+| `subordinate` | 下级   | `from` 是 `to` 的下级 | 同上                          |
+| `peer`        | 平级   | 两端互不统属          | 同上                          |
+| `belongs_to`  | 属于   | `from` 属于 `to`      | 其余任意模块组合              |
 
 - **双向查询**：`listWorldRefs(entityId, code?)` 取出边（`from_id`），`listWorldRefsTo(...)` 取入边（`to_id`），各按 `sort_order, id` 排序，均可按语义码筛选。卡片摘要由 `loadRelationSummaryMap` 批量补齐（两条 IN 查询，出边在前、入边在后，避免逐卡 N+1），摘要自带对端 `peerEntityType` / `peerSubType` / `peerPresetKey` 供上色。
 - **反向存储**：角色 → 物品固定记为「物品属于角色」（`from = 物品`、`to = 角色`），不出现「角色属于物品」；`isReverseRelation` 判定，写库时交换两端。
@@ -175,10 +175,10 @@ DDL 由 `worldEntitiesTableDdl('world_entities')` 生成，新库建表与两处
 - **标签**（`world_tags` + `world_entity_tags`）：标签是**按书隔离的字典**，`UNIQUE (book_id, name)`；实体与标签多对多，写入先 upsert 字典再重建关联。`listWorldTags` 返回每标签的 `usageCount`（`COUNT(entity_id)`）。
 - **正文**（`world_texts`，与实体一对一）：
 
-| 列 | 角色 | 可见性 |
-| --- | --- | --- |
-| `body_json` | **真源**：整条块级 Tiptap JSON | 仅详情（`worldEntity:get` / `getText`）返回 |
-| `body` | **派生**纯文本摘要，块级之间以 `\n` 分隔 | 列表与详情都返回，供卡片截断 / 搜索 |
+| 列          | 角色                                     | 可见性                                      |
+| ----------- | ---------------------------------------- | ------------------------------------------- |
+| `body_json` | **真源**：整条块级 Tiptap JSON           | 仅详情（`worldEntity:get` / `getText`）返回 |
+| `body`      | **派生**纯文本摘要，块级之间以 `\n` 分隔 | 列表与详情都返回，供卡片截断 / 搜索         |
 
 写入为 upsert 且**两列整体替换**：`writeWorldText(entityId, body, bodyJson)` 未提供的列按空串落库，故调用方必须成对传参（`DossierUpdatePatch.body` 与 `bodyJson` 成对提交），否则摘要与真源失步。
 
@@ -191,10 +191,10 @@ DDL 由 `worldEntitiesTableDdl('world_entities')` 生成，新库建表与两处
 
 配色真源是 `chip_colors` 表，共 **28 行** = `scope = 'preset'` 的 **23 行**（对齐 23 条预设子类）+ `scope = 'module'` 的 **5 行**（五模块自定义分类兜底色）。每行即一个「`bg` 实色底 + `fg` 配对文字色」色对，`CHECK` 限定 `scope` / `module`，`UNIQUE (scope, module, preset_key)`；种子 `CHIP_COLOR_SEEDS` 用 `INSERT OR IGNORE` 幂等补齐，**不覆盖**用户改过的颜色，故无需 settings 守卫键。
 
-| scope | 行数 | 键 | 用途 |
-| --- | --- | --- | --- |
-| `preset` | 23 | `preset_key`（如 `weapon`） | 预设子类独立色（`.chip-p-<presetKey>`） |
-| `module` | 5 | `preset_key = ''` | 自定义分类 / 未分类兜底色（`.chip-m-<entityType>`） |
+| scope    | 行数 | 键                          | 用途                                                |
+| -------- | ---- | --------------------------- | --------------------------------------------------- |
+| `preset` | 23   | `preset_key`（如 `weapon`） | 预设子类独立色（`.chip-p-<presetKey>`）             |
+| `module` | 5    | `preset_key = ''`           | 自定义分类 / 未分类兜底色（`.chip-m-<entityType>`） |
 
 **类名查表优先级**（`presetChipColors.ts` / `relationChip.ts`）：
 
@@ -214,12 +214,12 @@ DDL 由 `worldEntitiesTableDdl('world_entities')` 生成，新库建表与两处
 
 IPC 共 **19 个** `worldEntity:*` 通道，按用途分四组：
 
-| 组 | 通道 | 说明 |
-| --- | --- | --- |
-| 主表 CRUD | `list` / `get` / `create` / `update` / `delete` | `delete` 为软删；`create` 缺分类时自动补境界体系默认分类，其余类型缺分类直接返回 `null` |
-| 附属 | `listAliases` / `setAliases` / `getText` / `saveText` / `listTags` / `setTags` | 别名 / 标签 / 正文整体替换；正文单字段上限 2 MB 字符 |
-| 关系 | `listRefs` / `listIncomingRefs` / `listSemanticCodes` / `addRef` / `updateRef` / `removeRef` | 出边 / 入边 / 字典 / 增改删 |
-| 境界体系 | `listPowerSystems` / `updatePowerSystem` | 列表只读 + 写「体系类型」 |
+| 组        | 通道                                                                                         | 说明                                                                                    |
+| --------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| 主表 CRUD | `list` / `get` / `create` / `update` / `delete`                                              | `delete` 为软删；`create` 缺分类时自动补境界体系默认分类，其余类型缺分类直接返回 `null` |
+| 附属      | `listAliases` / `setAliases` / `getText` / `saveText` / `listTags` / `setTags`               | 别名 / 标签 / 正文整体替换；正文单字段上限 2 MB 字符                                    |
+| 关系      | `listRefs` / `listIncomingRefs` / `listSemanticCodes` / `addRef` / `updateRef` / `removeRef` | 出边 / 入边 / 字典 / 增改删                                                             |
+| 境界体系  | `listPowerSystems` / `updatePowerSystem`                                                     | 列表只读 + 写「体系类型」                                                               |
 
 另有独立前缀：`worldSubtype:list|create|update|delete|ensurePresets`（5 个）与 `chipColors:list`（1 个）。入参校验口径统一：非法一律返回 `[]` / `null` / `false`，不向渲染层抛异常；写失败记 error 日志后按通道语义回落。
 
@@ -229,18 +229,18 @@ IPC 共 **19 个** `worldEntity:*` 通道，按用途分四组：
 
 主目录 `src/renderer/src/pages/writer/dossier/`，五域共用同一套组件，按 `DossierModule`（`worldview` / `characters` / `factions` / `power_system` / `items`）参数化，`MODULE_ENTITY_TYPE` 映射到 `entity_type`。
 
-| 文件 | 职责 |
-| --- | --- |
-| `DossierView.tsx` | 中栏装配：新建入口 + 卡片网格 + 编辑 / 关系 / 删除三个弹窗；两层悬停卡（关系胶囊 → 对端详情，「+N」浮窗内胶囊 → 第二层详情）的浮层状态机 |
-| `DossierCard.tsx` | 单卡：名称 / 别名 / 正文摘要 / 关系行；关系行按容器实测宽度做「+N」折叠 |
-| `dossierCardRelations.ts` / `relationChip.ts` | 关系胶囊文案与配色类名（纯函数，卡片 / 悬停卡 / 浮窗三处共用） |
-| `DossierCreateDialog.tsx` / `DossierEditDialog.tsx` / `SubTypeSelect.tsx` | 名称、类别（子类）、别名、标签编辑；类别下拉含新增 / 删除自定义子类 |
-| `DossierDetail.tsx` | 右栏上下两张卡 + 底部保存条：上卡子类字段，下卡富文本正文；集中持草稿、比对脏态、点保存才提交「仅变更字段」补丁 |
-| `SubtypeFieldsPanel.tsx` / `CustomKeyValueEditor.tsx` | 子类专属字段面板（按 `presetKey` 路由）、自定义子类键值编辑器；受控组件，不直接写库 |
-| `DossierBodyEditor.tsx` | 正文富文本编辑器，`EntityHighlight` 按书匹配（`entities:match`），与章节 / 剧情正文同一高亮口径；正文两列成对提交 |
-| `DossierRelationsDialog.tsx` / `RelationList.tsx` | 关联关系弹窗：出边 / 入边同表渲染、就地改类型与备注；新增区按「当前模块 × 目标模块」过滤可选语义码 |
-| `useDossierWorkspace.ts` / `useDossierBundle.ts` / `useDossierMutations.ts` | 列表 / 详情 / 别名 / 标签 / 关系装配与写入链串行化（写后重拉缓存失效） |
-| `useRelationDraft.ts` / `useRelationTargets.ts` / `useRelationCategories.ts` | 新增关系草稿：跨模块候选、已关联目标排除、反向存储判定、类别下拉数据 |
+| 文件                                                                         | 职责                                                                                                                                     |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `DossierView.tsx`                                                            | 中栏装配：新建入口 + 卡片网格 + 编辑 / 关系 / 删除三个弹窗；两层悬停卡（关系胶囊 → 对端详情，「+N」浮窗内胶囊 → 第二层详情）的浮层状态机 |
+| `DossierCard.tsx`                                                            | 单卡：名称 / 别名 / 正文摘要 / 关系行；关系行按容器实测宽度做「+N」折叠                                                                  |
+| `dossierCardRelations.ts` / `relationChip.ts`                                | 关系胶囊文案与配色类名（纯函数，卡片 / 悬停卡 / 浮窗三处共用）                                                                           |
+| `DossierCreateDialog.tsx` / `DossierEditDialog.tsx` / `SubTypeSelect.tsx`    | 名称、类别（子类）、别名、标签编辑；类别下拉含新增 / 删除自定义子类                                                                      |
+| `DossierDetail.tsx`                                                          | 右栏上下两张卡 + 底部保存条：上卡子类字段，下卡富文本正文；集中持草稿、比对脏态、点保存才提交「仅变更字段」补丁                          |
+| `SubtypeFieldsPanel.tsx` / `CustomKeyValueEditor.tsx`                        | 子类专属字段面板（按 `presetKey` 路由）、自定义子类键值编辑器；受控组件，不直接写库                                                      |
+| `DossierBodyEditor.tsx`                                                      | 正文富文本编辑器，`EntityHighlight` 按书匹配（`entities:match`），与章节 / 剧情正文同一高亮口径；正文两列成对提交                        |
+| `DossierRelationsDialog.tsx` / `RelationList.tsx`                            | 关联关系弹窗：出边 / 入边同表渲染、就地改类型与备注；新增区按「当前模块 × 目标模块」过滤可选语义码                                       |
+| `useDossierWorkspace.ts` / `useDossierBundle.ts` / `useDossierMutations.ts`  | 列表 / 详情 / 别名 / 标签 / 关系装配与写入链串行化（写后重拉缓存失效）                                                                   |
+| `useRelationDraft.ts` / `useRelationTargets.ts` / `useRelationCategories.ts` | 新增关系草稿：跨模块候选、已关联目标排除、反向存储判定、类别下拉数据                                                                     |
 
 正文高亮与悬停卡：`pages/writer/entities/entityHighlight.ts` 的 `EntityHighlight` 扩展按段落缓存匹配结果（键 = 书 + 词表版本 + 段落文本），装饰类名复用 `entityChipClass(type, presetKey)`；`pages/writer/entities/HoverCard.tsx` 按 `peerId` 走 `worldEntity:get` 取详情并内置 LRU 缓存。
 

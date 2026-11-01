@@ -9,11 +9,7 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { createLogger } from '@renderer/lib/log'
-import type {
-  DossierRelationInput,
-  DossierRelationPatch,
-  WorldRefRow
-} from './dossierTree'
+import type { DossierRelationInput, DossierRelationPatch, WorldRefRow } from './dossierTree'
 
 const log = createLogger('dossier')
 

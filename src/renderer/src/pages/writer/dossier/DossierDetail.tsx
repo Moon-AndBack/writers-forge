@@ -183,7 +183,12 @@ function DossierDetailForm({
         </div>
       </div>
       {/* 底部保存条：独立底色卡片（与上方两卡区分）；无脏禁用、保存中 loading。 */}
-      <SaveBar className="dossier-save-bar on-soft" dirty={dirty} saving={saving} onSave={saveNow} />
+      <SaveBar
+        className="dossier-save-bar on-soft"
+        dirty={dirty}
+        saving={saving}
+        onSave={saveNow}
+      />
     </>
   )
 }

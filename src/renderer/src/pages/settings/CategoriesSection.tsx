@@ -215,7 +215,12 @@ export default function CategoriesSection() {
                         }
                       }}
                     />
-                    <Button size="sm" variant="primary" onClick={handleCommitRename} disabled={busy}>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      onClick={handleCommitRename}
+                      disabled={busy}
+                    >
                       {tCommon('save')}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={handleCancelRename}>

@@ -4,35 +4,35 @@
 
 ## 技术栈
 
-| 依赖 | 版本 | 用途 |
-| --- | --- | --- |
-| Electron | ^44.6.0 | 桌面运行时、主进程与窗口 |
-| electron-vite | ^5.0.0 | 主进程 / preload / 渲染层三端构建 |
-| Vite | ^7.3.7 | 渲染层开发服务器与产物打包 |
-| React / React DOM | ^19.3.0 | 渲染层 UI |
-| react-router-dom | ^7.18.4 | 页面路由 |
-| TypeScript | ^5.9.3 | 全项目类型检查（Node / Web 双 tsconfig） |
-| better-sqlite3 | ^13.0.3 | 本地 SQLite 持久化（N-API 预编译） |
-| TipTap | ^3.31.4 | 正文富文本编辑器 |
-| i18next / react-i18next | ^26.4.3 / ^17.0.16 | 国际化（zh-CN / en） |
-| openai | ^7.45.1 | AI 服务商客户端 |
-| electron-builder | ^26.15.3 | 安装包构建 |
-| ESLint / Prettier | ^10.12.0 / ^3.9.9 | 代码检查与格式化 |
+| 依赖                    | 版本               | 用途                                     |
+| ----------------------- | ------------------ | ---------------------------------------- |
+| Electron                | ^44.6.0            | 桌面运行时、主进程与窗口                 |
+| electron-vite           | ^5.0.0             | 主进程 / preload / 渲染层三端构建        |
+| Vite                    | ^7.3.7             | 渲染层开发服务器与产物打包               |
+| React / React DOM       | ^19.3.0            | 渲染层 UI                                |
+| react-router-dom        | ^7.18.4            | 页面路由                                 |
+| TypeScript              | ^5.9.3             | 全项目类型检查（Node / Web 双 tsconfig） |
+| better-sqlite3          | ^13.0.3            | 本地 SQLite 持久化（N-API 预编译）       |
+| TipTap                  | ^3.31.4            | 正文富文本编辑器                         |
+| i18next / react-i18next | ^26.4.3 / ^17.0.16 | 国际化（zh-CN / en）                     |
+| openai                  | ^7.45.1            | AI 服务商客户端                          |
+| electron-builder        | ^26.15.3           | 安装包构建                               |
+| ESLint / Prettier       | ^10.12.0 / ^3.9.9  | 代码检查与格式化                         |
 
 ## 文档索引
 
-| 文档 | 用途 |
-| --- | --- |
-| [`architecture/overview.md`](./architecture/overview.md) | 进程模型、启动时序、安全边界、目录分层 |
-| [`architecture/database.md`](./architecture/database.md) | 连接单例、建表装配、迁移、种子、诊断 |
-| [`architecture/ipc-preload.md`](./architecture/ipc-preload.md) | 148 个 IPC 通道、5 个主→渲染事件、preload 20 个命名空间 |
-| [`ui/window.md`](./ui/window.md) | 窗口创建、尺寸持久化、材质（仅 acrylic / none）、自绘标题栏、宽度磁吸 |
-| [`ui/components.md`](./ui/components.md) | `components/ui/` 下 29 个通用组件与钩子的 API |
-| [`ui/design-tokens.md`](./ui/design-tokens.md) | `styles/theme.css` 令牌体系与四套主题 |
-| [`conventions/i18n.md`](./conventions/i18n.md) | 19 个命名空间、zh-CN 真源、类型校验、双语同步 |
-| [`specs/database/table-layers.md`](./specs/database/table-layers.md) | 49 张表的分层规范 |
-| [`specs/world-library.md`](./specs/world-library.md) | 五类实体统一设定库、23 条子类预设、4 个关系语义码 |
-| [`integrations/ai-and-onedrive.md`](./integrations/ai-and-onedrive.md) | AI 服务商接入与 OneDrive 备份 |
+| 文档                                                                   | 用途                                                                  |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| [`architecture/overview.md`](./architecture/overview.md)               | 进程模型、启动时序、安全边界、目录分层                                |
+| [`architecture/database.md`](./architecture/database.md)               | 连接单例、建表装配、迁移、种子、诊断                                  |
+| [`architecture/ipc-preload.md`](./architecture/ipc-preload.md)         | 148 个 IPC 通道、5 个主→渲染事件、preload 20 个命名空间               |
+| [`ui/window.md`](./ui/window.md)                                       | 窗口创建、尺寸持久化、材质（仅 acrylic / none）、自绘标题栏、宽度磁吸 |
+| [`ui/components.md`](./ui/components.md)                               | `components/ui/` 下 29 个通用组件与钩子的 API                         |
+| [`ui/design-tokens.md`](./ui/design-tokens.md)                         | `styles/theme.css` 令牌体系与四套主题                                 |
+| [`conventions/i18n.md`](./conventions/i18n.md)                         | 19 个命名空间、zh-CN 真源、类型校验、双语同步                         |
+| [`specs/database/table-layers.md`](./specs/database/table-layers.md)   | 49 张表的分层规范                                                     |
+| [`specs/world-library.md`](./specs/world-library.md)                   | 五类实体统一设定库、23 条子类预设、4 个关系语义码                     |
+| [`integrations/ai-and-onedrive.md`](./integrations/ai-and-onedrive.md) | AI 服务商接入与 OneDrive 备份                                         |
 
 ## 阅读路径
 
@@ -73,16 +73,16 @@
 
 ## 常用命令
 
-| 命令 | 说明 |
-| --- | --- |
-| `npm run dev` | 开发模式（electron-vite dev） |
-| `npm run start` | 预览已构建产物（electron-vite preview） |
-| `npm run build` | 构建三端产物到 `out/` |
-| `npm run icon` | 生成 `build/icon.svg` / `icon.png` / `icon.ico` |
-| `npm run typecheck` | 类型检查（node + web） |
-| `npm run lint` | ESLint 检查（flat config） |
-| `npm run format` | Prettier 格式化 |
-| `npm run build:win` | 构建并打包 Windows 安装包到 `dist/` |
+| 命令                | 说明                                            |
+| ------------------- | ----------------------------------------------- |
+| `npm run dev`       | 开发模式（electron-vite dev）                   |
+| `npm run start`     | 预览已构建产物（electron-vite preview）         |
+| `npm run build`     | 构建三端产物到 `out/`                           |
+| `npm run icon`      | 生成 `build/icon.svg` / `icon.png` / `icon.ico` |
+| `npm run typecheck` | 类型检查（node + web）                          |
+| `npm run lint`      | ESLint 检查（flat config）                      |
+| `npm run format`    | Prettier 格式化                                 |
+| `npm run build:win` | 构建并打包 Windows 安装包到 `dist/`             |
 
 ## 数据目录
 

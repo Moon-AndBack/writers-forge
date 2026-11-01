@@ -32,14 +32,7 @@ export interface PlotLineRow {
 
 /** 剧情线类型 8 项 key（镜像主进程；中文名由 `plot` ns 提供：主线 / 支线 / 感情 / 暗线 / 副线 / 成长 / 世界 / 悬念）。 */
 export type PlotLineType =
-  | 'main'
-  | 'branch'
-  | 'romance'
-  | 'hidden'
-  | 'sub'
-  | 'growth'
-  | 'world'
-  | 'suspense'
+  'main' | 'branch' | 'romance' | 'hidden' | 'sub' | 'growth' | 'world' | 'suspense'
 export const PLOT_LINE_TYPES: readonly PlotLineType[] = [
   'main',
   'branch',
@@ -210,11 +203,7 @@ export function plotSceneTime(
       : era
     head = label
     // 元年无年份（编辑器在 zero 下禁用年份框并清空）；纪前 / 纪后有整数年才拼年份。
-    if (
-      era !== 'zero' &&
-      typeof scene.timeYear === 'number' &&
-      Number.isInteger(scene.timeYear)
-    ) {
+    if (era !== 'zero' && typeof scene.timeYear === 'number' && Number.isInteger(scene.timeYear)) {
       head = `${label} ${scene.timeYear}${eraLabels ? eraLabels.yearUnit : ''}`
     }
   }
@@ -240,9 +229,7 @@ export function scenesOfLine(scenes: readonly PlotSceneRow[], lineId: number): P
  * bc 纪前 → `-year` / zero 元年 → `0`（年份恒忽略，编辑器已清空）/ ad 纪后 → `+year`；
  * 未设置（纪元 '' 或纪前 / 纪后缺整数年）回 `null`（= 未定年组，沉底）。
  */
-export function plotAbsoluteYear(
-  scene: Pick<PlotSceneRow, 'timeEra' | 'timeYear'>
-): number | null {
+export function plotAbsoluteYear(scene: Pick<PlotSceneRow, 'timeEra' | 'timeYear'>): number | null {
   if (scene.timeEra === 'zero') return 0
   if (
     (scene.timeEra === 'bc' || scene.timeEra === 'ad') &&
@@ -272,17 +259,15 @@ export interface PlotYearGroup {
  * 跨线合并：不按 `lineId` 过滤，同年多线场景同组一排。
  */
 export function groupScenesByYear(scenes: readonly PlotSceneRow[]): PlotYearGroup[] {
-  const ordered = scenes
-    .slice()
-    .sort((a, b) => {
-      const yearA = plotAbsoluteYear(a)
-      const yearB = plotAbsoluteYear(b)
-      const datedA = yearA === null ? 1 : 0
-      const datedB = yearB === null ? 1 : 0
-      if (datedA !== datedB) return datedA - datedB
-      if (yearA !== null && yearB !== null && yearA !== yearB) return yearA - yearB
-      return a.sortOrder - b.sortOrder || a.id - b.id
-    })
+  const ordered = scenes.slice().sort((a, b) => {
+    const yearA = plotAbsoluteYear(a)
+    const yearB = plotAbsoluteYear(b)
+    const datedA = yearA === null ? 1 : 0
+    const datedB = yearB === null ? 1 : 0
+    if (datedA !== datedB) return datedA - datedB
+    if (yearA !== null && yearB !== null && yearA !== yearB) return yearA - yearB
+    return a.sortOrder - b.sortOrder || a.id - b.id
+  })
   const groups: PlotYearGroup[] = []
   const indexByKey = new Map<string, PlotYearGroup>()
   for (const scene of ordered) {

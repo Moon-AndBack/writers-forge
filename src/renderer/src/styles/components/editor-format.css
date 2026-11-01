@@ -39,7 +39,9 @@
   padding: 8px;
   background: var(--pane);
   border-radius: var(--r-lg);
-  box-shadow: var(--sh-popup), 0 0 0 1px var(--line);
+  box-shadow:
+    var(--sh-popup),
+    0 0 0 1px var(--line);
   -webkit-app-region: no-drag;
   transform-origin: top left;
 }

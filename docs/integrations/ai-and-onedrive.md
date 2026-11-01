@@ -29,14 +29,14 @@ src/main/ai/index.ts           按 provider 分发 · 生成 requestId · 异常
               └── opencode.ts  OpenCode Go（自定义端点 + 会话头）
 ```
 
-| 文件 | 行数 | 职责 |
-| --- | --- | --- |
-| `ai/config.ts` | 244 | settings 键集中定义、读写配置、`safeStorage` 加解密、`maskSecret` |
-| `ai/http.ts` | 214 | 创建 SDK 客户端、超时下限、`AbortSignal` 合并、异常 → `AiError` |
-| `ai/types.ts` | 153 | 服务商 id、错误码、流式事件、适配器接口（不依赖 electron） |
-| `ai/index.ts` | 81 | `listModels` / `streamChat` 聚合，按 id 取适配器 |
-| `ai/providers/deepseek.ts` | 160 | 模型列表 + 流式对话（标准 OpenAI 兼容） |
-| `ai/providers/opencode.ts` | 320 | 双前缀端点、`x-opencode-session`、上游错误分诊 |
+| 文件                       | 行数 | 职责                                                              |
+| -------------------------- | ---- | ----------------------------------------------------------------- |
+| `ai/config.ts`             | 244  | settings 键集中定义、读写配置、`safeStorage` 加解密、`maskSecret` |
+| `ai/http.ts`               | 214  | 创建 SDK 客户端、超时下限、`AbortSignal` 合并、异常 → `AiError`   |
+| `ai/types.ts`              | 153  | 服务商 id、错误码、流式事件、适配器接口（不依赖 electron）        |
+| `ai/index.ts`              | 81   | `listModels` / `streamChat` 聚合，按 id 取适配器                  |
+| `ai/providers/deepseek.ts` | 160  | 模型列表 + 流式对话（标准 OpenAI 兼容）                           |
+| `ai/providers/opencode.ts` | 320  | 双前缀端点、`x-opencode-session`、上游错误分诊                    |
 
 调用链只有一条：`ipc/ai.ts → ai/index.ts → providers/* → ai/http.ts → SDK / fetch`。适配器不读 settings、不碰 IPC；`index.ts` 不碰密钥明文；密钥只在 `config.ts` 解密后经 `AiProviderConnection` 传给 `http.ts`。
 
@@ -44,15 +44,15 @@ src/main/ai/index.ts           按 provider 分发 · 生成 requestId · 异常
 
 配置全部落在 `settings` 表（`ai/config.ts:29-37` 的 `AI_KEYS`）：
 
-| 键 | 内容 | 存储形态 |
-| --- | --- | --- |
-| `ai:provider` | 当前服务商 id | 明文（`deepseek` / `opencode`） |
-| `ai:deepseek:baseUrl` | 默认 `https://api.deepseek.com/v1` | 明文 |
-| `ai:deepseek:model` | 模型 ID（空 = 未选） | 明文 |
-| `ai:deepseek:apiKey` | API Key | `safeStorage` 密文，base64 落库 |
-| `ai:opencode:baseUrl` | 默认 `https://opencode.ai/inference/go` | 明文 |
-| `ai:opencode:model` | 模型 ID | 明文 |
-| `ai:opencode:token` | Personal API Key | `safeStorage` 密文，base64 落库 |
+| 键                    | 内容                                    | 存储形态                        |
+| --------------------- | --------------------------------------- | ------------------------------- |
+| `ai:provider`         | 当前服务商 id                           | 明文（`deepseek` / `opencode`） |
+| `ai:deepseek:baseUrl` | 默认 `https://api.deepseek.com/v1`      | 明文                            |
+| `ai:deepseek:model`   | 模型 ID（空 = 未选）                    | 明文                            |
+| `ai:deepseek:apiKey`  | API Key                                 | `safeStorage` 密文，base64 落库 |
+| `ai:opencode:baseUrl` | 默认 `https://opencode.ai/inference/go` | 明文                            |
+| `ai:opencode:model`   | 模型 ID                                 | 明文                            |
+| `ai:opencode:token`   | Personal API Key                        | `safeStorage` 密文，base64 落库 |
 
 **id 与展示名分离**：持久化与 IPC 里只有 `'deepseek' | 'opencode'`（`ai/types.ts:11`，`isAiProviderId` 做运行时判定）。展示名只存在于渲染层文案：`ai.provider.deepseek` = `DeepSeek`、`ai.provider.opencode` = `OpenCode Go`。**id 不可改**——已落库的 `ai:provider` 与 `ai_chat_sessions.provider` 都按 id 存值，改名等于数据迁移。
 
@@ -104,11 +104,11 @@ ai:chat:start(input)
 
 ### 3.5 超时与重试（实测值）
 
-| 场景 | 超时 | 重试 | 出处 |
-| --- | --- | --- | --- |
-| 模型列表 / 连通性测试 | **15 s**（`PROBE_TIMEOUT_MS`） | 无 | `ipc/ai.ts:42` |
-| 流式对话（默认） | **60 s**（`AI_DEFAULT_TIMEOUT_MS`） | **0 次**（`maxRetries: 0`） | `ai/http.ts:21`、`209` |
-| 超时下限 | **1 s**（`MIN_TIMEOUT_MS`） | — | `ai/http.ts:24`、`112-115` |
+| 场景                  | 超时                                | 重试                        | 出处                       |
+| --------------------- | ----------------------------------- | --------------------------- | -------------------------- |
+| 模型列表 / 连通性测试 | **15 s**（`PROBE_TIMEOUT_MS`）      | 无                          | `ipc/ai.ts:42`             |
+| 流式对话（默认）      | **60 s**（`AI_DEFAULT_TIMEOUT_MS`） | **0 次**（`maxRetries: 0`） | `ai/http.ts:21`、`209`     |
+| 超时下限              | **1 s**（`MIN_TIMEOUT_MS`）         | —                           | `ai/http.ts:24`、`112-115` |
 
 两个细节必须按代码理解：
 
@@ -119,16 +119,16 @@ ai:chat:start(input)
 
 `AiError { code, status?, message }`（`ai/types.ts:36-43`）是跨进程唯一错误形状。上游响应体、请求头、密钥一律不进错误对象。
 
-| code | 触发条件 | status |
-| --- | --- | --- |
-| `network` | `APIConnectionError`、`TypeError`（fetch 连接失败） | — |
-| `timeout` | 本地定时器触发、408、`APIConnectionTimeoutError` | 可能 408 |
-| `auth` | 401 / 403（含 OpenCode 凭据 / 档位分诊） | 401 / 403 |
-| `rate_limit` | 402 / 429 | 402 / 429 |
-| `invalid_request` | 其余 4xx、空消息、未选模型、Base URL 为空、未知 provider | 可能 4xx |
-| `upstream` | ≥ 500、无 status 的 `APIError` | 5xx |
-| `aborted` | `APIUserAbortError`、`AbortError`、本地取消 | — |
-| `unknown` | 其余异常 | — |
+| code              | 触发条件                                                 | status    |
+| ----------------- | -------------------------------------------------------- | --------- |
+| `network`         | `APIConnectionError`、`TypeError`（fetch 连接失败）      | —         |
+| `timeout`         | 本地定时器触发、408、`APIConnectionTimeoutError`         | 可能 408  |
+| `auth`            | 401 / 403（含 OpenCode 凭据 / 档位分诊）                 | 401 / 403 |
+| `rate_limit`      | 402 / 429                                                | 402 / 429 |
+| `invalid_request` | 其余 4xx、空消息、未选模型、Base URL 为空、未知 provider | 可能 4xx  |
+| `upstream`        | ≥ 500、无 status 的 `APIError`                           | 5xx       |
+| `aborted`         | `APIUserAbortError`、`AbortError`、本地取消              | —         |
+| `unknown`         | 其余异常                                                 | —         |
 
 状态码 → code 的映射只有一处真源 `codeFromStatus`（`ai/http.ts:56-63`），OpenCode 的原生 fetch 分支复用 `aiErrorFromStatus`（`ai/http.ts:71-73`）。
 
@@ -136,7 +136,7 @@ ai:chat:start(input)
 
 ```ts
 export const ERROR_KEYS = {
-  network: 'error.network',
+  network: 'error.network'
   // …共 8 项
 } as const satisfies Record<AiErrorCode, string>
 ```
@@ -149,10 +149,10 @@ export const ERROR_KEYS = {
 
 两张表，`schema/aiChat.ts` 建表，`database/aiChat.ts` 提供读写：
 
-| 表 | 列 | 说明 |
-| --- | --- | --- |
-| `ai_chat_sessions` | `id`、`book_id`、`chapter_id`、`provider`、`model`、`title`、`created_at`、`updated_at` | 会话归属「书 + 章」；索引 `(book_id, chapter_id)`；删书 / 删章物理级联 |
-| `ai_chat_messages` | `id`、`session_id`、`role`、`content`、`usage_json`、`created_at` | `role` 由 CHECK 限 `system`/`user`/`assistant`；索引 `(session_id, id)` |
+| 表                 | 列                                                                                      | 说明                                                                    |
+| ------------------ | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `ai_chat_sessions` | `id`、`book_id`、`chapter_id`、`provider`、`model`、`title`、`created_at`、`updated_at` | 会话归属「书 + 章」；索引 `(book_id, chapter_id)`；删书 / 删章物理级联  |
+| `ai_chat_messages` | `id`、`session_id`、`role`、`content`、`usage_json`、`created_at`                       | `role` 由 CHECK 限 `system`/`user`/`assistant`；索引 `(session_id, id)` |
 
 落库时机（渲染层 `useAiConversation` + `chatRuntime.ts`）：
 
@@ -180,19 +180,19 @@ onedrive:signIn / onedrive:backup（ipc/onedrive.ts）
         └── index.ts           统一出口
 ```
 
-| 文件 | 行数 | 职责 |
-| --- | --- | --- |
-| `auth.ts` | 315 | 生成 PKCE、起回调 server、换 token、刷新单飞、登出 |
-| `authCallback.ts` | 192 | 只监听 `127.0.0.1` 随机端口、校验 `state`、返回内置 HTML |
-| `authToken.ts` | 95 | 令牌端点 HTTP + OAuth 错误映射 |
-| `backup.ts` | 231 | `db.backup()` 快照、互斥、进度、临时文件清理 |
-| `credentials.ts` | 249 | settings 键、加密读写、`getOneDriveAuthStatus` |
-| `graph.ts` | 207 | `graphRequest`、`/me`、`approot:/backups` 目录、URL 构造 |
-| `http.ts` | 185 | 与 AI 域平行的最小 HTTP 工具（不引 `openai` SDK） |
-| `index.ts` | 43 | 对外导出面 |
-| `logSafe.ts` | 82 | `maskEmail` / `safePath` / `safeError` |
-| `types.ts` | 166 | 错误码、凭据、进度、结果类型 |
-| `upload.ts` | 445 | 大小分流、分片、重试、416 纠偏、会话取消 |
+| 文件              | 行数 | 职责                                                     |
+| ----------------- | ---- | -------------------------------------------------------- |
+| `auth.ts`         | 315  | 生成 PKCE、起回调 server、换 token、刷新单飞、登出       |
+| `authCallback.ts` | 192  | 只监听 `127.0.0.1` 随机端口、校验 `state`、返回内置 HTML |
+| `authToken.ts`    | 95   | 令牌端点 HTTP + OAuth 错误映射                           |
+| `backup.ts`       | 231  | `db.backup()` 快照、互斥、进度、临时文件清理             |
+| `credentials.ts`  | 249  | settings 键、加密读写、`getOneDriveAuthStatus`           |
+| `graph.ts`        | 207  | `graphRequest`、`/me`、`approot:/backups` 目录、URL 构造 |
+| `http.ts`         | 185  | 与 AI 域平行的最小 HTTP 工具（不引 `openai` SDK）        |
+| `index.ts`        | 43   | 对外导出面                                               |
+| `logSafe.ts`      | 82   | `maskEmail` / `safePath` / `safeError`                   |
+| `types.ts`        | 166  | 错误码、凭据、进度、结果类型                             |
+| `upload.ts`       | 445  | 大小分流、分片、重试、416 纠偏、会话取消                 |
 
 `http.ts` 与 `ai/http.ts` 是**有意的双份实现**：错误归一化产物不同（`OneDriveError` vs `AiError`），且 AI 侧依赖 `openai` SDK，备份模块不应被它拖入依赖（`onedrive/http.ts:4-10` 已登记该例外）。
 
@@ -213,11 +213,11 @@ onedrive:signIn / onedrive:backup（ipc/onedrive.ts）
 
 ### 7.3 凭据存储
 
-| 键 | 内容 | 形态 |
-| --- | --- | --- |
-| `onedrive:clientId` | Azure 应用 ID（可留空） | 明文；空则回退内置 `DEFAULT_ONEDRIVE_CLIENT_ID` |
-| `onedrive:credentials:v1` | `{ accessToken, refreshToken, expiresAt, account? }` | `safeStorage` 密文 base64 |
-| `onedrive:account` | 账户邮箱 | 明文，仅供界面展示，免每次解密 |
+| 键                        | 内容                                                 | 形态                                            |
+| ------------------------- | ---------------------------------------------------- | ----------------------------------------------- |
+| `onedrive:clientId`       | Azure 应用 ID（可留空）                              | 明文；空则回退内置 `DEFAULT_ONEDRIVE_CLIENT_ID` |
+| `onedrive:credentials:v1` | `{ accessToken, refreshToken, expiresAt, account? }` | `safeStorage` 密文 base64                       |
+| `onedrive:account`        | 账户邮箱                                             | 明文，仅供界面展示，免每次解密                  |
 
 加密判定比 AI 侧更严：除 `isEncryptionAvailable()` 外，Linux 上还要排除 `basic_text` 后端（仅 base64 混淆，等同明文），命中即视为**不可用**（`credentials.ts:48-75`）。不可用时拒绝写入、读取抛 `encryption_unavailable`，绝不降级明文。
 
@@ -239,10 +239,10 @@ onedrive:signIn / onedrive:backup（ipc/onedrive.ts）
 
 ### 8.2 上传策略
 
-| 文件大小 | 策略 | 出处 |
-| --- | --- | --- |
-| ≤ **4 MB** | 单次 `PUT …:/content` | `graph.ts:22` |
-| > 4 MB | `createUploadSession` + 分片 `PUT` | `upload.ts:324-392` |
+| 文件大小   | 策略                               | 出处                |
+| ---------- | ---------------------------------- | ------------------- |
+| ≤ **4 MB** | 单次 `PUT …:/content`              | `graph.ts:22`       |
+| > 4 MB     | `createUploadSession` + 分片 `PUT` | `upload.ts:324-392` |
 
 分片细节：单元 **10 MB**，单分片上限 **60 MB**，以「约 10 片」为目标放大（`upload.ts:42-44`、`100-106`）。每片最多尝试 **4 次**（含首次），429 / 5xx / 网络错误按 `Retry-After` 或指数退避 **1s / 2s / 4s（上限 30 s）** 重试；`Retry-After` 取值裁剪到 **1s–60s**；416 时向会话查询 `nextExpectedRanges` 纠偏继续；失败 / 取消 `DELETE` 会话（固定 **5 s** 超时，best-effort）。上传前先 `ensureBackupFolder` 创建 `approot:/backups`（并发 409 视为成功）。
 
@@ -250,11 +250,11 @@ onedrive:signIn / onedrive:backup（ipc/onedrive.ts）
 
 主进程 → 渲染层单向下发 `onedrive:progress`，载荷 `{ phase, bytesSent, totalBytes, percent }`：
 
-| phase | 时机 | 数值 |
-| --- | --- | --- |
-| `snapshot` | 开始、取 token 成功后 | `0 / 0 / 0` |
-| `upload` | 每个分片完成（小文件为上传完成后一次） | 实际字节与百分比 |
-| `done` | 上传成功 | `size / size / 100` |
+| phase      | 时机                                   | 数值                |
+| ---------- | -------------------------------------- | ------------------- |
+| `snapshot` | 开始、取 token 成功后                  | `0 / 0 / 0`         |
+| `upload`   | 每个分片完成（小文件为上传完成后一次） | 实际字节与百分比    |
+| `done`     | 上传成功                               | `size / size / 100` |
 
 进度回调抛错只记日志，不影响备份本身（`backup.ts:137-147`）。`sender` 已销毁时静默丢弃。
 
@@ -267,12 +267,12 @@ onedrive:signIn / onedrive:backup（ipc/onedrive.ts）
 
 跨 IPC 时**不抛异常**：`OneDriveError` 序列化后只剩 `name`/`message`，`code` 会丢，因此可预期错误一律返回 `{ ok: false, code, status? }`，只有非域内异常才重抛（`ipc/onedrive.ts:39-43`）。渲染层经 `ERROR_KEYS`（`satisfies Record<OneDriveErrorCode, string>`）取 `onedrive.error.<code>`。
 
-| 分组 | code |
-| --- | --- |
-| 配置 / 凭据 | `not_configured`、`encryption_unavailable`、`credentials_corrupt` |
-| 授权流程 | `auth_cancelled`、`auth_timeout`、`auth_failed`、`state_mismatch`、`reauth_required`、`port_bind_failed` |
-| 传输 | `network`、`timeout`、`aborted`、`unauthorized`、`forbidden`、`not_found`、`rate_limited`、`upstream` |
-| 备份 | `upload_failed`、`snapshot_failed`、`backup_in_progress`、`unknown` |
+| 分组        | code                                                                                                     |
+| ----------- | -------------------------------------------------------------------------------------------------------- |
+| 配置 / 凭据 | `not_configured`、`encryption_unavailable`、`credentials_corrupt`                                        |
+| 授权流程    | `auth_cancelled`、`auth_timeout`、`auth_failed`、`state_mismatch`、`reauth_required`、`port_bind_failed` |
+| 传输        | `network`、`timeout`、`aborted`、`unauthorized`、`forbidden`、`not_found`、`rate_limited`、`upstream`    |
+| 备份        | `upload_failed`、`snapshot_failed`、`backup_in_progress`、`unknown`                                      |
 
 可重试判定集中在 `RETRYABLE_CODES`：`network` / `timeout` / `rate_limited` / `upstream`（`onedrive/types.ts:36-41`）。
 
@@ -286,12 +286,12 @@ onedrive:signIn / onedrive:backup（ipc/onedrive.ts）
 const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
 ```
 
-| 通道 | 命中敏感键的行为 |
-| --- | --- |
-| `settings:get` | 返回 `null`（与「未设置」不可区分），并记 warn |
-| `settings:set` | 返回 `false`，禁止渲染层覆盖（如篡改 OneDrive 密文） |
-| `settings:all` | 整键剔除后返回，只记剔除数量 |
-| `settings:delete` | 返回 `false`，清理只能由主进程授权流程执行 |
+| 通道              | 命中敏感键的行为                                     |
+| ----------------- | ---------------------------------------------------- |
+| `settings:get`    | 返回 `null`（与「未设置」不可区分），并记 warn       |
+| `settings:set`    | 返回 `false`，禁止渲染层覆盖（如篡改 OneDrive 密文） |
+| `settings:all`    | 整键剔除后返回，只记剔除数量                         |
+| `settings:delete` | 返回 `false`，清理只能由主进程授权流程执行           |
 
 放行项：`onedrive:clientId`（Azure 公共客户端 ID，非密钥）、`onedrive:account`（展示用邮箱）。新增敏感域必须在此登记。
 
@@ -299,11 +299,11 @@ const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
 
 `logSafe.ts` 的定位是「落盘日志属于离开进程边界的数据」，三条规则：
 
-| 函数 | 规则 | 示例 |
-| --- | --- | --- |
-| `maskEmail` | 保留首字符 + 域名 | `alice@example.com` → `a***@example.com` |
-| `safePath` | 只保留 `basename`，绝不记目录 | `C:\Users\<name>\…\x.db` → `x.db` |
-| `safeError` | 白名单 `code` / `status` / `message`，message 压缩空白并截断 **200** 字符 | 不序列化 `cause` 与自定义属性 |
+| 函数        | 规则                                                                      | 示例                                     |
+| ----------- | ------------------------------------------------------------------------- | ---------------------------------------- |
+| `maskEmail` | 保留首字符 + 域名                                                         | `alice@example.com` → `a***@example.com` |
+| `safePath`  | 只保留 `basename`，绝不记目录                                             | `C:\Users\<name>\…\x.db` → `x.db`        |
+| `safeError` | 白名单 `code` / `status` / `message`，message 压缩空白并截断 **200** 字符 | 不序列化 `cause` 与自定义属性            |
 
 `logSafe` 只依赖 `node:path` 与纯类型模块，因此核心 `logger.ts` 也能安全引入而不产生循环依赖。AI 侧遵循同类约束：只记 `{ provider, model, code, status }`；配置写入日志带 `keyLength`（`ai/config.ts:233-237`），但 IPC 层**不再重复记录长度**以避免侧信道（`ipc/ai.ts:100-106`）。两域都保证：密钥明文、密文、上游响应体、用户正文不进入日志与错误对象。
 

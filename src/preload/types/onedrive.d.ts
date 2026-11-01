@@ -16,11 +16,7 @@ import type {
   OneDriveBackupResult,
   OneDriveErrorCode
 } from '../../main/onedrive'
-import type {
-  OneDriveFailure,
-  OneDriveResult,
-  OneDriveStatus
-} from '../../main/ipc/onedrive'
+import type { OneDriveFailure, OneDriveResult, OneDriveStatus } from '../../main/ipc/onedrive'
 
 export type {
   OneDriveAccount,
@@ -57,7 +53,5 @@ export interface OneDriveApi {
   /** 中断进行中的备份；返回是否发出了取消请求（无进行中任务为 false）。 */
   cancelBackup: () => Promise<boolean>
   /** 订阅备份进度，返回退订函数（组件卸载时必调）。 */
-  onProgress: (
-    callback: (progress: OneDriveBackupProgress) => void
-  ) => OneDriveProgressUnsubscribe
+  onProgress: (callback: (progress: OneDriveBackupProgress) => void) => OneDriveProgressUnsubscribe
 }

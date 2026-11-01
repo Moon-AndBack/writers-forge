@@ -111,9 +111,7 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
   const updateOrigin = useCallback(
     (origin: string) => {
       if (activeId === null) return
-      const next = list.map((entry) =>
-        entry.id === activeId ? { ...entry, origin } : entry
-      )
+      const next = list.map((entry) => (entry.id === activeId ? { ...entry, origin } : entry))
       setList(next)
       void window.api?.settings.set(listKey, serializeTimelineList(next))
     },

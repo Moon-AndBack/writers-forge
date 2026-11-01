@@ -46,7 +46,12 @@ function readIsCustom(value: unknown): number | null {
 }
 
 /** 写操作兜底：失败只记日志并返回 fallback，绝不向渲染层抛异常。 */
-function runWrite<T>(channel: string, context: Record<string, unknown>, fn: () => T, fallback: T): T {
+function runWrite<T>(
+  channel: string,
+  context: Record<string, unknown>,
+  fn: () => T,
+  fallback: T
+): T {
   try {
     const result = fn()
     log.debug(`${channel} 完成`, context)

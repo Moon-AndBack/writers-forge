@@ -6,11 +6,7 @@ import { plainTextToDocJson } from './richText'
 import { HIERARCHY_SEMANTIC_CODES } from './worldSemanticCodes'
 import { seedGuidePlotSceneEntities } from './worldEntityPlotSeed'
 import { DEMO_ENTITIES } from './worldEntitySeedEntities'
-import {
-  ensureCustomSubtypeByName,
-  ensurePresetSubtypes,
-  listWorldSubtypes
-} from './worldSubtypes'
+import { ensureCustomSubtypeByName, ensurePresetSubtypes, listWorldSubtypes } from './worldSubtypes'
 
 /**
  * 教学书「Writer's Forge · 使用指南」的统一设定库 demo 种子。

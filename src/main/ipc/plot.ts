@@ -71,9 +71,7 @@ function isOptionalTimeEra(value: unknown): value is string | null | undefined {
 /** 校验结构化年份：undefined / null（未设置）/ 整数。 */
 function isOptionalTimeYear(value: unknown): value is number | null | undefined {
   return (
-    value === undefined ||
-    value === null ||
-    (typeof value === 'number' && Number.isInteger(value))
+    value === undefined || value === null || (typeof value === 'number' && Number.isInteger(value))
   )
 }
 
@@ -103,7 +101,8 @@ function sanitizeSceneEntityRows(value: unknown): PlotSceneEntityInput[] | undef
     }
     rows.push({
       entityId: record.entityId,
-      role: typeof record.role === 'string' ? record.role.slice(0, SCENE_ENTITY_ROLE_MAX) : undefined,
+      role:
+        typeof record.role === 'string' ? record.role.slice(0, SCENE_ENTITY_ROLE_MAX) : undefined,
       sortOrder: typeof record.sortOrder === 'number' ? record.sortOrder : undefined
     })
   }

@@ -123,15 +123,10 @@ function retryDelayMs(headers: Headers | null, attempt: number): number {
 
 /** 会话状态：服务端还有待传区间、已传完、或无法判定。 */
 type SessionState =
-  | { kind: 'next'; nextOffset: number }
-  | { kind: 'complete'; item: unknown }
-  | { kind: 'unknown' }
+  { kind: 'next'; nextOffset: number } | { kind: 'complete'; item: unknown } | { kind: 'unknown' }
 
 /** 向会话查询当前状态（用于 416 偏移纠偏与完成后补取 driveItem）。 */
-async function resolveSessionState(
-  uploadUrl: string,
-  signal?: AbortSignal
-): Promise<SessionState> {
+async function resolveSessionState(uploadUrl: string, signal?: AbortSignal): Promise<SessionState> {
   try {
     const response = await fetch(uploadUrl, {
       method: 'GET',
@@ -412,8 +407,7 @@ export async function uploadFile(
 
   // 显式 fileName 只取 basename（防御调用方传绝对路径 / 子目录），
   // 缺省或非字符串时回退本地文件名，保持既有默认命名不变。
-  const explicitName =
-    typeof options.fileName === 'string' ? basename(options.fileName).trim() : ''
+  const explicitName = typeof options.fileName === 'string' ? basename(options.fileName).trim() : ''
   const fileName = (explicitName || basename(filePath)).trim()
   if (!fileName) {
     throw new OneDriveError('upload_failed', { message: 'Backup file name is empty' })

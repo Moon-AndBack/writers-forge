@@ -112,9 +112,7 @@ export function migrateI18nChineseDefaults(instance: Database.Database): void {
     instance.prepare("UPDATE plot_scenes SET time_desc = '' WHERE time_desc = '时间未定'").run()
 
     if (bookColumns.has('default_origin')) {
-      instance
-        .prepare("UPDATE books SET default_origin = '' WHERE default_origin = '元年'")
-        .run()
+      instance.prepare("UPDATE books SET default_origin = '' WHERE default_origin = '元年'").run()
     }
 
     instance

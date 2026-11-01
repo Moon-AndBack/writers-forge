@@ -15,12 +15,7 @@
  *   （调用点均在组件内，见 `formatBookWords` / `formatStatWords`）。
  */
 import type { TFunction } from 'i18next'
-import type {
-  BookChannel,
-  BookLength,
-  BookRow,
-  BookStatus
-} from '../../../../main/database/books'
+import type { BookChannel, BookLength, BookRow, BookStatus } from '../../../../main/database/books'
 
 /** 书籍领域类型（单一真源：主进程 BookRow 与其状态六态）。 */
 export type { BookChannel, BookLength, BookRow, BookStatus }

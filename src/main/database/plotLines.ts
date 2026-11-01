@@ -32,15 +32,37 @@ export function listPlotLines(bookId: string): PlotLineRow[] {
 
 /** 创建剧情线（追加到该书末尾）。`name` 缺省 / 空白 → `DEFAULT_LINE_NAME`（空串，展示层兜底）；
  * `options` 缺省取默认类型 `'main'` + 默认首色，非法值同样回退默认。 */
-export function createPlotLine(bookId: string, name?: string, options?: CreatePlotLineOptions): PlotLineRow {
+export function createPlotLine(
+  bookId: string,
+  name?: string,
+  options?: CreatePlotLineOptions
+): PlotLineRow {
   const trimmed = typeof name === 'string' ? name.trim() : ''
   const finalName = trimmed !== '' ? trimmed : DEFAULT_LINE_NAME
   const lineType = normalizePlotLineType(options?.lineType)
   const lineColor = normalizePlotLineColor(options?.lineColor)
-  const timelineId = typeof options?.timelineId === 'string' && options.timelineId.trim() !== '' ? options.timelineId.trim() : 'default'
-  const defaultOrigin = typeof options?.defaultOrigin === 'string' && options.defaultOrigin.trim() !== '' ? options.defaultOrigin.trim() : ''
+  const timelineId =
+    typeof options?.timelineId === 'string' && options.timelineId.trim() !== ''
+      ? options.timelineId.trim()
+      : 'default'
+  const defaultOrigin =
+    typeof options?.defaultOrigin === 'string' && options.defaultOrigin.trim() !== ''
+      ? options.defaultOrigin.trim()
+      : ''
   const db = getDb()
-  const result = db.prepare("INSERT INTO plot_lines (book_id, name, line_type, line_color, timeline_id, default_origin, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)").run(bookId, finalName, lineType, lineColor, timelineId, defaultOrigin, nextLineSortOrder(bookId))
+  const result = db
+    .prepare(
+      'INSERT INTO plot_lines (book_id, name, line_type, line_color, timeline_id, default_origin, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    )
+    .run(
+      bookId,
+      finalName,
+      lineType,
+      lineColor,
+      timelineId,
+      defaultOrigin,
+      nextLineSortOrder(bookId)
+    )
   return db
     .prepare(`SELECT ${PLOT_LINE_COLUMNS} FROM plot_lines WHERE id = ?`)
     .get(Number(result.lastInsertRowid)) as PlotLineRow
@@ -111,7 +133,9 @@ export function deletePlotLine(id: number): boolean {
 export function backfillPlotLineDefaults(bookId: string): number {
   const db = getDb()
   const rows = db
-    .prepare('SELECT id, line_type AS lineType, line_color AS lineColor FROM plot_lines WHERE book_id = ?')
+    .prepare(
+      'SELECT id, line_type AS lineType, line_color AS lineColor FROM plot_lines WHERE book_id = ?'
+    )
     .all(bookId) as Array<{ id: number; lineType: string | null; lineColor: string | null }>
   const rewrite = db.prepare('UPDATE plot_lines SET line_type = ?, line_color = ? WHERE id = ?')
   let updated = 0
@@ -129,13 +153,25 @@ export function backfillPlotLineDefaults(bookId: string): number {
 
 export function backfillPlotLineTimeline(bookId: string): number {
   const db = getDb()
-  const rows = db.prepare('SELECT id, timeline_id AS timelineId, default_origin AS defaultOrigin FROM plot_lines WHERE book_id = ?').all(bookId) as Array<{ id: number; timelineId: string | null; defaultOrigin: string | null }>
-  const rewrite = db.prepare('UPDATE plot_lines SET timeline_id = ?, default_origin = ? WHERE id = ?')
+  const rows = db
+    .prepare(
+      'SELECT id, timeline_id AS timelineId, default_origin AS defaultOrigin FROM plot_lines WHERE book_id = ?'
+    )
+    .all(bookId) as Array<{ id: number; timelineId: string | null; defaultOrigin: string | null }>
+  const rewrite = db.prepare(
+    'UPDATE plot_lines SET timeline_id = ?, default_origin = ? WHERE id = ?'
+  )
   let updated = 0
   db.transaction(() => {
     for (const row of rows) {
-      const timelineId = typeof row.timelineId === 'string' && row.timelineId.trim() !== '' ? row.timelineId.trim() : 'default'
-      const defaultOrigin = typeof row.defaultOrigin === 'string' && row.defaultOrigin.trim() !== '' ? row.defaultOrigin.trim() : ''
+      const timelineId =
+        typeof row.timelineId === 'string' && row.timelineId.trim() !== ''
+          ? row.timelineId.trim()
+          : 'default'
+      const defaultOrigin =
+        typeof row.defaultOrigin === 'string' && row.defaultOrigin.trim() !== ''
+          ? row.defaultOrigin.trim()
+          : ''
       if (row.timelineId === timelineId && row.defaultOrigin === defaultOrigin) continue
       rewrite.run(timelineId, defaultOrigin, row.id)
       updated += 1

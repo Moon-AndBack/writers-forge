@@ -159,7 +159,9 @@
   max-width: 90vw;
   overflow: hidden;
   background: var(--pane);
-  box-shadow: var(--sh-float), 0 0 0 1px var(--line);
+  box-shadow:
+    var(--sh-float),
+    0 0 0 1px var(--line);
 }
 
 .wf-drawer__panel--right {

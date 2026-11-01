@@ -14,18 +14,18 @@
 
 主窗口由 `createMainWindow()` 创建，`BrowserWindow` 选项集中在 `src/main/window.ts:74-99`。
 
-| 参数 | 取值 | 说明 | 出处 |
-| --- | --- | --- | --- |
-| `width` / `height` | 持久化值，缺省 902 × 764 | 外框尺寸，单位 DIP | `window.ts:75-76`、`windowState.ts:22-23` |
-| `minWidth` / `minHeight` | 902 × 764 | 与默认尺寸相同，窗口不可再缩小 | `window.ts:77-78` |
-| `backgroundColor` | 材质生效 `#00000000`；否则 `#f3f3f3` | 透明用 alpha 通道实现，**不用** `transparent: true` | `window.ts:84` |
-| `backgroundMaterial` | `resolveMaterial()` 结果 | `acrylic` / `none` | `window.ts:65,85` |
-| `icon` | 开发态 `build/icon.png`；打包态 `resources/icon.png` | 路径由 `app.isPackaged` 分支决定 | `window.ts:70-72,80` |
-| `titleBarStyle` | `'hidden'` | 隐藏系统标题栏，渲染层自绘 | `window.ts:86` |
-| `titleBarOverlay` | `color: '#00000000'`、`symbolColor: '#5c5c5c'`、`height: 42` | 仅保留右上角系统按钮（WCO） | `window.ts:87-91` |
-| `show` | `false` | 等 `ready-to-show` 再 `show()`，避免白屏闪烁 | `window.ts:79,110-113` |
-| `autoHideMenuBar` | `true` | 隐藏菜单栏 | `window.ts:92` |
-| `webPreferences` | `contextIsolation: true`、`sandbox: false`、`nodeIntegration: false` | preload 为 `../preload/index.js` | `window.ts:93-98` |
+| 参数                     | 取值                                                                 | 说明                                                | 出处                                      |
+| ------------------------ | -------------------------------------------------------------------- | --------------------------------------------------- | ----------------------------------------- |
+| `width` / `height`       | 持久化值，缺省 902 × 764                                             | 外框尺寸，单位 DIP                                  | `window.ts:75-76`、`windowState.ts:22-23` |
+| `minWidth` / `minHeight` | 902 × 764                                                            | 与默认尺寸相同，窗口不可再缩小                      | `window.ts:77-78`                         |
+| `backgroundColor`        | 材质生效 `#00000000`；否则 `#f3f3f3`                                 | 透明用 alpha 通道实现，**不用** `transparent: true` | `window.ts:84`                            |
+| `backgroundMaterial`     | `resolveMaterial()` 结果                                             | `acrylic` / `none`                                  | `window.ts:65,85`                         |
+| `icon`                   | 开发态 `build/icon.png`；打包态 `resources/icon.png`                 | 路径由 `app.isPackaged` 分支决定                    | `window.ts:70-72,80`                      |
+| `titleBarStyle`          | `'hidden'`                                                           | 隐藏系统标题栏，渲染层自绘                          | `window.ts:86`                            |
+| `titleBarOverlay`        | `color: '#00000000'`、`symbolColor: '#5c5c5c'`、`height: 42`         | 仅保留右上角系统按钮（WCO）                         | `window.ts:87-91`                         |
+| `show`                   | `false`                                                              | 等 `ready-to-show` 再 `show()`，避免白屏闪烁        | `window.ts:79,110-113`                    |
+| `autoHideMenuBar`        | `true`                                                               | 隐藏菜单栏                                          | `window.ts:92`                            |
+| `webPreferences`         | `contextIsolation: true`、`sandbox: false`、`nodeIntegration: false` | preload 为 `../preload/index.js`                    | `window.ts:93-98`                         |
 
 其他行为：
 
@@ -58,16 +58,16 @@
 
 实现见 `registerWindowSizePersistence()`（`windowState.ts:107-133`）。
 
-| 项目 | 取值 / 行为 | 出处 |
-| --- | --- | --- |
-| settings 键 | `windowSize` | `windowState.ts:9` |
-| 存储格式 | `"<宽>x<高>"`，四舍五入取整 | `windowState.ts:45,63-65` |
-| 防抖间隔 | 300 ms（`WINDOW_SIZE_SAVE_DELAY`） | `windowState.ts:98,120-123` |
-| 忽略状态 | 最大化 / 全屏 / 最小化时不写库 | `windowState.ts:114` |
-| 取值来源 | `getNormalBounds()`，保留恢复态尺寸 | `windowState.ts:116` |
-| 关闭补写 | `close` 时清定时器并立即写一次 | `windowState.ts:126-132` |
-| 合法范围 | 宽 320–10000、高 240–10000 | `windowState.ts:26-29,50-57` |
-| 解析规则 | 仅接受 `^\d{1,4}x\d{1,4}$`；null / 空串 / 负数 / 小数 / 越界一律丢弃 | `windowState.ts:42-60` |
+| 项目        | 取值 / 行为                                                          | 出处                         |
+| ----------- | -------------------------------------------------------------------- | ---------------------------- |
+| settings 键 | `windowSize`                                                         | `windowState.ts:9`           |
+| 存储格式    | `"<宽>x<高>"`，四舍五入取整                                          | `windowState.ts:45,63-65`    |
+| 防抖间隔    | 300 ms（`WINDOW_SIZE_SAVE_DELAY`）                                   | `windowState.ts:98,120-123`  |
+| 忽略状态    | 最大化 / 全屏 / 最小化时不写库                                       | `windowState.ts:114`         |
+| 取值来源    | `getNormalBounds()`，保留恢复态尺寸                                  | `windowState.ts:116`         |
+| 关闭补写    | `close` 时清定时器并立即写一次                                       | `windowState.ts:126-132`     |
+| 合法范围    | 宽 320–10000、高 240–10000                                           | `windowState.ts:26-29,50-57` |
+| 解析规则    | 仅接受 `^\d{1,4}x\d{1,4}$`；null / 空串 / 负数 / 小数 / 越界一律丢弃 | `windowState.ts:42-60`       |
 
 - 启动读取：`readInitialWindowSize()` 有合法值用持久化值，无值 / 非法 / 读库异常回退 902 × 764（`windowState.ts:76-85`）。
 - 写库异常只记 `warn`，不影响窗口使用（`windowState.ts:88-95`）。
@@ -79,10 +79,10 @@
 
 窗口材质**只有两种**（`src/main/windowMaterial.ts:14`）：
 
-| 值 | 含义 |
-| --- | --- |
+| 值        | 含义                                                   |
+| --------- | ------------------------------------------------------ |
 | `acrylic` | 开启亚克力透明：窗口底全透明，透出 Windows DWM Acrylic |
-| `none` | 关闭：不透明，回退渲染层光斑渐变 |
+| `none`    | 关闭：不透明，回退渲染层光斑渐变                       |
 
 - 默认值：`acrylic`（`windowMaterial.ts:24`；渲染层默认一致，`theme/windowMaterial.ts:17`）。
 - settings 键：`windowMaterial`（`windowMaterial.ts:17`、`theme/windowMaterial.ts:10`）。
@@ -146,10 +146,10 @@
 
 ### 6.2 阈值与决策
 
-| 常量 | 值 | 含义 | 出处 |
-| --- | --- | --- | --- |
-| `SNAP_ENTER` | 12 DIP | 未锁定时，距最近档 ≤ 12 即吸附 | `resizeSnap.ts:44` |
-| `SNAP_EXIT` | 24 DIP | 已锁定时，偏离 > 24 才解锁（滞回防抖） | `resizeSnap.ts:46` |
+| 常量         | 值     | 含义                                   | 出处               |
+| ------------ | ------ | -------------------------------------- | ------------------ |
+| `SNAP_ENTER` | 12 DIP | 未锁定时，距最近档 ≤ 12 即吸附         | `resizeSnap.ts:44` |
+| `SNAP_EXIT`  | 24 DIP | 已锁定时，偏离 > 24 才解锁（滞回防抖） | `resizeSnap.ts:46` |
 
 - 档位宽度：`overhead + N × cardWidth + (N − 1) × columnGap`，取整（`resizeSnap.ts:101-103`）。
 - 决策为纯函数 `decideSnap()`：已锁定且未越 EXIT → 维持吸附；越 EXIT → 重新寻档；未锁定且 ≤ ENTER → 锁定；否则自由（`resizeSnap.ts:131-153`）。
@@ -179,12 +179,12 @@
 
 ### 6.6 IPC 通道
 
-| 通道 | 作用 | 出处 |
-| --- | --- | --- |
-| `window:snap:set` | 校验配置并启用吸附 | `src/main/ipc/snap.ts:19-29` |
-| `window:snap:clear` | 关闭吸附（离开书架页） | `src/main/ipc/snap.ts:31-36` |
-| `window:snap:status` | 读取当前吸附状态 | `src/main/ipc/snap.ts:38-41` |
-| `window:bounds:get` | 返回窗口外宽（DIP），供渲染层算 overhead | `src/main/ipc/snap.ts:44-47` |
+| 通道                 | 作用                                     | 出处                         |
+| -------------------- | ---------------------------------------- | ---------------------------- |
+| `window:snap:set`    | 校验配置并启用吸附                       | `src/main/ipc/snap.ts:19-29` |
+| `window:snap:clear`  | 关闭吸附（离开书架页）                   | `src/main/ipc/snap.ts:31-36` |
+| `window:snap:status` | 读取当前吸附状态                         | `src/main/ipc/snap.ts:38-41` |
+| `window:bounds:get`  | 返回窗口外宽（DIP），供渲染层算 overhead | `src/main/ipc/snap.ts:44-47` |
 
 preload 对应 `window.api.windowSnap`（`src/preload/index.ts:352-361`）。配置校验拒绝 NaN / Infinity / 负值 / 非整数列数（`resizeSnap.ts:71-98`）。
 
@@ -192,10 +192,10 @@ preload 对应 `window.api.windowSnap`（`src/preload/index.ts:352-361`）。配
 
 垂直方向由两段固定 chrome 夹住内容区，二者都是硬编码高度，改动需三处同步（主进程 overlay、CSS、推导注释）：
 
-| 区段 | 高度 | 出处 |
-| --- | --- | --- |
-| 标题栏 `.titlebar` | 42 px | `styles/shell.css:86-91`；`window.ts:90` |
-| 状态栏 `.statusbar` | 36 px | `styles/statusbar.css:17-22` |
+| 区段                | 高度  | 出处                                     |
+| ------------------- | ----- | ---------------------------------------- |
+| 标题栏 `.titlebar`  | 42 px | `styles/shell.css:86-91`；`window.ts:90` |
+| 状态栏 `.statusbar` | 36 px | `styles/statusbar.css:17-22`             |
 
 - 默认高度 764 已包含 42 + 36（`windowState.ts:18-20`）。
 - 最小高度同为 764（`window.ts:78`），因此内容区高度下限 = 764 − 42 − 36 − 页面 padding / 工具条。

@@ -34,7 +34,9 @@
   padding: 8px;
   background: var(--pane);
   border-radius: var(--r-lg);
-  box-shadow: var(--sh-popup), 0 0 0 1px var(--line);
+  box-shadow:
+    var(--sh-popup),
+    0 0 0 1px var(--line);
   -webkit-app-region: no-drag;
 }
 
@@ -103,8 +105,7 @@
   background: var(--soft-solid);
   border-radius: var(--r-xs);
   cursor: pointer;
-  transition:
-    box-shadow var(--ease) 0.15s;
+  transition: box-shadow var(--ease) 0.15s;
 }
 
 /* hover：不位移，改为品牌色边缘光晕（描边环 + 外发光），与书籍卡

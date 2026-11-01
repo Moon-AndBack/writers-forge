@@ -188,10 +188,7 @@ function toSubtypeRow(row: WorldSubtypeDbRow): WorldSubtypeRow {
 }
 
 /** 列出某书未删除子类，可选按实体类型过滤；排序 `sort_order, id`。 */
-export function listWorldSubtypes(
-  bookId: string,
-  entityType?: WorldEntityType
-): WorldSubtypeRow[] {
+export function listWorldSubtypes(bookId: string, entityType?: WorldEntityType): WorldSubtypeRow[] {
   const where = ['book_id = @bookId', 'deleted_at IS NULL']
   const params: Record<string, unknown> = { bookId }
   if (entityType !== undefined) {

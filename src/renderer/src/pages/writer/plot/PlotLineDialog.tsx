@@ -95,7 +95,9 @@ export default function PlotLineDialog({
       <div className="plot-line-dialog">
         <FormField label={t('createDialog.timelineLabel')}>
           <Input
-            value={timelineName && timelineName.trim() !== '' ? timelineName : tTimeline('defaultName')}
+            value={
+              timelineName && timelineName.trim() !== '' ? timelineName : tTimeline('defaultName')
+            }
             readOnly
             aria-readonly="true"
           />

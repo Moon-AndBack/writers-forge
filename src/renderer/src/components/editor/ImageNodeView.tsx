@@ -43,9 +43,11 @@ export function ImageNodeView({ node, selected }: ReactNodeViewProps): ReactElem
   const isExternal = imageId === null && rawSrc !== '' && !isImagePlaceholder(rawSrc)
 
   // 上传图补水结果（按 id 记录）。
-  const [upload, setUpload] = useState<{ forId: number; url: string | null; failed: boolean } | null>(
-    null
-  )
+  const [upload, setUpload] = useState<{
+    forId: number
+    url: string | null
+    failed: boolean
+  } | null>(null)
   // 加载失败的真实 src（按 src 记录；src 一变即自然失效，无需同步 reset）。
   const [errorSrc, setErrorSrc] = useState<string | null>(null)
 

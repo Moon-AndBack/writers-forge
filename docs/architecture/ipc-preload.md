@@ -15,11 +15,11 @@ Writer's Forge 的渲染层不直接接触 Node / Electron 能力：所有数据
 
 通道名一律 `域:资源:动作`（简单 CRUD 可省略资源段，写 `域:动作`）：
 
-| 形态 | 示例 | 说明 |
-| --- | --- | --- |
-| `域:动作` | `books:list`、`chapters:purge` | 单资源域，动作即语义 |
-| `域:资源:动作` | `books:cover:get`、`ai:sessions:create` | 域下挂子资源 |
-| `域:资源动词` | `chapters:listVolumes`、`window:snap:set` | 资源本身就是动作宾语 |
+| 形态           | 示例                                      | 说明                 |
+| -------------- | ----------------------------------------- | -------------------- |
+| `域:动作`      | `books:list`、`chapters:purge`            | 单资源域，动作即语义 |
+| `域:资源:动作` | `books:cover:get`、`ai:sessions:create`   | 域下挂子资源         |
+| `域:资源动词`  | `chapters:listVolumes`、`window:snap:set` | 资源本身就是动作宾语 |
 
 动作词表固定：`list` / `get` / `create` / `update` / `rename` / `delete` / `reorder` / `move` / `setX` / `restore` / `purge` / `purgeAllDeleted` / `ensurePresets`。读通道不写库，写通道必须以动词开头，便于按名审查（例如 `purge*` 是不可恢复的物理删除，`restore*` 只对回收站生效）。
 
@@ -44,28 +44,28 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 }
 ```
 
-| # | 注册函数 | 文件 | handler 数 |
-| --- | --- | --- | --- |
-| 1 | `registerAiIpc` | `ai.ts` | 12 |
-| 2 | `registerBooksIpc` | `books.ts` | 8 |
-| 3 | `registerCategoriesIpc` | `categories.ts` | 4 |
-| 4 | `registerChaptersIpc` | `chapters.ts` | 24 |
-| 5 | `registerChapterSearchIpc` | `chapterSearch.ts` | 3 |
-| 6 | `registerChipColorsIpc` | `chipColors.ts` | 1 |
-| 7 | `registerCleanWordsIpc` | `cleanWords.ts` | 6 |
-| 8 | `registerDiagnosticsIpc(report)` | `diagnostics.ts` | 1 |
-| 9 | `registerEntitiesIpc` | `entities.ts` | 7 |
-| 10 | `registerImagesIpc` | `images.ts` | 3 |
-| 11 | `registerOneDriveIpc` | `onedrive.ts` | 7 |
-| 12 | `registerOutlineIpc` | `outline.ts` | 21 |
-| 13 | `registerPlotIpc` | `plot.ts` | 11 |
-| 14 | `registerSettingsIpc` | `settings.ts` | 4 |
-| 15 | `registerSnapIpc` | `snap.ts` | 4 |
-| 16 | `registerStatsIpc` | `stats.ts` | 4 |
-| 17 | `registerThemeIpc` | `theme.ts` | 1 |
-| 18 | `registerWindowIpc` | `window.ts` | 3 |
-| 19 | `registerWorldEntitiesIpc` | `worldEntities.ts` | 12（另间接 7） |
-| 20 | `registerWorldSubtypesIpc` | `worldSubtypes.ts` | 5 |
+| #   | 注册函数                         | 文件               | handler 数     |
+| --- | -------------------------------- | ------------------ | -------------- |
+| 1   | `registerAiIpc`                  | `ai.ts`            | 12             |
+| 2   | `registerBooksIpc`               | `books.ts`         | 8              |
+| 3   | `registerCategoriesIpc`          | `categories.ts`    | 4              |
+| 4   | `registerChaptersIpc`            | `chapters.ts`      | 24             |
+| 5   | `registerChapterSearchIpc`       | `chapterSearch.ts` | 3              |
+| 6   | `registerChipColorsIpc`          | `chipColors.ts`    | 1              |
+| 7   | `registerCleanWordsIpc`          | `cleanWords.ts`    | 6              |
+| 8   | `registerDiagnosticsIpc(report)` | `diagnostics.ts`   | 1              |
+| 9   | `registerEntitiesIpc`            | `entities.ts`      | 7              |
+| 10  | `registerImagesIpc`              | `images.ts`        | 3              |
+| 11  | `registerOneDriveIpc`            | `onedrive.ts`      | 7              |
+| 12  | `registerOutlineIpc`             | `outline.ts`       | 21             |
+| 13  | `registerPlotIpc`                | `plot.ts`          | 11             |
+| 14  | `registerSettingsIpc`            | `settings.ts`      | 4              |
+| 15  | `registerSnapIpc`                | `snap.ts`          | 4              |
+| 16  | `registerStatsIpc`               | `stats.ts`         | 4              |
+| 17  | `registerThemeIpc`               | `theme.ts`         | 1              |
+| 18  | `registerWindowIpc`              | `window.ts`        | 3              |
+| 19  | `registerWorldEntitiesIpc`       | `worldEntities.ts` | 12（另间接 7） |
+| 20  | `registerWorldSubtypesIpc`       | `worldSubtypes.ts` | 5              |
 
 27 个文件 = `index.ts` + 上述 20 个注册文件 + `worldRefs.ts` / `worldPowers.ts`（间接注册，见 §9）+ 4 个无通道的辅助模块：
 
@@ -78,27 +78,27 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 
 实测 `ipcMain.handle` 共 **148** 个（含 `onedrive:backup`、`outline:saveContent`、`worldEntity:list` / `saveText` / `listIncomingRefs` 等跨行书写的 5 个）。按一级前缀（域）分布：
 
-| 域 | 文件 | 数量 |
-| --- | --- | --- |
-| `ai` | `ai.ts` | 12 |
-| `books` | `books.ts` | 8 |
-| `categories` | `categories.ts` | 4 |
-| `chapters` | `chapters.ts` + `chapterSearch.ts` | 27 |
-| `chipColors` | `chipColors.ts` | 1 |
-| `cleanWords` | `cleanWords.ts` | 6 |
-| `diagnostics` | `diagnostics.ts` | 1 |
-| `entities` | `entities.ts` | 7 |
-| `images` | `images.ts` | 3 |
-| `onedrive` | `onedrive.ts` | 7 |
-| `outline` | `outline.ts` | 21 |
-| `plot` | `plot.ts` | 11 |
-| `settings` | `settings.ts` | 4 |
-| `stats` | `stats.ts` | 4 |
-| `theme` | `theme.ts` | 1 |
-| `window` | `window.ts` + `snap.ts` | 7 |
-| `worldEntity` | `worldEntities.ts` + `worldRefs.ts` + `worldPowers.ts` | 19 |
-| `worldSubtype` | `worldSubtypes.ts` | 5 |
-| **合计** | 22 个注册文件 | **148** |
+| 域             | 文件                                                   | 数量    |
+| -------------- | ------------------------------------------------------ | ------- |
+| `ai`           | `ai.ts`                                                | 12      |
+| `books`        | `books.ts`                                             | 8       |
+| `categories`   | `categories.ts`                                        | 4       |
+| `chapters`     | `chapters.ts` + `chapterSearch.ts`                     | 27      |
+| `chipColors`   | `chipColors.ts`                                        | 1       |
+| `cleanWords`   | `cleanWords.ts`                                        | 6       |
+| `diagnostics`  | `diagnostics.ts`                                       | 1       |
+| `entities`     | `entities.ts`                                          | 7       |
+| `images`       | `images.ts`                                            | 3       |
+| `onedrive`     | `onedrive.ts`                                          | 7       |
+| `outline`      | `outline.ts`                                           | 21      |
+| `plot`         | `plot.ts`                                              | 11      |
+| `settings`     | `settings.ts`                                          | 4       |
+| `stats`        | `stats.ts`                                             | 4       |
+| `theme`        | `theme.ts`                                             | 1       |
+| `window`       | `window.ts` + `snap.ts`                                | 7       |
+| `worldEntity`  | `worldEntities.ts` + `worldRefs.ts` + `worldPowers.ts` | 19      |
+| `worldSubtype` | `worldSubtypes.ts`                                     | 5       |
+| **合计**       | 22 个注册文件                                          | **148** |
 
 ### 3.1 AI / 书稿 / 内容类（75）
 
@@ -202,13 +202,13 @@ window:snap:set · window:snap:clear · window:snap:status · window:bounds:get
 
 主进程主动下发只有以下 5 个事件，全部由 preload 包装成"订阅返回退订函数"，渲染层拿不到 `ipcRenderer`。
 
-| 事件名 | 载荷 | 订阅方式 | 取消订阅 | 发送方 |
-| --- | --- | --- | --- | --- |
-| `ai:chat:delta` | `{ requestId: string, delta: string }` | `window.api.ai.chat.onStream(cb)` | 返回值 `()` 调用即退订 | `event.sender.send`（仅发起窗口） |
-| `ai:chat:done` | `{ requestId: string, usage?: AiUsage }` | 同上 | 同上 | 同上 |
-| `ai:chat:error` | `{ requestId: string, error: AiError }` | 同上 | 同上 | 同上 |
-| `onedrive:progress` | `OneDriveBackupProgress { phase: 'snapshot' \| 'upload' \| 'done', bytesSent, totalBytes, percent }` | `window.api.onedrive.onProgress(cb)` | 返回值调用即退订 | `event.sender.send` |
-| `theme:accent:changed` | `string \| null`（`#rrggbb` 或读取失败） | `window.api.systemTheme.onAccentChange(cb)` | 返回值调用即退订 | `webContents.send`（广播到所有窗口） |
+| 事件名                 | 载荷                                                                                                 | 订阅方式                                    | 取消订阅               | 发送方                               |
+| ---------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------- | ------------------------------------ |
+| `ai:chat:delta`        | `{ requestId: string, delta: string }`                                                               | `window.api.ai.chat.onStream(cb)`           | 返回值 `()` 调用即退订 | `event.sender.send`（仅发起窗口）    |
+| `ai:chat:done`         | `{ requestId: string, usage?: AiUsage }`                                                             | 同上                                        | 同上                   | 同上                                 |
+| `ai:chat:error`        | `{ requestId: string, error: AiError }`                                                              | 同上                                        | 同上                   | 同上                                 |
+| `onedrive:progress`    | `OneDriveBackupProgress { phase: 'snapshot' \| 'upload' \| 'done', bytesSent, totalBytes, percent }` | `window.api.onedrive.onProgress(cb)`        | 返回值调用即退订       | `event.sender.send`                  |
+| `theme:accent:changed` | `string \| null`（`#rrggbb` 或读取失败）                                                             | `window.api.systemTheme.onAccentChange(cb)` | 返回值调用即退订       | `webContents.send`（广播到所有窗口） |
 
 实现约定（三处代码同构，改动须保持一致）：
 
@@ -230,15 +230,15 @@ window:snap:set · window:snap:clear · window:snap:status · window:bounds:get
 
 ### 5.2 失败表达
 
-| 形态 | 含义 | 示例 |
-| --- | --- | --- |
-| `null` | 单条对象失败 / 未命中 / 入参非法 | `books:get`、`plot:createScene` |
-| `false` | 布尔写失败 / 未命中 | `chapters:delete`、`settings:set` |
-| `[]` | 列表读失败按空列表兜底 | `chapters:list`、`ai:sessions:list` |
-| 带默认字段的空对象 | 有固定返回形状 | `chapters:stats` → `{ chapters: 0, words: 0 }`；`chapters:listDeleted` → `{ volumes: [], chapters: [] }` |
-| `{ ok: false, error }` | 可预期业务失败（AI 探测） | `ai:models:list`、`ai:test` |
-| `{ ok: false, code, status? }` | 可预期域内失败（OneDrive） | `onedrive:signIn`、`onedrive:backup` |
-| reject | 编程错误 / 数据库异常 | 见下 |
+| 形态                           | 含义                             | 示例                                                                                                     |
+| ------------------------------ | -------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `null`                         | 单条对象失败 / 未命中 / 入参非法 | `books:get`、`plot:createScene`                                                                          |
+| `false`                        | 布尔写失败 / 未命中              | `chapters:delete`、`settings:set`                                                                        |
+| `[]`                           | 列表读失败按空列表兜底           | `chapters:list`、`ai:sessions:list`                                                                      |
+| 带默认字段的空对象             | 有固定返回形状                   | `chapters:stats` → `{ chapters: 0, words: 0 }`；`chapters:listDeleted` → `{ volumes: [], chapters: [] }` |
+| `{ ok: false, error }`         | 可预期业务失败（AI 探测）        | `ai:models:list`、`ai:test`                                                                              |
+| `{ ok: false, code, status? }` | 可预期域内失败（OneDrive）       | `onedrive:signIn`、`onedrive:backup`                                                                     |
+| reject                         | 编程错误 / 数据库异常            | 见下                                                                                                     |
 
 ### 5.3 `runWrite` 两种形态
 
@@ -252,10 +252,17 @@ window:snap:set · window:snap:clear · window:snap:status · window:bounds:get
 
 ```ts
 interface AiError {
-  code: 'network' | 'timeout' | 'auth' | 'rate_limit'
-      | 'invalid_request' | 'upstream' | 'aborted' | 'unknown'
-  status?: number   // 上游 HTTP 状态，无则省略
-  message: string   // 英文技术描述，不得作为 UI 文案
+  code:
+    | 'network'
+    | 'timeout'
+    | 'auth'
+    | 'rate_limit'
+    | 'invalid_request'
+    | 'upstream'
+    | 'aborted'
+    | 'unknown'
+  status?: number // 上游 HTTP 状态，无则省略
+  message: string // 英文技术描述，不得作为 UI 文案
 }
 ```
 
@@ -265,28 +272,28 @@ interface AiError {
 
 `contextBridge.exposeInMainWorld('api', api)` 暴露一个对象，含 20 个命名空间 + `versions` / `ping` 两个非 IPC 成员（静态版本号与 `'pong'`）。`export type Api = typeof api` 让渲染层拿到精确签名。
 
-| 命名空间 | 成员数 | 代表方法 | 对应通道前缀 |
-| --- | --- | --- | --- |
-| `books` | 9 | `list` / `cover.set` / `statsAll` | `books:*`（`statsAll` 复用 `stats:bookStatsAll`） |
-| `categories` | 4 | `list` / `delete` | `categories:*` |
-| `chapters` | 27 | `getParagraphs` / `saveParagraphs` / `replaceAll` | `chapters:*` |
-| `entities` | 7 | `match` / `revision` | `entities:*` |
-| `worldEntity` | 19 | `list` / `addRef` / `updatePowerSystem` | `worldEntity:*` |
-| `worldSubtype` | 5 | `list` / `ensurePresets` | `worldSubtype:*` |
-| `chipColors` | 1 | `list` | `chipColors:*` |
-| `images` | 3 | `create` / `get` | `images:*` |
-| `outline` | 21 | `getVolumeOutline` / `saveContent` | `outline:*` |
-| `plot` | 11 | `listLines` / `setSceneEntities` | `plot:*` |
-| `stats` | 4 | `totalWords` / `bookStatsAll` | `stats:*` |
-| `diagnostics` | 1 | `get` | `diagnostics:*` |
-| `settings` | 4 | `get` / `set` / `remove` | `settings:*`（`remove` → `settings:delete`） |
-| `ai` | 13 | `chat.start` / `chat.onStream` | `ai:*` |
-| `cleanWords` | 6 | `import` / `toggle` | `cleanWords:*` |
-| `onedrive` | 8 | `backup` / `onProgress` | `onedrive:*` |
-| `titleBar` | 1 | `setOverlay` | `window:titlebar:*` |
-| `windowMaterial` | 2 | `set` / `acrylicSupported` | `window:setMaterial`、`window:acrylicSupported` |
-| `windowSnap` | 4 | `set` / `clear` / `boundsWidth` | `window:snap:*`、`window:bounds:get` |
-| `systemTheme` | 2 | `getAccentColor` / `onAccentChange` | `theme:accent:*` |
+| 命名空间         | 成员数 | 代表方法                                          | 对应通道前缀                                      |
+| ---------------- | ------ | ------------------------------------------------- | ------------------------------------------------- |
+| `books`          | 9      | `list` / `cover.set` / `statsAll`                 | `books:*`（`statsAll` 复用 `stats:bookStatsAll`） |
+| `categories`     | 4      | `list` / `delete`                                 | `categories:*`                                    |
+| `chapters`       | 27     | `getParagraphs` / `saveParagraphs` / `replaceAll` | `chapters:*`                                      |
+| `entities`       | 7      | `match` / `revision`                              | `entities:*`                                      |
+| `worldEntity`    | 19     | `list` / `addRef` / `updatePowerSystem`           | `worldEntity:*`                                   |
+| `worldSubtype`   | 5      | `list` / `ensurePresets`                          | `worldSubtype:*`                                  |
+| `chipColors`     | 1      | `list`                                            | `chipColors:*`                                    |
+| `images`         | 3      | `create` / `get`                                  | `images:*`                                        |
+| `outline`        | 21     | `getVolumeOutline` / `saveContent`                | `outline:*`                                       |
+| `plot`           | 11     | `listLines` / `setSceneEntities`                  | `plot:*`                                          |
+| `stats`          | 4      | `totalWords` / `bookStatsAll`                     | `stats:*`                                         |
+| `diagnostics`    | 1      | `get`                                             | `diagnostics:*`                                   |
+| `settings`       | 4      | `get` / `set` / `remove`                          | `settings:*`（`remove` → `settings:delete`）      |
+| `ai`             | 13     | `chat.start` / `chat.onStream`                    | `ai:*`                                            |
+| `cleanWords`     | 6      | `import` / `toggle`                               | `cleanWords:*`                                    |
+| `onedrive`       | 8      | `backup` / `onProgress`                           | `onedrive:*`                                      |
+| `titleBar`       | 1      | `setOverlay`                                      | `window:titlebar:*`                               |
+| `windowMaterial` | 2      | `set` / `acrylicSupported`                        | `window:setMaterial`、`window:acrylicSupported`   |
+| `windowSnap`     | 4      | `set` / `clear` / `boundsWidth`                   | `window:snap:*`、`window:bounds:get`              |
+| `systemTheme`    | 2      | `getAccentColor` / `onAccentChange`               | `theme:accent:*`                                  |
 
 合计 **152 个成员** = 149 个 invoke 调用点 + 3 个订阅方法（`ai.chat.onStream`、`onedrive.onProgress`、`systemTheme.onAccentChange`）。调用点比通道多 1，是因为 `stats:bookStatsAll` 同时挂在 `books.statsAll` 与 `stats.bookStatsAll` 两个入口（书架批量取数，避免逐书 N+1）。
 
@@ -298,12 +305,12 @@ interface AiError {
 
 `settings` 是通用键值表（string → string），四条通道全部走同一敏感判定 `isSensitiveKey`：
 
-| 通道 | 行为 |
-| --- | --- |
-| `settings:get` | 键非 string → `null`；敏感键 → `null`（与"未设置"不可区分，保持 `Promise<string \| null>` 契约不 reject） |
-| `settings:set` | 键或值非 string → `false`；敏感键 → `false`；写库异常 → reject |
-| `settings:all` | 遍历全表，剔除敏感键后返回，并记 `hidden` 条数 |
-| `settings:delete` | 键非 string → `false`；敏感键 → `false`（清理只由主进程授权流程负责） |
+| 通道              | 行为                                                                                                      |
+| ----------------- | --------------------------------------------------------------------------------------------------------- |
+| `settings:get`    | 键非 string → `null`；敏感键 → `null`（与"未设置"不可区分，保持 `Promise<string \| null>` 契约不 reject） |
+| `settings:set`    | 键或值非 string → `false`；敏感键 → `false`；写库异常 → reject                                            |
+| `settings:all`    | 遍历全表，剔除敏感键后返回，并记 `hidden` 条数                                                            |
+| `settings:delete` | 键非 string → `false`；敏感键 → `false`（清理只由主进程授权流程负责）                                     |
 
 敏感前缀登记在 `src/main/ipc/settings.ts:19`：
 
@@ -321,13 +328,13 @@ const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
 
 类型链路是单向的：主进程数据层 → `types/*.d.ts` 的 `import type` → `Api` 接口 → `window.api`。preload 实现处用 `typeof api` / `satisfies` 反查，任何一侧漏改都会在类型检查暴露。
 
-| 层 | 文件 | 职责 |
-| --- | --- | --- |
-| 主进程 | `src/main/ipc/<域>.ts` | `ipcMain.handle('域:动作', …)` 唯一真源；通道名是字符串字面量 |
-| preload 实现 | `src/preload/index.ts` 或 `src/preload/api/<域>.ts` | `ipcRenderer.invoke('域:动作', …)`；大域用 `satisfies` 约束 |
-| preload 类型 | `src/preload/types/window.d.ts` 的 `Api` | 组装全部命名空间签名；新域在 `types/<域>.d.ts` 定义接口后挂到 `Api` |
-| 全局声明 | `src/preload/index.d.ts` | 只做 `declare global { interface Window { api: Api } }`，不写业务类型 |
-| 渲染层 | `window.api.<ns>.<method>` | 类型经 `Api` 推导，禁止自建镜像类型 |
+| 层           | 文件                                                | 职责                                                                  |
+| ------------ | --------------------------------------------------- | --------------------------------------------------------------------- |
+| 主进程       | `src/main/ipc/<域>.ts`                              | `ipcMain.handle('域:动作', …)` 唯一真源；通道名是字符串字面量         |
+| preload 实现 | `src/preload/index.ts` 或 `src/preload/api/<域>.ts` | `ipcRenderer.invoke('域:动作', …)`；大域用 `satisfies` 约束           |
+| preload 类型 | `src/preload/types/window.d.ts` 的 `Api`            | 组装全部命名空间签名；新域在 `types/<域>.d.ts` 定义接口后挂到 `Api`   |
+| 全局声明     | `src/preload/index.d.ts`                            | 只做 `declare global { interface Window { api: Api } }`，不写业务类型 |
+| 渲染层       | `window.api.<ns>.<method>`                          | 类型经 `Api` 推导，禁止自建镜像类型                                   |
 
 ### 改通道的三处同步清单
 
@@ -342,7 +349,7 @@ const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
 `registerWorldEntitiesIpc()` 在函数末尾自行调用两个子注册器（`src/main/ipc/worldEntities.ts:413-415`）：
 
 ```ts
-registerWorldRefsIpc()   // worldEntity:listRefs / listIncomingRefs / listSemanticCodes / addRef / updateRef / removeRef
+registerWorldRefsIpc() // worldEntity:listRefs / listIncomingRefs / listSemanticCodes / addRef / updateRef / removeRef
 registerWorldPowersIpc() // worldEntity:updatePowerSystem
 ```
 
@@ -368,12 +375,12 @@ registerWorldPowersIpc() // worldEntity:updatePowerSystem
 
 常见故障对照：
 
-| 现象 | 原因 |
-| --- | --- |
-| `No handler registered for 'x:y'` | handler 未注册、注册函数未被 `registerIpc` 调用，或落在间接注册文件里被漏调 |
-| `Attempted to register a second handler` | 同一通道注册两次（典型：worldRefs / worldPowers 被重复注册） |
-| `window.api.x is undefined` | preload 漏方法或 `contextBridge` 未重建（改 preload 必须重启 dev） |
-| 类型检查报命名空间缺方法 | `index.ts` 与 `Api` 不同步，或 `satisfies` 约束未满足 |
-| 事件回调触发多次 | 订阅时注册监听而非复用顶层 Set 分发；或组件卸载未调用退订函数 |
+| 现象                                     | 原因                                                                        |
+| ---------------------------------------- | --------------------------------------------------------------------------- |
+| `No handler registered for 'x:y'`        | handler 未注册、注册函数未被 `registerIpc` 调用，或落在间接注册文件里被漏调 |
+| `Attempted to register a second handler` | 同一通道注册两次（典型：worldRefs / worldPowers 被重复注册）                |
+| `window.api.x is undefined`              | preload 漏方法或 `contextBridge` 未重建（改 preload 必须重启 dev）          |
+| 类型检查报命名空间缺方法                 | `index.ts` 与 `Api` 不同步，或 `satisfies` 约束未满足                       |
+| 事件回调触发多次                         | 订阅时注册监听而非复用顶层 Set 分发；或组件卸载未调用退订函数               |
 
 最后核对：2026-10-31

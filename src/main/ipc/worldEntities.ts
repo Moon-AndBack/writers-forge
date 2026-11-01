@@ -117,7 +117,8 @@ function parseCreateInput(input: unknown): CreateWorldEntityInput | null {
   if (body === null || (body !== undefined && body.length > MAX_TEXT_LENGTH)) return null
   if (body !== undefined) parsed.body = body
   const bodyJson = readOptionalString(input.bodyJson)
-  if (bodyJson === null || (bodyJson !== undefined && bodyJson.length > MAX_TEXT_LENGTH)) return null
+  if (bodyJson === null || (bodyJson !== undefined && bodyJson.length > MAX_TEXT_LENGTH))
+    return null
   if (bodyJson !== undefined) parsed.bodyJson = bodyJson
 
   if (input.rank !== undefined) {
@@ -326,11 +327,7 @@ export function registerWorldEntitiesIpc(): void {
     }
     if (parsed.subtypeId !== undefined) {
       // 显式传 null（清空类别）一律非法；指定分类时必须存在、未软删且归属本书 / 本类型。
-      const resolved = resolveEntitySubtype(
-        existing.bookId,
-        existing.entityType,
-        parsed.subtypeId
-      )
+      const resolved = resolveEntitySubtype(existing.bookId, existing.entityType, parsed.subtypeId)
       if (!resolved) {
         log.warn('worldEntity:update 子类非法', { id, subtypeId: parsed.subtypeId })
         return null
@@ -349,10 +346,7 @@ export function registerWorldEntitiesIpc(): void {
         effectiveSubtype = resolved
       }
     }
-    if (
-      hasSubtypeFields &&
-      !validateSubtypeFields(existing.entityType, effectiveSubtype, parsed)
-    ) {
+    if (hasSubtypeFields && !validateSubtypeFields(existing.entityType, effectiveSubtype, parsed)) {
       log.warn('worldEntity:update 子类字段非法', { id })
       return null
     }
@@ -386,9 +380,7 @@ export function registerWorldEntitiesIpc(): void {
     (_event, id: unknown, body: unknown, bodyJson: unknown) => {
       if (!isPositiveInt(id) || !isTextWithinLimit(body)) return false
       if (bodyJson !== undefined && !isTextWithinLimit(bodyJson)) return false
-      return runWrite('worldEntity:saveText', { id }, () =>
-        saveWorldText(id, body, bodyJson ?? '')
-      )
+      return runWrite('worldEntity:saveText', { id }, () => saveWorldText(id, body, bodyJson ?? ''))
     }
   )
 

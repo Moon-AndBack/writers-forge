@@ -99,9 +99,7 @@ export default function RelationEditor({
             ariaLabel={t('detail.relation.moduleLabel')}
             value={targetModule}
             placeholder={t('detail.relation.modulePlaceholder')}
-            onChange={(next) =>
-              setTargetModule(next === '' ? '' : (next as RelationTargetModule))
-            }
+            onChange={(next) => setTargetModule(next === '' ? '' : (next as RelationTargetModule))}
             options={RELATION_TARGET_MODULES.map((id) => ({ value: id, label: tModule(id) }))}
           />
           <Select

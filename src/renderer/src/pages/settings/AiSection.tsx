@@ -136,9 +136,7 @@ export default function AiSection() {
         description={
           <>
             {t('provider.description')}
-            {isOpencode ? (
-              <span className="ai-status">{t('provider.opencodeHint')}</span>
-            ) : null}
+            {isOpencode ? <span className="ai-status">{t('provider.opencodeHint')}</span> : null}
           </>
         }
       >

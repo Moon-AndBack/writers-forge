@@ -22,11 +22,7 @@ import type { CategoryRow } from './categories'
 
 /** 自定义分类写操作的领域错误码（IPC 层据此回传结构化失败，**不产出用户文案**）。 */
 export type CategoryWriteErrorCode =
-  | 'invalidName'
-  | 'duplicateName'
-  | 'invalidParent'
-  | 'notFound'
-  | 'notCustom'
+  'invalidName' | 'duplicateName' | 'invalidParent' | 'notFound' | 'notCustom'
 
 /** 自定义分类写操作领域错误：`code` 供调用方判定失败原因。 */
 export class CategoryWriteError extends Error {
@@ -90,11 +86,7 @@ function normalizeName(name: string): string {
  * 口径：对 trim 后的入参名与库内 `name` 做 `COLLATE NOCASE` 比较（ASCII 大小写不敏感，
  * 中文为精确比较）；`excludeId` 用于重命名时排除自身。
  */
-function assertNameAvailable(
-  db: Database.Database,
-  name: string,
-  excludeId: number | null
-): void {
+function assertNameAvailable(db: Database.Database, name: string, excludeId: number | null): void {
   const hit =
     excludeId === null
       ? db.prepare('SELECT 1 FROM categories WHERE name = ? COLLATE NOCASE LIMIT 1').get(name)

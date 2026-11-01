@@ -78,9 +78,9 @@ export function createMainWindow(): BrowserWindow {
     minHeight: DEFAULT_WINDOW_HEIGHT,
     show: false,
     icon: windowIcon,
-    // 开启 Acrylic 时窗口底全透明（透出 DWM 材质）；关闭时不透明，取默认主题 light 的
-    // --win-rgb: 243,243,243 避免创建瞬间黑闪。用 backgroundColor 的 alpha 通道而非
-    // transparent:true，规避后者在 Windows 上「无法缩放 / 无阴影」等副作用。
+    // 开启 Acrylic 时窗口底全透明（透出 DWM 材质）；关闭时不透明，取近白中性色 #f3f3f3
+    // 避免创建瞬间黑闪。用 backgroundColor 的 alpha 通道而非 transparent:true，
+    // 规避后者在 Windows 上「无法缩放 / 无阴影」等副作用。
     backgroundColor: acrylicEnabled ? '#00000000' : '#f3f3f3',
     backgroundMaterial: initialMaterial,
     titleBarStyle: 'hidden',

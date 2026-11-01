@@ -169,8 +169,7 @@ function loadWorldviewFields(
   if (!fields) return {}
   const cols = fields.join(', ')
   const row = getDb().prepare(`SELECT ${cols} FROM ${table} WHERE entity_id = ?`).get(id) as
-    | Record<string, string>
-    | undefined
+    Record<string, string> | undefined
   const result: Record<string, string> = {}
   for (const field of fields) {
     result[field] = row ? (row[field] ?? '') : ''
@@ -191,7 +190,8 @@ export function getWorldEntity(id: number): WorldEntityDetail | null {
        LEFT JOIN world_power_system ps ON ps.entity_id = e.id
        WHERE e.id = ? AND e.deleted_at IS NULL`
     )
-    .get(id) as (WorldEntityDbRow & { role: string; bodyJson: string; powerKind: string }) | undefined
+    .get(id) as
+    (WorldEntityDbRow & { role: string; bodyJson: string; powerKind: string }) | undefined
   if (!row) return null
   const subtype: WorldEntitySubtypeRef = { subtypeId: row.subtypeId, presetKey: row.presetKey }
   const aliases = listWorldAliases(id).map((alias) => alias.alias)

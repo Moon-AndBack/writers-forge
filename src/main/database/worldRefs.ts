@@ -40,7 +40,11 @@ const SELECT_REF = `SELECT r.id, r.book_id AS bookId, r.from_id AS fromId, f.nam
   LEFT JOIN world_semantic_codes sc ON sc.code = r.semantic_code`
 
 /** 按方向 + 可选语义码取边（`column` 只接受内部固定的两列名）。 */
-function selectRefs(column: 'from_id' | 'to_id', entityId: number, semanticCode?: string): WorldRefRow[] {
+function selectRefs(
+  column: 'from_id' | 'to_id',
+  entityId: number,
+  semanticCode?: string
+): WorldRefRow[] {
   const conditions = [`r.${column} = ?`]
   const params: Array<string | number> = [entityId]
   if (semanticCode !== undefined) {

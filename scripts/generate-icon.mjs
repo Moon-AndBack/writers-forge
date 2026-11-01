@@ -31,9 +31,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const BUILD_DIR = join(ROOT, 'build')
 
 /** 品牌字形几何唯一真源（渲染层 `BrandIcon` 与图标生成共用同一份）。 */
-const GLYPH = JSON.parse(
-  readFileSync(join(ROOT, 'src/renderer/src/shell/brandGlyph.json'), 'utf8')
-)
+const GLYPH = JSON.parse(readFileSync(join(ROOT, 'src/renderer/src/shell/brandGlyph.json'), 'utf8'))
 
 // ---------------------------------------------------------------- 设计常量
 
@@ -176,8 +174,7 @@ function insideRoundedRect(x, y, size, radius) {
 
 /** 渐变取色（t 由 148° 渐变线投影决定，越界截断）。 */
 function gradientAt(x, y, size) {
-  const t0 =
-    0.5 + ((x - size / 2) * GRAD_DIR[0] + (y - size / 2) * GRAD_DIR[1]) / (GRAD_LEN * size)
+  const t0 = 0.5 + ((x - size / 2) * GRAD_DIR[0] + (y - size / 2) * GRAD_DIR[1]) / (GRAD_LEN * size)
   const t = t0 < 0 ? 0 : t0 > 1 ? 1 : t0
   return [
     BG_FROM[0] + (BG_TO[0] - BG_FROM[0]) * t,
@@ -245,9 +242,17 @@ function strokeSegmentMask(seg, width, half) {
 function strokeCircleMask(circle, width, half) {
   const mask = new Uint8Array(width * width)
   const outer = circle.r + half
-  for (let j = Math.max(0, Math.floor(circle.cy - outer)); j < Math.min(width, Math.ceil(circle.cy + outer)); j++) {
+  for (
+    let j = Math.max(0, Math.floor(circle.cy - outer));
+    j < Math.min(width, Math.ceil(circle.cy + outer));
+    j++
+  ) {
     const dy = j + 0.5 - circle.cy
-    for (let x = Math.max(0, Math.floor(circle.cx - outer)); x < Math.min(width, Math.ceil(circle.cx + outer)); x++) {
+    for (
+      let x = Math.max(0, Math.floor(circle.cx - outer));
+      x < Math.min(width, Math.ceil(circle.cx + outer));
+      x++
+    ) {
       const dx = x + 0.5 - circle.cx
       if (Math.abs(Math.hypot(dx, dy) - circle.r) <= half) mask[j * width + x] = 1
     }
@@ -309,9 +314,7 @@ function render(size) {
 
       const k = sampleRow + i
       const [r, g, b] =
-        droplet[k] === 1 || slit[k] === 1 || dot[k] === 1
-          ? [255, 255, 255]
-          : gradientAt(px, py, w)
+        droplet[k] === 1 || slit[k] === 1 || dot[k] === 1 ? [255, 255, 255] : gradientAt(px, py, w)
 
       const o = outRow + ((i / ss) | 0)
       accR[o] += r

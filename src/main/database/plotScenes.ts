@@ -50,17 +50,28 @@ export function createPlotScene(
   input?: CreatePlotSceneInput
 ): PlotSceneRow {
   const db = getDb()
-  const line = db.prepare("SELECT id, default_origin AS defaultOrigin FROM plot_lines WHERE id = ? AND book_id = ? AND deleted_at IS NULL").get(lineId, bookId) as { id: number; defaultOrigin: string | null } | undefined
+  const line = db
+    .prepare(
+      'SELECT id, default_origin AS defaultOrigin FROM plot_lines WHERE id = ? AND book_id = ? AND deleted_at IS NULL'
+    )
+    .get(lineId, bookId) as { id: number; defaultOrigin: string | null } | undefined
   if (!line) throw new Error(`createPlotScene: 剧情线不存在（lineId=${lineId}）`)
 
-  const hasTimeField = input?.timeText !== undefined || input?.timeEra !== undefined || input?.timeYear !== undefined || input?.timeDesc !== undefined
+  const hasTimeField =
+    input?.timeText !== undefined ||
+    input?.timeEra !== undefined ||
+    input?.timeYear !== undefined ||
+    input?.timeDesc !== undefined
   let timeText = typeof input?.timeText === 'string' ? input.timeText : ''
   let timeEra = normalizeTimeEra(input?.timeEra)
   let timeYear = normalizeTimeYear(input?.timeYear)
   let timeDesc = typeof input?.timeDesc === 'string' ? input.timeDesc : ''
   if (!hasTimeField) {
     const p = parseTimelineOrigin(line.defaultOrigin ?? '')
-    timeText = p.timeText; timeEra = p.timeEra; timeYear = p.timeYear; timeDesc = p.timeDesc
+    timeText = p.timeText
+    timeEra = p.timeEra
+    timeYear = p.timeYear
+    timeDesc = p.timeDesc
   }
   const title = typeof input?.title === 'string' ? input.title : ''
   // 正文两列恒同步：显式富文本优先，否则按纯文本包成富文本文档。

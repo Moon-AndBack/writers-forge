@@ -70,23 +70,23 @@ import type { DropdownItem } from '../../components/ui'
 
 29 项中 **22 项有 `export default`，7 项只有具名导出**：
 
-| 无默认导出（只能具名引入） | 文件 |
-| --- | --- |
-| `Input` | `Input.tsx` |
-| `Textarea` | `Textarea.tsx` |
-| `Select` | `Select.tsx` |
-| `Checkbox` | `Checkbox.tsx` |
-| `Radio` | `Radio.tsx` |
-| `Switch` | `Switch.tsx` |
-| `Combobox` | `Combobox.tsx` |
+| 无默认导出（只能具名引入） | 文件           |
+| -------------------------- | -------------- |
+| `Input`                    | `Input.tsx`    |
+| `Textarea`                 | `Textarea.tsx` |
+| `Select`                   | `Select.tsx`   |
+| `Checkbox`                 | `Checkbox.tsx` |
+| `Radio`                    | `Radio.tsx`    |
+| `Switch`                   | `Switch.tsx`   |
+| `Combobox`                 | `Combobox.tsx` |
 
 对这 7 个写 `import Input from './Input'` 会直接报错（模块无默认导出）。
 
 **统一规则：一律用具名导入。** 具名导入对 29 项全部有效，且与桶文件一致，不必记忆差异：
 
 ```tsx
-import { Input, Select } from '@renderer/components/ui'      // ✅ 全部可用
-import Input from './Input'                                   // ❌ Input 无默认导出
+import { Input, Select } from '@renderer/components/ui' // ✅ 全部可用
+import Input from './Input' // ❌ Input 无默认导出
 ```
 
 其余 22 项的默认导出仅为兼容历史调用点存在，新代码不再使用。
@@ -104,21 +104,21 @@ import '../../styles/components/button.css'
 
 共享样式表的情况（多个组件共用一个 CSS，重复 import 会被打包器去重）：
 
-| 样式文件 | 行数 | 服务的组件 |
-| --- | --- | --- |
-| `button.css` | 188 | Button |
-| `icon-button.css` | 97 | IconButton |
-| `surface.css` | 426 | Card / Tag / Badge / Divider / Avatar / Progress（首行 `@import './modal.css'`） |
-| `modal.css` | 97 | Modal（经 `surface.css` 转发引入） |
-| `overlay.css` | 287 | Drawer / Dropdown |
-| `form.css` | 413 | Input / Textarea / Checkbox / Radio / Switch / Select / Combobox（首行 `@import './form-select.css'`） |
-| `form-select.css` | 186 | Select / Combobox（经 `form.css` 转发引入） |
-| `form-extras.css` | 404 | SearchInput / ChipInput / FormField / Stepper |
-| `display-extras.css` | 257 | Accordion / ListItem / ColorSwatchPicker |
-| `segmented.css` | 119 | Segmented |
-| `toast.css` | 57 | useToast |
-| `tooltip.css` | 47 | useTooltip |
-| `window.css` | 128 | Window（Modal 面板复用其结构） |
+| 样式文件             | 行数 | 服务的组件                                                                                             |
+| -------------------- | ---- | ------------------------------------------------------------------------------------------------------ |
+| `button.css`         | 188  | Button                                                                                                 |
+| `icon-button.css`    | 97   | IconButton                                                                                             |
+| `surface.css`        | 426  | Card / Tag / Badge / Divider / Avatar / Progress（首行 `@import './modal.css'`）                       |
+| `modal.css`          | 97   | Modal（经 `surface.css` 转发引入）                                                                     |
+| `overlay.css`        | 287  | Drawer / Dropdown                                                                                      |
+| `form.css`           | 413  | Input / Textarea / Checkbox / Radio / Switch / Select / Combobox（首行 `@import './form-select.css'`） |
+| `form-select.css`    | 186  | Select / Combobox（经 `form.css` 转发引入）                                                            |
+| `form-extras.css`    | 404  | SearchInput / ChipInput / FormField / Stepper                                                          |
+| `display-extras.css` | 257  | Accordion / ListItem / ColorSwatchPicker                                                               |
+| `segmented.css`      | 119  | Segmented                                                                                              |
+| `toast.css`          | 57   | useToast                                                                                               |
+| `tooltip.css`        | 47   | useTooltip                                                                                             |
+| `window.css`         | 128  | Window（Modal 面板复用其结构）                                                                         |
 
 `styles/components/` 目录共 19 个 CSS（含 `category-manager.css`、`editor-format.css` 等业务域样式，
 不由 `components/ui/` 引入），合计 3,520 行左右。
@@ -146,12 +146,12 @@ import { Button } from '@renderer/components/ui'
 
 所有类名统一 `wf-` 前缀，命名遵循 BEM + 状态类：
 
-| 形态 | 含义 | 示例 |
-| --- | --- | --- |
-| `wf-block` | 根节点 | `.wf-btn`、`.wf-card`、`.wf-select` |
-| `wf-block__element` | 内部元素 | `.wf-card__body`、`.wf-select__option` |
-| `wf-block--modifier` | 变体（props 映射） | `.wf-btn--primary`、`.wf-avatar--lg` |
-| `is-state` | 运行期状态 | `.is-active`、`.is-open`、`.is-disabled`、`.is-invalid`、`.is-closing` |
+| 形态                 | 含义               | 示例                                                                   |
+| -------------------- | ------------------ | ---------------------------------------------------------------------- |
+| `wf-block`           | 根节点             | `.wf-btn`、`.wf-card`、`.wf-select`                                    |
+| `wf-block__element`  | 内部元素           | `.wf-card__body`、`.wf-select__option`                                 |
+| `wf-block--modifier` | 变体（props 映射） | `.wf-btn--primary`、`.wf-avatar--lg`                                   |
+| `is-state`           | 运行期状态         | `.is-active`、`.is-open`、`.is-disabled`、`.is-invalid`、`.is-closing` |
 
 约定：
 
@@ -184,37 +184,37 @@ import { Button } from '@renderer/components/ui'
 
 ## 2. 总览表
 
-| # | 组件 / 钩子 | 导入名 | 一句话用途 | 默认导出 |
-| --- | --- | --- | --- | --- |
-| 1 | Accordion | `Accordion` | 折叠面板，受控 / 非受控展开 | ✅ |
-| 2 | Avatar | `Avatar` | 头像，图片或姓名首字 | ✅ |
-| 3 | Badge | `Badge` | 状态标签 / 计数徽标 | ✅ |
-| 4 | Button | `Button` | 通用按钮（4 变体 3 尺寸，支持 loading） | ✅ |
-| 5 | Card | `Card` | 面板容器，含标题区 / 页脚 | ✅ |
-| 6 | Checkbox | `Checkbox` | 复选框（带标签） | ❌ 仅具名 |
-| 7 | ChipInput | `ChipInput` | 受控标签输入（回车 / 逗号新增） | ✅ |
-| 8 | ColorSwatchPicker | `ColorSwatchPicker` | 色板选择（radiogroup 语义） | ✅ |
-| 9 | Combobox | `Combobox` | 可搜索下拉组合框 | ❌ 仅具名 |
-| 10 | Divider | `Divider` | 水平 / 垂直分隔线 | ✅ |
-| 11 | Drawer | `Drawer` | 侧边抽屉浮层 | ✅ |
-| 12 | Dropdown | `Dropdown` | 下拉菜单（含分隔线 / 勾选项） | ✅ |
-| 13 | FormField | `FormField` | 字段容器：label / hint / error / required | ✅ |
-| 14 | IconButton | `IconButton` | 圆形图标按钮（自带 tooltip） | ✅ |
-| 15 | Input | `Input` | 单行文本输入 | ❌ 仅具名 |
-| 16 | ListItem | `ListItem` | 列表行（头像 / 标题 / 副标题 / 附加） | ✅ |
-| 17 | Modal | `Modal` | 模态弹窗（焦点陷阱 / 嵌套栈） | ✅ |
-| 18 | Progress | `Progress` | 进度条 | ✅ |
-| 19 | Radio | `Radio` | 单选按钮（带标签） | ❌ 仅具名 |
-| 20 | SearchInput | `SearchInput` | 搜索框（前置图标 + 清除按钮） | ✅ |
-| 21 | Segmented | `Segmented<T>` | 分段控件 / 标签切换 | ✅ |
-| 22 | Select | `Select` | 下拉选择（自绘面板） | ❌ 仅具名 |
-| 23 | Stepper | `Stepper` | 步进器（− / 值 / +） | ✅ |
-| 24 | Switch | `Switch` | 开关（`role="switch"`） | ❌ 仅具名 |
-| 25 | Tag | `Tag` | 标签，可关闭 / 可带操作 | ✅ |
-| 26 | Textarea | `Textarea` | 多行文本输入 | ❌ 仅具名 |
-| 27 | Toast | `useToast` | 命令式轻提示（钩子） | ✅（默认导出钩子） |
-| 28 | Tooltip | `useTooltip` | 自绘 tooltip（钩子） | ✅（默认导出钩子） |
-| 29 | Window | `Window` | 窗口框架：标题 / 内容 / 底部操作区 | ✅ |
+| #   | 组件 / 钩子       | 导入名              | 一句话用途                                | 默认导出           |
+| --- | ----------------- | ------------------- | ----------------------------------------- | ------------------ |
+| 1   | Accordion         | `Accordion`         | 折叠面板，受控 / 非受控展开               | ✅                 |
+| 2   | Avatar            | `Avatar`            | 头像，图片或姓名首字                      | ✅                 |
+| 3   | Badge             | `Badge`             | 状态标签 / 计数徽标                       | ✅                 |
+| 4   | Button            | `Button`            | 通用按钮（4 变体 3 尺寸，支持 loading）   | ✅                 |
+| 5   | Card              | `Card`              | 面板容器，含标题区 / 页脚                 | ✅                 |
+| 6   | Checkbox          | `Checkbox`          | 复选框（带标签）                          | ❌ 仅具名          |
+| 7   | ChipInput         | `ChipInput`         | 受控标签输入（回车 / 逗号新增）           | ✅                 |
+| 8   | ColorSwatchPicker | `ColorSwatchPicker` | 色板选择（radiogroup 语义）               | ✅                 |
+| 9   | Combobox          | `Combobox`          | 可搜索下拉组合框                          | ❌ 仅具名          |
+| 10  | Divider           | `Divider`           | 水平 / 垂直分隔线                         | ✅                 |
+| 11  | Drawer            | `Drawer`            | 侧边抽屉浮层                              | ✅                 |
+| 12  | Dropdown          | `Dropdown`          | 下拉菜单（含分隔线 / 勾选项）             | ✅                 |
+| 13  | FormField         | `FormField`         | 字段容器：label / hint / error / required | ✅                 |
+| 14  | IconButton        | `IconButton`        | 圆形图标按钮（自带 tooltip）              | ✅                 |
+| 15  | Input             | `Input`             | 单行文本输入                              | ❌ 仅具名          |
+| 16  | ListItem          | `ListItem`          | 列表行（头像 / 标题 / 副标题 / 附加）     | ✅                 |
+| 17  | Modal             | `Modal`             | 模态弹窗（焦点陷阱 / 嵌套栈）             | ✅                 |
+| 18  | Progress          | `Progress`          | 进度条                                    | ✅                 |
+| 19  | Radio             | `Radio`             | 单选按钮（带标签）                        | ❌ 仅具名          |
+| 20  | SearchInput       | `SearchInput`       | 搜索框（前置图标 + 清除按钮）             | ✅                 |
+| 21  | Segmented         | `Segmented<T>`      | 分段控件 / 标签切换                       | ✅                 |
+| 22  | Select            | `Select`            | 下拉选择（自绘面板）                      | ❌ 仅具名          |
+| 23  | Stepper           | `Stepper`           | 步进器（− / 值 / +）                      | ✅                 |
+| 24  | Switch            | `Switch`            | 开关（`role="switch"`）                   | ❌ 仅具名          |
+| 25  | Tag               | `Tag`               | 标签，可关闭 / 可带操作                   | ✅                 |
+| 26  | Textarea          | `Textarea`          | 多行文本输入                              | ❌ 仅具名          |
+| 27  | Toast             | `useToast`          | 命令式轻提示（钩子）                      | ✅（默认导出钩子） |
+| 28  | Tooltip           | `useTooltip`        | 自绘 tooltip（钩子）                      | ✅（默认导出钩子） |
+| 29  | Window            | `Window`            | 窗口框架：标题 / 内容 / 底部操作区        | ✅                 |
 
 统计口径：29 项 = 27 组件 + 2 钩子；有默认导出 22 项，**无默认导出 7 项**
 （第 6、9、15、19、22、24、26 项，即 Checkbox / Combobox / Input / Radio / Select / Switch / Textarea）。
@@ -234,15 +234,15 @@ import { Button } from '@renderer/components/ui'
 
 **Props**
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `items` | `ReadonlyArray<AccordionItemData>` | 必填 | 面板项列表 |
-| `openKeys` | `ReadonlyArray<string>` | `undefined` | 受控展开的 key 列表；提供后即受控模式 |
-| `defaultOpenKeys` | `ReadonlyArray<string>` | `undefined` | 非受控模式的初始展开项 |
-| `onToggle` | `(key: string, open: boolean) => void` | `undefined` | 展开 / 收起回调，受控与非受控都会触发 |
-| `multiple` | `boolean` | `true` | 是否可同时展开多项（仅非受控生效） |
-| `className` | `string` | `undefined` | 合并到根节点类名 |
-| `'aria-label'` | `string` | `undefined` | 面板组无障碍名称 |
+| 名称              | 类型                                   | 默认值      | 说明                                  |
+| ----------------- | -------------------------------------- | ----------- | ------------------------------------- |
+| `items`           | `ReadonlyArray<AccordionItemData>`     | 必填        | 面板项列表                            |
+| `openKeys`        | `ReadonlyArray<string>`                | `undefined` | 受控展开的 key 列表；提供后即受控模式 |
+| `defaultOpenKeys` | `ReadonlyArray<string>`                | `undefined` | 非受控模式的初始展开项                |
+| `onToggle`        | `(key: string, open: boolean) => void` | `undefined` | 展开 / 收起回调，受控与非受控都会触发 |
+| `multiple`        | `boolean`                              | `true`      | 是否可同时展开多项（仅非受控生效）    |
+| `className`       | `string`                               | `undefined` | 合并到根节点类名                      |
+| `'aria-label'`    | `string`                               | `undefined` | 面板组无障碍名称                      |
 
 `AccordionItemData`：`key: string`（唯一标识）、`title: ReactNode`、`content: ReactNode`、
 `defaultOpen?: boolean`（非受控默认展开）、`disabled?: boolean`。
@@ -278,14 +278,14 @@ import { Button } from '@renderer/components/ui'
 
 **Props**（继承 `HTMLAttributes<HTMLSpanElement>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `src` | `string` | `undefined` | 图片地址；提供后渲染 `img` |
-| `alt` | `string` | `undefined` | 图片替代文本，`img` 上缺省为空串（装饰性） |
-| `size` | `'sm' / 'md' / 'lg'` | `'sm'` | 尺寸：28 / 40 / 72 px |
-| `tone` | `'brand' / 'ok' / 'warn' / 'danger' / 'neutral'` | `'brand'` | 底色色调 |
-| `shape` | `'rounded' / 'circle'` | `'rounded'` | 圆角矩形或圆形 |
-| `children` | `ReactNode` | `undefined` | 无 `src` 时显示的内容（首字 / 图标） |
+| 名称       | 类型                                             | 默认值      | 说明                                       |
+| ---------- | ------------------------------------------------ | ----------- | ------------------------------------------ |
+| `src`      | `string`                                         | `undefined` | 图片地址；提供后渲染 `img`                 |
+| `alt`      | `string`                                         | `undefined` | 图片替代文本，`img` 上缺省为空串（装饰性） |
+| `size`     | `'sm' / 'md' / 'lg'`                             | `'sm'`      | 尺寸：28 / 40 / 72 px                      |
+| `tone`     | `'brand' / 'ok' / 'warn' / 'danger' / 'neutral'` | `'brand'`   | 底色色调                                   |
+| `shape`    | `'rounded' / 'circle'`                           | `'rounded'` | 圆角矩形或圆形                             |
+| `children` | `ReactNode`                                      | `undefined` | 无 `src` 时显示的内容（首字 / 图标）       |
 
 **关键类名**：`.wf-avatar`、`.wf-avatar--sm/md/lg`、`.wf-avatar--brand/ok/warn/danger/neutral`、
 `.wf-avatar--circle`、`.wf-avatar__img`。
@@ -307,13 +307,13 @@ import { Button } from '@renderer/components/ui'
 
 **Props**（继承 `HTMLAttributes<HTMLSpanElement>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `tone` | `'neutral' / 'brand' / 'ok' / 'warn' / 'danger'` | `'neutral'` | 色调 |
-| `dot` | `boolean` | `false` | 文案前显示状态点 |
-| `count` | `number` | `undefined` | 计数；提供后优先于 `children` 渲染 |
-| `max` | `number` | `99` | 计数上限，超出显示 `99+` |
-| `children` | `ReactNode` | `undefined` | 自定义文案 |
+| 名称       | 类型                                             | 默认值      | 说明                               |
+| ---------- | ------------------------------------------------ | ----------- | ---------------------------------- |
+| `tone`     | `'neutral' / 'brand' / 'ok' / 'warn' / 'danger'` | `'neutral'` | 色调                               |
+| `dot`      | `boolean`                                        | `false`     | 文案前显示状态点                   |
+| `count`    | `number`                                         | `undefined` | 计数；提供后优先于 `children` 渲染 |
+| `max`      | `number`                                         | `99`        | 计数上限，超出显示 `99+`           |
+| `children` | `ReactNode`                                      | `undefined` | 自定义文案                         |
 
 **关键类名**：`.wf-badge`、`.wf-badge--neutral/brand/ok/warn/danger`、`.wf-badge__dot`
 （`aria-hidden`）、`.wf-badge__text`。
@@ -335,14 +335,14 @@ import { Button } from '@renderer/components/ui'
 
 **Props**（继承 `ButtonHTMLAttributes<HTMLButtonElement>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `variant` | `'primary' / 'secondary' / 'ghost' / 'danger'` | `'secondary'` | 视觉变体 |
-| `size` | `'sm' / 'md' / 'lg'` | `'md'` | 尺寸；`md` 不额外输出尺寸类（高 32px） |
-| `iconOnly` | `boolean` | `false` | 方形图标按钮（内容为单个图标） |
-| `loading` | `boolean` | `false` | 加载中：显示 spinner、禁用交互、`aria-busy` |
-| `disabled` | `boolean` | `undefined` | 原生禁用；与 `loading` 取或 |
-| `type` | `'button' / 'submit' / 'reset'` | `'button'` | 显式默认 `button`，避免表单误提交 |
+| 名称       | 类型                                           | 默认值        | 说明                                        |
+| ---------- | ---------------------------------------------- | ------------- | ------------------------------------------- |
+| `variant`  | `'primary' / 'secondary' / 'ghost' / 'danger'` | `'secondary'` | 视觉变体                                    |
+| `size`     | `'sm' / 'md' / 'lg'`                           | `'md'`        | 尺寸；`md` 不额外输出尺寸类（高 32px）      |
+| `iconOnly` | `boolean`                                      | `false`       | 方形图标按钮（内容为单个图标）              |
+| `loading`  | `boolean`                                      | `false`       | 加载中：显示 spinner、禁用交互、`aria-busy` |
+| `disabled` | `boolean`                                      | `undefined`   | 原生禁用；与 `loading` 取或                 |
+| `type`     | `'button' / 'submit' / 'reset'`                | `'button'`    | 显式默认 `button`，避免表单误提交           |
 
 **关键类名**：`.wf-btn`、`.wf-btn--primary/secondary/ghost/danger`、`.wf-btn--sm/lg`、
 `.wf-btn--icon`、`.is-loading`、`.wf-btn__spinner`、`.wf-btn__content`（loading 时降透明度）。
@@ -367,16 +367,16 @@ import { Button } from '@renderer/components/ui'
 
 **Props**（继承 `Omit<HTMLAttributes<HTMLDivElement>, 'title'>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `title` | `ReactNode` | `undefined` | 卡片标题，提供后渲染头部 |
-| `subtitle` | `ReactNode` | `undefined` | 标题下方副标题 |
-| `extra` | `ReactNode` | `undefined` | 头部右侧附加内容（按钮 / 标签） |
-| `footer` | `ReactNode` | `undefined` | 页脚内容，带顶部细分隔线 |
-| `variant` | `'default' / 'soft'` | `'default'` | 面板底 / 柔和底（无阴影） |
-| `interactive` | `boolean` | `false` | 可点击卡片：`cursor: pointer` + hover 边缘光晕 |
-| `bodyClassName` | `string` | `undefined` | 透传到内容容器 |
-| `className` | `string` | `undefined` | 合并到根节点 |
+| 名称            | 类型                 | 默认值      | 说明                                           |
+| --------------- | -------------------- | ----------- | ---------------------------------------------- |
+| `title`         | `ReactNode`          | `undefined` | 卡片标题，提供后渲染头部                       |
+| `subtitle`      | `ReactNode`          | `undefined` | 标题下方副标题                                 |
+| `extra`         | `ReactNode`          | `undefined` | 头部右侧附加内容（按钮 / 标签）                |
+| `footer`        | `ReactNode`          | `undefined` | 页脚内容，带顶部细分隔线                       |
+| `variant`       | `'default' / 'soft'` | `'default'` | 面板底 / 柔和底（无阴影）                      |
+| `interactive`   | `boolean`            | `false`     | 可点击卡片：`cursor: pointer` + hover 边缘光晕 |
+| `bodyClassName` | `string`             | `undefined` | 透传到内容容器                                 |
+| `className`     | `string`             | `undefined` | 合并到根节点                                   |
 
 **关键类名**：`.wf-card`、`.wf-card--soft`、`.wf-card--interactive`、`.wf-card--halo`
 （外部追加的光晕变体）、`.wf-card__head/__titles/__title/__subtitle/__extra/__body/__footer`。
@@ -393,7 +393,11 @@ import { Button } from '@renderer/components/ui'
 <Card
   title={t('stats.title')}
   subtitle={t('stats.subtitle')}
-  extra={<Button variant="ghost" size="sm">{t('action.refresh')}</Button>}
+  extra={
+    <Button variant="ghost" size="sm">
+      {t('action.refresh')}
+    </Button>
+  }
   footer={<span>{t('stats.updatedAt', { time })}</span>}
   variant="soft"
 >
@@ -410,13 +414,13 @@ import { Button } from '@renderer/components/ui'
 
 **Props**（继承 `Omit<InputHTMLAttributes<HTMLInputElement>, 'type' / 'size'>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `label` | `ReactNode` | `undefined` | 标签文本；省略则为纯控件 |
-| `size` | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 控件尺寸；仅 `sm` / `lg` 输出修饰类 |
-| `invalid` | `boolean` | `false` | 错误态：附加 `is-invalid` 与 `aria-invalid` |
-| `checked` / `defaultChecked` / `onChange` | 原生 | — | 受控 / 非受控均支持 |
-| `disabled` | `boolean` | `undefined` | 原生禁用，额外附加 `is-disabled` |
+| 名称                                      | 类型                 | 默认值            | 说明                                        |
+| ----------------------------------------- | -------------------- | ----------------- | ------------------------------------------- |
+| `label`                                   | `ReactNode`          | `undefined`       | 标签文本；省略则为纯控件                    |
+| `size`                                    | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 控件尺寸；仅 `sm` / `lg` 输出修饰类         |
+| `invalid`                                 | `boolean`            | `false`           | 错误态：附加 `is-invalid` 与 `aria-invalid` |
+| `checked` / `defaultChecked` / `onChange` | 原生                 | —                 | 受控 / 非受控均支持                         |
+| `disabled`                                | `boolean`            | `undefined`       | 原生禁用，额外附加 `is-disabled`            |
 
 **关键类名**：`.wf-checkbox`、`.wf-checkbox--sm/lg`、`.wf-checkbox.is-disabled`、
 `.wf-checkbox.is-invalid`、`.wf-checkbox__input`（视觉隐藏）、`.wf-checkbox__box`、
@@ -443,17 +447,17 @@ import { Button } from '@renderer/components/ui'
 
 **Props**
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `value` | `string[]` | 必填 | 当前标签（受控） |
-| `onChange` | `(value: string[]) => void` | 必填 | 标签变化回调 |
-| `placeholder` | `string` | `t('common.chipPlaceholder')` | 占位文案；仅在无标签时显示 |
-| `max` | `number` | `undefined` | 标签数量上限 |
-| `disabled` | `boolean` | `false` | 禁用整个控件 |
-| `invalid` | `boolean` | `false` | 错误态：附加 `is-invalid` |
-| `id` | `string` | `undefined` | 输入框 id，便于 `FormField` 的 `htmlFor` 关联 |
-| `ariaLabel` | `string` | `undefined` | 无可见标签时的无障碍名称 |
-| `className` | `string` | `undefined` | 合并到根节点 |
+| 名称          | 类型                        | 默认值                        | 说明                                          |
+| ------------- | --------------------------- | ----------------------------- | --------------------------------------------- |
+| `value`       | `string[]`                  | 必填                          | 当前标签（受控）                              |
+| `onChange`    | `(value: string[]) => void` | 必填                          | 标签变化回调                                  |
+| `placeholder` | `string`                    | `t('common.chipPlaceholder')` | 占位文案；仅在无标签时显示                    |
+| `max`         | `number`                    | `undefined`                   | 标签数量上限                                  |
+| `disabled`    | `boolean`                   | `false`                       | 禁用整个控件                                  |
+| `invalid`     | `boolean`                   | `false`                       | 错误态：附加 `is-invalid`                     |
+| `id`          | `string`                    | `undefined`                   | 输入框 id，便于 `FormField` 的 `htmlFor` 关联 |
+| `ariaLabel`   | `string`                    | `undefined`                   | 无可见标签时的无障碍名称                      |
+| `className`   | `string`                    | `undefined`                   | 合并到根节点                                  |
 
 **关键类名**：`.wf-chipinput`、`.wf-chipinput.is-disabled`、`.wf-chipinput.is-invalid`、
 `.wf-chipinput__field`（点击空白聚焦输入框）、`.wf-chipinput__chip`（复用 `chip-pill chip-pill--neutral`）、
@@ -479,15 +483,15 @@ import { Button } from '@renderer/components/ui'
 
 **Props**
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `value` | `string` | `undefined` | 当前选中值（受控） |
-| `onChange` | `(value: string) => void` | `undefined` | 选中变更回调 |
-| `colors` | `ReadonlyArray<string \| ColorSwatchOption>` | 内置 6 色 | 色板选项；字符串按纯色处理 |
-| `size` | `'sm' / 'md' / 'lg'` | `'md'` | 色块尺寸 20 / 26 / 32 px |
-| `disabled` | `boolean` | `false` | 整体禁用 |
-| `className` | `string` | `undefined` | 合并到根节点 |
-| `'aria-label'` | `string` | `undefined` | 色板组无障碍名称 |
+| 名称           | 类型                                         | 默认值      | 说明                       |
+| -------------- | -------------------------------------------- | ----------- | -------------------------- |
+| `value`        | `string`                                     | `undefined` | 当前选中值（受控）         |
+| `onChange`     | `(value: string) => void`                    | `undefined` | 选中变更回调               |
+| `colors`       | `ReadonlyArray<string \| ColorSwatchOption>` | 内置 6 色   | 色板选项；字符串按纯色处理 |
+| `size`         | `'sm' / 'md' / 'lg'`                         | `'md'`      | 色块尺寸 20 / 26 / 32 px   |
+| `disabled`     | `boolean`                                    | `false`     | 整体禁用                   |
+| `className`    | `string`                                     | `undefined` | 合并到根节点               |
+| `'aria-label'` | `string`                                     | `undefined` | 色板组无障碍名称           |
 
 `ColorSwatchOption`：`value: string`（与 `value` 比较）、`css: string`（任意 CSS 颜色 / 渐变）、
 `ring?: string`（选中环颜色，渐变选项务必显式提供，否则退化为渐变本身导致对比不足）。
@@ -519,16 +523,16 @@ roving `tabIndex`（仅选中项可 Tab 进入）。方向键（←↑ / →↓�
 
 **Props**
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `options` | `ComboboxOption[]` | 必填 | 候选列表：`{ value, label }` |
-| `value` | `string` | `undefined` | 当前选中值（受控） |
-| `onChange` | `(value: string) => void` | `undefined` | 选中回调；输入文本与已选 `label` 不一致时回传空串 |
-| `placeholder` | `string` | `undefined` | 占位文案 |
-| `ariaLabel` | `string` | `undefined` | 无可见标签时的无障碍名称 |
-| `size` | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 控件尺寸 |
-| `disabled` | `boolean` | `false` | 禁用 |
-| `emptyText` | `string` | `t('common.noOptions')` | 过滤后无候选的提示 |
+| 名称          | 类型                      | 默认值                  | 说明                                              |
+| ------------- | ------------------------- | ----------------------- | ------------------------------------------------- |
+| `options`     | `ComboboxOption[]`        | 必填                    | 候选列表：`{ value, label }`                      |
+| `value`       | `string`                  | `undefined`             | 当前选中值（受控）                                |
+| `onChange`    | `(value: string) => void` | `undefined`             | 选中回调；输入文本与已选 `label` 不一致时回传空串 |
+| `placeholder` | `string`                  | `undefined`             | 占位文案                                          |
+| `ariaLabel`   | `string`                  | `undefined`             | 无可见标签时的无障碍名称                          |
+| `size`        | `'sm' / 'md' / 'lg'`      | 不传（等同 `md`）       | 控件尺寸                                          |
+| `disabled`    | `boolean`                 | `false`                 | 禁用                                              |
+| `emptyText`   | `string`                  | `t('common.noOptions')` | 过滤后无候选的提示                                |
 
 **关键类名**：`.wf-select` + `.wf-combobox`、`.wf-select--sm/lg`、`.wf-select.is-open`、
 `.wf-select__trigger.wf-combobox__input`、`.wf-select__caret`、`.wf-select__panel`、
@@ -536,8 +540,9 @@ roving `tabIndex`（仅选中项可 Tab 进入）。方向键（←↑ / →↓�
 
 **键盘与无障碍**：输入框为 `role="combobox"`，带 `aria-expanded` / `aria-controls` /
 `aria-autocomplete="list"` / `aria-activedescendant`；面板 `role="listbox"`，选项 `role="option"`
-+ `aria-selected`。↑↓ 循环高亮（未展开时先展开），Enter 提交，Esc 关闭，Tab 关闭并让出焦点；
-点击组件外部关闭。面板下方空间不足时自动上翻，滚动 / 缩放重算位置。
+
+- `aria-selected`。↑↓ 循环高亮（未展开时先展开），Enter 提交，Esc 关闭，Tab 关闭并让出焦点；
+  点击组件外部关闭。面板下方空间不足时自动上翻，滚动 / 缩放重算位置。
 
 **示例**
 
@@ -558,8 +563,8 @@ roving `tabIndex`（仅选中项可 Tab 进入）。方向键（←↑ / →↓�
 
 **Props**（继承 `HTMLAttributes<HTMLDivElement>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
+| 名称          | 类型                        | 默认值         | 说明 |
+| ------------- | --------------------------- | -------------- | ---- |
 | `orientation` | `'horizontal' / 'vertical'` | `'horizontal'` | 方向 |
 
 **关键类名**：`.wf-divider`、`.wf-divider--horizontal`、`.wf-divider--vertical`。
@@ -584,20 +589,20 @@ roving `tabIndex`（仅选中项可 Tab 进入）。方向键（←↑ / →↓�
 
 **Props**
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `open` | `boolean` | 必填 | 是否显示 |
-| `onClose` | `() => void` | 必填 | 关闭回调（遮罩 / Esc / 关闭按钮） |
-| `side` | `'left' / 'right'` | `'right'` | 滑出方向 |
-| `size` | `number / string` | `undefined`（样式 400px） | 面板宽度，数字按 px；CSS 另限 `max-width: 90vw` |
-| `title` | `ReactNode` | `undefined` | 标题，提供后渲染头部 |
-| `footer` | `ReactNode` | `undefined` | 底部内容 |
-| `closeOnMask` | `boolean` | `true` | 点击遮罩是否关闭 |
-| `closeOnEsc` | `boolean` | `true` | Esc 是否关闭 |
-| `showClose` | `boolean` | `true` | 是否显示关闭按钮 |
-| `closeLabel` | `string` | `t('common.close')` | 关闭按钮无障碍标签 |
-| `ariaLabel` | `string` | `undefined` | 对话框无障碍名称（无可见标题时用） |
-| `panelClassName` | `string` | `undefined` | 透传到面板的类名 |
+| 名称             | 类型               | 默认值                    | 说明                                            |
+| ---------------- | ------------------ | ------------------------- | ----------------------------------------------- |
+| `open`           | `boolean`          | 必填                      | 是否显示                                        |
+| `onClose`        | `() => void`       | 必填                      | 关闭回调（遮罩 / Esc / 关闭按钮）               |
+| `side`           | `'left' / 'right'` | `'right'`                 | 滑出方向                                        |
+| `size`           | `number / string`  | `undefined`（样式 400px） | 面板宽度，数字按 px；CSS 另限 `max-width: 90vw` |
+| `title`          | `ReactNode`        | `undefined`               | 标题，提供后渲染头部                            |
+| `footer`         | `ReactNode`        | `undefined`               | 底部内容                                        |
+| `closeOnMask`    | `boolean`          | `true`                    | 点击遮罩是否关闭                                |
+| `closeOnEsc`     | `boolean`          | `true`                    | Esc 是否关闭                                    |
+| `showClose`      | `boolean`          | `true`                    | 是否显示关闭按钮                                |
+| `closeLabel`     | `string`           | `t('common.close')`       | 关闭按钮无障碍标签                              |
+| `ariaLabel`      | `string`           | `undefined`               | 对话框无障碍名称（无可见标题时用）              |
+| `panelClassName` | `string`           | `undefined`               | 透传到面板的类名                                |
 
 **关键类名**：`.wf-drawer`、`.wf-drawer__mask`、`.wf-drawer__panel`、
 `.wf-drawer__panel--left/right`、`.wf-drawer__head/__title/__close/__body/__foot`。
@@ -614,7 +619,11 @@ Esc 由 `document` 级监听处理（`closeOnEsc` 可关）。关闭时恢复 `b
   open={open}
   onClose={() => setOpen(false)}
   title={t('chapter.detail')}
-  footer={<Button variant="primary" onClick={save}>{t('action.save')}</Button>}
+  footer={
+    <Button variant="primary" onClick={save}>
+      {t('action.save')}
+    </Button>
+  }
 >
   …
 </Drawer>
@@ -627,14 +636,14 @@ Esc 由 `document` 级监听处理（`closeOnEsc` 可关）。关闭时恢复 `b
 
 **Props**
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `trigger` | `ReactNode / ((state: { open: boolean }) => ReactNode)` | 必填 | 触发器节点或渲染函数 |
-| `items` | `DropdownItem[]` | 必填 | 菜单项列表 |
-| `align` | `'start' / 'end'` | `'start'` | 菜单对齐（贴左 / 贴右） |
-| `disabled` | `boolean` | `false` | 禁用整个下拉 |
-| `className` | `string` | `undefined` | 透传到根节点 |
-| `onOpenChange` | `(open: boolean) => void` | `undefined` | 展开状态变化回调 |
+| 名称           | 类型                                                    | 默认值      | 说明                    |
+| -------------- | ------------------------------------------------------- | ----------- | ----------------------- |
+| `trigger`      | `ReactNode / ((state: { open: boolean }) => ReactNode)` | 必填        | 触发器节点或渲染函数    |
+| `items`        | `DropdownItem[]`                                        | 必填        | 菜单项列表              |
+| `align`        | `'start' / 'end'`                                       | `'start'`   | 菜单对齐（贴左 / 贴右） |
+| `disabled`     | `boolean`                                               | `false`     | 禁用整个下拉            |
+| `className`    | `string`                                                | `undefined` | 透传到根节点            |
+| `onOpenChange` | `(open: boolean) => void`                               | `undefined` | 展开状态变化回调        |
 
 `DropdownItem`：`key: string`、`label?: ReactNode`、`icon?: ReactNode`、`disabled?: boolean`、
 `checked?: boolean`（提供该字段即以 `menuitemcheckbox` 语义渲染并显示 ✓）、`onSelect?: () => void`、
@@ -675,14 +684,14 @@ Enter / Space 打开或提交、Esc 关闭、Tab 关闭。仅键盘导航时把�
 
 **Props**（继承 `HTMLAttributes<HTMLDivElement>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `label` | `ReactNode` | `undefined` | 字段标签，渲染为 `<label htmlFor>` |
-| `htmlFor` | `string` | `undefined` | 关联控件 id |
-| `hint` | `ReactNode` | `undefined` | 辅助说明；无 `error` 时展示 |
-| `error` | `ReactNode` | `undefined` | 错误信息；非空时展示并加 `is-invalid` |
-| `required` | `boolean` | `false` | 显示必填星号（`aria-hidden`，不改变原生校验） |
-| `children` | `ReactNode` | `undefined` | 被包裹的控件 |
+| 名称       | 类型        | 默认值      | 说明                                          |
+| ---------- | ----------- | ----------- | --------------------------------------------- |
+| `label`    | `ReactNode` | `undefined` | 字段标签，渲染为 `<label htmlFor>`            |
+| `htmlFor`  | `string`    | `undefined` | 关联控件 id                                   |
+| `hint`     | `ReactNode` | `undefined` | 辅助说明；无 `error` 时展示                   |
+| `error`    | `ReactNode` | `undefined` | 错误信息；非空时展示并加 `is-invalid`         |
+| `required` | `boolean`   | `false`     | 显示必填星号（`aria-hidden`，不改变原生校验） |
+| `children` | `ReactNode` | `undefined` | 被包裹的控件                                  |
 
 **关键类名**：`.wf-field`、`.wf-field.is-invalid`、`.wf-field__label`、`.wf-field__required`、
 `.wf-field__control`、`.wf-field__hint`、`.wf-field__error`。
@@ -720,15 +729,15 @@ Enter / Space 打开或提交、Esc 关闭、Tab 关闭。仅键盘导航时把�
 
 **Props**（继承 `ButtonHTMLAttributes<HTMLButtonElement>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `variant` | `'ghost' / 'solid'` | `'ghost'` | `ghost` 无底色（hover 出底）/ `solid` 常备柔和底 |
-| `size` | `'sm' / 'md'` | `'md'` | 尺寸；`md` 不输出尺寸类 |
-| `tone` | `'default' / 'danger'` | `'default'` | `danger` 时 hover 呈危险色 |
-| `label` | `string` | **必填** | 映射为 `aria-label`，同时作为 tooltip 默认文案 |
-| `tooltip` | `string` | `undefined` | 覆盖 tooltip 文案（如 `label="设置" tooltip="设置（即将推出）"`） |
-| `tooltipPlacement` | `'top' / 'right' / 'bottom' / 'left'` | `'bottom'` | tooltip 首选方向，运行时仍会自动避让 |
-| `children` | `ReactNode` | `undefined` | 图标（建议内联 SVG，随 `currentColor` 着色） |
+| 名称               | 类型                                  | 默认值      | 说明                                                              |
+| ------------------ | ------------------------------------- | ----------- | ----------------------------------------------------------------- |
+| `variant`          | `'ghost' / 'solid'`                   | `'ghost'`   | `ghost` 无底色（hover 出底）/ `solid` 常备柔和底                  |
+| `size`             | `'sm' / 'md'`                         | `'md'`      | 尺寸；`md` 不输出尺寸类                                           |
+| `tone`             | `'default' / 'danger'`                | `'default'` | `danger` 时 hover 呈危险色                                        |
+| `label`            | `string`                              | **必填**    | 映射为 `aria-label`，同时作为 tooltip 默认文案                    |
+| `tooltip`          | `string`                              | `undefined` | 覆盖 tooltip 文案（如 `label="设置" tooltip="设置（即将推出）"`） |
+| `tooltipPlacement` | `'top' / 'right' / 'bottom' / 'left'` | `'bottom'`  | tooltip 首选方向，运行时仍会自动避让                              |
+| `children`         | `ReactNode`                           | `undefined` | 图标（建议内联 SVG，随 `currentColor` 着色）                      |
 
 **关键类名**：`.wf-iconbtn`、`.wf-iconbtn--ghost/solid`、`.wf-iconbtn--default/danger`、
 `.wf-iconbtn--sm`。
@@ -761,12 +770,12 @@ tooltip 通过 `aria-describedby` 关联（仅在有文案时）。`title` 被�
 
 **Props**（继承 `Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `size` | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 控件尺寸；仅 `sm` / `lg` 输出修饰类 |
-| `invalid` | `boolean` | `false` | 错误态：`aria-invalid` + `is-invalid` |
-| `type` | 原生 | `'text'` | 输入类型 |
-| `readOnly` / `disabled` | 原生 | `undefined` | 只读 / 禁用（只读时底色与光标同步降级） |
+| 名称                    | 类型                 | 默认值            | 说明                                    |
+| ----------------------- | -------------------- | ----------------- | --------------------------------------- |
+| `size`                  | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 控件尺寸；仅 `sm` / `lg` 输出修饰类     |
+| `invalid`               | `boolean`            | `false`           | 错误态：`aria-invalid` + `is-invalid`   |
+| `type`                  | 原生                 | `'text'`          | 输入类型                                |
+| `readOnly` / `disabled` | 原生                 | `undefined`       | 只读 / 禁用（只读时底色与光标同步降级） |
 
 **关键类名**：`.wf-input`、`.wf-input--sm/lg`、`.wf-input.is-invalid`（也支持
 `[aria-invalid='true']` 选择器）；父容器加 `.on-soft` 可在柔和底容器上换用更深的控件底色。
@@ -794,16 +803,16 @@ tooltip 通过 `aria-describedby` 关联（仅在有文案时）。`title` 被�
 
 **Props**（继承 `Omit<HTMLAttributes<HTMLDivElement>, 'title' / 'onClick'>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `avatar` | `ReactNode` | `undefined` | 左侧头像位（常放 `Avatar`） |
-| `title` | `ReactNode` | `undefined` | 主标题 |
-| `subtitle` | `ReactNode` | `undefined` | 副标题 |
-| `extra` | `ReactNode` | `undefined` | 右侧附加内容（`Tag` / `Badge`） |
-| `active` | `boolean` | `false` | 选中态（`is-active`） |
-| `disabled` | `boolean` | `false` | 禁用态（`is-disabled`，点击被阻止） |
-| `onClick` | `(event: SyntheticEvent<HTMLDivElement>) => void` | `undefined` | 点击回调；提供后整行可聚焦 + 键盘激活 |
-| `children` | `ReactNode` | `undefined` | 追加到正文区（标题 / 副标题之后） |
+| 名称       | 类型                                              | 默认值      | 说明                                  |
+| ---------- | ------------------------------------------------- | ----------- | ------------------------------------- |
+| `avatar`   | `ReactNode`                                       | `undefined` | 左侧头像位（常放 `Avatar`）           |
+| `title`    | `ReactNode`                                       | `undefined` | 主标题                                |
+| `subtitle` | `ReactNode`                                       | `undefined` | 副标题                                |
+| `extra`    | `ReactNode`                                       | `undefined` | 右侧附加内容（`Tag` / `Badge`）       |
+| `active`   | `boolean`                                         | `false`     | 选中态（`is-active`）                 |
+| `disabled` | `boolean`                                         | `false`     | 禁用态（`is-disabled`，点击被阻止）   |
+| `onClick`  | `(event: SyntheticEvent<HTMLDivElement>) => void` | `undefined` | 点击回调；提供后整行可聚焦 + 键盘激活 |
+| `children` | `ReactNode`                                       | `undefined` | 追加到正文区（标题 / 副标题之后）     |
 
 **关键类名**：`.wf-listitem`（`is-active` / `is-disabled`）、`.wf-listitem__avatar`、
 `.wf-listitem__body`、`.wf-listitem__title`、`.wf-listitem__subtitle`、`.wf-listitem__extra`。
@@ -833,21 +842,21 @@ Tab 焦点陷阱、背景 `inert`、`body` 滚动锁、退场动画（关闭时�
 
 **Props**
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `open` | `boolean` | 必填 | 是否显示 |
-| `onClose` | `() => void` | 必填 | 关闭回调（遮罩 / Esc / 关闭按钮） |
-| `title` | `ReactNode` | `undefined` | 标题，提供后渲染头部 |
-| `footer` | `ReactNode` | `undefined` | 底部操作区 |
-| `size` | `'sm' / 'md' / 'lg' / 'xl'` | `'md'` | 面板宽度档位：360 / 480 / 640 / 880 px |
-| `closeOnMask` | `boolean` | `true` | 点击遮罩是否关闭 |
-| `closeOnEsc` | `boolean` | `true` | Esc 是否关闭（仅栈顶响应） |
-| `showClose` | `boolean` | `true` | 是否显示右上角关闭按钮 |
-| `closeLabel` | `string` | `t('common.close')` | 关闭按钮无障碍标签 |
-| `ariaLabel` | `string` | `undefined` | 对话框无障碍名称（无可见标题时用） |
-| `panelClassName` | `string` | `undefined` | 透传到面板类名 |
-| `maskClassName` | `string` | `undefined` | 遮罩附加类名（加强模糊 / 调遮罩） |
-| `coverTitlebar` | `boolean` | `true` | 遮罩是否覆盖标题栏；`false` 时标题栏保持可交互 |
+| 名称             | 类型                        | 默认值              | 说明                                           |
+| ---------------- | --------------------------- | ------------------- | ---------------------------------------------- |
+| `open`           | `boolean`                   | 必填                | 是否显示                                       |
+| `onClose`        | `() => void`                | 必填                | 关闭回调（遮罩 / Esc / 关闭按钮）              |
+| `title`          | `ReactNode`                 | `undefined`         | 标题，提供后渲染头部                           |
+| `footer`         | `ReactNode`                 | `undefined`         | 底部操作区                                     |
+| `size`           | `'sm' / 'md' / 'lg' / 'xl'` | `'md'`              | 面板宽度档位：360 / 480 / 640 / 880 px         |
+| `closeOnMask`    | `boolean`                   | `true`              | 点击遮罩是否关闭                               |
+| `closeOnEsc`     | `boolean`                   | `true`              | Esc 是否关闭（仅栈顶响应）                     |
+| `showClose`      | `boolean`                   | `true`              | 是否显示右上角关闭按钮                         |
+| `closeLabel`     | `string`                    | `t('common.close')` | 关闭按钮无障碍标签                             |
+| `ariaLabel`      | `string`                    | `undefined`         | 对话框无障碍名称（无可见标题时用）             |
+| `panelClassName` | `string`                    | `undefined`         | 透传到面板类名                                 |
+| `maskClassName`  | `string`                    | `undefined`         | 遮罩附加类名（加强模糊 / 调遮罩）              |
+| `coverTitlebar`  | `boolean`                   | `true`              | 遮罩是否覆盖标题栏；`false` 时标题栏保持可交互 |
 
 **关键类名**：`.wf-modal`、`.wf-modal--no-titlebar`（`coverTitlebar={false}`）、`.wf-modal.is-closing`、
 `.wf-modal__mask`（`is-closing`）、`.wf-modal__panel`（`is-closing`）；面板内部是
@@ -871,7 +880,9 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
   footer={
     <>
       <Button onClick={() => setOpen(false)}>{t('action.cancel')}</Button>
-      <Button variant="danger" onClick={confirmDelete}>{t('action.delete')}</Button>
+      <Button variant="danger" onClick={confirmDelete}>
+        {t('action.delete')}
+      </Button>
     </>
   }
 >
@@ -886,13 +897,13 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
 
 **Props**（继承 `HTMLAttributes<HTMLDivElement>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `value` | `number` | `0` | 当前值，自动夹取到 `[0, max]` |
-| `max` | `number` | `100` | 最大值；`max <= 0` 时回退为 100 |
-| `tone` | `'brand' / 'ok' / 'warn' / 'danger'` | `'brand'` | 填充色调 |
-| `size` | `'sm' / 'md' / 'lg'` | `'md'` | 高度 3 / 4 / 6 px |
-| `label` | `string` | `undefined` | 无障碍名称 |
+| 名称    | 类型                                 | 默认值      | 说明                            |
+| ------- | ------------------------------------ | ----------- | ------------------------------- |
+| `value` | `number`                             | `0`         | 当前值，自动夹取到 `[0, max]`   |
+| `max`   | `number`                             | `100`       | 最大值；`max <= 0` 时回退为 100 |
+| `tone`  | `'brand' / 'ok' / 'warn' / 'danger'` | `'brand'`   | 填充色调                        |
+| `size`  | `'sm' / 'md' / 'lg'`                 | `'md'`      | 高度 3 / 4 / 6 px               |
+| `label` | `string`                             | `undefined` | 无障碍名称                      |
 
 **关键类名**：`.wf-progress`、`.wf-progress--sm/md/lg`、`.wf-progress__bar`、
 `.wf-progress__bar--ok/warn/danger`（`brand` 用基础渐变，无修饰类）。
@@ -904,7 +915,12 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
 **示例**
 
 ```tsx
-<Progress value={done} max={total} tone={done === total ? 'ok' : 'brand'} label={t('book.progress')} />
+<Progress
+  value={done}
+  max={total}
+  tone={done === total ? 'ok' : 'brand'}
+  label={t('book.progress')}
+/>
 ```
 
 ### 3.19 Radio
@@ -916,13 +932,13 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
 
 **Props**（继承 `Omit<InputHTMLAttributes<HTMLInputElement>, 'type' / 'size'>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `label` | `ReactNode` | `undefined` | 标签文本；省略则为纯控件 |
-| `size` | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 控件尺寸 |
-| `invalid` | `boolean` | `false` | 错误态：`aria-invalid` + `is-invalid` |
-| `name` | 原生 | `undefined` | **分组必需**，同组同名 |
-| `checked` / `defaultChecked` / `onChange` | 原生 | — | 受控 / 非受控均支持 |
+| 名称                                      | 类型                 | 默认值            | 说明                                  |
+| ----------------------------------------- | -------------------- | ----------------- | ------------------------------------- |
+| `label`                                   | `ReactNode`          | `undefined`       | 标签文本；省略则为纯控件              |
+| `size`                                    | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 控件尺寸                              |
+| `invalid`                                 | `boolean`            | `false`           | 错误态：`aria-invalid` + `is-invalid` |
+| `name`                                    | 原生                 | `undefined`       | **分组必需**，同组同名                |
+| `checked` / `defaultChecked` / `onChange` | 原生                 | —                 | 受控 / 非受控均支持                   |
 
 **关键类名**：`.wf-radio`、`.wf-radio--sm/lg`、`.wf-radio.is-disabled`、`.wf-radio.is-invalid`、
 `.wf-radio__input`（视觉隐藏）、`.wf-radio__dot`（`::after` 画选中内环）、`.wf-radio__label`。
@@ -935,8 +951,18 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
 
 ```tsx
 <FormField label={t('book.visibility')}>
-  <Radio name="visibility" label={t('book.private')} checked={v === 'private'} onChange={() => setV('private')} />
-  <Radio name="visibility" label={t('book.public')} checked={v === 'public'} onChange={() => setV('public')} />
+  <Radio
+    name="visibility"
+    label={t('book.private')}
+    checked={v === 'private'}
+    onChange={() => setV('private')}
+  />
+  <Radio
+    name="visibility"
+    label={t('book.public')}
+    checked={v === 'public'}
+    onChange={() => setV('public')}
+  />
 </FormField>
 ```
 
@@ -947,13 +973,13 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
 
 **Props**（继承 `InputHTMLAttributes<HTMLInputElement>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `onClear` | `() => void` | `undefined` | 清除回调；**受控模式下必须提供**，否则清除按钮不渲染 |
-| `clearable` | `boolean` | `true` | 是否允许显示清除按钮 |
-| `icon` | `ReactNode` | 内置放大镜 | 前置图标 |
-| `value` / `defaultValue` / `onChange` | 原生 | — | 受控 / 非受控均可 |
-| `disabled` | `boolean` | `false` | 禁用（容器加 `is-disabled`，输入框 `disabled`） |
+| 名称                                  | 类型         | 默认值      | 说明                                                 |
+| ------------------------------------- | ------------ | ----------- | ---------------------------------------------------- |
+| `onClear`                             | `() => void` | `undefined` | 清除回调；**受控模式下必须提供**，否则清除按钮不渲染 |
+| `clearable`                           | `boolean`    | `true`      | 是否允许显示清除按钮                                 |
+| `icon`                                | `ReactNode`  | 内置放大镜  | 前置图标                                             |
+| `value` / `defaultValue` / `onChange` | 原生         | —           | 受控 / 非受控均可                                    |
+| `disabled`                            | `boolean`    | `false`     | 禁用（容器加 `is-disabled`，输入框 `disabled`）      |
 
 **关键类名**：`.wf-search`、`.wf-search.is-disabled`、`.wf-search__icon`、`.wf-search__input`、
 `.wf-search__clear`。注意 `className` 作用在**外层容器** `.wf-search`，不是 `<input>`。
@@ -980,14 +1006,14 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
 
 **Props**
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `options` | `ReadonlyArray<SegmentedOption<T>>` | 必填 | 选项：`{ value, label, disabled? }` |
-| `value` | `T` | 必填 | 当前选中值（受控） |
-| `onChange` | `(value: T) => void` | `undefined` | 选中变更回调 |
-| `size` | `'sm' / 'md'` | `'md'` | 尺寸 |
-| `className` | `string` | `undefined` | 合并到根节点（如追加 `.wf-seg--fill`） |
-| `'aria-label'` | `string` | `undefined` | 分段组无障碍名称 |
+| 名称           | 类型                                | 默认值      | 说明                                   |
+| -------------- | ----------------------------------- | ----------- | -------------------------------------- |
+| `options`      | `ReadonlyArray<SegmentedOption<T>>` | 必填        | 选项：`{ value, label, disabled? }`    |
+| `value`        | `T`                                 | 必填        | 当前选中值（受控）                     |
+| `onChange`     | `(value: T) => void`                | `undefined` | 选中变更回调                           |
+| `size`         | `'sm' / 'md'`                       | `'md'`      | 尺寸                                   |
+| `className`    | `string`                            | `undefined` | 合并到根节点（如追加 `.wf-seg--fill`） |
+| `'aria-label'` | `string`                            | `undefined` | 分段组无障碍名称                       |
 
 **关键类名**：`.wf-seg`、`.wf-seg--sm`、`.wf-seg--fill`（外部追加的等分变体）、
 `.wf-seg__item`、`.wf-seg__item.is-active`（`::before` 画选中底板）。
@@ -1019,20 +1045,20 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
 
 **Props**
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `value` | `string` | `undefined` | 当前值（受控） |
-| `onChange` | `(value: string) => void` | `undefined` | 选中回调，回传选项 `value` |
-| `options` | `SelectOption[]` | 必填 | `{ value, label, disabled? }` |
-| `placeholder` | `string` | `t('common.selectPlaceholder')` | 未选中时的占位文案 |
-| `disabled` | `boolean` | `false` | 禁用 |
-| `size` | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 控件尺寸 |
-| `invalid` | `boolean` | `false` | 错误态：`aria-invalid` |
-| `id` | `string` | 内部 `useId` | 触发器 id，并派生 listbox / option 的 id |
-| `name` | `string` | `undefined` | 提供后渲染同名隐藏 `<input>` 供表单提交 |
-| `ariaLabel` | `string` | `undefined` | 无障碍名称（无可见标签时） |
-| `emptyText` | `string` | `t('common.noOptions')` | 面板空态文案 |
-| `className` | `string` | `undefined` | 合并到根节点 |
+| 名称          | 类型                      | 默认值                          | 说明                                     |
+| ------------- | ------------------------- | ------------------------------- | ---------------------------------------- |
+| `value`       | `string`                  | `undefined`                     | 当前值（受控）                           |
+| `onChange`    | `(value: string) => void` | `undefined`                     | 选中回调，回传选项 `value`               |
+| `options`     | `SelectOption[]`          | 必填                            | `{ value, label, disabled? }`            |
+| `placeholder` | `string`                  | `t('common.selectPlaceholder')` | 未选中时的占位文案                       |
+| `disabled`    | `boolean`                 | `false`                         | 禁用                                     |
+| `size`        | `'sm' / 'md' / 'lg'`      | 不传（等同 `md`）               | 控件尺寸                                 |
+| `invalid`     | `boolean`                 | `false`                         | 错误态：`aria-invalid`                   |
+| `id`          | `string`                  | 内部 `useId`                    | 触发器 id，并派生 listbox / option 的 id |
+| `name`        | `string`                  | `undefined`                     | 提供后渲染同名隐藏 `<input>` 供表单提交  |
+| `ariaLabel`   | `string`                  | `undefined`                     | 无障碍名称（无可见标签时）               |
+| `emptyText`   | `string`                  | `t('common.noOptions')`         | 面板空态文案                             |
+| `className`   | `string`                  | `undefined`                     | 合并到根节点                             |
 
 **关键类名**：`.wf-select`（`is-open` / `is-disabled`）、`.wf-select--sm/lg`、`.wf-select__trigger`、
 `.wf-select__value`（`is-placeholder`）、`.wf-select__caret`（展开时翻转）、`.wf-select__panel`、
@@ -1062,20 +1088,20 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 
 **Props**
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `value` | `number` | 必填 | 当前值（受控） |
-| `onChange` | `(value: number) => void` | 必填 | 变化回调，回传已夹取到 `[min, max]` 的值 |
-| `min` | `number` | `undefined` | 下界（含） |
-| `max` | `number` | `undefined` | 上界（含） |
-| `step` | `number` | `1` | 步长 |
-| `precision` | `number` | 按 `step` 推断小数位 | 小数精度，避免浮点误差 |
-| `disabled` | `boolean` | `false` | 禁用整个控件 |
-| `editable` | `boolean` | `false` | 值是否可点击进入编辑 |
-| `format` | `(value: number) => string` | `String(value)` | 展示格式化 |
-| `ariaLabel` | `string` | `undefined` | 控件组无障碍名称 |
-| `label` | `string` | `t('common.stepperLabel')` | 用于拼接按钮文案（「数值增加」等） |
-| `className` | `string` | `undefined` | 合并到根节点 |
+| 名称        | 类型                        | 默认值                     | 说明                                     |
+| ----------- | --------------------------- | -------------------------- | ---------------------------------------- |
+| `value`     | `number`                    | 必填                       | 当前值（受控）                           |
+| `onChange`  | `(value: number) => void`   | 必填                       | 变化回调，回传已夹取到 `[min, max]` 的值 |
+| `min`       | `number`                    | `undefined`                | 下界（含）                               |
+| `max`       | `number`                    | `undefined`                | 上界（含）                               |
+| `step`      | `number`                    | `1`                        | 步长                                     |
+| `precision` | `number`                    | 按 `step` 推断小数位       | 小数精度，避免浮点误差                   |
+| `disabled`  | `boolean`                   | `false`                    | 禁用整个控件                             |
+| `editable`  | `boolean`                   | `false`                    | 值是否可点击进入编辑                     |
+| `format`    | `(value: number) => string` | `String(value)`            | 展示格式化                               |
+| `ariaLabel` | `string`                    | `undefined`                | 控件组无障碍名称                         |
+| `label`     | `string`                    | `t('common.stepperLabel')` | 用于拼接按钮文案（「数值增加」等）       |
+| `className` | `string`                    | `undefined`                | 合并到根节点                             |
 
 **关键类名**：`.wf-stepper`、`.wf-stepper.is-disabled`、`.wf-stepper__btn`、
 `.wf-stepper__value`（`.is-editable`）、`.wf-stepper__input`。
@@ -1107,12 +1133,12 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 
 **Props**（继承 `Omit<InputHTMLAttributes<HTMLInputElement>, 'type' / 'size'>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `label` | `ReactNode` | `undefined` | 标签文本；省略则为纯控件 |
-| `size` | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 控件尺寸 |
-| `checked` / `defaultChecked` / `onChange` | 原生 | — | 受控 / 非受控均支持 |
-| `disabled` | `boolean` | `undefined` | 原生禁用，额外附加 `is-disabled` |
+| 名称                                      | 类型                 | 默认值            | 说明                             |
+| ----------------------------------------- | -------------------- | ----------------- | -------------------------------- |
+| `label`                                   | `ReactNode`          | `undefined`       | 标签文本；省略则为纯控件         |
+| `size`                                    | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 控件尺寸                         |
+| `checked` / `defaultChecked` / `onChange` | 原生                 | —                 | 受控 / 非受控均支持              |
+| `disabled`                                | `boolean`            | `undefined`       | 原生禁用，额外附加 `is-disabled` |
 
 **关键类名**：`.wf-switch`、`.wf-switch--sm/lg`、`.wf-switch.is-disabled`、
 `.wf-switch__input`（视觉隐藏、`role="switch"`）、`.wf-switch__track`、`.wf-switch__thumb`、
@@ -1138,13 +1164,13 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 
 **Props**（继承 `HTMLAttributes<HTMLSpanElement>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `tone` | `'neutral' / 'brand' / 'ok' / 'warn' / 'danger'` | `'neutral'` | 色调 |
-| `onClose` | `() => void` | `undefined` | 提供后显示关闭按钮 |
-| `closeLabel` | `string` | `t('common.remove')` | 关闭按钮无障碍标签 |
-| `action` | `ReactNode` | `undefined` | 标签文字与关闭按钮之间的附加操作（如展开编辑） |
-| `children` | `ReactNode` | `undefined` | 标签文字 |
+| 名称         | 类型                                             | 默认值               | 说明                                           |
+| ------------ | ------------------------------------------------ | -------------------- | ---------------------------------------------- |
+| `tone`       | `'neutral' / 'brand' / 'ok' / 'warn' / 'danger'` | `'neutral'`          | 色调                                           |
+| `onClose`    | `() => void`                                     | `undefined`          | 提供后显示关闭按钮                             |
+| `closeLabel` | `string`                                         | `t('common.remove')` | 关闭按钮无障碍标签                             |
+| `action`     | `ReactNode`                                      | `undefined`          | 标签文字与关闭按钮之间的附加操作（如展开编辑） |
+| `children`   | `ReactNode`                                      | `undefined`          | 标签文字                                       |
 
 **关键类名**：`.wf-tag`、`.wf-tag--neutral/brand/ok/warn/danger`、`.wf-tag__label`、
 `.wf-tag__close`。
@@ -1170,11 +1196,11 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 
 **Props**（继承 `TextareaHTMLAttributes<HTMLTextAreaElement>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `size` | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 尺寸：最小高度 62 / 82 / 108 px |
-| `invalid` | `boolean` | `false` | 错误态：`aria-invalid` + `is-invalid` |
-| `rows` / `value` / `onChange` / `disabled` | 原生 | — | 完全透传 |
+| 名称                                       | 类型                 | 默认值            | 说明                                  |
+| ------------------------------------------ | -------------------- | ----------------- | ------------------------------------- |
+| `size`                                     | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 尺寸：最小高度 62 / 82 / 108 px       |
+| `invalid`                                  | `boolean`            | `false`           | 错误态：`aria-invalid` + `is-invalid` |
+| `rows` / `value` / `onChange` / `disabled` | 原生                 | —                 | 完全透传                              |
 
 **关键类名**：`.wf-textarea`、`.wf-textarea--sm/lg`、`.wf-textarea.is-invalid`。
 
@@ -1200,11 +1226,11 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 
 > **导出的是钩子不是组件**：`useToast(duration?) => { show, node }`。
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `duration` | `number` | `2600` | 展示时长（ms），退场淡出另计 200ms |
-| 返回值 `show` | `(message: string) => void` | — | 展示提示（覆盖上一条并重新计时） |
-| 返回值 `node` | `ReactNode` | — | 需挂载到组件树中的浮层节点 |
+| 名称          | 类型                        | 默认值 | 说明                               |
+| ------------- | --------------------------- | ------ | ---------------------------------- |
+| `duration`    | `number`                    | `2600` | 展示时长（ms），退场淡出另计 200ms |
+| 返回值 `show` | `(message: string) => void` | —      | 展示提示（覆盖上一条并重新计时）   |
+| 返回值 `node` | `ReactNode`                 | —      | 需挂载到组件树中的浮层节点         |
 
 **关键类名**：`.wf-toast`、`.wf-toast.is-leaving`。
 
@@ -1230,18 +1256,18 @@ return (
 
 > **导出的是钩子不是组件**：
 > `useTooltip<T>({ content, placement?, disabled?, showDelay?, hideDelay? }) =>
-> { anchorRef, anchorProps, tooltip }`。
+{ anchorRef, anchorProps, tooltip }`。
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `content` | `string` | 必填 | 提示文本；空串时不显示 |
-| `placement` | `'top' / 'right' / 'bottom' / 'left'` | `'bottom'` | 首选方向（运行时会避让） |
-| `disabled` | `boolean` | `false` | 始终不显示（如按钮禁用态） |
-| `showDelay` | `number` | `350` | 显示延迟（ms） |
-| `hideDelay` | `number` | `60` | 隐藏延迟（ms） |
-| 返回值 `anchorRef` | `RefObject<T>` | — | 挂到锚点元素上供定位测量 |
-| 返回值 `anchorProps` | `TooltipAnchorProps` | — | `onMouseEnter/Leave`、`onFocus/Blur`、`aria-describedby` |
-| 返回值 `tooltip` | `ReactNode` | — | 浮层节点（portal 到 body），无内容时 `null` |
+| 名称                 | 类型                                  | 默认值     | 说明                                                     |
+| -------------------- | ------------------------------------- | ---------- | -------------------------------------------------------- |
+| `content`            | `string`                              | 必填       | 提示文本；空串时不显示                                   |
+| `placement`          | `'top' / 'right' / 'bottom' / 'left'` | `'bottom'` | 首选方向（运行时会避让）                                 |
+| `disabled`           | `boolean`                             | `false`    | 始终不显示（如按钮禁用态）                               |
+| `showDelay`          | `number`                              | `350`      | 显示延迟（ms）                                           |
+| `hideDelay`          | `number`                              | `60`       | 隐藏延迟（ms）                                           |
+| 返回值 `anchorRef`   | `RefObject<T>`                        | —          | 挂到锚点元素上供定位测量                                 |
+| 返回值 `anchorProps` | `TooltipAnchorProps`                  | —          | `onMouseEnter/Leave`、`onFocus/Blur`、`aria-describedby` |
+| 返回值 `tooltip`     | `ReactNode`                           | —          | 浮层节点（portal 到 body），无内容时 `null`              |
 
 **关键类名**：`.wf-tooltip`、`.wf-tooltip.is-ready`（定位完成前隐藏，避免闪跳）。
 
@@ -1258,7 +1284,9 @@ const { anchorRef, anchorProps, tooltip } = useTooltip<HTMLButtonElement>({
 return (
   <>
     {tooltip}
-    <button ref={anchorRef} {...anchorProps} onClick={exportAll}>…</button>
+    <button ref={anchorRef} {...anchorProps} onClick={exportAll}>
+      …
+    </button>
   </>
 )
 ```
@@ -1270,15 +1298,15 @@ return (
 
 **Props**（继承 `Omit<HTMLAttributes<HTMLDivElement>, 'title'>`）
 
-| 名称 | 类型 | 默认值 | 说明 |
-| --- | --- | --- | --- |
-| `title` | `ReactNode` | `undefined` | 标题区内容；无标题但有关闭按钮时仍渲染标题区 |
-| `onClose` | `() => void` | `undefined` | 关闭回调；提供后默认渲染关闭按钮 |
-| `showClose` | `boolean` | `onClose` 存在时为 `true` | 是否显示关闭按钮（`showClose ?? true` 再与 `onClose` 取与） |
-| `closeLabel` | `string` | `t('common.close')` | 关闭按钮无障碍标签 |
-| `footer` | `ReactNode` | `undefined` | 底部操作区 |
-| `size` | `'sm' / 'md' / 'lg' / 'xl'` | `undefined` | 宽度档位 360 / 480 / 640 / 880 px；不传不限宽 |
-| `bodyClassName` | `string` | `undefined` | 透传到内容区 |
+| 名称            | 类型                        | 默认值                    | 说明                                                        |
+| --------------- | --------------------------- | ------------------------- | ----------------------------------------------------------- |
+| `title`         | `ReactNode`                 | `undefined`               | 标题区内容；无标题但有关闭按钮时仍渲染标题区                |
+| `onClose`       | `() => void`                | `undefined`               | 关闭回调；提供后默认渲染关闭按钮                            |
+| `showClose`     | `boolean`                   | `onClose` 存在时为 `true` | 是否显示关闭按钮（`showClose ?? true` 再与 `onClose` 取与） |
+| `closeLabel`    | `string`                    | `t('common.close')`       | 关闭按钮无障碍标签                                          |
+| `footer`        | `ReactNode`                 | `undefined`               | 底部操作区                                                  |
+| `size`          | `'sm' / 'md' / 'lg' / 'xl'` | `undefined`               | 宽度档位 360 / 480 / 640 / 880 px；不传不限宽               |
+| `bodyClassName` | `string`                    | `undefined`               | 透传到内容区                                                |
 
 **关键类名**：`.wf-window`、`.wf-window--sm/md/lg/xl`、`.wf-window__head`、`.wf-window__title`、
 `.wf-window__close`、`.wf-window__body`（滚动容器）、`.wf-window__footer`（`::before` 渐隐分隔线）、
@@ -1295,7 +1323,11 @@ return (
   title={t('welcome.title')}
   size="lg"
   onClose={dismiss}
-  footer={<Button variant="primary" onClick={start}>{t('welcome.start')}</Button>}
+  footer={
+    <Button variant="primary" onClick={start}>
+      {t('welcome.start')}
+    </Button>
+  }
 >
   <p>{t('welcome.body')}</p>
 </Window>
@@ -1311,12 +1343,12 @@ return (
 
 ### 4.1 为什么 Toast / Tooltip 不是组件
 
-| 维度 | 组件形态 | 钩子形态（当前实现） | 采用钩子的原因 |
-| --- | --- | --- | --- |
-| 调用方式 | 父组件维护 `open` 状态，传 props | 调用 `show(msg)` / 挂 `anchorProps` 即可 | 提示是「一次性动作」而非持续 UI 状态，父组件不必为每条提示加 state |
-| 挂载位置 | 由父组件在 JSX 中放置 | 钩子返回 `node` / `tooltip`，父组件渲染一次 | 浮层内部 `createPortal` 到 `body`，位置与父组件布局解耦 |
-| 定时器 / 定位 | 需在组件内用 effect 管理 | 钩子内 `useRef` 持有定时器，卸载统一清理 | 避免每个调用点重复写清理逻辑 |
-| 与调用点耦合 | 低（纯受控） | 中（必须渲染返回节点） | Toast 需要「命令式一行调用」；Tooltip 需要「把属性展开到任意锚点」 |
+| 维度          | 组件形态                         | 钩子形态（当前实现）                        | 采用钩子的原因                                                     |
+| ------------- | -------------------------------- | ------------------------------------------- | ------------------------------------------------------------------ |
+| 调用方式      | 父组件维护 `open` 状态，传 props | 调用 `show(msg)` / 挂 `anchorProps` 即可    | 提示是「一次性动作」而非持续 UI 状态，父组件不必为每条提示加 state |
+| 挂载位置      | 由父组件在 JSX 中放置            | 钩子返回 `node` / `tooltip`，父组件渲染一次 | 浮层内部 `createPortal` 到 `body`，位置与父组件布局解耦            |
+| 定时器 / 定位 | 需在组件内用 effect 管理         | 钩子内 `useRef` 持有定时器，卸载统一清理    | 避免每个调用点重复写清理逻辑                                       |
+| 与调用点耦合  | 低（纯受控）                     | 中（必须渲染返回节点）                      | Toast 需要「命令式一行调用」；Tooltip 需要「把属性展开到任意锚点」 |
 
 **关键差异**：钩子不能单独渲染，**必须与一个挂载点绑定**——漏掉 `node` / `tooltip`
 就什么也看不到（也不会报错），这是最常见的接入错误。
@@ -1324,7 +1356,7 @@ return (
 ### 4.2 `useToast`
 
 ```ts
-const toast = useToast()      // duration 默认 2600ms
+const toast = useToast() // duration 默认 2600ms
 // toast.show(message: string): void
 // toast.node: ReactNode
 ```
@@ -1435,18 +1467,18 @@ const { anchorRef, anchorProps, tooltip } = useTooltip<HTMLButtonElement>({
 
 ### 5.5 常见误用速查
 
-| 现象 | 原因 | 正确做法 |
-| --- | --- | --- |
-| `import Input from './Input'` 编译报错 | 该模块无默认导出 | 改具名导入（见 1.3） |
-| Toast 不显示 | 忘了渲染 `toast.node` | 在 `return` 顶层渲染一次 |
-| Tooltip 不显示 | 没挂 `anchorRef` 或 `content` 为空 | 同时渲染 `tooltip` 并挂 ref |
-| 下拉菜单键盘进不去 | `trigger` 传了纯文本 | 传 `Button` / `IconButton` 等可聚焦控件 |
-| 卡片点击无键盘支持 | `Card interactive` 只加样式 | 用 `ListItem onClick` 或自行补 role / tabIndex |
-| 弹窗里 Tab 跑到背景 | 用了 `Drawer`（无焦点陷阱） | 改用 `Modal` |
-| Select 面板被裁切 | 自建绝对定位面板 | 用组件自带 portal 面板，勿在下拉内套 `overflow: hidden` |
-| 表单错误读屏不播报 | 未关联 `aria-describedby` | 传 `htmlFor`，并在控件上用 `aria-describedby="&lt;id&gt;-message"` 关联 |
-| 输入框标签缺失 | `Input` / `Textarea` 不带标签 | 用 `FormField` 包裹 |
-| 计数徽标读屏不完整 | `99+` 截断 | 容器补 `aria-label` 给完整数值 |
+| 现象                                   | 原因                               | 正确做法                                                                |
+| -------------------------------------- | ---------------------------------- | ----------------------------------------------------------------------- |
+| `import Input from './Input'` 编译报错 | 该模块无默认导出                   | 改具名导入（见 1.3）                                                    |
+| Toast 不显示                           | 忘了渲染 `toast.node`              | 在 `return` 顶层渲染一次                                                |
+| Tooltip 不显示                         | 没挂 `anchorRef` 或 `content` 为空 | 同时渲染 `tooltip` 并挂 ref                                             |
+| 下拉菜单键盘进不去                     | `trigger` 传了纯文本               | 传 `Button` / `IconButton` 等可聚焦控件                                 |
+| 卡片点击无键盘支持                     | `Card interactive` 只加样式        | 用 `ListItem onClick` 或自行补 role / tabIndex                          |
+| 弹窗里 Tab 跑到背景                    | 用了 `Drawer`（无焦点陷阱）        | 改用 `Modal`                                                            |
+| Select 面板被裁切                      | 自建绝对定位面板                   | 用组件自带 portal 面板，勿在下拉内套 `overflow: hidden`                 |
+| 表单错误读屏不播报                     | 未关联 `aria-describedby`          | 传 `htmlFor`，并在控件上用 `aria-describedby="&lt;id&gt;-message"` 关联 |
+| 输入框标签缺失                         | `Input` / `Textarea` 不带标签      | 用 `FormField` 包裹                                                     |
+| 计数徽标读屏不完整                     | `99+` 截断                         | 容器补 `aria-label` 给完整数值                                          |
 
 ---
 

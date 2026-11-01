@@ -86,7 +86,9 @@ export function ensureSelectionMirror(editor: Editor): void {
   if (editor.isDestroyed || !editor.isInitialized) return
   if (selectionMirrorKey.getState(editor.state) !== undefined) return
   const { view } = editor
-  view.updateState(view.state.reconfigure({ plugins: [...view.state.plugins, createMirrorPlugin()] }))
+  view.updateState(
+    view.state.reconfigure({ plugins: [...view.state.plugins, createMirrorPlugin()] })
+  )
 }
 
 /** 写入镜像饰带（空选区不画；不抢焦点，IME 安全）。 */
@@ -115,10 +117,7 @@ export function clearSelectionMirror(editor: Editor): void {
 }
 
 /** 链接面板口径的写入（保留原 API，行为 / 类名不变）。 */
-export function showLinkSelectionMirror(
-  editor: Editor,
-  range: { from: number; to: number }
-): void {
+export function showLinkSelectionMirror(editor: Editor, range: { from: number; to: number }): void {
   showSelectionMirror(editor, range, LINK_SELECTION_MIRROR_CLASS)
 }
 

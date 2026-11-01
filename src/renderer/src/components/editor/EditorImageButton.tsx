@@ -71,9 +71,7 @@ export function EditorImageButton({ editor, bookId }: EditorImageButtonProps): R
       width={264}
     >
       {(close) =>
-        hasBook ? (
-          <ImagePanelBody editor={editor} bookId={bookId} onDone={close} />
-        ) : null
+        hasBook ? <ImagePanelBody editor={editor} bookId={bookId} onDone={close} /> : null
       }
     </FormatPopover>
   )
@@ -95,7 +93,9 @@ function ImagePanelBody({ editor, bookId, onDone }: ImagePanelBodyProps): ReactN
   // 外链输入框：若光标落在既有外链图节点上则以其余 `src` 预填（占位串不预填）。
   const [url, setUrl] = useState<string>(() => {
     const current = editor?.getAttributes('image').src
-    return typeof current === 'string' && current !== '' && !isImagePlaceholder(current) ? current : ''
+    return typeof current === 'string' && current !== '' && !isImagePlaceholder(current)
+      ? current
+      : ''
   })
 
   const insertUploaded = useCallback(
@@ -192,11 +192,7 @@ function ImagePanelBody({ editor, bookId, onDone }: ImagePanelBodyProps): ReactN
           }}
         />
         <div className="wf-format-pop__actions">
-          <FormatButton
-            label={t('format.image.urlApply')}
-            disabled={busy}
-            onClick={applyUrl}
-          />
+          <FormatButton label={t('format.image.urlApply')} disabled={busy} onClick={applyUrl} />
         </div>
       </div>
     </>

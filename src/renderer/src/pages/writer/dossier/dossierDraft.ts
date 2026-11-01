@@ -1,13 +1,5 @@
-import type {
-  DossierDetail as DossierDetailData,
-  DossierUpdatePatch
-} from './dossierTree'
-import {
-  keyValueInputs,
-  keyValuesEqual,
-  toKeyValueRows,
-  type KeyValueRow
-} from './keyValueRows'
+import type { DossierDetail as DossierDetailData, DossierUpdatePatch } from './dossierTree'
+import { keyValueInputs, keyValuesEqual, toKeyValueRows, type KeyValueRow } from './keyValueRows'
 
 /**
  * 设定档案右栏「子类字段」草稿：品阶 / 档位（原文）+ 三组专属字段 + 自定义键值行。

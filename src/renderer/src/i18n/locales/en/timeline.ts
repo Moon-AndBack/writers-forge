@@ -21,7 +21,8 @@ const timeline = {
   originLabel: 'Origin',
   originTitle: 'Origin',
   originDefault: 'Year One',
-  originDesc: 'Start time of the read-only main timeline, default “Year One”; editable in the right pane.',
+  originDesc:
+    'Start time of the read-only main timeline, default “Year One”; editable in the right pane.',
   originNote: 'The story began',
   readonlyNote: 'Read-only · excluded from plot line counts and ordering',
   originAria: 'Timeline origin',

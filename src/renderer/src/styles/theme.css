@@ -85,7 +85,6 @@
   --desk-glow-1: rgba(91, 77, 232, 0.044);
   --desk-glow-2: rgba(47, 154, 224, 0.04);
   --desk-glow-3: rgba(255, 255, 255, 0.1);
-  --win-rgb: 243, 243, 243;
   --pane: #ffffff;
 
   /* 交互底色 */
@@ -171,7 +170,6 @@
   /* 窗口材质（Acrylic）开启时的纯色底：dark 定为 #161616（与 shell.css dark 斜切带中段同值），
      @70% 透明度（--desk-solid-alpha）透出 DWM 材质 */
   --desk-solid: #161616;
-  --win-rgb: 26, 26, 28;
   --pane: #202020;
 
   --soft: rgba(255, 255, 255, 0.05);
@@ -241,7 +239,6 @@
   --desk-glow-1: rgba(74, 157, 95, 0.036);
   --desk-glow-2: rgba(108, 191, 136, 0.03);
   --desk-glow-3: rgba(255, 255, 255, 0.1);
-  --win-rgb: 238, 245, 238;
   --pane: #fcfffc;
 
   --soft: rgba(20, 60, 30, 0.05);
@@ -303,7 +300,6 @@
   --desk-glow-1: rgba(201, 148, 38, 0.036);
   --desk-glow-2: rgba(224, 184, 94, 0.03);
   --desk-glow-3: rgba(255, 255, 255, 0.1);
-  --win-rgb: 249, 243, 228;
   --pane: #fffef9;
 
   --soft: rgba(80, 60, 10, 0.045);

@@ -91,9 +91,7 @@ export function createVolume(bookId: string, input: CreateVolumeInput = {}): Vol
   const db = getDb()
   const createdId = db.transaction((): number => {
     const result = db
-      .prepare(
-        'INSERT INTO volumes (book_id, kind, title, sort_order) VALUES (?, ?, ?, ?)'
-      )
+      .prepare('INSERT INTO volumes (book_id, kind, title, sort_order) VALUES (?, ?, ?, ?)')
       .run(bookId, kind, finalTitle, nextVolumeSortOrder(bookId, kind))
     const id = Number(result.lastInsertRowid)
     // 建卷即建卷纲（同事务插 `scope='volume'` 行，与部分唯一索引互为约束）。

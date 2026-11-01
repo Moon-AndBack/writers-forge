@@ -14,9 +14,4 @@ import type {
   DeleteCustomCategoryResult
 } from '../../main/database/categoriesWrite'
 
-export type {
-  CategoryChannel,
-  CategoryRow,
-  CreateCustomCategoryInput,
-  DeleteCustomCategoryResult
-}
+export type { CategoryChannel, CategoryRow, CreateCustomCategoryInput, DeleteCustomCategoryResult }

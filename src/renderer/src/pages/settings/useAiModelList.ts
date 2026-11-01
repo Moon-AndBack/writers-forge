@@ -7,11 +7,7 @@
  */
 import { useCallback, useRef, useState } from 'react'
 import type { AiError, AiProviderId } from '../../../../preload/types/ai'
-import {
-  CUSTOM_MODEL_VALUE,
-  type ModelsState,
-  type PersistConfig
-} from './aiSectionSupport'
+import { CUSTOM_MODEL_VALUE, type ModelsState, type PersistConfig } from './aiSectionSupport'
 
 export type ModelMode = 'list' | 'custom'
 

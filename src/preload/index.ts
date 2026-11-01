@@ -39,10 +39,7 @@ import type {
   UpdatePlotLinePatch,
   UpdatePlotScenePatch
 } from '../main/database/plot'
-import type {
-  PlotSceneEntityInput,
-  PlotSceneEntityRow
-} from '../main/database/plotSceneEntities'
+import type { PlotSceneEntityInput, PlotSceneEntityRow } from '../main/database/plotSceneEntities'
 import type { DiagnosticsReport } from '../main/database/diagnostics'
 import type {
   CreateEntityInput,

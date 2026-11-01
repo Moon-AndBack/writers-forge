@@ -99,8 +99,7 @@ export function OutlineRightPanel({
     if (!node) return
     const measure = (): void => {
       const styles = getComputedStyle(node)
-      const padding =
-        Number.parseFloat(styles.paddingTop) + Number.parseFloat(styles.paddingBottom)
+      const padding = Number.parseFloat(styles.paddingTop) + Number.parseFloat(styles.paddingBottom)
       setSplitSpace(Math.max(0, node.clientHeight - padding - SPLITTER_SIZE))
     }
     measure()
@@ -233,8 +232,7 @@ export function OutlineRightPanel({
 
   // 上下两栏最小高度换算成比例下限（容器过矮时放弃下限，交给 CSS 兜底）；
   // 渲染时再 clamp：容器缩小后不越下限，放大后回到用户拖出的比例。
-  const minSplitRatio =
-    splitSpace > MIN_PANE_HEIGHT * 2 ? (MIN_PANE_HEIGHT / splitSpace) * 100 : 0
+  const minSplitRatio = splitSpace > MIN_PANE_HEIGHT * 2 ? (MIN_PANE_HEIGHT / splitSpace) * 100 : 0
   const maxSplitRatio = 100 - minSplitRatio
   const visibleSplitRatio = Math.min(maxSplitRatio, Math.max(minSplitRatio, splitRatio))
 

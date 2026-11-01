@@ -65,7 +65,12 @@ export const DEMO_ENTITIES: ReadonlyArray<SeedEntity> = [
     aliases: ['文心'],
     tags: ['地理'],
     body: '文心城位于砚境正中，城中的抄书阁负责誊抄与校勘。世界观条目也能作为关联目标；本书示范里砚境以「上级」指向文心城，文心城的关系摘要会显示「砚境 是我的上级」。',
-    worldviewFields: { coordinates: '砚境·中央', climate: '温和', area: '方圆百里', terrain: '平原' }
+    worldviewFields: {
+      coordinates: '砚境·中央',
+      climate: '温和',
+      area: '方圆百里',
+      terrain: '平原'
+    }
   },
   {
     key: 'power-linear',

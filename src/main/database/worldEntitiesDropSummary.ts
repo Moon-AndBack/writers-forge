@@ -76,9 +76,8 @@ export function migrateWorldEntitiesDropSummary(instance: Database.Database): vo
   }
 
   const oldSeqRow = hasEntitySummary
-    ? (instance
-        .prepare("SELECT seq FROM sqlite_sequence WHERE name = 'world_entities'")
-        .get() as { seq: number } | undefined)
+    ? (instance.prepare("SELECT seq FROM sqlite_sequence WHERE name = 'world_entities'").get() as
+        { seq: number } | undefined)
     : undefined
   const oldSeq = oldSeqRow?.seq ?? null
 

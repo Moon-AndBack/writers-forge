@@ -52,7 +52,9 @@ export default function TimelineCardSizeControls() {
         onChange={(minHeight) => setSize({ minHeight })}
       />
       <PopupSelect
-        buttonLabel={t('cardSize.pill.maxHeight', { value: optionLabel(size.maxHeight, noneLabel) })}
+        buttonLabel={t('cardSize.pill.maxHeight', {
+          value: optionLabel(size.maxHeight, noneLabel)
+        })}
         popupLabel={t('cardSize.maxHeight')}
         options={toOptions(CARD_MAX_HEIGHT_OPTIONS)}
         value={size.maxHeight}

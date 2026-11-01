@@ -21,7 +21,9 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "build:win": "npm run build && electron-builder --win"
+    "format:check": "prettier --check .",
+    "build:win": "npm run build && electron-builder --win",
+    "prepare": "husky"
   },
   "dependencies": {
     "@tiptap/core": "^3.31.4",
@@ -61,9 +63,20 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.13.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.1",
     "vite": "^7.3.7"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,md,json,yml,yaml,html}": [
+      "prettier --write"
+    ]
   }
 }

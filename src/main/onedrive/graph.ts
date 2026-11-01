@@ -1,10 +1,4 @@
-import {
-  createRequestSignal,
-  isRecord,
-  normalizeError,
-  readString,
-  resolveTimeout
-} from './http'
+import { createRequestSignal, isRecord, normalizeError, readString, resolveTimeout } from './http'
 import { OneDriveError } from './types'
 import type { OneDriveAccount, OneDriveErrorCode } from './types'
 
@@ -97,10 +91,7 @@ export async function graphError(
  * 注意：createUploadSession 返回的 `uploadUrl` 是**预授权**地址，
  * 后续分片 PUT 不得再附带 Authorization，因此上传模块走独立的 `fetch` 分支。
  */
-export async function graphRequest(
-  url: string,
-  options: GraphRequestOptions
-): Promise<Response> {
+export async function graphRequest(url: string, options: GraphRequestOptions): Promise<Response> {
   const request = createRequestSignal(options.signal, resolveTimeout(options.timeoutMs))
 
   try {
@@ -130,9 +121,7 @@ export async function graphRequest(
 }
 
 /** 读取当前账户资料（用于界面展示邮箱）。 */
-export async function getAccountProfile(
-  options: GraphAuthOptions
-): Promise<OneDriveAccount> {
+export async function getAccountProfile(options: GraphAuthOptions): Promise<OneDriveAccount> {
   const response = await graphRequest(
     `${GRAPH_BASE}/me?$select=displayName,mail,userPrincipalName`,
     {

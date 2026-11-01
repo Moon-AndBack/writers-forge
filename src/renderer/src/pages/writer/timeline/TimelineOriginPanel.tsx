@@ -64,7 +64,7 @@ export default function TimelineOriginPanel({
   const handleSave = () => {
     const next = draft.trim()
     setSaved(false)
-    const targetId = activeId ?? activeTimelineId ?? (list[0]?.id ?? null)
+    const targetId = activeId ?? activeTimelineId ?? list[0]?.id ?? null
     if (targetId === null) return
     const nextList = list.length > 0 ? list : [{ id: targetId, name: '', origin: '' }]
     const updated = nextList.map((entry) =>

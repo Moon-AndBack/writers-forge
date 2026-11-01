@@ -53,10 +53,7 @@ interface SubtypeTarget {
 }
 
 /** 解析子类目标表；未分类、非物品 / 势力、类型非法均返回 null。 */
-function resolveTarget(
-  entityType: string,
-  subtype: WorldEntitySubtypeRef
-): SubtypeTarget | null {
+function resolveTarget(entityType: string, subtype: WorldEntitySubtypeRef): SubtypeTarget | null {
   if (subtype.subtypeId === null) return null
   if (entityType !== 'item' && entityType !== 'faction') return null
   if (subtype.presetKey !== '') {

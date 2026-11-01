@@ -35,7 +35,7 @@ export const DEFAULT_WINDOW_MATERIAL: WindowMaterial = 'acrylic'
  */
 const ACRYLIC_MIN_BUILD = 22621
 
-/** 关闭材质时的窗口底：沿用 light 主题 --win-rgb（243,243,243），避免创建瞬间黑闪 */
+/** 关闭材质时的窗口底：近白中性色 #f3f3f3，避免创建瞬间黑闪 */
 const FALLBACK_WINDOW_COLOR = '#f3f3f3'
 
 /** 开启材质时的窗口底：全透明，让 DWM Acrylic 从窗口与 Web 内容之间透出 */

@@ -92,5 +92,7 @@ export function TimelineCardSizeProvider({ children }: { children: ReactNode }) 
 
   const value = useMemo(() => ({ size, setSize }), [size, setSize])
 
-  return <TimelineCardSizeContext.Provider value={value}>{children}</TimelineCardSizeContext.Provider>
+  return (
+    <TimelineCardSizeContext.Provider value={value}>{children}</TimelineCardSizeContext.Provider>
+  )
 }

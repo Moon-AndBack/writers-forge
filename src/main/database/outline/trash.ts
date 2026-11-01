@@ -4,7 +4,11 @@ import { VOLUME_COLUMNS } from '../chapterTypes'
 import type { VolumeDbRow } from '../chapterTypes'
 import { OUTLINE_ITEM_COLUMNS, toOutlineItem } from './types'
 import type { DeletedOutlineContent, OutlineItemDbRow, OutlinePurgeCounts } from './types'
-import { nextOutlineItemSortOrder, nextVolumeSortOrder, renumberOutlineItemsInGroup } from './shared'
+import {
+  nextOutlineItemSortOrder,
+  nextVolumeSortOrder,
+  renumberOutlineItemsInGroup
+} from './shared'
 
 /**
  * 大纲域：回收站（查询 / 还原 / 彻底删除），自 `outline.ts` 拆出（对齐 `chapterTrash.ts`，§3）。

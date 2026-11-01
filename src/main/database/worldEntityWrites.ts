@@ -11,7 +11,11 @@ import type {
   WorldEntityType
 } from './worldEntityTypes'
 import { WORLDVIEW_SUBTYPE_FIELDS } from './worldEntityTypes'
-import { applySubtypeFields, ensureSubtypeRows, migrateSubtypeRows } from './worldEntitySubtypeFields'
+import {
+  applySubtypeFields,
+  ensureSubtypeRows,
+  migrateSubtypeRows
+} from './worldEntitySubtypeFields'
 import { writeGradeRank } from './worldItemGradeRank'
 import { writePowerSystemKind } from './worldPowerWrites'
 import { NO_SUBTYPE, NOW, WV_SUBTYPE_TABLE } from './worldEntityShared'
@@ -176,8 +180,7 @@ function readSubtypeRef(
        WHERE e.id = ? AND e.deleted_at IS NULL`
     )
     .get(id) as
-    | { bookId: string; entityType: string; subtypeId: number | null; presetKey: string }
-    | undefined
+    { bookId: string; entityType: string; subtypeId: number | null; presetKey: string } | undefined
   if (!row) return null
   return {
     bookId: row.bookId,

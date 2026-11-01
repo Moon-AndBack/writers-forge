@@ -4,19 +4,19 @@
 
 ## 技术栈
 
-| 依赖 | 版本 | 用途 |
-| --- | --- | --- |
-| Electron | ^44.6.0 | 桌面应用运行时与主进程 |
-| electron-vite | ^5.0.0 | 主进程 / preload / 渲染层构建 |
-| Vite | ^7.3.7 | 渲染层开发服务器与打包 |
-| React / React DOM | ^19.3.0 | 渲染层 UI |
-| react-router-dom | ^7.18.4 | 页面路由 |
-| TypeScript | ^5.9.3 | 全项目类型检查 |
-| better-sqlite3 | ^13.0.3 | 本地 SQLite 持久化 |
-| TipTap | ^3.31.4 | 富文本编辑器 |
-| i18next / react-i18next | ^26.4.3 / ^17.0.16 | 国际化（简体中文 / English） |
-| electron-builder | ^26.15.3 | 安装包构建 |
-| ESLint / Prettier | ^10.12.0 / ^3.9.9 | 代码检查与格式化 |
+| 依赖                    | 版本               | 用途                          |
+| ----------------------- | ------------------ | ----------------------------- |
+| Electron                | ^44.6.0            | 桌面应用运行时与主进程        |
+| electron-vite           | ^5.0.0             | 主进程 / preload / 渲染层构建 |
+| Vite                    | ^7.3.7             | 渲染层开发服务器与打包        |
+| React / React DOM       | ^19.3.0            | 渲染层 UI                     |
+| react-router-dom        | ^7.18.4            | 页面路由                      |
+| TypeScript              | ^5.9.3             | 全项目类型检查                |
+| better-sqlite3          | ^13.0.3            | 本地 SQLite 持久化            |
+| TipTap                  | ^3.31.4            | 富文本编辑器                  |
+| i18next / react-i18next | ^26.4.3 / ^17.0.16 | 国际化（简体中文 / English）  |
+| electron-builder        | ^26.15.3           | 安装包构建                    |
+| ESLint / Prettier       | ^10.12.0 / ^3.9.9  | 代码检查与格式化              |
 
 ## 环境要求
 
@@ -49,15 +49,15 @@ npm run icon
 
 ## 常用命令
 
-| 命令 | 说明 |
-| --- | --- |
-| `npm run dev` | 启动开发模式（electron-vite dev） |
-| `npm run build` | 构建主进程、preload 与渲染层产物到 `out/` |
-| `npm run typecheck` | 类型检查（Node 与 Web 两套 tsconfig） |
-| `npm run lint` | ESLint 检查（flat config） |
-| `npm run format` | Prettier 格式化 |
+| 命令                | 说明                                        |
+| ------------------- | ------------------------------------------- |
+| `npm run dev`       | 启动开发模式（electron-vite dev）           |
+| `npm run build`     | 构建主进程、preload 与渲染层产物到 `out/`   |
+| `npm run typecheck` | 类型检查（Node 与 Web 两套 tsconfig）       |
+| `npm run lint`      | ESLint 检查（flat config）                  |
+| `npm run format`    | Prettier 格式化                             |
 | `npm run build:win` | 构建并打包 Windows 安装包（输出到 `dist/`） |
-| `npm run start` | 预览已构建产物（electron-vite preview） |
+| `npm run start`     | 预览已构建产物（electron-vite preview）     |
 
 ## 目录结构
 

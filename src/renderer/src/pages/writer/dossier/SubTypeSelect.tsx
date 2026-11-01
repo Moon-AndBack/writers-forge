@@ -76,10 +76,7 @@ export default function SubTypeSelect({
     }
   }, [bookId, entityType])
 
-  const selected = useMemo(
-    () => rows.find((row) => row.id === value) ?? null,
-    [rows, value]
-  )
+  const selected = useMemo(() => rows.find((row) => row.id === value) ?? null, [rows, value])
   const isCustom = selected !== null && selected.isCustom === 1
 
   const options = useMemo(

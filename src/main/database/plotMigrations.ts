@@ -98,7 +98,9 @@ export function migratePlotLinesTimeline(instance: Database.Database): void {
 
   instance.transaction(() => {
     instance
-      .prepare("UPDATE plot_lines SET timeline_id = 'default' WHERE timeline_id IS NULL OR timeline_id = ''")
+      .prepare(
+        "UPDATE plot_lines SET timeline_id = 'default' WHERE timeline_id IS NULL OR timeline_id = ''"
+      )
       .run()
     instance
       .prepare(

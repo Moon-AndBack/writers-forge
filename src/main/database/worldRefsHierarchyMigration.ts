@@ -1,8 +1,5 @@
 import type Database from 'better-sqlite3'
-import {
-  HIERARCHY_SEMANTIC_CODES,
-  HIERARCHY_SEMANTIC_CODE_NAMES
-} from './worldSemanticCodes'
+import { HIERARCHY_SEMANTIC_CODES, HIERARCHY_SEMANTIC_CODE_NAMES } from './worldSemanticCodes'
 
 /**
  * 一次性迁移：关系类型体系收敛为「上级 / 下级 / 平级 / 属于」四码，并清空存量关系。

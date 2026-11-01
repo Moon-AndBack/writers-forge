@@ -94,11 +94,17 @@ function sanitizeValue(value: unknown): unknown {
 }
 
 function sanitizeImageAttrs(value: unknown): Record<string, unknown> {
-  const attrs = (value !== null && typeof value === 'object' ? value : {}) as Record<string, unknown>
+  const attrs = (value !== null && typeof value === 'object' ? value : {}) as Record<
+    string,
+    unknown
+  >
   const imageId = typeof attrs.imageId === 'number' ? attrs.imageId : null
   if (imageId !== null) {
     attrs.src = imagePlaceholderSrc(imageId)
-  } else if (typeof attrs.src === 'string' && (attrs.src.startsWith('blob:') || isImagePlaceholder(attrs.src))) {
+  } else if (
+    typeof attrs.src === 'string' &&
+    (attrs.src.startsWith('blob:') || isImagePlaceholder(attrs.src))
+  ) {
     attrs.src = null
   }
   return attrs
@@ -124,11 +130,7 @@ export interface ImageInsertState {
 /** 允许插图的位置判定（**仅普通段落，含引用块内段落**；表格 / 代码块 / 标题 / 列表一律禁止）。 */
 export function readImageInsertState(editor: Editor): ImageInsertState {
   if (!editor.isEditable) return { editable: false, reason: 'reasonBlock' }
-  if (
-    editor.isActive('table') ||
-    editor.isActive('tableCell') ||
-    editor.isActive('tableHeader')
-  ) {
+  if (editor.isActive('table') || editor.isActive('tableCell') || editor.isActive('tableHeader')) {
     return { editable: true, reason: 'reasonTable' }
   }
   if (editor.isActive('codeBlock')) return { editable: true, reason: 'reasonCodeBlock' }

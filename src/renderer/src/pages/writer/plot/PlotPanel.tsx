@@ -84,9 +84,7 @@ export default function PlotPanel({
       if (input.lineType !== line.lineType) patch.lineType = input.lineType
       if (input.lineColor !== line.lineColor) patch.lineColor = input.lineColor
       const changed =
-        patch.name !== undefined ||
-        patch.lineType !== undefined ||
-        patch.lineColor !== undefined
+        patch.name !== undefined || patch.lineType !== undefined || patch.lineColor !== undefined
       if (changed) onUpdateLine(line.id, patch)
     },
     [editingLine, onUpdateLine]

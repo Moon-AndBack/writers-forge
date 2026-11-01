@@ -126,8 +126,7 @@ function backfillSubtypeIds(instance: Database.Database): number {
   let createdCount = 0
   for (const row of pending) {
     const found = findSubtype.get(row.bookId, row.entityType, row.subType) as
-      | { id: number }
-      | undefined
+      { id: number } | undefined
     let subtypeId = found?.id
     if (subtypeId === undefined) {
       const next = nextSortOrder.get(row.bookId, row.entityType) as { next: number }
@@ -137,8 +136,7 @@ function backfillSubtypeIds(instance: Database.Database): number {
         createdCount += 1
       } else {
         const existing = findAnySubtype.get(row.bookId, row.entityType, row.subType) as
-          | { id: number }
-          | undefined
+          { id: number } | undefined
         subtypeId = existing?.id
       }
     }

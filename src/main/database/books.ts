@@ -109,7 +109,6 @@ const DEFAULT_COVER_COLOR = COVER_COLORS[0].key
  */
 export const DEFAULT_TIMELINE_ORIGIN = ''
 
-
 /**
  * 书籍领域对象：`categories` 为**分类 ID 列表**（`categories.id`，正整数），
  * 库内以 JSON 字符串（数字数组）存储。分类名称从 `categories.name` 取（不译项）。
@@ -309,7 +308,10 @@ export function createBook(input: CreateBookInput): BookRow {
   ensurePresetSubtypes(id)
 
   // 新书即有默认时间线：列表 + 选中 id（settings JSON），不再写老键 `timeline:origin:<id>`。
-  setSetting(`timeline:list:${id}`, JSON.stringify([{ id: 'default', name: '', origin: DEFAULT_TIMELINE_ORIGIN }]))
+  setSetting(
+    `timeline:list:${id}`,
+    JSON.stringify([{ id: 'default', name: '', origin: DEFAULT_TIMELINE_ORIGIN }])
+  )
   setSetting(`timeline:active:${id}`, 'default')
   const created = getBook(id)
   if (!created) {

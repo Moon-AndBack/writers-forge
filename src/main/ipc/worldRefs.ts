@@ -157,13 +157,10 @@ export function registerWorldRefsIpc(): void {
     return listWorldRefs(id, readFilterCode(semanticCode))
   })
 
-  ipcMain.handle(
-    'worldEntity:listIncomingRefs',
-    (_event, id: unknown, semanticCode: unknown) => {
-      if (!isPositiveInt(id)) return []
-      return listWorldRefsTo(id, readFilterCode(semanticCode))
-    }
-  )
+  ipcMain.handle('worldEntity:listIncomingRefs', (_event, id: unknown, semanticCode: unknown) => {
+    if (!isPositiveInt(id)) return []
+    return listWorldRefsTo(id, readFilterCode(semanticCode))
+  })
 
   ipcMain.handle('worldEntity:listSemanticCodes', () => listSemanticCodes())
 
