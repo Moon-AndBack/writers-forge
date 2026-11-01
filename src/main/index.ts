@@ -64,6 +64,12 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
-  log.info('before-quit，关闭数据库')
+  // 此时窗口的 close 拦截尚未执行（渲染层 flush 未完成），不可关库。
+  log.info('before-quit，等待窗口关闭与渲染层 flush')
+})
+
+app.on('will-quit', () => {
+  // will-quit 在所有窗口关闭之后触发，此时渲染层 flush 已完成，关库才安全。
+  log.info('will-quit，关闭数据库')
   closeDb()
 })

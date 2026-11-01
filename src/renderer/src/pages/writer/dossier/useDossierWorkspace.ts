@@ -54,7 +54,8 @@ export function useDossierWorkspace(module: WriterModule, bookId: string): Dossi
     saveRef,
     switchPending,
     resolveSwitch,
-    guardSwitch
+    guardSwitch,
+    confirming
   } = useDossierDirtyGuard(active, bookId)
 
   const currentRows = rowsState.module === active ? rowsState.rows : EMPTY_ROWS
@@ -157,6 +158,7 @@ export function useDossierWorkspace(module: WriterModule, bookId: string): Dossi
     discardDraft,
     switchPending,
     resolveSwitch,
+    confirming,
     select,
     create,
     update,

@@ -115,6 +115,13 @@ export interface Api {
     electron: string
   }
   ping: () => string
+  /** 应用关闭流程：主进程关窗前先通知渲染层统一落盘，收到回执后才真正关闭窗口 */
+  app: {
+    /** 订阅「即将关闭」通知，返回取消订阅函数 */
+    onBeforeClose: (callback: () => void) => () => void
+    /** 落盘完成回执；主进程收到后才关窗（约 3 秒未回执则超时强制关闭） */
+    notifyCloseReady: () => void
+  }
   books: {
     list: () => Promise<BookRow[]>
     get: (id: string) => Promise<BookRow | null>

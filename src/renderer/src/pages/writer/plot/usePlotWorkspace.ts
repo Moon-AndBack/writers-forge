@@ -10,6 +10,7 @@ import {
 } from './plotTree'
 import { usePlotTree } from './usePlotTree'
 import type { UpdatePlotLinePatch, UpdatePlotScenePatch } from './plotTree'
+import { useUnsavedGuard } from '../../../shell/useUnsavedGuard'
 
 /** 剧情页装配动作日志（无线 + 缝可辨：无可用线时记 warn）。 */
 const log = createLogger('plot')
@@ -40,15 +41,35 @@ export interface PlotWorkspace {
   editing: boolean
   /** 右栏正文编辑器聚焦态上报（聚焦 / 失焦各一次；语义对齐 `reportDirty`）。 */
   reportEditing: (editing: boolean) => void
-  /** 保存入口 ref：右栏表单挂载时写入 `saveNow`（仅变更字段补丁），供切换确认「保存」调用。 */
-  saveRef: RefObject<(() => void) | null>
+  /** 保存入口 ref：右栏表单挂载时写入 `saveNow`（仅变更字段补丁），供切换确认「保存」/ 关闭前 flush 调用。 */
+  saveRef: RefObject<(() => void | Promise<boolean>) | null>
+  /**
+   * 放弃当前草稿：清脏并递增 `draftResetKey`，让常驻的 `PlotEditor` 重挂、
+   * 草稿回退到场景行值（只清脏不重挂会「表单持旧草稿却标记为干净」）。
+   */
+  discardDraft: () => void
+  /** 草稿重置键：传给右栏 `PlotEditor` 的 key，递增即重挂表单并回退草稿。 */
+  draftResetKey: number
   /** 是否有挂起的切换（有改动时点选 / 新建 / 删除暂缓，等两态确认）。 */
   switchPending: boolean
-  /** 结算挂起的切换：`save=true` 先保存草稿再切换，`false` 丢弃草稿直接切换。 */
-  resolveSwitch: (save: boolean) => void
+  /** 保存结算中：确认弹框据此禁用按钮，期间重复结算一律忽略。 */
+  confirming: boolean
+  /**
+   * 结算挂起的切换：`save=true` 先保存草稿再切换，`false` 丢弃草稿直接切换。
+   * 返回值 = 是否已执行切换：保存失败时为 `false`（不切换、不清脏，可重试）。
+   */
+  resolveSwitch: (save: boolean) => Promise<boolean>
+  /**
+   * 切换守卫（供页面层包装跨域切换：切换 / 新建时间线等本 hook 之外的选中变化）：
+   * 无未保存改动立即执行；有改动则挂起该动作，等右栏两态确认后续行。
+   */
+  guardSwitch: (proceed: () => void) => void
   /** 选中剧情线（切换后节点选中回退到该线首个节点）。 */
   selectLine: (id: number) => void
-  /** 新建剧情线（三字段弹窗提交；缺省名 →「新剧情线」），返回新行并选中之。 */
+  /**
+   * 新建剧情线（三字段弹窗提交；缺省名 →「新剧情线」），返回新行并选中之；
+   * 有未保存草稿时先挂起确认，挂起分支返回 null（此刻尚未创建）。
+   */
   createLine: (name?: string, options?: CreatePlotLineOptions) => Promise<PlotLineRow | null>
   /** 重命名剧情线（兼容保留；编辑弹窗走 `updateLine`）。 */
   renameLine: (id: number, name: string) => void
@@ -61,7 +82,7 @@ export interface PlotWorkspace {
   /** 选中剧情场景。 */
   selectScene: (id: number) => void
   /** 保存剧情场景补丁（中栏节点弹窗的标题 / 时间即时落库；右栏正文手动保存同走本入口）。 */
-  updateScene: (id: number, patch: UpdatePlotScenePatch) => Promise<void>
+  updateScene: (id: number, patch: UpdatePlotScenePatch) => Promise<boolean>
   /** 删除剧情场景。 */
   deleteScene: (id: number) => void
 }
@@ -74,7 +95,7 @@ export interface PlotWorkspace {
  * （首条线 / 当前线首个节点），保证被删除后选中始终有效；与章节 / 大纲选中互不干扰。
  *
  * 正文口径（手动保存 + 切换守卫）：右栏编辑器只改本地草稿，点「保存」才落库（仅变更字段）；
- * 选中节点 / 新建节点 / 切换剧情线 / 删除节点前若有未保存改动，暂缓该动作并挂起
+ * 选中 / 新建 / 删除节点、切换 / 新建 / 删除剧情线前若有未保存改动，暂缓该动作并挂起
  * `switchPending`，由右栏弹两态确认后经 `resolveSwitch` 续行。
  *
  * 聚焦口径（`editing`）：右栏正文编辑器聚焦即「编辑中」、失焦即「非编辑中」，经
@@ -108,17 +129,16 @@ export function usePlotWorkspace(bookId: string, activeTimelineId?: string | nul
   const [selectedLineId, setSelectedLineId] = useState<number | null>(null)
   const [selectedSceneId, setSelectedSceneId] = useState<number | null>(null)
 
-  // 未保存改动（右栏编辑器上报）+ 挂起的切换目标动作（有改动时暂缓执行，等两态确认）。
+  // 未保存改动（右栏编辑器上报）。
   const [dirty, setDirty] = useState(false)
-  const dirtyRef = useRef(false)
   // 正文编辑器聚焦态（右栏编辑器上报；仅供标题栏工具栏按态显隐，不参与守卫判定）。
   const [editing, setEditing] = useState(false)
-  // 保存入口：右栏表单挂载时写入（切换确认「保存」据此落库当前草稿）。
-  const saveRef = useRef<(() => void) | null>(null)
-  const [pendingSwitch, setPendingSwitch] = useState<{ proceed: () => void } | null>(null)
+  // 保存入口：右栏表单挂载时写入（切换确认「保存」/ 关闭前 flush 据此落库当前草稿）。
+  const saveRef = useRef<(() => void | Promise<boolean>) | null>(null)
+  // 草稿重置键：放弃时递增，右栏 `PlotEditor` 以它为 key 重挂、草稿回退到场景行值。
+  const [draftResetKey, setDraftResetKey] = useState(0)
 
   const reportDirty = useCallback((next: boolean): void => {
-    dirtyRef.current = next
     setDirty(next)
   }, [])
 
@@ -126,26 +146,37 @@ export function usePlotWorkspace(bookId: string, activeTimelineId?: string | nul
     setEditing(next)
   }, [])
 
-  /** 切换守卫：无未保存改动立即执行；有改动则暂缓为该动作，等两态确认（保存 / 不保存）。 */
-  const guardSwitch = useCallback((proceed: () => void): void => {
-    if (!dirtyRef.current) {
-      proceed()
-      return
+  /** 无条件落库：无改动也应成功；无保存入口（表单未挂载）按失败处理，不假报成功。 */
+  const save = useCallback(async (): Promise<boolean> => {
+    const saveNow = saveRef.current
+    if (!saveNow) return false
+    try {
+      const result = saveNow()
+      // 表单无改动时 `saveNow` 直接返回 undefined（无写入）：视为成功。
+      if (result === undefined) return true
+      return (await result) !== false
+    } catch (error) {
+      log.warn('保存剧情正文草稿失败', error)
+      return false
     }
-    setPendingSwitch({ proceed })
   }, [])
 
-  const resolveSwitch = useCallback(
-    (save: boolean): void => {
-      const pending = pendingSwitch
-      setPendingSwitch(null)
-      // 草稿将随切换失效：「保存」先落库，「不保存」直接丢弃。
-      // 脏态由编辑器自行上报（切换后重挂的表单 / 空态会报净），此处不代写，避免与表单口径打架。
-      if (save) saveRef.current?.()
-      pending?.proceed()
-    },
-    [pendingSwitch]
-  )
+  /**
+   * 放弃当前草稿：清脏 + 递增重挂键。`PlotEditor` 常驻不卸载，只清脏会让表单
+   * 继续持有旧草稿却对外报净；重挂后草稿按场景行重新初始化，脏态随之归零。
+   */
+  const discardDraft = useCallback((): void => {
+    reportDirty(false)
+    setDraftResetKey((key) => key + 1)
+  }, [reportDirty])
+
+  const { guard, pending, confirming, resolve } = useUnsavedGuard({
+    dirty,
+    save,
+    discard: discardDraft
+  })
+  // 对外保持原 `guardSwitch` 名称 / void 签名（`boolean` 返回值可赋给 void 签名），调用点零改动。
+  const guardSwitch = guard
 
   const activeLineId =
     selectedLineId !== null && lines.some((row) => row.id === selectedLineId)
@@ -170,15 +201,26 @@ export function usePlotWorkspace(bookId: string, activeTimelineId?: string | nul
   )
 
   const createLine = useCallback(
-    async (name?: string, options?: CreatePlotLineOptions): Promise<PlotLineRow | null> => {
-      const created = await createPlotLine(name, options)
-      if (created) {
-        setSelectedLineId(created.id)
-        setSelectedSceneId(null)
+    (name?: string, options?: CreatePlotLineOptions): Promise<PlotLineRow | null> => {
+      // 入参在本次调用的闭包里捕获：挂起后延迟执行也按点击时的值新建，不读后续状态。
+      const run = async (): Promise<PlotLineRow | null> => {
+        const created = await createPlotLine(name, options)
+        if (created) {
+          setSelectedLineId(created.id)
+          setSelectedSceneId(null)
+        }
+        return created
       }
-      return created
+      // 有未保存改动时先挂起（新建会切走当前草稿，交右栏两态确认后再建）；
+      // 此刻尚未创建，按「未产生新行」返回 null（调用方仅 void 调用，不消费返回值）。
+      // 用容器接收挂起回调内的返回值：脏时回调不执行，容器保持 undefined。
+      const started: { task?: Promise<PlotLineRow | null> } = {}
+      guardSwitch(() => {
+        started.task = run()
+      })
+      return started.task ?? Promise.resolve(null)
     },
-    [createPlotLine]
+    [guardSwitch, createPlotLine]
   )
 
   const renameLine = useCallback(
@@ -197,10 +239,13 @@ export function usePlotWorkspace(bookId: string, activeTimelineId?: string | nul
 
   const deleteLine = useCallback(
     (id: number): void => {
-      if (selectedLineId === id) setSelectedLineId(null)
-      void deletePlotLine(id)
+      // 有未保存改动时先挂起（删除会切走当前草稿，交右栏两态确认后再删）。
+      guardSwitch(() => {
+        if (selectedLineId === id) setSelectedLineId(null)
+        void deletePlotLine(id)
+      })
     },
-    [selectedLineId, deletePlotLine]
+    [guardSwitch, selectedLineId, deletePlotLine]
   )
 
   const addScene = useCallback(
@@ -234,7 +279,7 @@ export function usePlotWorkspace(bookId: string, activeTimelineId?: string | nul
   )
 
   const updateScene = useCallback(
-    (id: number, patch: UpdatePlotScenePatch): Promise<void> => updatePlotScene(id, patch),
+    (id: number, patch: UpdatePlotScenePatch): Promise<boolean> => updatePlotScene(id, patch),
     [updatePlotScene]
   )
 
@@ -262,8 +307,12 @@ export function usePlotWorkspace(bookId: string, activeTimelineId?: string | nul
     editing,
     reportEditing,
     saveRef,
-    switchPending: pendingSwitch !== null,
-    resolveSwitch,
+    discardDraft,
+    draftResetKey,
+    switchPending: pending,
+    confirming,
+    resolveSwitch: resolve,
+    guardSwitch: guard,
     selectLine,
     createLine,
     renameLine,

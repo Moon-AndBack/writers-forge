@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Editor } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
@@ -24,6 +24,7 @@ import OutlineSearchView from './OutlineSearchView'
 import OutlineTrashView from './OutlineTrashView'
 import { TableContextMenu } from '../../../components/editor/TableContextMenu'
 import { useOutlineDoc } from './useOutlineDoc'
+import { useSyncFlushHandler } from '../../../shell/beforeCloseFlush'
 import { useOutlineSearch } from './useOutlineSearch'
 import { useOutlineTitle } from './useOutlineTitle'
 
@@ -75,6 +76,8 @@ export interface OutlineEditorProps {
   onCreateNonVolumeChapter: (title: string) => void
   /** 新建分组容器（创建弹窗提交；`title` 可空 = 默认名分组）。 */
   onCreateGroup: (title: string) => void
+  /** 立即落盘入口（写入本视图 `flush`，卸载置空）：页面层关闭前统一 flush 用。 */
+  flushRef?: RefObject<(() => Promise<void>) | null>
 }
 
 /**
@@ -97,7 +100,8 @@ export default function OutlineEditor({
   onTrashChanged,
   onRefreshVolumes,
   onCreateNonVolumeChapter,
-  onCreateGroup
+  onCreateGroup,
+  flushRef
 }: OutlineEditorProps) {
   const { t, i18n } = useTranslation('outline')
   // 「最后编辑」文案复用 `chapters` ns 现有 key（`editor.lastEdited`）——避免语义重复的并列 key（§10 明确允许组件内多次 useTranslation 跨 ns 取用）。
@@ -134,6 +138,7 @@ export default function OutlineEditor({
     contentId,
     editor
   })
+  useSyncFlushHandler(flushRef, flush)
 
   // 绑定 update：引用稳定，effect 保证只挂一次、卸载时解除。
   useEffect(() => {

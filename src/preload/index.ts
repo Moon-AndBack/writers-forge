@@ -78,6 +78,21 @@ const api = {
     electron: process.versions.electron
   },
   ping: (): string => 'pong',
+  /** 应用关闭流程：主进程关窗前先通知渲染层统一落盘，收到回执后才真正关闭窗口 */
+  app: {
+    /** 订阅「即将关闭」通知，返回取消订阅函数（内部 removeListener，不暴露 ipcRenderer） */
+    onBeforeClose: (callback: () => void): (() => void) => {
+      const listener = (): void => callback()
+      ipcRenderer.on('app:before-close', listener)
+      return () => {
+        ipcRenderer.removeListener('app:before-close', listener)
+      }
+    },
+    /** 落盘完成回执；主进程收到后才关窗（约 3 秒未回执则超时强制关闭） */
+    notifyCloseReady: (): void => {
+      ipcRenderer.send('app:close-ready')
+    }
+  },
   books: {
     list: (): Promise<BookRow[]> => ipcRenderer.invoke('books:list'),
     get: (id: string): Promise<BookRow | null> => ipcRenderer.invoke('books:get', id),

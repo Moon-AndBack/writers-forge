@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, type Input } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, type Input, type IpcMainEvent } from 'electron'
 import { join } from 'node:path'
 import { logger } from './logger'
 import { installContentSecurityPolicy, installNavigationGuards } from './security'
@@ -48,6 +48,85 @@ function registerDevToolsShortcut(win: BrowserWindow): void {
       win.webContents.openDevTools({ mode: 'detach' })
     }
   })
+}
+
+/** 关窗时等待渲染层落盘回执的上限（ms）；超时强制关闭，避免窗口关不掉。 */
+const BEFORE_CLOSE_TIMEOUT_MS = 3000
+
+/** 主进程 → 渲染层：「即将关闭，请统一落盘」。 */
+const BEFORE_CLOSE_CHANNEL = 'app:before-close'
+
+/** 渲染层 → 主进程：「落盘完成，可以关闭」。 */
+const CLOSE_READY_CHANNEL = 'app:close-ready'
+
+/**
+ * 关窗前等待渲染层落盘：拦截首次 `close` → 通知渲染层 → 等回执 / 3 秒超时 → 真正关闭。
+ *
+ * 状态机：
+ * - 首次 close：`preventDefault`，置 `closePending`，注册回执监听 + 超时定时器，发通知；
+ * - 回执（且 sender 为本窗口）：清理监听 / 定时器，置 `allowClose` 后 `close()` 放行；
+ * - 超时：清理监听 / 定时器后 `destroy()`，保证窗口一定关得掉；
+ * - 期间重复点关闭：`closePending` 为真，只 `preventDefault`，不重复发通知；
+ * - 窗口 / webContents 已销毁：直接放行（不拦截）。
+ *
+ * 回执用 `ipcMain.on` 读取 `event.sender` 精确比对，而非 `once`——`once` 会被
+ * 其它窗口（未来多窗口 / 异常 sender）的首条消息消耗掉，导致本窗口只能等超时。
+ */
+function registerCloseFlushGate(win: BrowserWindow): void {
+  const contents = win.webContents
+  let allowClose = false
+  let closePending = false
+  let timer: NodeJS.Timeout | null = null
+
+  const cleanup = (): void => {
+    if (timer) {
+      clearTimeout(timer)
+      timer = null
+    }
+    ipcMain.removeListener(CLOSE_READY_CHANNEL, onCloseReady)
+  }
+
+  /** 收到回执：放行 close（仍走 windowState 的尺寸补写等既有 close 监听）。 */
+  const finishClose = (): void => {
+    cleanup()
+    closePending = false
+    allowClose = true
+    if (!win.isDestroyed()) win.close()
+  }
+
+  function onCloseReady(event: IpcMainEvent): void {
+    // 只受理本窗口的回执，其它来源一律忽略（监听保留，继续等本窗口）。
+    if (event.sender !== contents) return
+    finishClose()
+  }
+
+  win.on('close', (event) => {
+    if (allowClose || win.isDestroyed() || contents.isDestroyed()) return
+
+    event.preventDefault()
+    if (closePending) return
+
+    closePending = true
+    ipcMain.on(CLOSE_READY_CHANNEL, onCloseReady)
+    timer = setTimeout(() => {
+      log.warn('等待渲染层落盘超时，强制关闭窗口', { timeoutMs: BEFORE_CLOSE_TIMEOUT_MS })
+      cleanup()
+      closePending = false
+      allowClose = true
+      if (!win.isDestroyed()) win.destroy()
+    }, BEFORE_CLOSE_TIMEOUT_MS)
+
+    try {
+      contents.send(BEFORE_CLOSE_CHANNEL)
+    } catch (error) {
+      // 发送失败（渲染进程异常）不阻塞关闭：直接走放行路径。
+      log.warn('通知渲染层关闭前落盘失败，直接关闭窗口', error)
+      finishClose()
+    }
+  })
+
+  // 兜底清理：任何路径关窗（含外部 destroy）都不留下挂在 ipcMain 上的监听 / 定时器。
+  win.once('closed', cleanup)
 }
 
 /**
@@ -100,6 +179,9 @@ export function createMainWindow(): BrowserWindow {
 
   // 持久化非最大化窗口尺寸（resize 防抖写库，close 补写）
   registerWindowSizePersistence(mainWindow)
+
+  // 关窗前先等渲染层统一落盘（与上面的尺寸补写监听共存：先补写尺寸，再拦截关闭）
+  registerCloseFlushGate(mainWindow)
 
   log.info('主窗口已创建', {
     width: initialSize.width,

@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { useToast } from '../components/ui'
 import { RichTextEditorProvider } from '../components/editor/richTextEditorProvider'
 import type { RichTextEditorSlots } from '../components/editor/richTextEditorContext'
-import type { WriterModule } from '../shell/activityBar'
 import { useActivityBar, useRegisterActivityBar } from '../shell/activityBarContext'
 import { useRegisterUnsavedSwitchGuard } from '../shell/unsavedSwitchGuard'
+import { useRegisterBeforeCloseFlush } from '../shell/beforeCloseFlush'
 import { useRightPaneVisibility } from '../shell/rightPaneVisibility'
 import EditorPane from './writer/EditorPane'
 import { ConfirmDialog } from './writer/ConfirmDialog'
@@ -24,6 +24,8 @@ import { useTimelineStatusBar } from './writer/timeline/useTimelineStatusBar'
 import { useTimelineWorkspace } from './writer/timeline/useTimelineWorkspace'
 import { useDossierBundle } from './writer/dossier/useDossierBundle'
 import { usePlotTimelineBundle } from './writer/usePlotTimelineBundle'
+import { useFlushAllModules } from './writer/useFlushAllModules'
+import { useWriterModuleSwitch } from './writer/useWriterModuleSwitch'
 import '../styles/writer.css'
 
 /* 分隔条 clamp 边界与默认宽（宽度仅在本次运行内保留，不落库） */
@@ -183,8 +185,49 @@ export default function Writer({ bookId }: WriterProps) {
     onSelectTimelineScene: handleSelectTimelineScene
   } = usePlotTimelineBundle(plot, rightPaneHidden, showRightPane)
 
+  /* 时间线切换 / 新建是会改变剧情线过滤集的「跨域切换」：本 hook 之外改 `activeId`
+     会让右栏表单按 `key={scene.id}` 重挂、草稿静默丢失，因此统一经剧情守卫包一层
+     （有未保存草稿 → 挂起并由右栏两态确认，确认后执行；无改动 → 直接执行）。
+     同一时间线早退：`Select` 对当前项、`TimelinePanel` 点当前行都会触发 onChange，
+     此时无实际变化，不应弹框。 */
+  // 先取出稳定成员再进回调依赖，避免整个 `timeline` / `plot` 装配对象入依赖（每次渲染新引用）。
+  const { activeId: activeTimelineId, selectTimeline, createTimeline } = timeline
+  const { guardSwitch: guardPlotSwitch } = plot
+  const handleSelectTimeline = useCallback(
+    (id: string): void => {
+      if (id === activeTimelineId) return
+      guardPlotSwitch(() => selectTimeline(id))
+    },
+    [activeTimelineId, selectTimeline, guardPlotSwitch]
+  )
+
+  // 新建时间线内部同样 `setActiveId`（隐式切换），入参与返回值语义保持原样：
+  // 调用方仅 `void` 调用、不消费返回值，故包装后仍以 void 暴露。
+  const handleCreateTimeline = useCallback(
+    (name: string, origin?: string): void => {
+      guardPlotSwitch(() => {
+        void createTimeline(name, origin)
+      })
+    },
+    [guardPlotSwitch, createTimeline]
+  )
+
   // 设定档案四域透传包（仅活动模块为四域之一时非空；选中 + 右栏隐藏时自动展开已收进 hook）。
   const dossierBundle = useDossierBundle(active, bookId ?? '', rightPaneHidden, showRightPane)
+
+  /* ---------- 关闭前统一 flush（外壳调用；主进程生命周期接线在下一步） ----------
+     各模块未落库内容统一在此聚合落库：章节 / 大纲由中栏常驻视图经 ref 写入落盘入口，
+     剧情用右栏表单的保存入口，设定档案用 `saveDraft`；任一模块失败不阻断其它，
+     整体恒 resolve（见 `useFlushAllModules`）。 */
+  const chapterFlushRef = useRef<(() => Promise<void>) | null>(null)
+  const outlineFlushRef = useRef<(() => Promise<void>) | null>(null)
+  const { flushAll, flushModule } = useFlushAllModules({
+    chapterFlushRef,
+    outlineFlushRef,
+    plotSaveRef: plot.saveRef,
+    saveDossierDraft: dossierBundle?.saveDraft ?? null
+  })
+  useRegisterBeforeCloseFlush(flushAll)
 
   // 设定档案右栏正文编辑器的聚焦态（真源在本页）：右栏 `DossierBodyEditor` 经通用注册表
   // `useRichTextEditor('dossier').reportEditing` 上报，标题栏动作据此切换「新建 / 工具栏」两态。
@@ -202,66 +245,23 @@ export default function Writer({ bookId }: WriterProps) {
 
   /* ---------- 模块切换未保存守卫（活动栏图标 / 筛选浮层发起） ----------
      外壳经 `useRequestSwitch` 把目标模块交给本页裁决：
-     同模块 / 无脏 → 直接切；设定档案有脏草稿 → 弹两态确认（保存并切换 / 放弃并切换）。
-     与右栏域内 `switchPending`（切条目）是两个独立场景，状态互不复用。 */
-  const [pendingModule, setPendingModule] = useState<WriterModule | null>(null)
-  const [moduleSwitchSaving, setModuleSwitchSaving] = useState(false)
+     同模块 / 无脏 → 直接切；当前模块（五域 / 剧情）有脏草稿 → 弹两态确认。
+     脏态判定、保存 / 放弃分派与章节 / 大纲切走前强制落库均收进
+     `useWriterModuleSwitch`；与右栏域内 `switchPending`（切条目）是两个独立场景。 */
   // 保存失败提示（不切换、脏态保留，可重试）。
   const { show: showSaveFailed, node: saveFailedToast } = useToast()
   const { t: tCommon } = useTranslation('common')
   const { t: tModule } = useTranslation('module')
 
-  const dossierDirty = dossierBundle?.dirty ?? false
-
-  const handleModuleSwitch = useCallback(
-    (target: WriterModule): void => {
-      // 同模块：没有「切换」动作，不打扰用户。
-      if (target === active) return
-      // 当前模块无脏草稿（其它模块暂无手动保存草稿）：直接切。
-      if (!dossierDirty) {
-        setActive(target)
-        return
-      }
-      setPendingModule(target)
-    },
-    [active, dossierDirty, setActive]
-  )
-  useRegisterUnsavedSwitchGuard(handleModuleSwitch)
-
-  /** 「保存并切换」：等落库结果；失败则不切换、不清脏（关框 + 提示，可再点一次重试）。 */
-  const handleSaveAndSwitch = useCallback((): void => {
-    const target = pendingModule
-    if (target === null) return
-    setModuleSwitchSaving(true)
-    void (async () => {
-      let ok: boolean
-      try {
-        ok = dossierBundle ? await dossierBundle.saveDraft() : true
-      } catch {
-        // 保存入口异常一律按失败处理（不切换），避免未处理的 rejection。
-        ok = false
-      } finally {
-        setModuleSwitchSaving(false)
-      }
-      if (!ok) {
-        // 失败：脏态保留在表单里（`dirtyRef` 未清），再点一次「保存并切换」即可重试。
-        setPendingModule(null)
-        showSaveFailed(tCommon('saveFailed'))
-        return
-      }
-      setPendingModule(null)
-      setActive(target)
-    })()
-  }, [pendingModule, dossierBundle, setActive, showSaveFailed, tCommon])
-
-  /** Esc / 遮罩 /「放弃并切换」：**先清脏**再切，切模块的清理 effect 就不会二次静默保存。 */
-  const handleDiscardAndSwitch = useCallback((): void => {
-    const target = pendingModule
-    setPendingModule(null)
-    if (target === null) return
-    dossierBundle?.discardDraft()
-    setActive(target)
-  }, [pendingModule, dossierBundle, setActive])
+  const switchGuard = useWriterModuleSwitch({
+    active,
+    setActive,
+    plot,
+    dossier: dossierBundle,
+    flushModule,
+    onSaveFailed: () => showSaveFailed(tCommon('saveFailed'))
+  })
+  useRegisterUnsavedSwitchGuard(switchGuard.handleSwitch)
 
   return (
     <section className="app-view writer-view is-active" data-view="writer">
@@ -306,7 +306,7 @@ export default function Writer({ bookId }: WriterProps) {
             onDeletePlotLine={plot.deleteLine}
             timelineEntries={timeline.list}
             activeTimelineId={timeline.activeId}
-            onSelectTimeline={timeline.selectTimeline}
+            onSelectTimeline={handleSelectTimeline}
           />
 
           <Splitter
@@ -358,8 +358,10 @@ export default function Writer({ bookId }: WriterProps) {
             timelineOrigin={timeline.origin}
             activeTimelineName={timeline.activeEntry?.name}
             activeTimelineId={timeline.activeId}
-            onCreateTimeline={timeline.createTimeline}
+            onCreateTimeline={handleCreateTimeline}
             dossier={dossierBundle}
+            chapterFlushRef={chapterFlushRef}
+            outlineFlushRef={outlineFlushRef}
           />
 
           <Splitter
@@ -387,6 +389,8 @@ export default function Writer({ bookId }: WriterProps) {
             onPlotDirtyChange={plot.reportDirty}
             plotSaveRef={plot.saveRef}
             plotSwitchPending={plot.switchPending}
+            plotConfirming={plot.confirming}
+            plotDraftResetKey={plot.draftResetKey}
             onResolvePlotSwitch={plot.resolveSwitch}
             outlineVolumes={outlineVolumes}
             outlineItems={outlineItems}
@@ -406,18 +410,18 @@ export default function Writer({ bookId }: WriterProps) {
       {/* 模块切换未保存守卫确认框（两态：保存并切换 / 放弃并切换）；Esc / 遮罩 = 放弃并切换。
           与右栏域内 `switchPending`（切条目）是两个独立场景，不合并、不互相干扰。 */}
       <ConfirmDialog
-        open={pendingModule !== null}
+        open={switchGuard.pendingModule !== null}
         title={tCommon('unsavedModuleSwitch.title')}
         message={tCommon('unsavedModuleSwitch.message', {
           module: tModule(active),
-          target: tModule(pendingModule ?? active)
+          target: tModule(switchGuard.pendingModule ?? active)
         })}
         confirmText={tCommon('unsavedModuleSwitch.saveAndSwitch')}
         cancelText={tCommon('unsavedModuleSwitch.discardAndSwitch')}
         tone="default"
-        confirming={moduleSwitchSaving}
-        onConfirm={handleSaveAndSwitch}
-        onClose={handleDiscardAndSwitch}
+        confirming={switchGuard.confirming}
+        onConfirm={switchGuard.saveAndSwitch}
+        onClose={switchGuard.discardAndSwitch}
       />
       {saveFailedToast}
     </section>

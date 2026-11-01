@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { WriterModule } from '../../shell/activityBar'
 import PlaceholderView from './PlaceholderView'
@@ -107,6 +108,10 @@ export interface EditorPaneProps {
   onCreateTimeline?: (name: string, origin?: string) => void | Promise<unknown>
   /** 设定档案五域装配包（仅活动模块为五域之一时非空；中栏卡片视图消费）。 */
   dossier?: DossierBundle | null
+  /** 章节正文立即落盘入口（视图写入；页面层「关闭前统一 flush」聚合用）。 */
+  chapterFlushRef?: RefObject<(() => Promise<void>) | null>
+  /** 大纲正文立即落盘入口（视图写入；页面层「关闭前统一 flush」聚合用）。 */
+  outlineFlushRef?: RefObject<(() => Promise<void>) | null>
 }
 
 /** 骨架阶段占位视图的模块（顺序与模块栏「伏笔 / 灵感」一致）。 */
@@ -157,7 +162,9 @@ export function EditorPane({
   activeTimelineName,
   activeTimelineId,
   onCreateTimeline,
-  dossier = null
+  dossier = null,
+  chapterFlushRef,
+  outlineFlushRef
 }: EditorPaneProps) {
   // 占位模块显示名走 `module` i18n 命名空间（键即模块 id），随界面语言切换。
   const { t: tModule } = useTranslation('module')
@@ -228,6 +235,7 @@ export function EditorPane({
           onCreateVolume={onCreateVolume}
           onToggleTrash={onToggleTrash}
           trashOpen={trashOpen}
+          flushRef={chapterFlushRef}
         />
       </div>
 
@@ -261,6 +269,7 @@ export function EditorPane({
           onRefreshVolumes={onOutlineVolumesRefresh}
           onCreateNonVolumeChapter={onCreateOutlineNonVolumeChapter}
           onCreateGroup={onCreateOutlineGroup}
+          flushRef={outlineFlushRef}
         />
       </div>
 

@@ -32,8 +32,8 @@ export interface PlotTree {
   deleteLine: (id: number) => Promise<void>
   /** 在指定剧情线下新建场景（追加到末尾），成功返回新场景供选中。 */
   createScene: (lineId: number, input?: CreatePlotSceneInput) => Promise<PlotSceneRow | null>
-  /** 更新场景（仅覆盖提供的字段），写后就地更新该行（写操作串行化）。 */
-  updateScene: (id: number, patch: UpdatePlotScenePatch) => Promise<void>
+  /** 更新场景（仅覆盖提供的字段），写后就地更新该行（写操作串行化）；返回是否落库成功。 */
+  updateScene: (id: number, patch: UpdatePlotScenePatch) => Promise<boolean>
   /** 软删除场景，写后 reload。 */
   deleteScene: (id: number) => Promise<void>
 }
@@ -199,20 +199,24 @@ export function usePlotTree(bookId: string): PlotTree {
   )
 
   const updateScene = useCallback(
-    async (id: number, patch: UpdatePlotScenePatch): Promise<void> => {
+    async (id: number, patch: UpdatePlotScenePatch): Promise<boolean> => {
       const api = window.api?.plot
-      if (!api) return
+      if (!api) return false
+      // 写链串行：成败写入局部标志，链尾读取（关闭前统一 flush 需据此判断「是否落库」）。
+      let saved = false
       writeChainRef.current = writeChainRef.current.then(async () => {
         try {
           const updated = await api.updateScene(id, patch)
           if (updated) {
             setScenes((prev) => prev.map((row) => (row.id === id ? updated : row)))
+            saved = true
           }
         } catch (error) {
           log.warn('更新剧情场景失败', error)
         }
       })
-      return writeChainRef.current
+      await writeChainRef.current
+      return saved
     },
     []
   )

@@ -19,7 +19,7 @@ import { TimelineRightPanel } from './right/TimelineRightPanel'
 import type { TimelineEntry } from './timeline/timelineOrigin'
 
 /** 调用方未传保存入口时的占位 ref（仅保证必填契约，编辑器写入无副作用）。 */
-const EMPTY_SAVE_REF: RefObject<(() => void) | null> = { current: null }
+const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { current: null }
 
 /** 静态映射可承载的模块：排除章节（大纲 / 剧情 / AI 三页签）、大纲（剧情筛选面板）、剧情
  *  （节点正文编辑器）、时间线（props 单独渲染）与设定档案五域（右栏详情单独渲染）。 */
@@ -71,6 +71,8 @@ export function RightPane({
   onPlotDirtyChange,
   plotSaveRef,
   plotSwitchPending = false,
+  plotConfirming = false,
+  plotDraftResetKey = 0,
   onResolvePlotSwitch,
   timelineScene = null,
   activeTimelineId = null,
@@ -104,18 +106,25 @@ export function RightPane({
   plotLine?: PlotLineRow | null
   /** 当前选中剧情场景；null = 未选中（渲染空态）。 */
   plotScene?: PlotSceneRow | null
-  /** 保存剧情场景补丁（手动保存，仅变更字段；返回写入 promise 供「保存中」态）。 */
-  onUpdatePlotScene?: (id: number, patch: UpdatePlotScenePatch) => void | Promise<void>
+  /** 保存剧情场景补丁（手动保存，仅变更字段；返回写入 promise 供「保存中」态 / 关闭前 flush 判定成败）。 */
+  onUpdatePlotScene?: (id: number, patch: UpdatePlotScenePatch) => void | Promise<boolean>
   /** 剧情节点是否有未保存改动（保存按钮禁用态）。 */
   plotDirty?: boolean
   /** 剧情节点脏态上报（编辑器草稿与场景行比对结果）。 */
   onPlotDirtyChange?: (dirty: boolean) => void
-  /** 保存入口（编辑器挂载时写入；切换确认「保存」据此落库）。 */
-  plotSaveRef?: RefObject<(() => void) | null>
+  /** 保存入口（编辑器挂载时写入；切换确认「保存」/ 关闭前 flush 据此落库）。 */
+  plotSaveRef?: RefObject<(() => void | Promise<boolean>) | null>
   /** 是否有挂起的剧情切换（有改动时暂缓，弹两态确认）。 */
   plotSwitchPending?: boolean
-  /** 结算挂起的剧情切换：`save=true` 先保存再切换，`false` 丢弃草稿直接切换。 */
-  onResolvePlotSwitch?: (save: boolean) => void
+  /** 剧情切换保存结算中（确认弹框据此禁用按钮）。 */
+  plotConfirming?: boolean
+  /** 草稿重置键：递增即重挂 `PlotEditor`，把草稿回退到场景行值。 */
+  plotDraftResetKey?: number
+  /**
+   * 结算挂起的剧情切换：`save=true` 先保存再切换，`false` 丢弃草稿直接切换。
+   * 返回是否已切换：保存失败为 `false`（不切换、脏态保留）。
+   */
+  onResolvePlotSwitch?: (save: boolean) => void | Promise<boolean>
   /** 时间线选中场景（只读详情）；null = 未选中（渲染空态）。 */
   timelineScene?: PlotSceneRow | null
   /** 当前选中时间线 id（右栏 origin 面板跟随切换）。 */
@@ -190,6 +199,7 @@ export function RightPane({
       <div className={`rp-view${module === 'plot' ? ' is-active' : ''}`} data-view="plot">
         <div className="rp-body">
           <PlotEditor
+            key={`${plotScene?.id}-${plotDraftResetKey}`}
             line={plotLine}
             scene={plotScene}
             dirty={plotDirty}
@@ -206,8 +216,15 @@ export function RightPane({
           confirmText={tCommon('save')}
           cancelText={tPlot('dialog.unsavedSwitch.discard')}
           tone="default"
-          onConfirm={() => onResolvePlotSwitch?.(true)}
-          onClose={() => onResolvePlotSwitch?.(false)}
+          confirming={plotConfirming}
+          onConfirm={() => {
+            void Promise.resolve(onResolvePlotSwitch?.(true)).then((switched) => {
+              if (switched === false) showSaveFailed(tCommon('saveFailed'))
+            })
+          }}
+          onClose={() => {
+            void onResolvePlotSwitch?.(false)
+          }}
         />
       </div>
 
@@ -251,6 +268,7 @@ export function RightPane({
             confirmText={tCommon('save')}
             cancelText={tDossier('dialog.unsavedSwitch.discard')}
             tone="default"
+            confirming={dossier.confirming}
             onConfirm={() => {
               void dossier.onResolveSwitch(true).then((switched) => {
                 if (!switched) showSaveFailed(tCommon('saveFailed'))
@@ -260,7 +278,6 @@ export function RightPane({
               void dossier.onResolveSwitch(false)
             }}
           />
-          {saveFailedToast}
         </div>
       ) : null}
 
@@ -277,6 +294,9 @@ export function RightPane({
           </div>
         )
       })}
+
+      {/* 域内切换「保存」失败提示：剧情 / 设定档案共用，toast 走 portal，位置不影响视觉。 */}
+      {saveFailedToast}
     </aside>
   )
 }

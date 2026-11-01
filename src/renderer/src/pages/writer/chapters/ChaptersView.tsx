@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Editor } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
@@ -17,6 +17,7 @@ import { CleanWordMark } from './proofreadMark'
 import NewVolumeDialog from '../../../components/dialogs/NewVolumeDialog'
 import { useChapterSearch, type ChapterSearchHit } from './useChapterSearch'
 import { useChapterDoc } from './useChapterDoc'
+import { useSyncFlushHandler } from '../../../shell/beforeCloseFlush'
 import { useEntityHover } from '../entities/useEntityHover'
 import DocTitleRow from './DocTitleRow'
 import DocMeta from '../../../components/editor/DocMeta'
@@ -111,6 +112,8 @@ export interface ChaptersViewProps {
   trashOpen: boolean
   /** 新建卷（标题栏「新建卷」弹窗提交，页面层调 `createVolume`）。 */
   onCreateVolume: (input: CreateVolumeInput) => void
+  /** 立即落盘入口（写入本视图 `flush`，卸载置空）：页面层关闭前统一 flush 用。 */
+  flushRef?: RefObject<(() => Promise<void>) | null>
 }
 
 /**
@@ -129,7 +132,8 @@ export default function ChaptersView({
   onContentChanged,
   onToggleTrash,
   trashOpen,
-  onCreateVolume
+  onCreateVolume,
+  flushRef
 }: ChaptersViewProps) {
   const { t, i18n } = useTranslation('chapters')
   const safeBookId = bookId ?? ''
@@ -215,6 +219,7 @@ export default function ChaptersView({
     chapterId,
     editor
   })
+  useSyncFlushHandler(flushRef, flush)
 
   /* ---------- 搜索 / 替换浮窗（右上侧） ---------- */
   const [searchOpen, setSearchOpen] = useState(false)

@@ -33,14 +33,14 @@ export interface PlotEditorProps {
   line: PlotLineRow | null
   /** 当前选中场景节点；null = 未选中（渲染空态）。 */
   scene: PlotSceneRow | null
-  /** 保存场景补丁（仅覆盖提供的字段；返回写入 promise 供「保存中」态）。 */
-  onUpdateScene: (id: number, patch: UpdatePlotScenePatch) => void | Promise<void>
+  /** 保存场景补丁（仅覆盖提供的字段；返回写入 promise 供「保存中」态 / 关闭前 flush 判定成败）。 */
+  onUpdateScene: (id: number, patch: UpdatePlotScenePatch) => void | Promise<boolean>
   /** 脏态上报（右栏：保存按钮禁用态 + 切换守卫据此拦截）。 */
   onDirtyChange: (dirty: boolean) => void
   /** 未保存改动（真源为本表单草稿比对，经右栏回传后驱动保存按钮；无改动 = 净态）。 */
   dirty: boolean
-  /** 保存入口：表单挂载时写入 `saveNow`（仅变更字段补丁），供切换确认「保存」调用。 */
-  saveRef: RefObject<(() => void) | null>
+  /** 保存入口：表单挂载时写入 `saveNow`（仅变更字段补丁），供切换确认「保存」/ 关闭前 flush 调用。 */
+  saveRef: RefObject<(() => void | Promise<boolean>) | null>
 }
 
 /**
@@ -99,9 +99,9 @@ interface PlotEditorFormProps {
   scene: PlotSceneRow
   /** 未保存改动（右栏持有时回传；本表单仅上报比对结果，不自行改写）。 */
   dirty: boolean
-  onUpdateScene: (id: number, patch: UpdatePlotScenePatch) => void | Promise<void>
+  onUpdateScene: (id: number, patch: UpdatePlotScenePatch) => void | Promise<boolean>
   onDirtyChange: (dirty: boolean) => void
-  saveRef: RefObject<(() => void) | null>
+  saveRef: RefObject<(() => void | Promise<boolean>) | null>
 }
 
 /** 单节点编辑表单（按 `scene.id` 重建，内部持草稿；手动保存 + 脏态上报）。 */
@@ -134,11 +134,15 @@ function PlotEditorForm({
   }, [])
 
   // 手动保存：仅落变更字段；无改动为空操作（与按钮禁用态同口径）。
-  const saveNow = useCallback((): void => {
-    if (!changed) return
+  // 返回值 = 是否落库成功（无改动视为成功），供父层「关闭前统一 flush」await。
+  const saveNow = useCallback((): void | Promise<boolean> => {
+    if (!changed) return Promise.resolve(true)
     setSaving(true)
     // 写完（含失败）即复位：失败下 dirty 仍为 true，按钮可再次点击重试。
-    void Promise.resolve(onUpdateScene(scene.id, patch)).finally(() => setSaving(false))
+    return Promise.resolve(onUpdateScene(scene.id, patch))
+      .then((ok) => ok !== false)
+      .catch(() => false)
+      .finally(() => setSaving(false))
   }, [changed, onUpdateScene, patch, scene.id])
 
   // 上报脏态（右栏保存按钮 + 切换守卫），并把保存入口交给父层（切换确认「保存」调用）；

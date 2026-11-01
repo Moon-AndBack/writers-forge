@@ -264,6 +264,8 @@ export interface DossierWorkspace {
   switchPending: boolean
   /** 结算挂起的切换：`save=true` 先保存草稿再切换，`false` 丢弃草稿直接切换。 */
   resolveSwitch: (save: boolean) => Promise<boolean>
+  /** 保存结算中：确认弹框禁用按钮，期间重复结算一律忽略。 */
+  confirming: boolean
   /** 选中某行（不触发右栏展开，展开由页面层包装）。 */
   select: (id: number) => void
   /** 新建（名称必填），成功后选中新行并返回其 id（失败 / 守卫回 null）。 */
@@ -319,6 +321,8 @@ export interface DossierBundle {
   switchPending: boolean
   /** 结算挂起的切换：`save=true` 先保存再切换，`false` 丢弃草稿直接切换；返回是否已切换。 */
   onResolveSwitch: (save: boolean) => Promise<boolean>
+  /** 保存结算中：确认弹框禁用按钮，期间重复结算一律忽略。 */
+  confirming: boolean
   /** 选中某行（页面层包装：选中 + 右栏隐藏时自动展开）。 */
   onSelect: (id: number) => void
   /** 新建（名称必填），成功后选中新行并返回其 id（失败 / 守卫回 null）。 */
