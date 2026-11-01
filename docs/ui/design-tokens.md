@@ -54,7 +54,7 @@
 | `--page-width`       | `620px`                                    | 正文栏最大宽度                                                     |
 | `--doc-font`         | 系统默认字体栈                             | 文档正文，与 `typographyContext.ts` 的 `DEFAULT_DOC_FONT` 逐字一致 |
 | `--doc-line`         | `2`                                        | 正文行高倍数                                                       |
-| `--doc-zoom`         | `1`                                        | 正文缩放，`calc(16px * var(--doc-zoom))`                           |
+| `--doc-zoom`         | `1`                                        | 正文缩放，`calc(18px * var(--doc-zoom))`                           |
 | `--doc-letter`       | `0.01em`                                   | 正文字距                                                           |
 | `--r-xs`             | `4px`                                      | 小圆角（最常用，70+ 处）                                           |
 | `--r-lg`             | `8px`                                      | 大圆角                                                             |

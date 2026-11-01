@@ -1,6 +1,6 @@
 .doc-body {
   font-family: var(--doc-font);
-  font-size: calc(16px * var(--doc-zoom));
+  font-size: calc(18px * var(--doc-zoom));
   line-height: var(--doc-line);
   letter-spacing: var(--doc-letter);
   color: var(--doc-text);
@@ -44,7 +44,7 @@
    oblique 渲染：字形墨迹沿基线**向右**倾斜溢出（实测 0.12–0.156em），基线下方
    墨迹略向左溢。紧邻的普通文字 / 标点 / 高亮色块边缘会被墨迹挤压。
    此处为斜体行内盒左右各留间距，随字号与 --doc-zoom 等比
-   （.doc-body font-size = calc(16px × var(--doc-zoom))，em 随之缩放）：
+   （.doc-body font-size = calc(18px × var(--doc-zoom))，em 随之缩放）：
      - 右 0.16em：覆盖实测最大右溢，与 entity-highlight.css 的右侧出血同口径；
      - 左 0.06em：覆盖基线下方墨迹的左溢（幅度小于右溢）。
    代价与取舍：斜体行内盒净宽 +0.22em，属「有意增距」——纯 CSS 无法在零净宽下
