@@ -68,7 +68,11 @@
     "prettier": "^3.9.9",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.1",
-    "vite": "^7.3.7"
+    "vite": "^7.3.7",
+    "wawoff2": "^2.0.1"
+  },
+  "config": {
+    "electron_mirror": "https://npmmirror.com/mirrors/electron/"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

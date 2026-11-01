@@ -1,17 +1,15 @@
 /**
  * 排版命名空间（`typography`）：状态栏排版胶囊的档位展示名与弹窗标签。
- * 正文字体展示名（含 8 个字体品牌名）随语言切换；字体档位的 `value`（CSS 族名）
+ * 正文字体展示名（含 6 个字体品牌名）随语言切换；字体档位的 `value`（CSS 族名）
  * 仍为不译常量，保留在 typographyContext.ts 中。
  */
 const typography = {
   font: {
     system: '系统默认',
-    alibabaPuHuiTi: '阿里巴巴普惠体',
     lxgwNeoXiHeiPlus: '霞鹜新晰黑＋',
     lxgwWenKai: '霞鹜文楷',
     lxgwWenKaiScreen: '霞鹜文楷屏幕版',
     lxgwZhenKaiGB: '霞鹜臻楷 GB',
-    miSans: 'MiSans',
     moonStarsKai: '月星楷',
     wenYuanRounded: '文渊圆体'
   },

@@ -9,12 +9,10 @@ import type { ZhCNResources } from '../zh-CN'
 const typography = {
   font: {
     system: 'System default',
-    alibabaPuHuiTi: 'Alibaba PuHuiTi',
     lxgwNeoXiHeiPlus: 'LXGW Neo XiHei Plus',
     lxgwWenKai: 'LXGW WenKai',
     lxgwWenKaiScreen: 'LXGW WenKai Screen',
     lxgwZhenKaiGB: 'LXGW ZhenKai GB',
-    miSans: 'MiSans',
     moonStarsKai: 'Moon Stars Kai',
     wenYuanRounded: 'WenYuan Rounded'
   },

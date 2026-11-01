@@ -31,16 +31,14 @@ export const TYPOGRAPHY_CSS_VARS = {
 export const TYPOGRAPHY_SETTING_KEY = 'typography'
 
 /** 字体档位：展示名走 `labelKey`（可译，取 `typography` ns），`value` 为 --doc-font 的
- *  CSS 族名（不译、逐字固定，作为持久化键）。展示名含 8 个字体品牌名。 */
+ *  CSS 族名（不译、逐字固定，作为持久化键）。共 7 档：系统默认 + 6 个字体品牌名。 */
 export type FontOption = {
   labelKey:
     | 'font.system'
-    | 'font.alibabaPuHuiTi'
     | 'font.lxgwNeoXiHeiPlus'
     | 'font.lxgwWenKai'
     | 'font.lxgwWenKaiScreen'
     | 'font.lxgwZhenKaiGB'
-    | 'font.miSans'
     | 'font.moonStarsKai'
     | 'font.wenYuanRounded'
   value: string
@@ -51,12 +49,10 @@ export const FONT_OPTIONS: readonly FontOption[] = [
     labelKey: 'font.system',
     value: "system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif"
   },
-  { labelKey: 'font.alibabaPuHuiTi', value: "'Alibaba PuHuiTi 3.0', serif" },
   { labelKey: 'font.lxgwNeoXiHeiPlus', value: "'LXGW Neo XiHei Plus', sans-serif" },
   { labelKey: 'font.lxgwWenKai', value: "'LXGW WenKai', serif" },
   { labelKey: 'font.lxgwWenKaiScreen', value: "'LXGW WenKai GB Screen', serif" },
   { labelKey: 'font.lxgwZhenKaiGB', value: "'LXGW ZhenKai GB', serif" },
-  { labelKey: 'font.miSans', value: "'MiSans L3', sans-serif" },
   { labelKey: 'font.moonStarsKai', value: "'Moon Stars Kai', serif" },
   { labelKey: 'font.wenYuanRounded', value: "'WenYuan Rounded SC', sans-serif" }
 ]

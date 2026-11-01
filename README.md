@@ -33,7 +33,11 @@ npm install
 npm run dev
 ```
 
-仓库内 `.npmrc` 已配置 npmmirror 的 Electron 二进制镜像（`electron_mirror`），仅影响安装阶段，可按需覆盖。
+Electron 二进制镜像配置在 `package.json` 的 `config.electron_mirror`（npmmirror）。npm 执行脚本时会将该字段导出为 `npm_package_config_electron_mirror`，由 `@electron/get` 读取；`.npmrc` 不再保存该键（npm 11 会对未知的项目级键告警）。
+
+注意：Electron 44 **不会在 `npm install` 阶段下载二进制**，而是在首次 `npm run dev`（或 `npm run build:win`）时由 `@electron/get` 惰性下载。
+
+如需更换镜像，按 `@electron/get` 的读取优先级从高到低为：`npm_config_electron_mirror`（环境变量）→ `NPM_CONFIG_ELECTRON_MIRROR` → `npm_package_config_electron_mirror`（即本仓库 `package.json`）→ `ELECTRON_MIRROR`。因此要覆盖本仓库配置，请使用 `npm_config_electron_mirror`；单独设置 `ELECTRON_MIRROR` 不会生效。
 
 ### 生成应用图标（首次克隆后必做）
 
