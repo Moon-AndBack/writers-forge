@@ -36,15 +36,16 @@ export interface DossierMutationsOptions {
   bookId: string
   /** 重新拉取列表（组合层提供）。 */
   reload: () => Promise<void>
-  /** 立即落库当前草稿（有脏才写；新建前调用）。 */
-  flushDraft: () => Promise<void>
+  /** 立即落库当前草稿（有脏才写；新建前调用）；返回值 = 是否落库成功。 */
+  flushDraft: () => Promise<boolean>
   /** 写后本地状态回填。 */
   writeBack: DossierWriteBack
 }
 
 export interface DossierMutations {
   create: (input: DossierCreateInput) => Promise<number | null>
-  update: (id: number, patch: DossierUpdatePatch) => Promise<void>
+  /** 更新某行；返回值 = 是否真的落库成功（守卫回 false / 异常也 false）。 */
+  update: (id: number, patch: DossierUpdatePatch) => Promise<boolean>
   remove: (id: number) => Promise<void>
   addRelation: (id: number, input: DossierRelationInput) => Promise<void>
   updateRelation: (id: number, refId: number, patch: DossierRelationPatch) => Promise<void>
@@ -107,11 +108,14 @@ export function useDossierMutations({
   )
 
   const update = useCallback(
-    async (id: number, patch: DossierUpdatePatch): Promise<void> => {
-      if (!active) return
+    async (id: number, patch: DossierUpdatePatch): Promise<boolean> => {
+      if (!active) return false
       const api = window.api?.worldEntity
-      if (!api) return
-      writeChainRef.current = writeChainRef.current.then(async () => {
+      if (!api) return false
+      // 本次调用的成败记在自己的闭包里：写链恒 resolve（下面已吞错），
+      // 一次失败不会卡死后续串行写入，调用方（保存守卫）仍拿到本次真实结果。
+      let ok = false
+      const run = writeChainRef.current.then(async () => {
         try {
           const updated = await api.update(id, patch)
           if (!updated) return
@@ -120,11 +124,14 @@ export function useDossierMutations({
           // 详情不携带列表关系摘要（见 `WorldEntityRow.relations`），沿用行上既有摘要。
           writeBack.patchRow(active, id, updated)
           writeBack.patchDetail(active, updated)
+          ok = true
         } catch (error) {
           log.warn('更新设定档案失败', error)
         }
       })
-      return writeChainRef.current
+      writeChainRef.current = run
+      await run
+      return ok
     },
     [active, writeBack]
   )

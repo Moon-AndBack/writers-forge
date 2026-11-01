@@ -255,17 +255,21 @@ export interface DossierWorkspace {
   /** 右栏编辑器上报脏态（表单挂载后按草稿与详情比对调用）。 */
   reportDirty: (dirty: boolean) => void
   /** 保存入口 ref：右栏表单挂载时写入 `saveNow`（仅变更字段补丁），供切换确认「保存」调用。 */
-  saveRef: RefObject<(() => void | Promise<void>) | null>
+  saveRef: RefObject<(() => void | Promise<boolean>) | null>
+  /** 立即落库当前草稿；返回值 = 是否落库成功（无脏视为成功）。模块切换守卫据此决定是否切换。 */
+  saveDraft: () => Promise<boolean>
+  /** 放弃当前草稿（先清脏）：「放弃并切换」必须先清脏，否则切模块的清理 effect 会二次静默保存。 */
+  discardDraft: () => void
   /** 是否有挂起的切换（有改动时点选卡片 / 新建暂缓，等两态确认）。 */
   switchPending: boolean
   /** 结算挂起的切换：`save=true` 先保存草稿再切换，`false` 丢弃草稿直接切换。 */
-  resolveSwitch: (save: boolean) => void
+  resolveSwitch: (save: boolean) => Promise<boolean>
   /** 选中某行（不触发右栏展开，展开由页面层包装）。 */
   select: (id: number) => void
   /** 新建（名称必填），成功后选中新行并返回其 id（失败 / 守卫回 null）。 */
   create: (input: DossierCreateInput) => Promise<number | null>
-  /** 更新某行（仅变更字段补丁；走写链串行化）。 */
-  update: (id: number, patch: DossierUpdatePatch) => Promise<void>
+  /** 更新某行（仅变更字段补丁；走写链串行化）；返回值 = 是否落库成功。 */
+  update: (id: number, patch: DossierUpdatePatch) => Promise<boolean>
   /** 软删除某行。 */
   remove: (id: number) => Promise<void>
   /** 新增出边关系（关系类型取语义码；目标可跨模块）。 */
@@ -306,17 +310,21 @@ export interface DossierBundle {
   /** 右栏编辑器上报脏态。 */
   onDirtyChange: (dirty: boolean) => void
   /** 保存入口（右栏表单挂载时写入；切换确认「保存」/ 切模块兜底据此落库）。 */
-  saveRef: RefObject<(() => void | Promise<void>) | null>
+  saveRef: RefObject<(() => void | Promise<boolean>) | null>
+  /** 立即落库当前草稿；返回值 = 是否落库成功（模块切换守卫据此决定是否切换）。 */
+  saveDraft: () => Promise<boolean>
+  /** 放弃当前草稿（先清脏）：「放弃并切换」必须先清脏，否则切模块的清理 effect 会二次静默保存。 */
+  discardDraft: () => void
   /** 是否有挂起的切换（有改动时点选卡片 / 新建暂缓，等两态确认）。 */
   switchPending: boolean
-  /** 结算挂起的切换：`save=true` 先保存再切换，`false` 丢弃草稿直接切换。 */
-  onResolveSwitch: (save: boolean) => void
+  /** 结算挂起的切换：`save=true` 先保存再切换，`false` 丢弃草稿直接切换；返回是否已切换。 */
+  onResolveSwitch: (save: boolean) => Promise<boolean>
   /** 选中某行（页面层包装：选中 + 右栏隐藏时自动展开）。 */
   onSelect: (id: number) => void
   /** 新建（名称必填），成功后选中新行并返回其 id（失败 / 守卫回 null）。 */
   onCreate: (input: DossierCreateInput) => Promise<number | null>
-  /** 更新（名称 / 子类 / 别名 / 标签 / 正文 / 子类专属字段补丁；返回写入 promise）。 */
-  onUpdate: (id: number, patch: DossierUpdatePatch) => void | Promise<void>
+  /** 更新（名称 / 子类 / 别名 / 标签 / 正文 / 子类专属字段补丁；返回值 = 是否落库成功）。 */
+  onUpdate: (id: number, patch: DossierUpdatePatch) => Promise<boolean>
   /** 软删除某行。 */
   onDelete: (id: number) => void
   /**

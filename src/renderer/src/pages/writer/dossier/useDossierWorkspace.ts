@@ -46,8 +46,16 @@ export function useDossierWorkspace(module: WriterModule, bookId: string): Dossi
   })
 
   // 脏态 / 保存入口 / 切换守卫（含切模块 / 换书的自动保存兜底）。
-  const { dirty, reportDirty, flushDraft, saveRef, switchPending, resolveSwitch, guardSwitch } =
-    useDossierDirtyGuard(active, bookId)
+  const {
+    dirty,
+    reportDirty,
+    flushDraft,
+    discardDraft,
+    saveRef,
+    switchPending,
+    resolveSwitch,
+    guardSwitch
+  } = useDossierDirtyGuard(active, bookId)
 
   const currentRows = rowsState.module === active ? rowsState.rows : EMPTY_ROWS
   // 当前域尚未拉过一次（标记不一致）即视为加载中。
@@ -144,6 +152,9 @@ export function useDossierWorkspace(module: WriterModule, bookId: string): Dossi
     dirty,
     reportDirty,
     saveRef,
+    // 模块切换守卫（外壳层）消费：立即保存 / 放弃草稿。
+    saveDraft: flushDraft,
+    discardDraft,
     switchPending,
     resolveSwitch,
     select,

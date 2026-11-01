@@ -12,6 +12,7 @@ import { WRITER_MODULES, isDossierModule } from './activityBarModules'
 import type { DossierModule, WriterModule } from './activityBarModules'
 import { useActivityPinned } from './activityPinned'
 import { MODULE_MORPH_ICONS } from './moduleIcons'
+import { useRequestSwitch } from './unsavedSwitchGuard'
 
 export type { WriterModule } from './activityBarModules'
 
@@ -67,7 +68,9 @@ function isDossierIconTarget(target: EventTarget | null): boolean {
 export function ActivityBar(): ReactElement {
   const { t } = useTranslation('titlebar')
   const { t: tModule } = useTranslation('module')
-  const { active, setActive } = useActivityBar()
+  const { active } = useActivityBar()
+  // 点图标切模块统一经守卫（页面注册了未保存守卫时先确认，否则直接切）。
+  const requestSwitch = useRequestSwitch()
   const { pinned } = useActivityPinned()
   const [shown, setShown] = useState(false)
   // 模块筛选浮层：目标模块 + 锚点（活元素优先，快照兜底）。
@@ -342,7 +345,7 @@ export function ActivityBar(): ReactElement {
               tooltipPlacement="right"
               aria-pressed={isActive}
               data-module={id}
-              onClick={() => setActive(id)}
+              onClick={() => requestSwitch(id)}
               onMouseEnter={dossier ? (event) => openFilter(id, event.currentTarget) : undefined}
               onMouseLeave={dossier ? handleIconLeave : undefined}
               onFocus={

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { ReactElement, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '../../components/ui'
 import type { WriterModule } from '../../shell/activityBar'
 import type { VolumeRow } from './chapters/chapterTree'
 import ConfirmDialog from './ConfirmDialog'
@@ -130,6 +131,9 @@ export function RightPane({
   const { t: tPlot } = useTranslation('plot')
   const { t: tDossier } = useTranslation('dossier')
 
+  // 域内切条目的「保存」失败提示：不切换、脏态保留，可直接再点一次重试。
+  const { show: showSaveFailed, node: saveFailedToast } = useToast()
+
   // 章节模块页签独立记忆（默认「大纲」）；三个面板始终挂载。
   const [chapterTab, setChapterTab] = useState<RightPaneTab>('outline')
 
@@ -238,7 +242,8 @@ export function RightPane({
             />
           </div>
           {/* 未保存确认（两态：保存并切换 / 不保存）；Esc / 遮罩视为「不保存」。
-              与设定库条目一致，文案走 dossier 专属 key（条目口径）。 */}
+              与设定库条目一致，文案走 dossier 专属 key（条目口径）。
+              「保存」等落库结果：失败则不切换、脏态保留，关框后 toast 提示可重试。 */}
           <ConfirmDialog
             open={dossier.switchPending}
             title={tDossier('dialog.unsavedSwitch.title')}
@@ -246,9 +251,16 @@ export function RightPane({
             confirmText={tCommon('save')}
             cancelText={tDossier('dialog.unsavedSwitch.discard')}
             tone="default"
-            onConfirm={() => dossier.onResolveSwitch(true)}
-            onClose={() => dossier.onResolveSwitch(false)}
+            onConfirm={() => {
+              void dossier.onResolveSwitch(true).then((switched) => {
+                if (!switched) showSaveFailed(tCommon('saveFailed'))
+              })
+            }}
+            onClose={() => {
+              void dossier.onResolveSwitch(false)
+            }}
           />
+          {saveFailedToast}
         </div>
       ) : null}
 

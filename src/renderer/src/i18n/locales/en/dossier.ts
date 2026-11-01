@@ -17,6 +17,7 @@ const dossier = {
     subtypeAria: 'Filter by subtype',
     searchPlaceholder: 'Search names or aliases',
     searchAria: 'Search names or aliases',
+    search: 'Search',
     emptyTitle: 'No matching results',
     emptyDesc: 'Try a different keyword or subtype',
     matchCount: '{{count}} matches',

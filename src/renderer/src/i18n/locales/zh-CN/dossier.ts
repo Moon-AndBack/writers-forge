@@ -28,6 +28,8 @@ const dossier = {
     subtypeAria: '按子类筛选',
     searchPlaceholder: '搜索名称或别名',
     searchAria: '搜索名称或别名',
+    /** 搜索框右侧按钮：提交关键词并切到该模块（aria-label / title）。 */
+    search: '搜索',
     emptyTitle: '无匹配结果',
     emptyDesc: '换个关键词或子类再试',
     /** 搜索结果计数（浮层内只报数，不列条目）；0 条时用 `noMatch`。 */

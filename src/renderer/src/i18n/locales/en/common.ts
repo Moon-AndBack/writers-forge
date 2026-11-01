@@ -21,6 +21,16 @@ const common = {
   save: 'Save',
   saving: 'Saving…',
   saveDirty: 'Save (unsaved changes)',
+  /** Saving failed (e.g. dossier draft write-back): stay on the module, retry allowed. */
+  saveFailed: 'Failed to save. Please try again.',
+  /** Unsaved-changes guard for module switching (activity bar / filter popover): `module` / `target` are module names. */
+  unsavedModuleSwitch: {
+    title: 'This module has unsaved changes',
+    message:
+      '“{{module}}” still has unsaved changes. Choose “Save and switch” to persist them before switching to “{{target}}”, or “Discard and switch” to drop them and switch now.',
+    saveAndSwitch: 'Save and switch',
+    discardAndSwitch: 'Discard and switch'
+  },
   undo: 'Undo',
   redo: 'Redo',
   searchButton: 'Search',

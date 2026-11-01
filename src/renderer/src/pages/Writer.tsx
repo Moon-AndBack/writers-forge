@@ -1,9 +1,14 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useToast } from '../components/ui'
 import { RichTextEditorProvider } from '../components/editor/richTextEditorProvider'
 import type { RichTextEditorSlots } from '../components/editor/richTextEditorContext'
+import type { WriterModule } from '../shell/activityBar'
 import { useActivityBar, useRegisterActivityBar } from '../shell/activityBarContext'
+import { useRegisterUnsavedSwitchGuard } from '../shell/unsavedSwitchGuard'
 import { useRightPaneVisibility } from '../shell/rightPaneVisibility'
 import EditorPane from './writer/EditorPane'
+import { ConfirmDialog } from './writer/ConfirmDialog'
 import RightPane from './writer/RightPane'
 import SidePane from './writer/SidePane'
 import Splitter from './writer/Splitter'
@@ -54,7 +59,7 @@ export interface WriterProps {
 export default function Writer({ bookId }: WriterProps) {
   // 声明本页需要外壳活动栏（挂载注册、卸载注销）
   useRegisterActivityBar(true)
-  const { active } = useActivityBar()
+  const { active, setActive } = useActivityBar()
 
   const [sideWidth, setSideWidth] = useState(SIDE_DEFAULT)
   const [rightWidth, setRightWidth] = useState(RIGHT_DEFAULT)
@@ -195,6 +200,69 @@ export default function Writer({ bookId }: WriterProps) {
     [plot.editing, plot.reportEditing, dossierEditing]
   )
 
+  /* ---------- 模块切换未保存守卫（活动栏图标 / 筛选浮层发起） ----------
+     外壳经 `useRequestSwitch` 把目标模块交给本页裁决：
+     同模块 / 无脏 → 直接切；设定档案有脏草稿 → 弹两态确认（保存并切换 / 放弃并切换）。
+     与右栏域内 `switchPending`（切条目）是两个独立场景，状态互不复用。 */
+  const [pendingModule, setPendingModule] = useState<WriterModule | null>(null)
+  const [moduleSwitchSaving, setModuleSwitchSaving] = useState(false)
+  // 保存失败提示（不切换、脏态保留，可重试）。
+  const { show: showSaveFailed, node: saveFailedToast } = useToast()
+  const { t: tCommon } = useTranslation('common')
+  const { t: tModule } = useTranslation('module')
+
+  const dossierDirty = dossierBundle?.dirty ?? false
+
+  const handleModuleSwitch = useCallback(
+    (target: WriterModule): void => {
+      // 同模块：没有「切换」动作，不打扰用户。
+      if (target === active) return
+      // 当前模块无脏草稿（其它模块暂无手动保存草稿）：直接切。
+      if (!dossierDirty) {
+        setActive(target)
+        return
+      }
+      setPendingModule(target)
+    },
+    [active, dossierDirty, setActive]
+  )
+  useRegisterUnsavedSwitchGuard(handleModuleSwitch)
+
+  /** 「保存并切换」：等落库结果；失败则不切换、不清脏（关框 + 提示，可再点一次重试）。 */
+  const handleSaveAndSwitch = useCallback((): void => {
+    const target = pendingModule
+    if (target === null) return
+    setModuleSwitchSaving(true)
+    void (async () => {
+      let ok: boolean
+      try {
+        ok = dossierBundle ? await dossierBundle.saveDraft() : true
+      } catch {
+        // 保存入口异常一律按失败处理（不切换），避免未处理的 rejection。
+        ok = false
+      } finally {
+        setModuleSwitchSaving(false)
+      }
+      if (!ok) {
+        // 失败：脏态保留在表单里（`dirtyRef` 未清），再点一次「保存并切换」即可重试。
+        setPendingModule(null)
+        showSaveFailed(tCommon('saveFailed'))
+        return
+      }
+      setPendingModule(null)
+      setActive(target)
+    })()
+  }, [pendingModule, dossierBundle, setActive, showSaveFailed, tCommon])
+
+  /** Esc / 遮罩 /「放弃并切换」：**先清脏**再切，切模块的清理 effect 就不会二次静默保存。 */
+  const handleDiscardAndSwitch = useCallback((): void => {
+    const target = pendingModule
+    setPendingModule(null)
+    if (target === null) return
+    dossierBundle?.discardDraft()
+    setActive(target)
+  }, [pendingModule, dossierBundle, setActive])
+
   return (
     <section className="app-view writer-view is-active" data-view="writer">
       {/* 富文本编辑器共享上下文（通用注册表）：右栏编辑器注册 `editor`，标题栏动作
@@ -334,6 +402,24 @@ export default function Writer({ bookId }: WriterProps) {
           />
         </div>
       </RichTextEditorProvider>
+
+      {/* 模块切换未保存守卫确认框（两态：保存并切换 / 放弃并切换）；Esc / 遮罩 = 放弃并切换。
+          与右栏域内 `switchPending`（切条目）是两个独立场景，不合并、不互相干扰。 */}
+      <ConfirmDialog
+        open={pendingModule !== null}
+        title={tCommon('unsavedModuleSwitch.title')}
+        message={tCommon('unsavedModuleSwitch.message', {
+          module: tModule(active),
+          target: tModule(pendingModule ?? active)
+        })}
+        confirmText={tCommon('unsavedModuleSwitch.saveAndSwitch')}
+        cancelText={tCommon('unsavedModuleSwitch.discardAndSwitch')}
+        tone="default"
+        confirming={moduleSwitchSaving}
+        onConfirm={handleSaveAndSwitch}
+        onClose={handleDiscardAndSwitch}
+      />
+      {saveFailedToast}
     </section>
   )
 }

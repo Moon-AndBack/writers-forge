@@ -16,6 +16,19 @@ const common = {
   save: '保存',
   saving: '保存中…',
   saveDirty: '保存（有未保存改动）',
+  /** 保存失败（如设定档案草稿落库失败）：不切换模块，可重试。 */
+  saveFailed: '保存失败，请重试',
+  /**
+   * 模块切换的未保存守卫（活动栏图标 / 筛选浮层的「搜索」发起）：
+   * 两态确认；`module` / `target` 均为模块名（取 `module` ns）。
+   */
+  unsavedModuleSwitch: {
+    title: '当前模块有未保存的修改',
+    message:
+      '「{{module}}」还有未保存的修改。点「保存并切换」先落库再切到「{{target}}」；点「放弃并切换」丢弃这些修改直接切过去。',
+    saveAndSwitch: '保存并切换',
+    discardAndSwitch: '放弃并切换'
+  },
   undo: '撤销',
   redo: '重做',
   searchButton: '搜索',

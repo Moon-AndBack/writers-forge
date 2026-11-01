@@ -28,12 +28,12 @@ export interface DossierDetailProps {
   detailPending: boolean
   /** 右栏上报的未保存改动（保存按钮禁用态；真源为本面板草稿比对）。 */
   dirty: boolean
-  /** 更新（正文 / 子类字段 / 品阶档位 / 自定义键值补丁；返回写入 promise 供「保存中」态）。 */
-  onUpdate: (id: number, patch: DossierUpdatePatch) => void | Promise<void>
+  /** 更新（正文 / 子类字段 / 品阶档位 / 自定义键值补丁；返回值 = 是否落库成功，供「保存中」态与守卫判定）。 */
+  onUpdate: (id: number, patch: DossierUpdatePatch) => Promise<boolean>
   /** 脏态上报（切换守卫 + 保存按钮共用）。 */
   onDirtyChange: (dirty: boolean) => void
   /** 保存入口：表单挂载时写入 `saveNow`（切换确认「保存」/ 切模块兜底调用）。 */
-  saveRef: RefObject<(() => void | Promise<void>) | null>
+  saveRef: RefObject<(() => void | Promise<boolean>) | null>
 }
 
 /**
@@ -102,9 +102,9 @@ export default function DossierDetail({
 interface DossierDetailFormProps {
   detail: DossierDetailData
   dirty: boolean
-  onUpdate: (id: number, patch: DossierUpdatePatch) => void | Promise<void>
+  onUpdate: (id: number, patch: DossierUpdatePatch) => Promise<boolean>
   onDirtyChange: (dirty: boolean) => void
-  saveRef: RefObject<(() => void | Promise<void>) | null>
+  saveRef: RefObject<(() => void | Promise<boolean>) | null>
 }
 
 /** 单条目编辑表单（按 `detail.id` 重建，内部持草稿；手动保存 + 脏态上报）。 */
@@ -145,12 +145,15 @@ function DossierDetailForm({
 
   // 手动保存：仅落变更字段；无改动为空操作。档位原文先归一为整数文本，
   // 避免「007」之类中间输入留存（非法 / 空白归 0，与旧失焦提交同口径）。
-  const saveNow = useCallback((): void | Promise<void> => {
+  // 返回值 = 是否落库成功（模块切换守卫失败时不切换、不清脏）。
+  const saveNow = useCallback((): void | Promise<boolean> => {
     if (!changed) return
     setDraft((prev) => ({ ...prev, rankText: String(parseRank(prev.rankText)) }))
     setSaving(true)
     // 写完（含失败）即复位：失败下详情未回写、脏态仍为 true，按钮可再次点击重试。
-    return Promise.resolve(onUpdate(detail.id, patch)).finally(() => setSaving(false))
+    return Promise.resolve(onUpdate(detail.id, patch))
+      .then((ok) => ok !== false)
+      .finally(() => setSaving(false))
   }, [changed, onUpdate, detail.id, patch])
 
   // 上报脏态 + 注册保存入口。⚠️ 卸载时**不注销** `saveRef`：切模块会先卸载右栏，

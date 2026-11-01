@@ -58,6 +58,58 @@
   padding: 5px 8px;
 }
 
+/* 搜索框 + 提交按钮同一行：输入框占满剩余宽度，按钮固定不压缩。
+   浮层总宽仍是 `.act-filter` 的 204px 定宽，按钮 26px 不会加宽浮层。 */
+.act-filter__searchrow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.act-filter .act-filter__searchrow .act-filter__search {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 搜索提交按钮：把输入框里的关键词落库并切到该模块（无障碍名 + title 走 i18n）。 */
+.act-filter__search-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--text-dim);
+  background: var(--soft-solid);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.act-filter__search-btn > svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.act-filter__search-btn:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--soft-hover-solid);
+}
+
+.act-filter__search-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: 1px;
+}
+
+.act-filter__search-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* 结果计数（搜索框下方）：与中栏网格同一过滤口径，只报数不列条目；
    浮层模块不是当前模块时提示切换后生效。预留一行高度避免计数出现时列表跳动。 */
 .act-filter__status {
@@ -120,7 +172,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .act-filter {
+  .act-filter,
+  .act-filter__search-btn {
     animation: none;
+    transition: none;
   }
 }

@@ -9,21 +9,30 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
+import { createLogger } from '@renderer/lib/log'
 import type { DossierModule } from './dossierTree'
+
+/** 设定档案装配日志（转发至主进程落盘）。 */
+const log = createLogger('dossier')
 
 export interface DossierDirtyGuard {
   /** 当前是否有未保存改动（右栏保存按钮 / 切换守卫共用）。 */
   dirty: boolean
   /** 右栏编辑器上报脏态（表单挂载后按草稿与详情比对调用）。 */
   reportDirty: (dirty: boolean) => void
-  /** 立即落库当前草稿（有脏才写）；返回写入 promise 供「先保存再新建」等待。 */
-  flushDraft: () => Promise<void>
+  /** 立即落库当前草稿（有脏才写）；返回值 = 是否落库成功（无脏视为成功）。 */
+  flushDraft: () => Promise<boolean>
+  /** 放弃当前草稿（**先清脏**，切模块时清理 effect 不再二次静默保存）。 */
+  discardDraft: () => void
   /** 保存入口 ref：右栏表单挂载时写入 `saveNow`；原样透出，不得包装。 */
-  saveRef: RefObject<(() => void | Promise<void>) | null>
+  saveRef: RefObject<(() => void | Promise<boolean>) | null>
   /** 是否有挂起的切换（有改动时点选卡片 / 新建暂缓，等两态确认）。 */
   switchPending: boolean
-  /** 结算挂起的切换：`save=true` 先保存草稿再切换，`false` 丢弃草稿直接切换。 */
-  resolveSwitch: (save: boolean) => void
+  /**
+   * 结算挂起的切换：`save=true` 先落库再切换，`false` 丢弃草稿直接切换。
+   * 返回值 = 是否已执行切换：保存失败时为 `false`（不切换、不清脏，可重试）。
+   */
+  resolveSwitch: (save: boolean) => Promise<boolean>
   /** 切换守卫：无未保存改动立即执行；有改动则暂缓为该动作，等两态确认（保存 / 不保存）。 */
   guardSwitch: (proceed: () => void) => void
 }
@@ -40,7 +49,7 @@ export function useDossierDirtyGuard(
   const [dirty, setDirty] = useState(false)
   const dirtyRef = useRef(false)
   // 保存入口：右栏表单挂载时写入（切换确认「保存」/ 切模块兜底据此落库当前草稿）。
-  const saveRef = useRef<(() => void | Promise<void>) | null>(null)
+  const saveRef = useRef<(() => void | Promise<boolean>) | null>(null)
   const [pendingSwitch, setPendingSwitch] = useState<{ proceed: () => void } | null>(null)
 
   const reportDirty = useCallback((next: boolean): void => {
@@ -48,11 +57,27 @@ export function useDossierDirtyGuard(
     setDirty(next)
   }, [])
 
-  /** 立即落库当前草稿（有脏才写）；返回写入 promise 供「先保存再新建」等待。 */
-  const flushDraft = useCallback(async (): Promise<void> => {
-    if (!dirtyRef.current) return
-    await saveRef.current?.()
+  /** 立即落库当前草稿（有脏才写）；返回值 = 是否落库成功（无脏 = 无需保存，视为成功）。 */
+  const flushDraft = useCallback(async (): Promise<boolean> => {
+    if (!dirtyRef.current) return true
+    const save = saveRef.current
+    // 有脏却无保存入口（右栏表单未挂载）：无法落库，按失败处理，不假报成功。
+    if (!save) return false
+    try {
+      const result = save()
+      // 表单无改动时 `saveNow` 直接返回 undefined（无写入）：视为成功。
+      if (result === undefined) return true
+      return (await result) !== false
+    } catch (error) {
+      log.warn('保存设定档案草稿失败', error)
+      return false
+    }
   }, [])
+
+  /** 放弃当前草稿：先清脏，后续切模块的清理 effect 才不会二次静默保存。 */
+  const discardDraft = useCallback((): void => {
+    reportDirty(false)
+  }, [reportDirty])
 
   /** 切换守卫：无未保存改动立即执行；有改动则暂缓为该动作，等两态确认（保存 / 不保存）。 */
   const guardSwitch = useCallback((proceed: () => void): void => {
@@ -64,15 +89,24 @@ export function useDossierDirtyGuard(
   }, [])
 
   const resolveSwitch = useCallback(
-    (save: boolean): void => {
+    (save: boolean): Promise<boolean> => {
       const pending = pendingSwitch
+      // 弹窗先关：失败时也不把用户锁在弹框里（脏态保留，可再点一次重试）。
       setPendingSwitch(null)
-      // 草稿将随切换失效：「保存」先落库，「不保存」直接丢弃（表单卸载时不再自动保存，
-      // 丢弃即真丢弃）；脏态由切换后重挂的表单自行上报，此处不代写。
-      if (save) void saveRef.current?.()
-      pending?.proceed()
+      if (!save) {
+        // 「不保存」= 真丢弃：先清脏再切，避免切模块时清理 effect 又静默保存。
+        reportDirty(false)
+        pending?.proceed()
+        return Promise.resolve(true)
+      }
+      // 「保存」必须等落库结果：失败则不切换、不清脏，调用方据此提示重试。
+      return flushDraft().then((ok) => {
+        if (!ok) return false
+        pending?.proceed()
+        return true
+      })
     },
-    [pendingSwitch]
+    [pendingSwitch, flushDraft, reportDirty]
   )
 
   /**
@@ -82,6 +116,9 @@ export function useDossierDirtyGuard(
    */
   useEffect(() => {
     return () => {
+      // 挂起的域内切换属于旧装配：不随模块变化残留，否则在新模块里点「保存」
+      // 会拿新表单的 `saveNow` 去结算旧动作。
+      setPendingSwitch(null)
       if (!dirtyRef.current) return
       dirtyRef.current = false
       setDirty(false)
@@ -96,6 +133,7 @@ export function useDossierDirtyGuard(
     dirty,
     reportDirty,
     flushDraft,
+    discardDraft,
     saveRef,
     switchPending: pendingSwitch !== null,
     resolveSwitch,

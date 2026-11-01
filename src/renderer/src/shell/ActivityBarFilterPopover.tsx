@@ -30,12 +30,14 @@ import type {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { SearchInput } from '../components/ui'
+import { SearchIcon } from '../components/icons'
 import { HoverPopupShell } from '../components/HoverPopupShell'
 import { FILTER_ALL, useDossierFilters } from '../pages/writer/dossier/dossierFilterContext'
 import { useDossierSubtypes } from '../pages/writer/dossier/useDossierSubtypes'
 import { useActivityBar } from './activityBarContext'
 import { MODULE_ENTITY_TYPE, useModuleLabel } from './activityBarModules'
 import type { DossierModule } from './activityBarModules'
+import { useRequestSwitch } from './unsavedSwitchGuard'
 
 /** 搜索输入提交防抖（ms）：停止打字后 200ms 再写 Context。 */
 const QUERY_DEBOUNCE = 200
@@ -69,7 +71,9 @@ export default function ActivityBarFilterPopover({
 }: ActivityBarFilterPopoverProps) {
   const { t } = useTranslation('dossier')
   const { bookId, filters, setFilter, summary } = useDossierFilters()
-  const { active, setActive } = useActivityBar()
+  const { active } = useActivityBar()
+  // 模块切换统一经守卫：有未保存草稿时由写作页弹「保存并切换 / 放弃并切换」。
+  const requestSwitch = useRequestSwitch()
   const moduleLabel = useModuleLabel(module)
   const subtypes = useDossierSubtypes(bookId, MODULE_ENTITY_TYPE[module])
   const entry = filters[module]
@@ -205,10 +209,23 @@ export default function ActivityBarFilterPopover({
         : t('filter.matchCount', { count: moduleSummary.matched })
   }
 
-  /** 应用子类筛选并切到该模块（切换走活动栏既有入口，保留其未保存改动守卫）。 */
+  /** 应用子类筛选并切到该模块（切换走模块切换守卫，保留未保存改动确认）。 */
   const handlePick = (value: string): void => {
+    // 筛选条件先写入（立即生效，不受守卫影响），模块切换交给守卫裁决。
     setFilter(module, { subtype: value })
-    setActive(module)
+    requestSwitch(module)
+  }
+
+  /**
+   * 空关键词且浮层模块就是当前模块时没有可提交的内容（禁用按钮）；
+   * 其余情况（有关键词，或要切到别的模块）都允许点，切换仍受未保存守卫约束。
+   */
+  const canSubmitSearch = query.trim().length > 0 || !isCurrentModule
+
+  /** 搜索按钮：先 flush 防抖窗口内的关键词，再切到该模块让关键词生效。 */
+  const handleSearchSubmit = (): void => {
+    flushQuery()
+    requestSwitch(module)
   }
 
   return (
@@ -224,21 +241,34 @@ export default function ActivityBarFilterPopover({
       onPointerLeave={onLeave}
     >
       <div className="act-filter__head">{moduleLabel}</div>
-      <SearchInput
-        className="act-filter__search"
-        value={query}
-        placeholder={t('filter.searchPlaceholder')}
-        aria-label={t('filter.searchAria')}
-        autoComplete="off"
-        spellCheck={false}
-        onChange={handleQueryChange}
-        onCompositionStart={handleCompositionStart}
-        onCompositionEnd={handleCompositionEnd}
-        onKeyDown={handleQueryKeyDown}
-        onBlur={handleQueryBlur}
-        onClear={handleQueryClear}
-        onFocus={onKeepOpen}
-      />
+      {/* 搜索框与提交按钮同一行：按钮先把关键词落进 Context，再切到该模块。 */}
+      <div className="act-filter__searchrow">
+        <SearchInput
+          className="act-filter__search"
+          value={query}
+          placeholder={t('filter.searchPlaceholder')}
+          aria-label={t('filter.searchAria')}
+          autoComplete="off"
+          spellCheck={false}
+          onChange={handleQueryChange}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
+          onKeyDown={handleQueryKeyDown}
+          onBlur={handleQueryBlur}
+          onClear={handleQueryClear}
+          onFocus={onKeepOpen}
+        />
+        <button
+          type="button"
+          className="act-filter__search-btn"
+          aria-label={t('filter.search')}
+          title={t('filter.search')}
+          disabled={!canSubmitSearch}
+          onClick={handleSearchSubmit}
+        >
+          <SearchIcon />
+        </button>
+      </div>
       <p className="act-filter__status" role="status">
         {statusText}
       </p>
