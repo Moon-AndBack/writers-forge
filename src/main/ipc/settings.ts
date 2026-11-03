@@ -62,7 +62,8 @@ export function registerSettingsIpc(): void {
     }
   })
 
-  // 全量回传前剔除敏感键（`ai:*` 密钥 / OneDrive 凭据）；渲染层当前零调用，保留通道仅为兼容。
+  // 全量回传前剔除敏感键（`ai:*` 密钥 / OneDrive 凭据）。
+  // 渲染层启动阶段（main.tsx）用它一次批量取主题 / 材质 / 活动栏固定态，替代多次 `settings:get`。
   ipcMain.handle('settings:all', () => {
     const all = getAllSettings()
     const visible: Record<string, string> = {}

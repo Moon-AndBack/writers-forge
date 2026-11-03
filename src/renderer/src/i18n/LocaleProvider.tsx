@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import i18n from './index'
+import { changeLocale } from './index'
 import { LOCALE_SETTING_KEY, type Locale } from './config'
 import { LocaleContext } from './context'
 
@@ -29,7 +29,8 @@ export function LocaleProvider({
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next)
-    void i18n.changeLanguage(next)
+    // 目标语言包按需加载（必要时动态 import + addResourceBundle）后再切换 i18next
+    void changeLocale(next).catch(() => {})
     void window.api?.settings.set(LOCALE_SETTING_KEY, next).catch(() => {})
   }, [])
 
