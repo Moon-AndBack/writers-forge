@@ -125,7 +125,7 @@ instance.pragma('foreign_keys = ON')
 | 域                                    | 守卫键                               | 实现文件                            | 作用                                                                                   |
 | ------------------------------------- | ------------------------------------ | ----------------------------------- | -------------------------------------------------------------------------------------- |
 | 书籍                                  | `books:dropAuthorTargetWords:v1`     | `booksDropColumns.ts`               | 删除 `books.author` / `books.targetWords` 两列                                         |
-| 教学书（跨章节 / 大纲 / 剧情 / 实体） | `chapterData:v57:migrated`           | `chapterSeed.ts`                    | 教学书全量重灌（详见 §6）                                                              |
+| 教学书（跨章节 / 大纲 / 剧情 / 实体） | `chapterData:v59:migrated`           | `chapterSeed.ts`                    | 教学书全量重灌（详见 §6）                                                              |
 | 剧情                                  | `plot:dropCharacters:v1`             | `plotMigrations.ts`                 | 删除 `plot_scenes.characters`                                                          |
 | 剧情                                  | `plot:descriptionRich:v1`            | `plotMigrations.ts`                 | 纯文本 `description` 包成富文本写入 `description_json`                                 |
 | 剧情                                  | `plot:lineTimeline:v1`               | `plotMigrations.ts`                 | `timeline_id` / `default_origin` 空值收敛                                              |
@@ -166,7 +166,7 @@ instance.pragma('foreign_keys = ON')
 | -------------- | ------------------ | ------------------------------- | -------------------------------------------------- |
 | 官方分类       | 一级 33 / 二级 145 | `categories:seed:v1`            | 单事务插入两级树，`is_custom = 0`                  |
 | 胶囊配色       | 28 行色对          | 无 settings 键                  | 每次启动 `INSERT OR IGNORE`，不覆盖用户改色        |
-| 教学书         | 1 本 / 5 卷        | `chapterData:v57:migrated`      | 全量重灌卷章、正文、大纲、剧情、实体（§6）         |
+| 教学书         | 1 本 / 5 卷        | `chapterData:v59:migrated`      | 全量重灌卷章、正文、大纲、剧情、实体（§6）         |
 | 子类预设       | 23 条 / 书         | `worldSubtypes:presets:v1`      | 为既有书籍补齐；新建书由 `createBook` 即时写入     |
 | 关系语义码     | 4 个               | 无键                            | 每次启动 `ON CONFLICT(code) DO NOTHING` 补齐新增码 |
 | 内置违禁词     | 853 行             | `cleanWords:seed:v1`            | 首次导入；已存在同词保留用户启停意图               |
@@ -185,7 +185,7 @@ instance.pragma('foreign_keys = ON')
 教学书是首启唯一书籍，固定 `id = 'guide'`，标题「Writer's Forge · 使用指南」。重灌入口 `src/main/database/chapterSeed.ts` 的 `resetChapterDataOnce()`，守卫键：
 
 ```ts
-const MIGRATION_KEY = 'chapterData:v57:migrated'
+const MIGRATION_KEY = 'chapterData:v59:migrated'
 ```
 
 ### 6.1 重灌范围
