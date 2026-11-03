@@ -1,9 +1,8 @@
+import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import { DiagnosticsGate } from './diagnostics/DiagnosticsGate'
 import { useOnboarding } from './onboarding/useOnboarding'
 import Bookshelf from './pages/Bookshelf'
-import Welcome from './pages/Welcome'
-import Writer from './pages/Writer'
 import { TimelineCardSizeProvider } from './pages/writer/timeline/TimelineCardSizeProvider'
 import { DossierFilterProvider } from './pages/writer/dossier/DossierFilterProvider'
 import { ActivityBar, ActivityBarProvider } from './shell/activityBar'
@@ -27,6 +26,22 @@ import { useTitleBarOverlay } from './theme/useTitleBarOverlay'
 import './styles/shell.css'
 import './styles/shell-activity-filter.css'
 import './styles/acrylic.css'
+
+/**
+ * 路由级懒加载：欢迎页（仅首启）与写作页（含编辑器 / 剧情 / 档案 / 时间线整域子图）
+ * 各自拆成独立 chunk，书架首屏不再解析写作域代码。
+ * 书架保持静态导入——它是默认首屏，留在入口 chunk 可省一次 chunk 往返与额外占位帧。
+ */
+const Welcome = lazy(() => import('./pages/Welcome'))
+const Writer = lazy(() => import('./pages/Writer'))
+
+/**
+ * 视口占位：引导状态读取中与路由页懒加载期间共用同一视觉，
+ * 两段加载态衔接为同一个空 div，不产生白屏或二次加载态跳变。
+ */
+function ViewportPlaceholder() {
+  return <div className="viewport-placeholder" aria-busy="true" />
+}
 
 /**
  * 活动栏插槽：仅当有页面注册需要活动栏时渲染（`visible`），
@@ -149,33 +164,37 @@ export default function App({ initialActivityPinned }: { initialActivityPinned?:
 
                             <main className="app-viewport">
                               {status === 'loading' ? (
-                                <div className="viewport-placeholder" aria-busy="true" />
+                                <ViewportPlaceholder />
                               ) : (
-                                <Routes>
-                                  <Route
-                                    path="/"
-                                    element={
-                                      status === 'required' ? (
-                                        <Welcome onFinish={complete} />
-                                      ) : (
-                                        <Bookshelf />
-                                      )
-                                    }
-                                  />
-                                  <Route
-                                    path="/write/:bookId"
-                                    element={
-                                      status === 'required' ? (
-                                        <Navigate to="/" replace />
-                                      ) : (
-                                        <WriteRoute />
-                                      )
-                                    }
-                                  />
-                                  {/* 设置已改为标题栏齿轮唤起的弹窗（`SettingsDialog`），
+                                /* 路由页懒加载：只包裹路由出口，标题栏 / 活动栏 / 状态栏外壳
+                                   首帧即渲染；fallback 与上面的引导占位同款，衔接无跳变。 */
+                                <Suspense fallback={<ViewportPlaceholder />}>
+                                  <Routes>
+                                    <Route
+                                      path="/"
+                                      element={
+                                        status === 'required' ? (
+                                          <Welcome onFinish={complete} />
+                                        ) : (
+                                          <Bookshelf />
+                                        )
+                                      }
+                                    />
+                                    <Route
+                                      path="/write/:bookId"
+                                      element={
+                                        status === 'required' ? (
+                                          <Navigate to="/" replace />
+                                        ) : (
+                                          <WriteRoute />
+                                        )
+                                      }
+                                    />
+                                    {/* 设置已改为标题栏齿轮唤起的弹窗（`SettingsDialog`），
                                     不再占用路由；未匹配路径一律回首页。 */}
-                                  <Route path="*" element={<Navigate to="/" replace />} />
-                                </Routes>
+                                    <Route path="*" element={<Navigate to="/" replace />} />
+                                  </Routes>
+                                </Suspense>
                               )}
                             </main>
 
