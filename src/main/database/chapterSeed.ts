@@ -203,10 +203,23 @@ const log = logger.scope('chapterSeed')
  * 「保存并切换 / 放弃并切换」（剧情保存失败不切换、草稿保留；放弃会重挂编辑器回退到
  * 场景行值），章节 / 大纲不弹框而是在切走前立即触发落库；教学文案同步，键提升让老库
  * 也能看到新文案。
+ * `v57`（关系语义 i18n 批）：关系展示名改由渲染层 i18n 提供（`dossier` ns 的
+ * `detail.relation.typeName` / `peerLabel`），胶囊改为**直接描述对方身份**——出边
+ * `superior` 读「下级 对端名」、入边读「上级 对端名」，`belongs_to` 入边读「所属 对端名」，
+ * 平级只显示对端名；新增关系表单补充方向提示；教学文案与演示正文同步，键提升让老库
+ * 也能看到新文案。
+ * `v58`（物品关系胶囊免前缀批）：卡片关系胶囊与「关联关系」弹窗对齐——物品出边的
+ * `belongs_to` 只显示对端名（如「砚秋」），不再带「属于」前缀；判断收敛为共享纯函数
+ * （`relationChip.ts` 的 `isRelationPrefixSuppressed`）。教学文案同步，键提升让老库也能
+ * 看到新文案。
+ * `v59`（归属关系免前缀批）：关系胶囊里的「属于 / 所属」描述前缀全部下线——`belongs_to`
+ * 在**所有实体类型、出边与入边**都只显示对端名（如物品「锻笔剑」与角色「砚秋」两头各显示
+ * 「砚秋」「锻笔剑」），共享判断 `isRelationPrefixSuppressed` 收敛为只按语义码判定；
+ * 新增关系下拉里的类型名「属于」保留。教学文案同步，键提升让老库也能看到新文案。
  */
 
 /** 迁移完成标记的 settings key（更换键强制老库重灌种子）。 */
-const MIGRATION_KEY = 'chapterData:v56:migrated'
+const MIGRATION_KEY = 'chapterData:v59:migrated'
 
 /**
  * 重建教学书的卷 / 章（章节域）。卷序即 `GUIDE_VOLUMES` 顺序；

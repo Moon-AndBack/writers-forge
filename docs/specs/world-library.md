@@ -2,7 +2,7 @@
 
 Writer's Forge 的「世界观 / 角色 / 物品功法 / 势力 / 境界体系」五类设定，共用一张主表 `world_entities` 与一套子类、附属、关系体系，本文统称**统一设定库**。本文说明其领域模型、表结构、子类与字段白名单、关系语义、正文双列、胶囊配色链路、读写路径与界面落点。
 
-真源声明：结构以 `src/main/database/schema/worldEntities.ts`（模板 DDL）+ `schema/world{Worldview,Item,Faction}Subtypes.ts` / `schema/worldCustom.ts` / `schema/worldPowers.ts` 为准；类型与枚举以 `src/main/database/worldEntityTypes.ts` 为准；子类预设以 `worldSubtypes.ts` 的 `PRESET_WORLD_SUBTYPES` 为准；字段白名单以 `src/shared/worldSubtypeFields.ts` 为准；语义码以 `src/shared/worldRelationCodes.ts` 为准。文档只做解释，冲突一律以代码为准。
+真源声明：结构以 `src/main/database/schema/worldEntities.ts`（模板 DDL）+ `schema/world{Worldview,Item,Faction}Subtypes.ts` / `schema/worldCustom.ts` / `schema/worldPowers.ts` 为准；类型与枚举以 `src/main/database/worldEntityTypes.ts` 为准；子类预设以 `worldSubtypes.ts` 的 `PRESET_WORLD_SUBTYPES` 为准；字段白名单以 `src/shared/worldSubtypeFields.ts` 为准；语义码列表与字典 `note` 兜底名以 `src/shared/worldRelationCodes.ts` 为准（展示名见 §5，由渲染层 i18n 提供）。文档只做解释，冲突一律以代码为准。
 
 ## 1. 领域模型总览
 
@@ -154,14 +154,16 @@ DDL 由 `worldEntitiesTableDdl('world_entities')` 生成，新库建表与两处
 
 关系存于 `world_refs`，一条行 = 一条**有向**边：`from_id → to_id`，附 `semantic_code`（必填）、`role`、`note`、`sort_order`、`valid_from` / `valid_to`。约束 `CHECK (from_id <> to_id)`；两端须同书、未软删，端点类型不受限制（世界观同样可作起点 / 终点）。
 
-**4 个语义码**（`HIERARCHY_SEMANTIC_CODES` / `RELATION_SEMANTIC_LABELS`，`from_type` / `to_type` 全为 `NULL`，字典不按模块收窄）：
+**4 个语义码**（码表 `HIERARCHY_SEMANTIC_CODES`，`from_type` / `to_type` 全为 `NULL`，字典不按模块收窄）。展示名真源在**渲染层 i18n**（`dossier` ns 的 `detail.relation.typeName.*` 类型名、`detail.relation.peerLabel.out|in.*` 对端身份标签，入口 `pages/writer/dossier/useRelationLabels.ts`）；`RELATION_SEMANTIC_LABELS` 仅供主进程写 `world_semantic_codes.note`，作未知 / 自定义码兜底：
 
-| 码            | 展示名 | 方向语义              | 可选组合（渲染层过滤）        |
-| ------------- | ------ | --------------------- | ----------------------------- |
-| `superior`    | 上级   | `from` 是 `to` 的上级 | 世界观 / 势力 → 世界观 / 势力 |
-| `subordinate` | 下级   | `from` 是 `to` 的下级 | 同上                          |
-| `peer`        | 平级   | 两端互不统属          | 同上                          |
-| `belongs_to`  | 属于   | `from` 属于 `to`      | 其余任意模块组合              |
+| 码            | 类型名 | 方向语义              | 出边胶囊（当前条目是 `from`） | 入边胶囊（当前条目是 `to`） | 可选组合（渲染层过滤）        |
+| ------------- | ------ | --------------------- | ----------------------------- | --------------------------- | ----------------------------- |
+| `superior`    | 上级   | `from` 是 `to` 的上级 | 下级 对端名                   | 上级 对端名                 | 世界观 / 势力 → 世界观 / 势力 |
+| `subordinate` | 下级   | `from` 是 `to` 的下级 | 上级 对端名                   | 下级 对端名                 | 同上                          |
+| `peer`        | 平级   | 两端互不统属          | 只显示对端名                  | 只显示对端名                | 同上                          |
+| `belongs_to`  | 属于   | `from` 属于 `to`      | 只显示对端名                  | 只显示对端名                | 其余任意模块组合              |
+
+展示口径为**直接描述对方身份**，不以「我」为中心：`from=1, to=2, code='superior'` 表示「1 是 2 的上级」，1 的卡片显示「下级 2」、2 的卡片显示「上级 1」。未知 / 空码只显示对端名；卡片与弹窗一致：`belongs_to` 的胶囊**一律只显示对端名**（不分方向、不分模块，如物品「锻笔剑」属于角色「砚秋」时两端胶囊各显示「砚秋」「锻笔剑」），「属于」只作为关系类型名出现在新增关系的类型下拉里。
 
 - **双向查询**：`listWorldRefs(entityId, code?)` 取出边（`from_id`），`listWorldRefsTo(...)` 取入边（`to_id`），各按 `sort_order, id` 排序，均可按语义码筛选。卡片摘要由 `loadRelationSummaryMap` 批量补齐（两条 IN 查询，出边在前、入边在后，避免逐卡 N+1），摘要自带对端 `peerEntityType` / `peerSubType` / `peerPresetKey` 供上色。
 - **反向存储**：角色 → 物品固定记为「物品属于角色」（`from = 物品`、`to = 角色`），不出现「角色属于物品」；`isReverseRelation` 判定，写库时交换两端。

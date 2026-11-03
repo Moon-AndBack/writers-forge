@@ -21,6 +21,7 @@ import { PencilIcon } from '../icons'
 import { dossierCardRelations } from './dossierCardRelations'
 import type { DossierRow } from './dossierTree'
 import { entityChipClass } from './relationChip'
+import { useRelationLabels } from './useRelationLabels'
 
 /**
  * 「+N」计数胶囊的语义类：`useChipOverflow` 的 `moreSelector` 靠它把计数槽排除在容量测量外
@@ -87,8 +88,10 @@ export function DossierCard({
   const typeLabel = row.subType.trim() === '' ? null : row.subType
   // 别名以独立标签展示，最多前三个，可换行（无「+N」）。
   const aliasChips = row.aliases.slice(0, 3)
-  // 关系胶囊数据（全量；出边「上级 文心城」+ 入边「锻笔剑 属于我」同口径）。
-  const relations = dossierCardRelations(row.relations)
+  // 关系胶囊数据（全量；出边「下级 文心城」+ 入边「上级 砚境」同口径，映射走 i18n；
+  // `belongs_to` 一律只显示对端名，不再带「属于 / 所属」前缀）。
+  const relationLabels = useRelationLabels()
+  const relations = dossierCardRelations(row.relations, relationLabels)
   // 本卡自身（实体模块 + 预设分类）的色系类名：仅右上类别标签使用。
   const ownChipClass = entityChipClass(row.entityType, row.presetKey)
 

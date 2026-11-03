@@ -64,7 +64,7 @@ export const DEMO_ENTITIES: ReadonlyArray<SeedEntity> = [
     name: '文心城',
     aliases: ['文心'],
     tags: ['地理'],
-    body: '文心城位于砚境正中，城中的抄书阁负责誊抄与校勘。世界观条目也能作为关联目标；本书示范里砚境以「上级」指向文心城，文心城的关系摘要会显示「砚境 是我的上级」。',
+    body: '文心城位于砚境正中，城中的抄书阁负责誊抄与校勘。世界观条目也能作为关联目标；本书示范里砚境以「上级」指向文心城，文心城的关系摘要会显示「上级 砚境」。',
     worldviewFields: {
       coordinates: '砚境·中央',
       climate: '温和',

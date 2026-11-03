@@ -125,7 +125,7 @@ instance.pragma('foreign_keys = ON')
 | 域                                    | 守卫键                               | 实现文件                            | 作用                                                                                   |
 | ------------------------------------- | ------------------------------------ | ----------------------------------- | -------------------------------------------------------------------------------------- |
 | 书籍                                  | `books:dropAuthorTargetWords:v1`     | `booksDropColumns.ts`               | 删除 `books.author` / `books.targetWords` 两列                                         |
-| 教学书（跨章节 / 大纲 / 剧情 / 实体） | `chapterData:v52:migrated`           | `chapterSeed.ts`                    | 教学书全量重灌（详见 §6）                                                              |
+| 教学书（跨章节 / 大纲 / 剧情 / 实体） | `chapterData:v57:migrated`           | `chapterSeed.ts`                    | 教学书全量重灌（详见 §6）                                                              |
 | 剧情                                  | `plot:dropCharacters:v1`             | `plotMigrations.ts`                 | 删除 `plot_scenes.characters`                                                          |
 | 剧情                                  | `plot:descriptionRich:v1`            | `plotMigrations.ts`                 | 纯文本 `description` 包成富文本写入 `description_json`                                 |
 | 剧情                                  | `plot:lineTimeline:v1`               | `plotMigrations.ts`                 | `timeline_id` / `default_origin` 空值收敛                                              |
@@ -166,7 +166,7 @@ instance.pragma('foreign_keys = ON')
 | -------------- | ------------------ | ------------------------------- | -------------------------------------------------- |
 | 官方分类       | 一级 33 / 二级 145 | `categories:seed:v1`            | 单事务插入两级树，`is_custom = 0`                  |
 | 胶囊配色       | 28 行色对          | 无 settings 键                  | 每次启动 `INSERT OR IGNORE`，不覆盖用户改色        |
-| 教学书         | 1 本 / 5 卷        | `chapterData:v52:migrated`      | 全量重灌卷章、正文、大纲、剧情、实体（§6）         |
+| 教学书         | 1 本 / 5 卷        | `chapterData:v57:migrated`      | 全量重灌卷章、正文、大纲、剧情、实体（§6）         |
 | 子类预设       | 23 条 / 书         | `worldSubtypes:presets:v1`      | 为既有书籍补齐；新建书由 `createBook` 即时写入     |
 | 关系语义码     | 4 个               | 无键                            | 每次启动 `ON CONFLICT(code) DO NOTHING` 补齐新增码 |
 | 内置违禁词     | 853 行             | `cleanWords:seed:v1`            | 首次导入；已存在同词保留用户启停意图               |
@@ -177,7 +177,7 @@ instance.pragma('foreign_keys = ON')
 
 - **分类名称是数据常量**（`BOOK_CATEGORIES` 镜像），不进入 i18n 资源；`origin_id` 保留官方 ID 便于对齐。
 - **23 条预设子类**：世界观 6 / 物品 6 / 势力 6 / 角色 4 / 境界体系 1，定义在 `worldSubtypes.ts` 的 `PRESET_WORLD_SUBTYPES`；`preset_key` 为 ASCII 路由键，与胶囊配色、专属子表映射共用。
-- **4 个语义码**：`superior` / `subordinate` / `belongs_to` / `peer`，真源 `worldSemanticCodes.ts` 的 `HIERARCHY_SEMANTIC_CODES`，展示名取自 `src/shared/worldRelationCodes.ts`。
+- **4 个语义码**：`superior` / `subordinate` / `belongs_to` / `peer`，码表真源 `worldSemanticCodes.ts` 的 `HIERARCHY_SEMANTIC_CODES`；**展示名真源为渲染层 i18n**（`dossier` ns 的 `detail.relation.typeName.*` 类型名、`detail.relation.peerLabel.*` 对端身份标签），`src/shared/worldRelationCodes.ts` 的中文名只写进 `world_semantic_codes.note`，供未知 / 自定义码兜底。
 - **无键种子必须真幂等**：胶囊配色与语义码每次启动都会执行，只允许 `INSERT OR IGNORE` / `ON CONFLICT DO NOTHING`，不得覆盖用户数据。
 
 ## 6. 教学书重灌机制
@@ -185,7 +185,7 @@ instance.pragma('foreign_keys = ON')
 教学书是首启唯一书籍，固定 `id = 'guide'`，标题「Writer's Forge · 使用指南」。重灌入口 `src/main/database/chapterSeed.ts` 的 `resetChapterDataOnce()`，守卫键：
 
 ```ts
-const MIGRATION_KEY = 'chapterData:v52:migrated'
+const MIGRATION_KEY = 'chapterData:v57:migrated'
 ```
 
 ### 6.1 重灌范围
@@ -264,7 +264,7 @@ ON CONFLICT(id) DO NOTHING
 - **迁移顺序**：新增迁移必须插入到依赖满足的位置（建表之后、种子之前、相关列仍存在时），并在注释中写明「须在 X 之后」。
 - **守卫键**：一次性迁移必须有 settings 键、事务包裹、失败不置键；新键命名沿用 `<域>:<动作>:v1`。
 - **种子文档**：新增功能或不兼容交互变更时，按 AGENTS §7.5 同步 `seedGuideBook/`，教学文案与按钮、快捷键、默认值逐条一致。
-- **i18n 数据边界**：分类枚举、预设子类名、语义码展示名是数据常量，不拆进 i18n 资源。
+- **i18n 数据边界**：分类枚举、预设子类名仍是数据常量，不拆进 i18n 资源；**关系语义码展示名例外**——四个内置码的展示名已改由渲染层 i18n 提供（`dossier` ns 的 `detail.relation.typeName.*` / `peerLabel.*`），`world_semantic_codes.note` 收缩为未知 / 自定义码的兜底文案（仍为中文数据常量、不译）。
 - **单文件上限**：数据层单文件不得超过 500 行；装配逻辑过多时按域拆到独立模块，由 `getDb()` 单行调用（`applyCleanWordsSetup` 即此模式的范例）。
 
 ## 9. 数据文件位置

@@ -12,10 +12,6 @@
  */
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  relationSemanticLabel,
-  relationSemanticReverseLabel
-} from '../../../../../shared/worldRelationCodes'
 import type { RelationDirection, RelationTypeOption } from './RelationList'
 import { MODULE_ENTITY_TYPE, isReverseRelation, relationCodesForPair } from './dossierTree'
 import type {
@@ -26,6 +22,7 @@ import type {
   WorldSemanticCodeRow
 } from './dossierTree'
 import { entityChipClass } from './relationChip'
+import { useRelationLabels } from './useRelationLabels'
 import { useRelationTargets } from './useRelationTargets'
 import { useRelationCategories } from './useRelationCategories'
 
@@ -103,6 +100,8 @@ export function useRelationDraft({
   onAdd
 }: RelationDraftOptions): RelationDraftState {
   const { t } = useTranslation('dossier')
+  // 关系类型名（i18n 真源，`dossier` ns）：下拉选项优先取它，DB 的 note 仅作未知码兜底。
+  const { typeName } = useRelationLabels()
   const [targetModule, setTargetModuleState] = useState<RelationTargetModule | ''>('')
   const [targetCategory, setTargetCategoryState] = useState('')
   const [targetId, setTargetId] = useState('')
@@ -137,15 +136,16 @@ export function useRelationDraft({
   /** 当前「当前实体 + 目标模块」组合的可选关系码（未选模块时为全部四码）。 */
   const relationCodes = relationCodesForPair(entityType, targetType)
 
-  const allOptions = semanticCodes.map((code) => ({
-    value: code.code,
-    label: code.note.trim() !== '' ? code.note : code.code
-  }))
-  /** 按码取选项：字典缺项时回退共享层展示名，避免下拉出现裸码。 */
+  const allOptions = semanticCodes.map((code) => {
+    const note = code.note.trim()
+    // 类型名以 i18n 为准；DB 备注仅作未知码（自定义 / 历史残留）兜底。
+    return { value: code.code, label: typeName(code.code) || (note !== '' ? note : code.code) }
+  })
+  /** 按码取选项：字典缺项时回退 i18n 类型名，避免下拉出现裸码。 */
   const optionFor = (code: string): RelationTypeOption =>
     allOptions.find((option) => option.value === code) ?? {
       value: code,
-      label: relationSemanticLabel(code) || code
+      label: typeName(code) || code
     }
   /** 新增关系的类型候选（顺序即规则表顺序，首项为默认值）。 */
   const typeOptions = relationCodes.map(optionFor)
@@ -153,24 +153,13 @@ export function useRelationDraft({
   const defaultTypeCode = typeOptions[0]?.value ?? ''
 
   /**
-   * 入边类型选项：语义码仍读 `from → to`（from = 对方），故在正向标签后补反向读法
-   * （「上级 · 是我的上级」），避免把「我是对方的上级」误读成「对方是我的上级」。
-   * 胶囊本身与出边同款正向读法（`RelationList`），两条提示不冲突。
-   */
-  const incomingOption = (code: string): RelationTypeOption => {
-    const option = optionFor(code)
-    const reverseLabel = relationSemanticReverseLabel(code)
-    return reverseLabel === ''
-      ? option
-      : { value: option.value, label: `${option.label} · ${reverseLabel}` }
-  }
-
-  /**
    * 编辑既有关系时的类型候选：按「该行两端模块」过滤，并保留该行自身的码
    * （历史组合 / 字典缺项）。
    *
    * 端点在方向间对调：出边 `from = 当前实体`、`to = 对端`；入边 `from = 对端`、
    * `to = 当前实体`。对端类型查不到时回退「未选目标」的宽松候选（全部四码）。
+   * 选项文案统一取类型名（`typeName`），方向说明由列表内的 `incomingTypeHint` 承担，
+   * 不再拼接「正向 · 反向」双读法。
    */
   const optionsFor = (rel: WorldRefRow, direction: RelationDirection): RelationTypeOption[] => {
     const peerId = direction === 'out' ? rel.toId : rel.fromId
@@ -181,13 +170,11 @@ export function useRelationDraft({
         : peerType === null
           ? relationCodesForPair(entityType, null)
           : relationCodesForPair(peerType, entityType)
-    const options = codes.map(direction === 'in' ? incomingOption : optionFor)
+    const options = codes.map(optionFor)
     if (rel.semanticCode === null || options.some((option) => option.value === rel.semanticCode)) {
       return options
     }
-    const ownOption: RelationTypeOption =
-      direction === 'in' ? incomingOption(rel.semanticCode) : optionFor(rel.semanticCode)
-    return [ownOption, ...options]
+    return [optionFor(rel.semanticCode), ...options]
   }
 
   /**

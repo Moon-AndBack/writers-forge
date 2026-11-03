@@ -72,7 +72,8 @@ export function listWorldRefsTo(entityId: number, semanticCode?: string): WorldR
  * 两条 IN 查询补齐全页（出边按 `from_id`、入边按 `to_id`），避免逐卡 N+1；只投影卡片
  * 摘要所需字段 + 方向（不取备注，避免传输膨胀），并 JOIN `world_subtypes` 带出对端模块
  * 类型与子类，供渲染层直接上色。与 `worldEntities.ts` 的 `loadAliasMap` 同思路。
- * 入边让角色卡能看到「物品属于角色」这类反向引用。
+ * 入边让角色卡能看到「锻笔剑」这类由对方发起的关系（记录方向仍是「物品 → 角色」，
+ * 胶囊只显示对端名，不带「所属 / 属于」前缀）。
  */
 export function loadRelationSummaryMap(
   ids: readonly number[]

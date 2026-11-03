@@ -62,7 +62,7 @@ renderer（Chromium · React 19）
 
 preload 的入口是一个 `api` 对象（`src/preload/index.ts:77`），类型经 `export type Api = typeof api`（`src/preload/index.ts:376`）导出，再由 `contextBridge.exposeInMainWorld('api', api)`（`src/preload/index.ts:378`）挂到渲染层。事件订阅不把 `ipcRenderer` 交给页面：例如 `onAccentChange` 内部注册监听并返回取消函数（`src/preload/index.ts:366-372`）。
 
-共享层被两侧真实引用：主进程 `src/main/database/richText.ts:1` 与渲染层 `src/renderer/src/components/editor/useRichTextBodyEditor.ts:5` 都从 `src/shared/richTextDoc.ts` 取转换函数；关系语义码同样双端共用（`src/main/database/worldSemanticCodes.ts:1`、`src/renderer/src/pages/writer/dossier/relationChip.ts:15`）。
+共享层被两侧真实引用：主进程 `src/main/database/richText.ts:1` 与渲染层 `src/renderer/src/components/editor/useRichTextBodyEditor.ts:5` 都从 `src/shared/richTextDoc.ts` 取转换函数；关系语义码的码表与中文兜底名仍由共享层提供、当前只被主进程引用（`src/main/database/worldSemanticCodes.ts:1`）；其展示名已改由渲染层 i18n 提供（`dossier` ns，见 `pages/writer/dossier/useRelationLabels.ts`），渲染层不再引用共享层的展示名。
 
 ## 3. 目录分层
 

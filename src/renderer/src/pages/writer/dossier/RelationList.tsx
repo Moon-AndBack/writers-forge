@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Input, Select, Tag } from '../../../components/ui'
-import {
-  relationSemanticLabel,
-  relationSemanticReverseLabel
-} from '../../../../../shared/worldRelationCodes'
 import ConfirmDialog from '../ConfirmDialog'
-import type { DossierRelationPatch, WorldEntityType, WorldRefRow } from './dossierTree'
+import type { DossierRelationPatch, WorldRefRow } from './dossierTree'
+import { isRelationPrefixSuppressed } from './relationChip'
+import { useRelationLabels } from './useRelationLabels'
 
 /** 关系方向：出边（我 → 对方）/ 入边（对方 → 我）。 */
 export type RelationDirection = 'out' | 'in'
@@ -15,11 +13,6 @@ export type RelationDirection = 'out' | 'in'
 export interface RelationTypeOption {
   value: string
   label: string
-}
-
-/** 关系类型**正向**文案（`semantic_code` 描述 from → to）：字典备注优先，缺则回退码本身。 */
-function forwardTypeLabel(rel: WorldRefRow): string {
-  return rel.semanticNote.trim() !== '' ? rel.semanticNote : (rel.semanticCode ?? '')
 }
 
 /** 语义码 → 胶囊配色变体（四码各一色；空码 / 未知码回退中性）。 */
@@ -39,13 +32,8 @@ function pillTone(code: string | null): string {
 }
 
 export interface RelationListProps {
-  /** 方向（决定对端字段与胶囊的 `belongs_to` 反向收尾）。 */
+  /** 方向（决定对端字段与胶囊文案的方向映射）。 */
   direction: RelationDirection
-  /**
-   * 当前实体类型（仅出边使用）：物品的 `belongs_to` 直接显示目标名，不带「属于」前缀
-   * （物品归属关系由角色 / 势力侧表达更自然）；其余模块保持「属于 目标名」。
-   */
-  entityType?: WorldEntityType
   /** 本方向的关系行（出边 / 入边）。 */
   relations: readonly WorldRefRow[]
   /** 该行可选的类型（调用方按方向 + 对端实体类型过滤，并保留该行历史码）。 */
@@ -65,12 +53,13 @@ export interface RelationListProps {
  * 关系胶囊列表（出边与入边**共用同一份渲染 + 就地编辑面板**，§9）。
  *
  * 方向只影响两处（`direction` 参数化，不做平行实现）：
- * - **对端**：出边读 `toName`（我指向谁），入边读 `fromName`（谁指向我）；
- * - **阅读顺序**：出边「类型 对端名」（平级只显示对端名；物品的 `belongs_to` 同样只显示
- *   目标名）；入边同样取**正向**读法「类型 对端名」（如「上级 砚境」「下级 抄书阁」，
- *   平级只显示对端名），唯一例外是 `belongs_to`——正向「属于 对端名」会被误读为
- *   「我属于对方」，故保留反向收尾「对端名 属于我」。卡片摘要（`dossierCardRelations.ts`
- *   的 `relationChipLabel`）采用同一正向读法。
+ * - **对端**：出边读 `toName`（当前条目指向谁），入边读 `fromName`（谁指向当前条目）；
+ * - **文案前缀**：出边 / 入边共用同一套「对端身份」映射（`useRelationLabels().peerLabel`，
+ *   由 i18n 提供，不以「我」为中心）：当前条目是 `from` 时 `superior` 读作「下级 对端名」，
+ *   是 `to` 时同一码读作「上级 对端名」；平级（`peer`）与未知 / 空码只显示对端名。
+ *   `belongs_to` 一律免前缀（只显示对端名，所有实体类型、出边入边同款），与卡片摘要
+ *   （`dossierCardRelations.ts` 的 `relationChipLabel`）共用同一判断（`relationChip.ts` 的
+ *   `isRelationPrefixSuppressed`），两边口径一致。
  *
  * 两端可编辑范围一致：胶囊内 ▸/▾ 展开就地改类型 / 备注，× 删除（二次确认，入边删除的
  * 是对方发起的那条 `world_refs` 行）；**关联对象不可改**——端点由发起方决定。
@@ -84,7 +73,6 @@ export interface RelationListProps {
  */
 export default function RelationList({
   direction,
-  entityType,
   relations,
   optionsFor,
   pillClassOf,
@@ -93,6 +81,7 @@ export default function RelationList({
 }: RelationListProps) {
   const { t } = useTranslation('dossier')
   const { t: tCommon } = useTranslation('common')
+  const { peerLabel } = useRelationLabels()
   /** 当前展开编辑的行（同一列表内只展开一行）。 */
   const [editingId, setEditingId] = useState<number | null>(null)
   /** 待确认删除的行（null = 未弹确认）。 */
@@ -104,57 +93,22 @@ export default function RelationList({
   const peerName = (rel: WorldRefRow): string => (direction === 'out' ? rel.toName : rel.fromName)
 
   /**
-   * 出边前缀：四码取共享层展示名（`worldRelationCodes`）；**平级无前缀**（只显示目标名），
-   * 物品的 `belongs_to` 同样无前缀（物品条目的胶囊只看归属对象名，如「砚秋」）；未知 / 空码回退
-   * 正向文案（备注优先，再回退「自定义关系」）。
+   * 胶囊前缀（出边 / 入边同一套逻辑）：取对端身份标签；`peer` / 空码 / `belongs_to` 无前缀
+   * （只显示对端名，规则与卡片摘要共用 `isRelationPrefixSuppressed`）。
+   * 未知码（绕过写入路径的历史残留）回退字典备注，再回退「自定义关系」。
    */
-  const outPrefix = (rel: WorldRefRow): string => {
-    if (rel.semanticCode === 'peer') return ''
-    if (rel.semanticCode === 'belongs_to' && entityType === 'item') return ''
-    return (
-      relationSemanticLabel(rel.semanticCode ?? '') ||
-      forwardTypeLabel(rel) ||
-      t('detail.relation.custom')
-    )
+  const pillPrefix = (rel: WorldRefRow): string => {
+    const code = rel.semanticCode ?? ''
+    if (isRelationPrefixSuppressed(code)) return ''
+    const label = peerLabel(code, direction)
+    if (label !== '' || code === '' || code === 'peer') return label
+    return rel.semanticNote.trim() !== '' ? rel.semanticNote : t('detail.relation.custom')
   }
 
-  /**
-   * 入边前缀：与出边同款**正向**读法。语义码仍描述「对方 → 我」，所以
-   * `superior`（对方是我的上级）读作「上级 <对端名>」、`subordinate`（对方是我的下级）
-   * 读作「下级 <对端名>」；平级 / 未知 / 空码无前缀（只显示对端名）。
-   */
-  const inPrefix = (rel: WorldRefRow): string => {
-    switch (rel.semanticCode) {
-      case 'superior':
-      case 'subordinate':
-        return relationSemanticLabel(rel.semanticCode)
-      default:
-        return ''
-    }
-  }
-
-  /**
-   * 入边后缀：仅 `belongs_to` 保留反向读法「对端名 属于我」。该码语义为
-   * 「对端属于我」，若取正向「属于 <对端名>」会被读成「我属于对方」，与事实相反。
-   */
-  const inSuffix = (rel: WorldRefRow): string =>
-    rel.semanticCode === 'belongs_to' ? relationSemanticReverseLabel('belongs_to') : ''
-
-  /**
-   * 胶囊正文：出边与入边都用「类型 对端名」（平级 / 未知码 / 物品的 `belongs_to`
-   * 只显示对端名）；入边的 `belongs_to` 例外，读作「对端名 属于我」。
-   * 与卡片摘要（`dossierCardRelations.ts` 的 `relationChipLabel`）同一正向读法；物品出边
-   * `belongs_to` 免前缀为本弹窗特例。
-   */
+  /** 胶囊正文：前缀非空时读作「前缀 对端名」，否则只显示对端名。 */
   const pillText = (rel: WorldRefRow): string => {
     const peer = displayName(peerName(rel))
-    if (direction === 'in') {
-      const prefix = inPrefix(rel)
-      if (prefix !== '') return `${prefix} ${peer}`
-      const suffix = inSuffix(rel)
-      return suffix === '' ? peer : `${peer} ${suffix}`
-    }
-    const prefix = outPrefix(rel)
+    const prefix = pillPrefix(rel)
     return prefix === '' ? peer : `${prefix} ${peer}`
   }
 

@@ -2,12 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Combobox, Select, Textarea } from '../../../components/ui'
 import RelationList from './RelationList'
 import { RELATION_TARGET_MODULES } from './dossierTree'
-import type {
-  DossierRelationPatch,
-  RelationTargetModule,
-  WorldEntityType,
-  WorldRefRow
-} from './dossierTree'
+import type { DossierRelationPatch, RelationTargetModule, WorldRefRow } from './dossierTree'
 import type { RelationDraftState } from './useRelationDraft'
 
 export interface RelationEditorProps {
@@ -18,8 +13,6 @@ export interface RelationEditorProps {
   draft: RelationDraftState
   /** 出边关系（当前实体指向他人的关系）。 */
   relations: WorldRefRow[]
-  /** 当前实体类型（出边物品的 `belongs_to` 胶囊只显示目标名）。 */
-  entityType: WorldEntityType
   /** 入边关系（他人指向当前实体的关系；类型 / 备注可改、可删，关联对象只读）。 */
   incoming: WorldRefRow[]
   /** 更新关系（类型 / 备注）。 */
@@ -41,16 +34,15 @@ export interface RelationEditorProps {
  *   「上级 / 下级 / 平级」，其余组合只给「属于」；目标模块变更时自动切到该组合首项；
  * - **自动反向**：当前实体是角色、目标是物品时，提示「将记录为：物品属于角色」，
  *   提交带 `reverse: true`，由装配层写成 `from = 物品`、`to = 角色`；
- * - 出边关系以**胶囊列表**展示「关系类型 目标名」（平级只显示目标名；物品的 `belongs_to`
- *   也只显示目标名，不带「属于」前缀），不同语义码底色不同；胶囊内 ▸/▾ 展开就地改类型 /
+ * - 出边关系以**胶囊列表**展示「关系类型 目标名」（平级只显示目标名；`belongs_to` 一律
+ *   只显示目标名，不带「属于」前缀），不同语义码底色不同；胶囊内 ▸/▾ 展开就地改类型 /
  *   备注，× 删除（二次确认），悬停显示备注（空备注不出 tip）；
  * - **入边列表（「被引用」）与出边共用同一份胶囊渲染**（`RelationList` + `direction`）：
  *   类型 / 备注同样可就地改、关系可删（二次确认）；关联对象（对方名称）只读，
  *   因为端点由对方条目发起。类型码仍描述 `from → to`，入边的 from 是对方，故候选按
- *   `relationCodesForPair(对方类型, 当前类型)` 过滤，下拉文案补「反向读法」提示（说明
- *   记录方向仍是「对方 → 我」）；胶囊与出边同为正向读法（如「上级 砚境」「下级 抄书阁」，
- *   平级只显示对方名），仅 `belongs_to` 保留反向收尾（如「锻笔剑 属于我」），避免
- *   「属于 对方名」被误读为「我属于对方」；
+ *   `relationCodesForPair(对方类型, 当前类型)` 过滤，方向说明由列表内的提示承担
+ *   （下拉文案统一取类型名）；胶囊按「对端身份」映射读作「上级 砚境」「下级 抄书阁」，
+ *   `belongs_to` 只显示对方名（如「锻笔剑」），平级只显示对方名（与卡片摘要同口径）。
  * - 补充说明（`role`）已下线：新增固定写空串，列表既不展示也不编辑，存量值按空处理。
  *
  * 使用方：世界观 / 角色 / 势力 / 物品功法四域卡片的关系按钮弹窗
@@ -62,7 +54,6 @@ export interface RelationEditorProps {
 export default function RelationEditor({
   draft,
   relations,
-  entityType,
   incoming,
   onUpdate,
   onRemove
@@ -90,6 +81,14 @@ export default function RelationEditor({
     optionsFor,
     pillColorClass
   } = draft
+
+  /**
+   * 层级方向提示：仅当当前「模块 + 目标模块」组合的候选含上级 / 下级时展示
+   * （纯归属组合如角色 → 物品不出现，避免无关提示）。
+   */
+  const showsHierarchyHint = typeOptions.some(
+    (option) => option.value === 'superior' || option.value === 'subordinate'
+  )
 
   return (
     <div className="dossier-detail__section">
@@ -128,6 +127,9 @@ export default function RelationEditor({
           options={typeOptions}
           disabled={!typeSelectable}
         />
+        {showsHierarchyHint ? (
+          <div className="dossier-rel-add__hint">{t('detail.relation.hierarchyHint')}</div>
+        ) : null}
         <Textarea
           className="dossier-rel-add__note"
           rows={3}
@@ -148,7 +150,6 @@ export default function RelationEditor({
       ) : (
         <RelationList
           direction="out"
-          entityType={entityType}
           relations={relations}
           optionsFor={(rel) => optionsFor(rel, 'out')}
           pillClassOf={(rel) => pillColorClass(rel, 'out')}

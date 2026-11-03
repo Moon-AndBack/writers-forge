@@ -98,7 +98,6 @@ export default function DossierRelationsDialog({
         <RelationEditor
           draft={draft}
           relations={relations}
-          entityType={MODULE_ENTITY_TYPE[module]}
           incoming={incoming}
           onUpdate={update}
           onRemove={remove}

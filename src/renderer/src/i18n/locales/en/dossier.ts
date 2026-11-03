@@ -100,6 +100,24 @@ const dossier = {
       targetSearchPlaceholder: 'Type a name to search entries',
       typeLabel: 'Relation type',
       typePlaceholder: 'Select a relation type',
+      typeName: {
+        superior: 'Superior',
+        subordinate: 'Subordinate',
+        peer: 'Peer',
+        belongs_to: 'Belongs to'
+      },
+      peerLabel: {
+        out: {
+          superior: 'Subordinate',
+          subordinate: 'Superior'
+        },
+        in: {
+          superior: 'Superior',
+          subordinate: 'Subordinate'
+        }
+      },
+      hierarchyHint:
+        'Choosing “Superior” means this entry is the other entry’s superior (the other card shows “Superior <this entry>”, this card shows “Subordinate <other entry>”).',
       reverseHint: 'Saved as: item belongs to character',
       custom: 'Custom relation',
       noteLabel: 'Remark',
@@ -111,7 +129,7 @@ const dossier = {
       incomingHint:
         'These relations are created by the other entry: you can change the type or remark, or remove them; the linked entry is read-only.',
       incomingTypeHint:
-        'The type is recorded as “other → me”: “上级” means the other entry is my superior, “属于” means the other entry belongs to me.',
+        'The type is recorded as “other → this entry”: “Superior” means the other entry is this entry’s superior (shown as “Superior <other>”); “Belongs to” means the other entry belongs to this entry (the chip shows just the other entry’s name, with no prefix).',
       removeMessage: 'Remove the relation with “{{name}}”? This cannot be undone.',
       removePill: 'Remove the relation with “{{name}}”'
     },

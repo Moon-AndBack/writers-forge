@@ -29,9 +29,10 @@ export const WORLD_ENTITY_TYPES: readonly WorldEntityType[] = [
  */
 export interface WorldEntityRelationSummary {
   /**
-   * 相对当前实体的方向：
-   * - `'out'` 出边（`from_id = 当前实体`），展示「语义码 + 对端名」，如「上级 文心城」；
-   * - `'in'` 入边（`to_id = 当前实体`），展示「对端名 + 反向语义」，如角色卡「锻笔剑 属于我」。
+   * 相对当前实体的方向（文案口径：**直接描述对方身份**，不以「我」为中心）：
+   * - `'out'` 出边（`from_id = 当前实体`）：如 `superior` 读作「下级 对端名」；
+   * - `'in'` 入边（`to_id = 当前实体`）：同一码从另一端看，如 `superior` 读作「上级 对端名」。
+   * 平级（`peer`）与未知 / 空码只显示对端名；映射真源为渲染层 `dossier` ns 的 `peerLabel.*`。
    */
   direction: 'out' | 'in'
   semanticCode: string

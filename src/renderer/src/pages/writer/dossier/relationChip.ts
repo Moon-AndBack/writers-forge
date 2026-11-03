@@ -9,11 +9,8 @@
  * 分类顺序算深浅。CSS 中存量的 `.chip-s*` 定义仅为既有样式保留，不由本模块产出。
  */
 import type { WorldEntityType } from '../../../../../preload/types/worldEntity'
-import {
-  relationSemanticLabel,
-  relationSemanticReverseLabel
-} from '../../../../../shared/worldRelationCodes'
 import { presetChipClass } from './presetChipColors'
+import type { RelationLabels } from './useRelationLabels'
 
 /**
  * 按「模块 + 预设键」拼装配色类名：始终带模块类 `chip-m-<entityType>`（`power_system`
@@ -47,20 +44,38 @@ export interface RelationChipSource {
 }
 
 /**
- * 单条关系的关系摘要标签统一读作「正向前缀 对端名」（出边 / 入边同款，如「上级 抄书阁」
- * 「下级 抄书阁」「属于 砚秋」）；平级（`peer`）两端都不标前缀，只显示对端名。
- * 唯一例外是入边的 `belongs_to`：该码描述「对端属于我」，若取正向「属于 对端名」
- * 会被读成「我属于对方」，故保留反向收尾「对端名 属于我」。未知语义码（历史残留空码）
- * 只显示对端名。
+ * `belongs_to` 免前缀：归属关系一律只显示对端名——**适用于所有实体类型、出边与入边同款**。
+ * 如物品「锻笔剑」属于角色「砚秋」时，锻笔剑卡只显示「砚秋」，砚秋卡也只显示「锻笔剑」，
+ * 不再出现「属于 / 所属」这类描述前缀。关系类型名（新增关系下拉里的「属于」）不受影响，
+ * 仍由 `detail.relation.typeName.belongs_to` 提供。
  *
- * 收敛自 `DossierView.tsx`（`relationChipLabel`）与 `HoverCard.tsx`（`relationLabel`）
- * 两份逐字等价实现；档案卡第四行、实体悬停卡与「+N」浮窗共用本函数，保证三处口径一致。
+ * 卡片胶囊（{@link relationChipLabel}）与「关联关系」弹窗（`RelationList.pillPrefix`）
+ * 共用本判断，避免两处各写一份规则（§9）。
  */
-export function relationChipLabel(relation: RelationChipSource): string {
+export function isRelationPrefixSuppressed(semanticCode: string): boolean {
+  return semanticCode === 'belongs_to'
+}
+
+/**
+ * 单条关系的关系摘要标签统一读作「对端身份标签 对端名」（出边 / 入边同款口径：
+ * 直接描述**对端**身份，不以「我」为中心）。方向映射由 `labels.peerLabel` 提供
+ * （`useRelationLabels`，i18n 真源）：如出边 `superior` →「下级 抄书阁」，入边
+ * `superior` →「上级 抄书阁」；平级（`peer`）两端都不标前缀，只显示对端名。未知语义码
+ * （历史残留空码）同样只显示对端名。
+ *
+ * `belongs_to` 一律免前缀（见 {@link isRelationPrefixSuppressed}），只显示对端名，卡片胶囊
+ * 与「关联关系」弹窗口径一致。
+ *
+ * 本函数保持纯函数（不依赖 React）：labels 能力由调用方从 `useRelationLabels()` 取到后传入，
+ * 供档案卡第四行、实体悬停卡与「+N」浮窗三处共用，保证文案口径一致。
+ */
+export function relationChipLabel(
+  relation: RelationChipSource,
+  labels: Pick<RelationLabels, 'peerLabel'>
+): string {
   const name = relation.targetName
-  if (relation.direction === 'in' && relation.semanticCode === 'belongs_to') {
-    return `${name} ${relationSemanticReverseLabel('belongs_to')}`
-  }
-  const label = relationSemanticLabel(relation.semanticCode)
-  return relation.semanticCode === 'peer' || label === '' ? name : `${label} ${name}`
+  const prefix = isRelationPrefixSuppressed(relation.semanticCode)
+    ? ''
+    : labels.peerLabel(relation.semanticCode, relation.direction)
+  return prefix === '' ? name : `${prefix} ${name}`
 }

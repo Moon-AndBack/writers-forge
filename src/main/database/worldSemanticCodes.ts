@@ -1,7 +1,8 @@
 import { RELATION_SEMANTIC_LABELS } from '../../shared/worldRelationCodes'
 
 /**
- * 统一设定库 · 关系类型（语义码）字典真源（码与类型约束；展示名取自共享层）。
+ * 统一设定库 · 关系类型（语义码）字典真源（码与类型约束；展示名由渲染层 i18n 提供，
+ * `note` 取自共享层、仅作未知 / 自定义码兜底）。
  *
  * 关系类型收敛为两类语义：
  * - 层级三码（世界观与势力之间可选，含世界观 ↔ 世界观 / 世界观 ↔ 势力 / 势力 ↔ 势力）：
@@ -12,9 +13,9 @@ import { RELATION_SEMANTIC_LABELS } from '../../shared/worldRelationCodes'
  *
  * `from_type` / `to_type` 全部为 `NULL`（不限模块，任意实体对通用）；具体某对模块能选
  * 哪些码由渲染层按模块组合计算（`dossierTree.ts` 的 `relationCodesForPair`），字典本身
- * 不按模块收窄，便于后续扩展组合而无需迁移。`note` 为界面展示名，属**数据常量**（不译），
- * 中文字面量即最终展示文案——真源为共享层 `src/shared/worldRelationCodes.ts`（渲染层卡片
- * 摘要同源取用），本文件不再另写一份。
+ * 不按模块收窄，便于后续扩展组合而无需迁移。`note` 为**数据常量**（不译），中文字面量取自
+ * 共享层 `src/shared/worldRelationCodes.ts`；它在界面上的用途已收缩为「未知 / 自定义语义码
+ * 兜底」，四个内置码的展示名改由渲染层 i18n（`dossier` ns 的 `detail.relation.typeName`）提供。
  *
  * 消费方：
  * - `worldEntitySeed.ts` 的 `seedSemanticCodeDictionary()`（每次启动幂等补齐）；

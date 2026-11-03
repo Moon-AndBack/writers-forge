@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next'
 import type { WorldEntityDetail } from '../../../../../preload/types/worldEntity'
 // 跨域复用档案域的胶囊纯函数（entities → dossier）：文案与配色与档案卡第四行同口径。
 import { entityChipClass, relationChipLabel } from '../dossier/relationChip'
+import { useRelationLabels } from '../dossier/useRelationLabels'
 import { useChipOverflow } from '../../../components/useChipOverflow'
 import { useOverflowPopup } from '../../../components/useOverflowPopup'
 import { EntityCardMorePopup } from './EntityCardMorePopup'
@@ -57,6 +58,8 @@ export function EntityCardRelations({
   onPopupLeave
 }: EntityCardRelationsProps): ReactElement | null {
   const { t } = useTranslation('entities')
+  // 关系文案映射（i18n，`dossier` ns）：本组件自身文案仍取 `entities` ns。
+  const relationLabels = useRelationLabels()
   const listRef = useRef<HTMLSpanElement | null>(null)
   // 单行容量（宽够则更多、窄则更少）；「+N」不计入容量测量。
   const capacity = useChipOverflow(listRef, relations.length, layoutKey, {
@@ -84,7 +87,7 @@ export function EntityCardRelations({
 
   const moreItems: EntityCardMoreItem[] = relations.slice(visibleCount).map((rel) => ({
     peerId: rel.peerId,
-    label: relationChipLabel(rel),
+    label: relationChipLabel(rel, relationLabels),
     chipClass: entityChipClass(rel.peerEntityType, rel.peerPresetKey)
   }))
 
@@ -106,7 +109,7 @@ export function EntityCardRelations({
               }
               onMouseLeave={chipsInteractive ? onChipLeave : undefined}
             >
-              {relationChipLabel(rel)}
+              {relationChipLabel(rel, relationLabels)}
             </span>
           ))}
           {hiddenCount > 0 ? (

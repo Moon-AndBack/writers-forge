@@ -9,6 +9,7 @@ import type { WorldEntityType } from '../../../../../preload/types/worldEntity'
 import type { EntityCardMoreItem } from '../entities/EntityCardMorePopup'
 import type { DossierRow } from './dossierTree'
 import { entityChipClass, relationChipLabel } from './relationChip'
+import type { RelationLabels } from './useRelationLabels'
 
 /** 单条关系胶囊的渲染数据（文案 + 配色已预计算，组件只负责摆放）。 */
 export interface DossierRelationChip {
@@ -33,20 +34,24 @@ export interface DossierCardRelations {
 }
 
 /**
- * 关系摘要标签统一读作「正向前缀 对端名」（出边 / 入边同款，如「上级 抄书阁」
- * 「下级 抄书阁」「属于 砚秋」）；平级（`peer`）两端都不标前缀，只显示对端名。
- * 唯一例外是入边的 `belongs_to`：该码描述「对端属于我」，若取正向「属于 对端名」
- * 会被读成「我属于对方」，故保留反向收尾「对端名 属于我」。未知语义码（历史残留空码）
- * 只显示对端名。文案计算统一走 `relationChipLabel`。
+ * 关系摘要标签统一读作「对端身份标签 对端名」（出边 / 入边同一套口径，直接描述对端身份）：
+ * 如当前条目是 `from` 时「下级 抄书阁」、是 `to` 时「上级 抄书阁」；平级（`peer`）两端都
+ * 不标前缀，只显示对端名。`belongs_to` 一律免前缀（所有实体类型、出边入边同款），只显示
+ * 对端名（与「关联关系」弹窗同规则，见 `relationChip.ts` 的 `isRelationPrefixSuppressed`）。
+ * 文字映射由调用方传入的 `labels`（`useRelationLabels()`）提供，文案计算统一走
+ * `relationChipLabel`。
  *
  * `peerId` 一并透出，供标签悬停时取对端实体详情（名称 / 类别 / 正文摘要）；
  * `entityType` / `presetKey` 取自关系摘要的对端字段，供标签按对端模块 + 预设分类取色。
  * 无关系返回空数组（`items` / `moreItems` 均为空）。
  */
-export function dossierCardRelations(relations: DossierRow['relations']): DossierCardRelations {
+export function dossierCardRelations(
+  relations: DossierRow['relations'],
+  labels: Pick<RelationLabels, 'peerLabel'>
+): DossierCardRelations {
   const items: DossierRelationChip[] = relations.map((relation) => ({
     peerId: relation.peerId,
-    label: relationChipLabel(relation),
+    label: relationChipLabel(relation, labels),
     chipClass: entityChipClass(relation.peerEntityType, relation.peerPresetKey),
     entityType: relation.peerEntityType,
     presetKey: relation.peerPresetKey

@@ -82,7 +82,7 @@ schema 目录下 18 个文件承载 46 张表；`settings` / `books` / `book_cov
 | `world_aliases`        | `entity_id`、`alias`、`kind`、`sort_order`                                                         | `kind` 为自由文本，默认 `other`                                                                                                                                                   |
 | `world_tags`           | `book_id`、`name`、`UNIQUE (book_id, name)`                                                        | 按书隔离的标签字典                                                                                                                                                                |
 | `world_entity_tags`    | `entity_id`、`tag_id`、`PRIMARY KEY (entity_id, tag_id)`                                           | 多对多连接表                                                                                                                                                                      |
-| `world_semantic_codes` | `code`（PK）、`from_type`、`to_type`、`note`                                                       | 关系类型字典；`from_type`/`to_type` 全为 `NULL`（不限模块）；`note` 即展示名                                                                                                      |
+| `world_semantic_codes` | `code`（PK）、`from_type`、`to_type`、`note`                                                       | 关系类型字典；`from_type`/`to_type` 全为 `NULL`（不限模块）；`note` 为未知 / 自定义码的兜底展示名（内置码展示名在渲染层 i18n）                                                    |
 
 ### 3.3 L1.5 自定义字段（1 张）
 
@@ -171,7 +171,7 @@ schema 目录下 18 个文件承载 46 张表；`settings` / `books` / `book_cov
 
 **5.3 模块层表始终有行。** `world_character` / `world_power_system` 不允许出现「有主行无子行」：由 §8 的触发器在插入与类型变更时补建。注意这只覆盖 L2，**L3 子分类表不预建空行**（预设子类在创建 / 子类变更 / 首次写字段时才 `INSERT OR IGNORE`），`world_custom` 更是只在写入字段时产生行。
 
-**5.4 关系只有四码。** `superior`（上级）/ `subordinate`（下级）/ `peer`（平级）/ `belongs_to`（属于），真源 `database/worldSemanticCodes.ts:32-47`，展示名真源 `src/shared/worldRelationCodes.ts`。字典的 `from_type` / `to_type` 全为 `NULL`，某对模块能选哪些码由渲染层 `relationCodesForPair` 计算，字典本身不收窄。新建引用时 `semanticCode` 必填。
+**5.4 关系只有四码。** `superior`（上级）/ `subordinate`（下级）/ `peer`（平级）/ `belongs_to`（属于），真源 `database/worldSemanticCodes.ts:32-47`。展示名真源为**渲染层 i18n**（`dossier` ns 的 `detail.relation.typeName.*` / `peerLabel.*`，入口 `pages/writer/dossier/useRelationLabels.ts`），口径是「直接描述对方身份」——`from` 是 `to` 的上级时，`from` 卡片显示「下级 对端名」、`to` 卡片显示「上级 对端名」；`belongs_to` 例外，胶囊不分方向、不分模块一律只显示对端名（无「属于 / 所属」前缀），「属于」只作为类型名出现在新增关系的类型下拉里。`src/shared/worldRelationCodes.ts` 的中文名只写进 `world_semantic_codes.note`，作未知 / 自定义码兜底。字典的 `from_type` / `to_type` 全为 `NULL`，某对模块能选哪些码由渲染层 `relationCodesForPair` 计算，字典本身不收窄。新建引用时 `semanticCode` 必填。
 
 **5.5 `preset_key` 是稳定键。** 路由、配色（`chip_colors.preset_key`）、字段白名单（`src/shared/worldSubtypeFields.ts`）全部按 ASCII 键匹配，**不按中文名称**：名称可被改名，键不可变。
 
