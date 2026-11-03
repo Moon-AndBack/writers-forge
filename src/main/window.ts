@@ -145,6 +145,8 @@ export function createMainWindow(): BrowserWindow {
   const acrylicEnabled = initialMaterial === 'acrylic'
 
   // 应用图标：开发态取仓库内 build/icon.png；打包态取 extraResources 投放的 icon.png。
+  // 文件内容恒定 256×256（文件名不再带尺寸后缀）：Electron 在 new BrowserWindow() 构造期
+  // 会同步把图标解码成 Windows HICON（尺寸上限 256），256² 约 3ms，无大图解码开销。
   // （electron-builder 同时以 build/icon.ico 内嵌 exe 图标，保证标题栏 / 任务栏一致。）
   const windowIcon = app.isPackaged
     ? join(process.resourcesPath, 'icon.png')

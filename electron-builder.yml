@@ -2,6 +2,7 @@ appId: com.writersforge.app
 productName: "Writer's Forge"
 
 # 应用图标：源 SVG 见 build/icon.svg，由 scripts/generate-icon.mjs 生成 icon.ico / icon.png
+# （icon.png 恒为 256×256，仅作窗口图标；exe 图标走下方 icon.ico）
 icon: build/icon.ico
 
 directories:
@@ -32,6 +33,7 @@ files:
 
 # build/ 不进入 app 包（见 files 的 '!build/**'），窗口图标以额外资源投放，
 # 供 src/main/window.ts 在打包态经 process.resourcesPath 读取。
+# 只投放 icon.png（恒 256×256）：Windows 图标尺寸上限即 256，构造期解码最快，4K PNG 已废弃。
 extraResources:
   - from: build/icon.png
     to: icon.png

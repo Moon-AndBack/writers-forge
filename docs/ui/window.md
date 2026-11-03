@@ -14,18 +14,18 @@
 
 主窗口由 `createMainWindow()` 创建，`BrowserWindow` 选项集中在 `src/main/window.ts:74-99`。
 
-| 参数                     | 取值                                                                 | 说明                                                | 出处                                      |
-| ------------------------ | -------------------------------------------------------------------- | --------------------------------------------------- | ----------------------------------------- |
-| `width` / `height`       | 持久化值，缺省 902 × 764                                             | 外框尺寸，单位 DIP                                  | `window.ts:75-76`、`windowState.ts:22-23` |
-| `minWidth` / `minHeight` | 902 × 764                                                            | 与默认尺寸相同，窗口不可再缩小                      | `window.ts:77-78`                         |
-| `backgroundColor`        | 材质生效 `#00000000`；否则 `#f3f3f3`                                 | 透明用 alpha 通道实现，**不用** `transparent: true` | `window.ts:84`                            |
-| `backgroundMaterial`     | `resolveMaterial()` 结果                                             | `acrylic` / `none`                                  | `window.ts:65,85`                         |
-| `icon`                   | 开发态 `build/icon.png`；打包态 `resources/icon.png`                 | 路径由 `app.isPackaged` 分支决定                    | `window.ts:70-72,80`                      |
-| `titleBarStyle`          | `'hidden'`                                                           | 隐藏系统标题栏，渲染层自绘                          | `window.ts:86`                            |
-| `titleBarOverlay`        | `color: '#00000000'`、`symbolColor: '#5c5c5c'`、`height: 42`         | 仅保留右上角系统按钮（WCO）                         | `window.ts:87-91`                         |
-| `show`                   | `false`                                                              | 等 `ready-to-show` 再 `show()`，避免白屏闪烁        | `window.ts:79,110-113`                    |
-| `autoHideMenuBar`        | `true`                                                               | 隐藏菜单栏                                          | `window.ts:92`                            |
-| `webPreferences`         | `contextIsolation: true`、`sandbox: false`、`nodeIntegration: false` | preload 为 `../preload/index.js`                    | `window.ts:93-98`                         |
+| 参数                     | 取值                                                                 | 说明                                                                              | 出处                                      |
+| ------------------------ | -------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------- |
+| `width` / `height`       | 持久化值，缺省 902 × 764                                             | 外框尺寸，单位 DIP                                                                | `window.ts:75-76`、`windowState.ts:22-23` |
+| `minWidth` / `minHeight` | 902 × 764                                                            | 与默认尺寸相同，窗口不可再缩小                                                    | `window.ts:77-78`                         |
+| `backgroundColor`        | 材质生效 `#00000000`；否则 `#f3f3f3`                                 | 透明用 alpha 通道实现，**不用** `transparent: true`                               | `window.ts:84`                            |
+| `backgroundMaterial`     | `resolveMaterial()` 结果                                             | `acrylic` / `none`                                                                | `window.ts:65,85`                         |
+| `icon`                   | 开发态 `build/icon.png`；打包态 `resources/icon.png`                 | 路径由 `app.isPackaged` 分支决定；窗口图标只用 256（Windows 图标尺寸上限，无 4K） | `window.ts:147-151,159`                   |
+| `titleBarStyle`          | `'hidden'`                                                           | 隐藏系统标题栏，渲染层自绘                                                        | `window.ts:86`                            |
+| `titleBarOverlay`        | `color: '#00000000'`、`symbolColor: '#5c5c5c'`、`height: 42`         | 仅保留右上角系统按钮（WCO）                                                       | `window.ts:87-91`                         |
+| `show`                   | `false`                                                              | 等 `ready-to-show` 再 `show()`，避免白屏闪烁                                      | `window.ts:79,110-113`                    |
+| `autoHideMenuBar`        | `true`                                                               | 隐藏菜单栏                                                                        | `window.ts:92`                            |
+| `webPreferences`         | `contextIsolation: true`、`sandbox: false`、`nodeIntegration: false` | preload 为 `../preload/index.js`                                                  | `window.ts:93-98`                         |
 
 其他行为：
 

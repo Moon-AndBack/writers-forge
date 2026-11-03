@@ -15,8 +15,10 @@
  *
  * 产出：
  * - build/icon.svg（源文件，便于人工检视 / 二次编辑）
- * - build/icon.png（4096×4096，4K，供 Linux 打包与窗口图标）
- * - build/icon.ico（16/24/32/48/64/128/256，Windows 应用 / 窗口图标）
+ * - build/icon.png（256×256，窗口图标；Electron 构造窗口时会把图标同步解码成 HICON，
+ *   而 Windows 图标尺寸上限就是 256，故只出这一档，**不再产出 4K PNG**）
+ *   —— 尺寸恒定 256，文件名不再带尺寸后缀
+ * - build/icon.ico（16/24/32/48/64/128/256，Windows 应用 / 任务栏图标，内嵌 exe）
  *
  * 小尺寸（≤32px）描边按最小 1.3px 物理宽度补偿，避免 16px 下笔画湮没 / 笔缝与笔尖糊连。
  *
@@ -61,19 +63,12 @@ const SLIT = GLYPH.slit
 const DOT = GLYPH.dot
 /** 每段贝塞尔的展平段数。 */
 const BEZIER_STEPS = 24
-/** 超采样倍率（抗锯齿）：常规尺寸用 4×。 */
+/** 超采样倍率（抗锯齿）：常规尺寸用 4×（最大输出 256，放大到 1024² 完全可接受）。 */
 const SS = 4
-/**
- * 大尺寸超采样倍率：4096 输出若仍用 4× 会放大到 16384²（约 2.7 亿采样/掩码，单掩码 268MB），
- * 内存与耗时不可接受，故大尺寸降为 2×（8192²，单掩码约 67MB）。
- */
-const SS_LARGE = 2
-/** 启用大尺寸降采样的输出边长阈值。 */
-const SS_LARGE_FROM = 2048
 
 const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256]
-/** 4K PNG 输出边长（供 Linux 打包与窗口图标）。 */
-const PNG_SIZE = 4096
+/** 窗口图标边长（Windows 图标尺寸上限，窗口构造期解码最快）。 */
+const WINDOW_ICON_SIZE = 256
 
 /** SVG 路径字符串（与栅格化几何一致，取自同一共享源）。 */
 const DROPLET_D = GLYPH.dropletD
@@ -267,7 +262,7 @@ function strokeCircleMask(circle, width, half) {
  * @returns {{width:number,height:number,data:Uint8ClampedArray}}
  */
 function render(size) {
-  const ss = size >= SS_LARGE_FROM ? SS_LARGE : SS
+  const ss = SS
   const w = size * ss
   const scale = w / VIEW
   // 小尺寸补偿：描边物理宽度不低于 MIN_STROKE_PX。
@@ -298,7 +293,7 @@ function render(size) {
   const radius = CORNER_RATIO * w
   const samples = ss * ss
   // 累加缓冲用 Float32：累加上限 = samples×255（≤4080），远低于 Float32 可精确表示的整数上限 2²⁴；
-  // 4096² 下每个缓冲 Float32 约 67MB（Float64 约 134MB），四缓冲合计省约 268MB。
+  // 且比 Float64 省一半内存，256² 输出下差异可以忽略，保持简单即可。
   const accR = new Float32Array(size * size)
   const accG = new Float32Array(size * size)
   const accB = new Float32Array(size * size)
@@ -447,14 +442,15 @@ function main() {
   const svg = buildSvg()
   writeFileSync(join(BUILD_DIR, 'icon.svg'), svg, 'utf8')
 
-  const png = encodePng(render(PNG_SIZE))
-  writeFileSync(join(BUILD_DIR, 'icon.png'), png)
+  // 窗口图标只出 256（Windows 图标尺寸上限）：构造期解码 ≈3ms，4K 需 ≈300ms 且无处可用。
+  const windowPng = encodePng(render(WINDOW_ICON_SIZE))
+  writeFileSync(join(BUILD_DIR, 'icon.png'), windowPng)
 
   const ico = encodeIco(ICO_SIZES.map((size) => render(size)))
   writeFileSync(join(BUILD_DIR, 'icon.ico'), ico)
 
   console.log(`icon.svg  ${svg.length} B`)
-  console.log(`icon.png  ${png.length} B (${PNG_SIZE}x${PNG_SIZE})`)
+  console.log(`icon.png  ${windowPng.length} B (${WINDOW_ICON_SIZE}x${WINDOW_ICON_SIZE})`)
   console.log(`icon.ico  ${ico.length} B (${ICO_SIZES.join('/')})`)
 }
 
