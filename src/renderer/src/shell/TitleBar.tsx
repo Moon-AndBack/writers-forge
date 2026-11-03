@@ -1,9 +1,8 @@
-import { useCallback, useState } from 'react'
+import { Suspense, lazy, useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { MorphIcon } from 'morphicons/react'
 import { IconButton } from '../components/ui'
-import SettingsDialog from '../components/dialogs/SettingsDialog'
 import { useActivityActions } from './activityActions'
 import { useActivityBar } from './activityBarContext'
 import { useModuleLabel } from './activityBarModules'
@@ -13,6 +12,18 @@ import { useRightPaneVisibility } from './rightPaneVisibility'
 import ThemeSwitcherPopover from './ThemeSwitcherPopover'
 import { useTitleBarActions } from './titleBarActions'
 import '../styles/titlebar.css'
+
+/**
+ * 设置弹窗按需加载：6 个 Section（`pages/settings/*`）与 `settings.css` 合计约
+ * 24 kB，只有用户点齿轮时才需要，故从入口 chunk 拆出独立 chunk。
+ *
+ * 模块说明符在本文件只此一处（`lazy` 与 hover 预取共用同一个函数），Vite 只会
+ * 产出一个 chunk；`import()` 自身带模块缓存，重复调用不会重复请求。
+ */
+const loadSettingsDialog = (): Promise<typeof import('../components/dialogs/SettingsDialog')> =>
+  import('../components/dialogs/SettingsDialog')
+
+const SettingsDialog = lazy(loadSettingsDialog)
 
 /**
  * 外壳标题栏（<header class="titlebar">）。
@@ -56,6 +67,10 @@ export default function TitleBar({ settingsLocked = false }: TitleBarProps) {
 
   // 设置弹窗开关：由标题栏齿轮持有（弹窗挂在本组件末尾）。
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // 懒加载门控：`Suspense` 必须真正渲染子节点才会触发 `import()`，故首次点击
+  // 齿轮后才挂载 `SettingsDialog`；此后保持挂载，关闭仍由 `Modal` 自己播退场
+  // 动画并延迟卸载，与静态导入时的生命周期一致。
+  const [settingsMounted, setSettingsMounted] = useState(false)
 
   // 品牌名随上下文派生：写作页显示当前活动模块名（如「章节」，模块栏切换时随
   // Provider 的 active 实时更新）；其余显示「书架」。
@@ -85,8 +100,16 @@ export default function TitleBar({ settingsLocked = false }: TitleBarProps) {
   // 亦可关闭。
   const handleToggleSettings = useCallback((): void => {
     if (settingsLocked) return
+    // 幂等：已挂载后重复置 true 会被 React 直接跳过，不产生额外渲染。
+    setSettingsMounted(true)
     setSettingsOpen((open) => !open)
   }, [settingsLocked])
+
+  // 预取：齿轮 hover / 聚焦时提前请求设置 chunk，摊掉首次打开的加载延迟；
+  // 预取失败不影响后续打开（`lazy` 会在真正渲染时重试并走自身的错误边界）。
+  const preloadSettingsDialog = useCallback((): void => {
+    void loadSettingsDialog().catch(() => undefined)
+  }, [])
 
   // 右栏开关文案：窄窗优先提示不可用；否则随实际显隐切换「显示 / 隐藏」。
   const rightPaneLabel = rightPaneNarrow
@@ -142,6 +165,8 @@ export default function TitleBar({ settingsLocked = false }: TitleBarProps) {
             tooltip={settingsOpen ? tCommon('close') : t('settings')}
             disabled={settingsLocked}
             onClick={handleToggleSettings}
+            onMouseEnter={preloadSettingsDialog}
+            onFocus={preloadSettingsDialog}
           >
             {/* 两态形变：齿轮 ↔ ×；reducedMotion="user" 跟随系统减少动效偏好。
                 两态结构差异较大，用 smooth 弹簧避免过冲带来的杂乱观感。 */}
@@ -201,8 +226,14 @@ export default function TitleBar({ settingsLocked = false }: TitleBarProps) {
         </div>
       </header>
 
-      {/* 设置弹窗：portal 挂到 body，置于 #root 之外；状态由标题栏齿轮持有。 */}
-      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {/* 设置弹窗：portal 挂到 body，置于 #root 之外；状态由标题栏齿轮持有。
+          首次打开才挂载（懒加载 chunk 随挂载请求），fallback 用 `null`：本地
+          file:// 下加载极快且已有 hover 预取，不做额外占位以免闪一帧骨架。 */}
+      {settingsMounted ? (
+        <Suspense fallback={null}>
+          <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+        </Suspense>
+      ) : null}
     </>
   )
 }
