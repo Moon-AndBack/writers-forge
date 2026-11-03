@@ -1,6 +1,8 @@
 import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import { DiagnosticsGate } from './diagnostics/DiagnosticsGate'
+import i18n, { ensureWriterNamespaces } from './i18n'
+import { resolveLocale } from './i18n/config'
 import { useOnboarding } from './onboarding/useOnboarding'
 import Bookshelf from './pages/Bookshelf'
 import { TimelineCardSizeProvider } from './pages/writer/timeline/TimelineCardSizeProvider'
@@ -31,9 +33,18 @@ import './styles/acrylic.css'
  * 路由级懒加载：欢迎页（仅首启）与写作页（含编辑器 / 剧情 / 档案 / 时间线整域子图）
  * 各自拆成独立 chunk，书架首屏不再解析写作域代码。
  * 书架保持静态导入——它是默认首屏，留在入口 chunk 可省一次 chunk 往返与额外占位帧。
+ *
+ * Writer 额外先加载**写作域语言包**（`chapters` / `dossier` / `entities` / `outline` /
+ * `plot` / `timeline` / `writer` 等只在写作页使用的 ns）：入口语言包仅含 core ns，
+ * 若先挂载页面再补资源会闪 key，故此处严格串行——写作域资源 resolve 后再请求页面 chunk。
+ * locale 取当前 `i18n.language` 并经 `resolveLocale` 规整，
+ * 语言切换后再次进入写作页也能拿到与当前语言一致的资源。
  */
 const Welcome = lazy(() => import('./pages/Welcome'))
-const Writer = lazy(() => import('./pages/Writer'))
+const Writer = lazy(async () => {
+  await ensureWriterNamespaces(resolveLocale(i18n.language))
+  return import('./pages/Writer')
+})
 
 /**
  * 视口占位：引导状态读取中与路由页懒加载期间共用同一视觉，
