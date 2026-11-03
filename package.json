@@ -16,8 +16,8 @@
     "start": "electron-vite preview",
     "build": "electron-vite build",
     "icon": "node scripts/generate-icon.mjs",
-    "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
-    "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false --incremental",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false --incremental",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -49,6 +49,8 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "@eslint/js": "^10.0.1",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.6.4",
@@ -76,6 +78,10 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{js,mjs,cjs,jsx}": [
       "eslint --fix",
       "prettier --write"
     ],
