@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { CSSProperties, RefObject } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Editor } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
 import {
   EMPTY_RICH_TEXT_CONTENT,
   RICH_TEXT_EDITOR_PROPS,
-  RICH_TEXT_EXTENSIONS,
-  toCssString
+  RICH_TEXT_EXTENSIONS
 } from '../../../components/editor/richTextExtensions'
 import { formatRelativeTime } from '@renderer/lib/relativeTime'
 import DocMeta from '../../../components/editor/DocMeta'
@@ -15,7 +14,6 @@ import DocTitleField from '../../../components/editor/DocTitleField'
 import DocCharCount from '../DocCharCount'
 import { DocWordLimit, docCharCount } from '../docWordLimit'
 import { SaveStatus, type ChapterSaveState } from '../chapters/SaveStatus'
-import { getQuotePool, randomQuoteIndex } from '../quotes'
 import { OutlineSearchHighlight } from './outlineSearch'
 import type { OutlineEditorTarget } from './outlineTree'
 import OutlineActivityActions from './OutlineActivityActions'
@@ -23,6 +21,13 @@ import OutlineCreateDialog from './OutlineCreateDialog'
 import OutlineSearchView from './OutlineSearchView'
 import OutlineTrashView from './OutlineTrashView'
 import { TableContextMenu } from '../../../components/editor/TableContextMenu'
+import { SelectionContextMenu } from '../../../components/editor/SelectionContextMenu'
+import { ForeshadowMark } from '../../../components/editor/foreshadowMarks'
+import {
+  useForeshadowMarks,
+  type ForeshadowLabelResolver
+} from '../../../components/editor/useForeshadowMarks'
+import { useDocPlaceholder } from '../useDocPlaceholder'
 import { useOutlineDoc } from './useOutlineDoc'
 import { useSyncFlushHandler } from '../../../shell/beforeCloseFlush'
 import { useOutlineSearch } from './useOutlineSearch'
@@ -30,17 +35,21 @@ import { useOutlineTitle } from './useOutlineTitle'
 
 /**
  * 大纲编辑器扩展集：**通用块级富文本底座**（`RICH_TEXT_EXTENSIONS`，与剧情场景正文共用，§9）
- * + 两枚大纲专属扩展：
+ * + 三枚大纲专属扩展：
  * - `OutlineSearchHighlight`：查找高亮 Decoration（仅当前条目；不涉及 entities / IPC）；
- * - `DocWordLimit`：单篇正文有效字数上限（20 万；输入时拦截），与章节编辑器共用同一扩展。
+ * - `DocWordLimit`：单篇正文有效字数上限（20 万；输入时拦截），与章节编辑器共用同一扩展；
+ * - `ForeshadowMark`：锚定当前**条目行**的伏笔正文标记（数据经 meta 事务写入）。
+ *   ⚠️ 只加在本数组，**不得**塞进共享的 `RICH_TEXT_EXTENSIONS`（否则污染剧情场景编辑器）。
  *
  * ⚠️ 本数组必须为**模块级常量引用**（`useEditor` 按引用比对选项，理由见 `RICH_TEXT_EXTENSIONS`），
  * 故此处展开一次、不再内联到 `useEditor` 调用处。
  */
-const EDITOR_BASE_EXTENSIONS = [...RICH_TEXT_EXTENSIONS, OutlineSearchHighlight, DocWordLimit]
-
-/** 空态诗词提示轮换间隔（与章节视图同口径）。 */
-const EMPTY_HINT_ROTATE_MS = 10000
+const EDITOR_BASE_EXTENSIONS = [
+  ...RICH_TEXT_EXTENSIONS,
+  OutlineSearchHighlight,
+  DocWordLimit,
+  ForeshadowMark
+]
 
 /**
  * 正文是否「空」：doc 仅一个顶层段落，且该段**既无文本也无行内节点**（与章节视图同口径）。
@@ -76,6 +85,10 @@ export interface OutlineEditorProps {
   onCreateNonVolumeChapter: (title: string) => void
   /** 新建分组容器（创建弹窗提交；`title` 可空 = 默认名分组）。 */
   onCreateGroup: (title: string) => void
+  /** 正文右键「添加伏笔」弹窗的关联展示串（卷 / 分组 / 所属卷 + 条目；空串 = 未关联）。 */
+  foreshadowContextLabel?: string
+  /** 伏笔正文标记的位置名解析（页面层注入；标记层不依赖具体数据源）。 */
+  resolveForeshadowTargetLabel?: ForeshadowLabelResolver
   /** 立即落盘入口（写入本视图 `flush`，卸载置空）：页面层关闭前统一 flush 用。 */
   flushRef?: RefObject<(() => Promise<void>) | null>
 }
@@ -101,6 +114,8 @@ export default function OutlineEditor({
   onRefreshVolumes,
   onCreateNonVolumeChapter,
   onCreateGroup,
+  foreshadowContextLabel = '',
+  resolveForeshadowTargetLabel,
   flushRef
 }: OutlineEditorProps) {
   const { t, i18n } = useTranslation('outline')
@@ -109,6 +124,9 @@ export default function OutlineEditor({
   const contentId = target?.contentId ?? null
   // 有编辑目标且其正文载体存在时才可编辑；否则正文只读（不落库）。
   const canEdit = target !== null && contentId !== null
+  // 伏笔锚点的大纲载体：**仅条目行**（`outline_items.id`，`scope='entry'`）可作为 `outlineItemId`；
+  // 卷 / 分组目标编辑的是卷纲行（`scope='volume'`），不属条目锚点 → null（锚点降级为未锚定）。
+  const outlineItemId = target?.kind === 'entry' ? contentId : null
 
   // 编辑头题名：目标切换重置输入值；失焦 / Enter 提交、Escape 还原。
   const titleField = useOutlineTitle({
@@ -134,6 +152,9 @@ export default function OutlineEditor({
     editor.setEditable(canEdit)
   }, [editor, canEdit])
 
+  // 伏笔正文标记：仅条目行有锚点（卷 / 分组目标传 null → 清空标记）；埋设点与回收点一并加载。
+  useForeshadowMarks(editor, null, outlineItemId, resolveForeshadowTargetLabel)
+
   const { status, dirty, lastSavedAt, onUpdate, flush, swapPhase } = useOutlineDoc({
     contentId,
     editor
@@ -156,41 +177,13 @@ export default function OutlineEditor({
     }
   }, [flush])
 
-  // 空态判定：监听 transaction（覆盖输入 / setContent 切条目等一切状态变更）。
-  const [isEmpty, setIsEmpty] = useState(true)
-  useEffect(() => {
-    if (!editor) return undefined
-    const sync = (): void => setIsEmpty(isEmptyDoc(editor))
-    sync()
-    editor.on('transaction', sync)
-    editor.on('update', sync)
-    return () => {
-      editor.off('transaction', sync)
-      editor.off('update', sync)
-    }
-  }, [editor])
-
-  // 空态诗词轮换：与章节视图同款——进入空态 / 切换条目时随机一条；空态停留期间每 ~10s 换一条。
-  const [rotateTick, setRotateTick] = useState(0)
-  useEffect(() => {
-    if (!isEmpty) return undefined
-    const timer = window.setInterval(() => setRotateTick((tick) => tick + 1), EMPTY_HINT_ROTATE_MS)
-    return () => window.clearInterval(timer)
-  }, [isEmpty])
-
-  // 依赖含 `i18n.language`：切换界面语言后按新语言池重新取一条。
-  const quote = useMemo(() => {
-    void isEmpty
-    void contentId
-    const pool = getQuotePool(i18n.language)
-    return { index: randomQuoteIndex(-1, pool), pool, phase: rotateTick % 2 }
-  }, [isEmpty, contentId, rotateTick, i18n.language])
-
-  const activeQuote = quote.pool[quote.index] ?? quote.pool[0]
-  const placeholder = `${activeQuote.text} —— ${activeQuote.source}`
-  const docBodyStyle = {
-    '--editor-placeholder': toCssString(placeholder)
-  } as CSSProperties
+  // 空态判定 + 诗词占位：与章节编辑器共用（逻辑见 useDocPlaceholder）。
+  const { isEmpty, docBodyStyle, phase } = useDocPlaceholder(
+    editor,
+    isEmptyDoc,
+    contentId,
+    i18n.language
+  )
 
   // 编辑头「最后编辑」相对时间：优先用本次会话最近落盘时间，回退载体行 `updatedAt`
   // （条目 = 条目行；卷 / 分组 = 卷纲行）。目标为空时回退 null（不展示）。
@@ -255,6 +248,15 @@ export default function OutlineEditor({
   }, [])
 
   const search = useOutlineSearch({ editor, open: searchOpen })
+
+  // 右键「搜索选中文字」：预填查询词并打开查找浮窗（大纲搜索只覆盖当前条目正文，无范围概念）。
+  const openSearchWith = useCallback(
+    (text: string): void => {
+      search.setQuery(text)
+      setSearchOpen(true)
+    },
+    [search]
+  )
 
   return (
     <>
@@ -359,10 +361,25 @@ export default function OutlineEditor({
                     editor={editor}
                     className={`doc-body${isEmpty ? ' is-empty' : ''}`}
                     style={docBodyStyle}
-                    data-placeholder-phase={quote.phase}
+                    data-placeholder-phase={phase}
                   />
                   {/* 表格增强（仅大纲）：表内右键弹上下文菜单（菜单项定义见 tableMenu）。 */}
-                  {canEdit && <TableContextMenu editor={editor} />}
+                  {canEdit && (
+                    <>
+                      <TableContextMenu editor={editor} />
+                      {/* 正文右键「选区菜单」：表格内让给表格菜单；卷 / 分组目标无条目锚点 → 未锚定。
+                          只传 `onSearchText`（大纲无 `CleanWordMark`，不提供「加入违禁词库」，避免加了看不到标记）。 */}
+                      <SelectionContextMenu
+                        editor={editor}
+                        bookId={bookId ?? ''}
+                        outlineItemId={outlineItemId}
+                        contextLabel={foreshadowContextLabel}
+                        resolveForeshadowTargetLabel={resolveForeshadowTargetLabel}
+                        shouldOpenExtra={(instance) => !instance.isActive('table')}
+                        onSearchText={openSearchWith}
+                      />
+                    </>
+                  )}
                 </>
               )}
             </div>

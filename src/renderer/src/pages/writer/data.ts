@@ -1,7 +1,8 @@
 /**
  * 写作页静态占位数据（阶段②起章节正文不再来自此文件——正文已接 paragraphs 表）；
  * 章节树见 `writer/chapters/`、大纲见 `writer/outline/`、剧情见 `writer/plot/`、
- * 设定档案四域（世界观 / 角色 / 势力 / 物品功法）见 `writer/dossier/`（均已接库）；
+ * 设定档案四域（世界观 / 角色 / 势力 / 物品功法）见 `writer/dossier/`、伏笔见
+ * `writer/foreshadow/`（均已接库）；
  * 本文件其余常量为「素材 / 笔记」等尚未接库的演示数据。
  * 文案逐条对齐 template/index.html 的写作视图（L986–1235），
  * 便于后续接入真实数据时按结构替换字段。
@@ -14,7 +15,8 @@ export type AvatarVariant = 'photo' | 'loc' | 'org' | 'item' | 'note'
 /**
  * 有左侧栏的模块（章节 / 大纲 / 剧情 / 时间线）。
  * 设定档案四域（世界观 / 角色 / 势力 / 物品功法）改卡片式中栏、收起左栏；
- * 伏笔 / 灵感仍为占位（无实体左栏，一并收起）。
+ * 伏笔为卡片列表式中栏（选中 / 编辑在右栏）、同样不需要实体左栏；
+ * 灵感仍为占位（无实体左栏，一并收起）。
  */
 export const SIDE_MODULES: readonly WriterModule[] = ['chapters', 'outline', 'plot', 'timeline']
 

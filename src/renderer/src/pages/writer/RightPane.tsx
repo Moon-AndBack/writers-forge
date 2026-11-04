@@ -3,10 +3,12 @@ import type { ReactElement, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../components/ui'
 import type { WriterModule } from '../../shell/activityBar'
-import type { VolumeRow } from './chapters/chapterTree'
+import type { ChapterRow, VolumeRow } from './chapters/chapterTree'
 import ConfirmDialog from './ConfirmDialog'
 import DossierDetail from './dossier/DossierDetail'
 import type { DossierBundle, DossierModule } from './dossier/dossierTree'
+import ForeshadowPanel from './foreshadow/ForeshadowPanel'
+import type { ForeshadowBundle } from './foreshadow/foreshadowTree'
 import type { OutlineItemRow } from './outline/outlineTree'
 import PlotEditor from './plot/PlotEditor'
 import type { PlotLineRow, PlotSceneRow, UpdatePlotScenePatch } from './plot/plotTree'
@@ -22,20 +24,20 @@ import type { TimelineEntry } from './timeline/timelineOrigin'
 const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { current: null }
 
 /** 静态映射可承载的模块：排除章节（大纲 / 剧情 / AI 三页签）、大纲（剧情筛选面板）、剧情
- *  （节点正文编辑器）、时间线（props 单独渲染）与设定档案五域（右栏详情单独渲染）。 */
+ *  （节点正文编辑器）、时间线（props 单独渲染）、设定档案五域（右栏详情单独渲染）与伏笔
+ *  （右栏详情单独渲染）。 */
 type StaticPanelModule = Exclude<
   WriterModule,
-  'chapters' | 'outline' | 'plot' | 'timeline' | DossierModule
+  'chapters' | 'outline' | 'plot' | 'timeline' | 'foreshadow' | DossierModule
 >
 
 const PANELS: Record<StaticPanelModule, () => ReactElement> = {
-  foreshadow: () => <ModulePlaceholder id="foreshadow" />,
   inspiration: () => <ModulePlaceholder id="inspiration" />
 }
 
 /**
  * 写作页右栏：按模块渲染对应 `.rp-view`（面板头 `.pane-head` + 内容 `.rp-body`；
- * 设定档案五域视图不设面板头，改由中栏承载模块标题）。
+ * 设定档案五域与伏笔详情两个视图不设面板头，模块标题由中栏承载）。
  *
  * - **章节模块**：右栏为「大纲 / 剧情 / AI」三页签（页签条 + 大纲面板 + 剧情面板 + AI 面板）。
  *   剧情页签走 `PlotFilterPanel`（时间线 + 剧情线双下拉筛选 + 只读时间轴卡片 + 悬停正文浮窗），
@@ -47,6 +49,8 @@ const PANELS: Record<StaticPanelModule, () => ReactElement> = {
  *   只读时间轴卡片 + 实体胶囊 + 悬停正文浮窗，点击只选中，不提供正文编辑器。
  * - **剧情模块**：右栏为节点正文富文本编辑器（`PlotEditor`：正文 + 底部保存条；
  *   未保存切换由 `ConfirmDialog` 两态确认）。
+ * - **伏笔模块**：右栏为详情表单（名称 / 描述 / 状态 + 只读锚点 + 底部保存条；
+ *   不设面板头，可编辑块吸收剩余高度；未保存切换同样两态确认）。
  * - 面板常驻，`is-active` 控制显示；宽度由页面 state 控制内联 `style.width`；
  *   显隐由标题栏「隐藏/显示右栏」按钮的偏好驱动（`hidden` → `.is-hidden`）。
  */
@@ -57,6 +61,8 @@ export function RightPane({
   hidden = false,
   bookId,
   chapterId = null,
+  chapters,
+  volumes,
   outlineVolumes,
   outlineItems,
   activeVolumeId = null,
@@ -77,7 +83,8 @@ export function RightPane({
   timelineScene = null,
   activeTimelineId = null,
   onTimelineOriginChange,
-  dossier = null
+  dossier = null,
+  foreshadow = null
 }: {
   module: WriterModule
   width: number
@@ -88,6 +95,10 @@ export function RightPane({
   bookId?: string
   /** 当前选中章节 id（AI 面板按章加载会话；null = 未选中章节）。 */
   chapterId?: number | null
+  /** 未删除章（伏笔右栏解析章节锚点目标）。 */
+  chapters: readonly ChapterRow[]
+  /** 章节页可见卷（伏笔右栏补全「卷 · 章」完整位置）。 */
+  volumes: readonly VolumeRow[]
   /** 大纲页可见卷（与左栏同源）。 */
   outlineVolumes: VolumeRow[]
   /** 未删除大纲条目（与左栏同源）。 */
@@ -133,12 +144,15 @@ export function RightPane({
   onTimelineOriginChange?: (origin: string) => void
   /** 设定档案五域装配包（仅活动模块为五域之一时非空；详情面板消费）。 */
   dossier?: DossierBundle | null
+  /** 伏笔装配包（仅活动模块为伏笔时非空；详情面板消费）。 */
+  foreshadow?: ForeshadowBundle | null
 }) {
   // 面板标题 / aria / 分段按钮为固定标签（i18n）；面板内容为演示数据或子组件（不译）。
   const { t } = useTranslation('writer')
   const { t: tCommon } = useTranslation('common')
   const { t: tPlot } = useTranslation('plot')
   const { t: tDossier } = useTranslation('dossier')
+  const { t: tForeshadow } = useTranslation('foreshadow')
 
   // 域内切条目的「保存」失败提示：不切换、脏态保留，可直接再点一次重试。
   const { show: showSaveFailed, node: saveFailedToast } = useToast()
@@ -281,6 +295,41 @@ export function RightPane({
         </div>
       ) : null}
 
+      {/* 伏笔详情面板：名称 / 描述 / 状态（草稿态 + 底部保存条）+ 只读锚点信息 + 删除确认。
+          条件挂载（活动模块为伏笔时），选中项 / 草稿真源在页面层装配包。 */}
+      {foreshadow ? (
+        <div className="rp-view is-active" data-view="foreshadow">
+          {/* 不设面板头（模块标题由中栏承载）：`.rp-body--no-head` 补顶部内衬，
+              删掉标题栏让出的高度由可编辑块吸收（见 writer-foreshadow.css）。 */}
+          <div className="rp-body rp-body--no-head">
+            <ForeshadowPanel
+              bundle={foreshadow}
+              chapters={chapters}
+              volumes={volumes}
+              outlineItems={outlineItems}
+            />
+          </div>
+          {/* 域内切换未保存确认（两态：保存并切换 / 不保存）；Esc / 遮罩视为「不保存」。 */}
+          <ConfirmDialog
+            open={foreshadow.switchPending}
+            title={tForeshadow('dialog.unsavedSwitch.title')}
+            message={tForeshadow('dialog.unsavedSwitch.message')}
+            confirmText={tCommon('save')}
+            cancelText={tForeshadow('dialog.unsavedSwitch.discard')}
+            tone="default"
+            confirming={foreshadow.confirming}
+            onConfirm={() => {
+              void foreshadow.onResolveSwitch(true).then((switched) => {
+                if (!switched) showSaveFailed(tCommon('saveFailed'))
+              })
+            }}
+            onClose={() => {
+              void foreshadow.onResolveSwitch(false)
+            }}
+          />
+        </div>
+      ) : null}
+
       {(Object.keys(PANELS) as StaticPanelModule[]).map((id) => {
         const Panel = PANELS[id]
         return (
@@ -295,7 +344,7 @@ export function RightPane({
         )
       })}
 
-      {/* 域内切换「保存」失败提示：剧情 / 设定档案共用，toast 走 portal，位置不影响视觉。 */}
+      {/* 域内切换「保存」失败提示：剧情 / 设定档案 / 伏笔共用，toast 走 portal，位置不影响视觉。 */}
       {saveFailedToast}
     </aside>
   )

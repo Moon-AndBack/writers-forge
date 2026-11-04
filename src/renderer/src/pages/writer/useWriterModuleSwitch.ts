@@ -3,6 +3,7 @@ import type { WriterModule } from '../../shell/activityBarModules'
 import { isDossierModule } from '../../shell/activityBarModules'
 import { useUnsavedGuard } from '../../shell/useUnsavedGuard'
 import type { DossierBundle } from './dossier/dossierTree'
+import type { ForeshadowBundle } from './foreshadow/foreshadowTree'
 
 /** 剧情域参与切换守卫所需的最小面（避免把整份装配对象塞进依赖）。 */
 export interface PlotSwitchSource {
@@ -21,6 +22,8 @@ export interface WriterModuleSwitchOptions {
   plot: PlotSwitchSource
   /** 设定档案装配包（仅五域之一时非空）。 */
   dossier: DossierBundle | null
+  /** 伏笔装配包（仅活动模块为伏笔时非空）。 */
+  foreshadow: ForeshadowBundle | null
   /** 单模块落库（`useFlushAllModules` 的 `flushModule`；返回真实成败）。 */
   flushModule: (module: WriterModule) => Promise<boolean>
   /** 保存失败回调（脏保留、不切换；由页面层弹提示）。 */
@@ -41,10 +44,11 @@ export interface WriterModuleSwitch {
 }
 
 /**
- * 模块切换未保存守卫：把「五域 / 剧情」的脏态统一接到通用 `useUnsavedGuard`，
+ * 模块切换未保存守卫：把「五域 / 剧情 / 伏笔」的脏态统一接到通用 `useUnsavedGuard`，
  * 供写作页活动栏切换时裁决（同一 hook 实例、同一份挂起动作）。
  *
- * 脏态**只取当前活动模块**：五域取设定档案包，剧情取 `plot.dirty`，其余模块恒净。
+ * 脏态**只取当前活动模块**：五域取设定档案包，剧情取 `plot.dirty`，伏笔取
+ * `foreshadow.dirty`，其余模块恒净。
  * 不得用 `plot.dirty || dossierDirty` —— 剧情草稿可能在切到章节模块后仍残留脏态，
  * 那样会在章节模块误弹确认框（章节本身没有手动草稿可丢）。
  */
@@ -53,6 +57,7 @@ export function useWriterModuleSwitch({
   setActive,
   plot,
   dossier,
+  foreshadow,
   flushModule,
   onSaveFailed
 }: WriterModuleSwitchOptions): WriterModuleSwitch {
@@ -63,7 +68,9 @@ export function useWriterModuleSwitch({
     ? (dossier?.dirty ?? false)
     : active === 'plot'
       ? plotDirty
-      : false
+      : active === 'foreshadow'
+        ? (foreshadow?.dirty ?? false)
+        : false
 
   const save = useCallback((): Promise<boolean> => flushModule(active), [flushModule, active])
 
@@ -72,8 +79,12 @@ export function useWriterModuleSwitch({
       dossier?.discardDraft()
       return
     }
-    if (active === 'plot') discardPlotDraft()
-  }, [active, dossier, discardPlotDraft])
+    if (active === 'plot') {
+      discardPlotDraft()
+      return
+    }
+    if (active === 'foreshadow') foreshadow?.discardDraft()
+  }, [active, dossier, discardPlotDraft, foreshadow])
 
   const { guard, confirming, resolve } = useUnsavedGuard({
     dirty: activeDirty,

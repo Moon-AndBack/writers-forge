@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { WriterModule } from '../../shell/activityBar'
@@ -16,6 +16,7 @@ import {
 } from './chapters/chapterTree'
 import OutlineEditor from './outline/OutlineEditor'
 import {
+  outlineItemLabel,
   type OutlineEditorTarget,
   type OutlineItemRow,
   type OutlineSelection
@@ -32,6 +33,9 @@ import type {
 } from './plot/plotTree'
 import DossierView from './dossier/DossierView'
 import type { DossierBundle } from './dossier/dossierTree'
+import ForeshadowView from './foreshadow/ForeshadowView'
+import { formatForeshadowPlace, type ForeshadowBundle } from './foreshadow/foreshadowTree'
+import type { ForeshadowLabelResolver } from '../../components/editor/useForeshadowMarks'
 
 export interface EditorPaneProps {
   /** 当前激活模块。 */
@@ -42,6 +46,8 @@ export interface EditorPaneProps {
   chapter: ChapterRow | null
   /** 同书全部未删除章（特殊 → 普通切换时预判组内编号）。 */
   chapters: ChapterRow[]
+  /** 章节页可见卷（`normal` + `custom`；供正文右键伏笔弹窗派生「卷 · 章」关联展示）。 */
+  volumes?: VolumeRow[]
   /** 状态切换回调（两态）。 */
   onStatusChange: (id: number, status: ChapterStatus) => void
   /** 编辑头章节名落库回调（字段直映射）。 */
@@ -108,14 +114,16 @@ export interface EditorPaneProps {
   onCreateTimeline?: (name: string, origin?: string) => void | Promise<unknown>
   /** 设定档案五域装配包（仅活动模块为五域之一时非空；中栏卡片视图消费）。 */
   dossier?: DossierBundle | null
+  /** 伏笔装配包（仅活动模块为伏笔时非空；中栏列表视图消费）。 */
+  foreshadow?: ForeshadowBundle | null
   /** 章节正文立即落盘入口（视图写入；页面层「关闭前统一 flush」聚合用）。 */
   chapterFlushRef?: RefObject<(() => Promise<void>) | null>
   /** 大纲正文立即落盘入口（视图写入；页面层「关闭前统一 flush」聚合用）。 */
   outlineFlushRef?: RefObject<(() => Promise<void>) | null>
 }
 
-/** 骨架阶段占位视图的模块（顺序与模块栏「伏笔 / 灵感」一致）。 */
-const PLACEHOLDER_MODULES: readonly WriterModule[] = ['foreshadow', 'inspiration']
+/** 骨架阶段占位视图的模块（当前仅「灵感」）。 */
+const PLACEHOLDER_MODULES: readonly WriterModule[] = ['inspiration']
 
 /**
  * 写作页中栏：按模块渲染对应 `.ep-view`（常驻，`is-active` 控制显示）。
@@ -123,13 +131,15 @@ const PLACEHOLDER_MODULES: readonly WriterModule[] = ['foreshadow', 'inspiration
  * 章节视图已拆分至 `chapters/ChaptersView.tsx`（Tiptap 正文 + 持久化 + 实体高亮）；
  * 大纲视图为 `outline/OutlineEditor.tsx`（选中大纲章 → 编辑其关联文档正文）；
  * 剧情 / 时间线各有独立视图；设定档案五域（世界观 / 角色 / 势力 / 境界体系 / 物品功法）
- * 复用 `dossier/DossierView.tsx`（卡片网格，按 module 参数化）；伏笔 / 灵感仍为占位。
+ * 复用 `dossier/DossierView.tsx`（卡片网格，按 module 参数化）；伏笔为独立列表视图；
+ * 灵感仍为占位。
  */
 export function EditorPane({
   module,
   bookId,
   chapter,
   chapters,
+  volumes = [],
   onStatusChange,
   onRenameChapter,
   onSelectChapter,
@@ -163,12 +173,41 @@ export function EditorPane({
   activeTimelineId,
   onCreateTimeline,
   dossier = null,
+  foreshadow = null,
   chapterFlushRef,
   outlineFlushRef
 }: EditorPaneProps) {
   // 占位模块显示名走 `module` i18n 命名空间（键即模块 id），随界面语言切换。
   const { t: tModule } = useTranslation('module')
+  // 大纲条目的空名兜底（与 `OutlineEditor` 编辑头同口径）。
+  const { t: tOutline } = useTranslation('outline')
+  const { t: tForeshadow } = useTranslation('foreshadow')
   const labels = useChapterLabels()
+
+  /**
+   * 伏笔正文标记的**位置名解析**（埋设 / 回收悬停文案里「在哪一章 / 哪个条目」）：
+   * 章节 → `formatForeshadowPlace`（「卷X 卷名 · 第X章 章名」，与伏笔列表卡 / 右栏同口径；
+   * 所属卷缺失时退化为「第X章 章名」）；大纲条目 → `anchor.outline` + 条目名。
+   * 目标行已不存在（已删）→ 空串，标记层按「未知位置」兜底。
+   * 只有本层同时持有 chapters / volumes / outlineItems，故解析集中在此、经 props 下传，
+   * 标记层（`useForeshadowMarks`）不依赖任何具体数据源。
+   */
+  const resolveForeshadowTargetLabel = useCallback<ForeshadowLabelResolver>(
+    (target) => {
+      if (target.kind === 'chapter') {
+        const row = chapters.find((item) => item.id === target.id)
+        if (!row) return ''
+        const volume = volumes.find((item) => item.id === row.volumeId) ?? null
+        return formatForeshadowPlace(volume, row, labels)
+      }
+      const item = outlineItems?.find((row) => row.id === target.id)
+      if (!item) return ''
+      return tForeshadow('anchor.outline', {
+        name: outlineItemLabel(item, tOutline('unnamedChapter'))
+      })
+    },
+    [chapters, volumes, outlineItems, labels, tForeshadow, tOutline]
+  )
   // 编辑目标解析：由 `OutlineSelection` 查行派生（未选中 / 目标已删除 / 卷缺失 → null）。
   const outlineTarget = useMemo<OutlineEditorTarget | null>(() => {
     if (!outlineSelection || !outlineVolumes) return null
@@ -216,6 +255,44 @@ export function EditorPane({
     }
   }, [outlineSelection, outlineVolumes, outlineVolumeRows, outlineItems, labels])
 
+  /* ---------- 伏笔创建弹窗「关联」展示串 ----------
+     章节：卷在前、章在后（章名含「第X章 · 名」编号口径）；
+     大纲：卷纲 / 分组行只有自身名；条目行 = 所属卷 / 分组名 + 条目名；
+     无上下文（手动新建 / 目标缺失）→ 空串（弹窗展示「未关联」）。 */
+  const foreshadowChapterContext = useMemo(() => {
+    if (!chapter) return ''
+    const volume = volumes.find((row) => row.id === chapter.volumeId)
+    return volume
+      ? `${labels.volumeLabel(volume)} · ${labels.chapterLabel(chapter)}`
+      : labels.chapterLabel(chapter)
+  }, [chapter, volumes, labels])
+
+  const foreshadowOutlineContext = useMemo(() => {
+    if (!outlineSelection || !outlineVolumes) return ''
+    if (outlineSelection.kind === 'volume') {
+      const volume = outlineVolumes.find(
+        (row) => row.id === outlineSelection.id && row.kind === 'normal'
+      )
+      return volume ? labels.volumeLabel(volume) : ''
+    }
+    if (outlineSelection.kind === 'group') {
+      const group = outlineVolumes.find(
+        (row) => row.id === outlineSelection.id && row.kind === 'group'
+      )
+      return group ? group.title || tOutline('unnamedGroup') : ''
+    }
+    const item = outlineItems?.find((row) => row.id === outlineSelection.id)
+    if (!item) return ''
+    const itemName = outlineItemLabel(item, tOutline('unnamedChapter'))
+    const parent =
+      item.volumeId === null
+        ? null
+        : (outlineVolumes.find((row) => row.id === item.volumeId) ?? null)
+    if (parent === null) return itemName
+    const parentName = parent.kind === 'group' ? parent.title : labels.volumeLabel(parent)
+    return parentName !== '' ? `${parentName} · ${itemName}` : itemName
+  }, [outlineSelection, outlineVolumes, outlineItems, labels, tOutline])
+
   return (
     <main className="editor-pane">
       {/* 章节视图常驻（有 props 与编辑器生命周期）；回收站打开时仅以 is-active 隐藏，
@@ -228,6 +305,8 @@ export function EditorPane({
           bookId={bookId}
           chapter={chapter}
           chapters={chapters}
+          foreshadowContextLabel={foreshadowChapterContext}
+          resolveForeshadowTargetLabel={resolveForeshadowTargetLabel}
           onStatusChange={onStatusChange}
           onRenameChapter={onRenameChapter}
           onSelectChapter={onSelectChapter}
@@ -255,6 +334,8 @@ export function EditorPane({
       <div className={`ep-view${module === 'outline' ? ' is-active' : ''}`} data-view="outline">
         <OutlineEditor
           target={outlineTarget}
+          foreshadowContextLabel={foreshadowOutlineContext}
+          resolveForeshadowTargetLabel={resolveForeshadowTargetLabel}
           onCommitTitle={(resolved, title) => {
             if (resolved.kind === 'entry') {
               onRenameOutlineChapter(resolved.id, title)
@@ -309,6 +390,19 @@ export function EditorPane({
       {dossier ? (
         <div className="ep-view is-active" data-view={dossier.module}>
           <DossierView key={dossier.module} bundle={dossier} />
+        </div>
+      ) : null}
+
+      {/* 伏笔：中栏列表（标题栏「新建」+ 列表卡）；仅活动模块为伏笔时挂载
+          （选中 / 草稿真源在页面层装配包，视图无编辑器生命周期需常驻）。 */}
+      {foreshadow ? (
+        <div className="ep-view is-active" data-view="foreshadow">
+          <ForeshadowView
+            bundle={foreshadow}
+            chapters={chapters}
+            volumes={volumes}
+            outlineItems={outlineItems ?? []}
+          />
         </div>
       ) : null}
 

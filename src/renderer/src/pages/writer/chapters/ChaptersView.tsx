@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, RefObject } from 'react'
+import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Editor } from '@tiptap/core'
 import { EditorContent, useEditor } from '@tiptap/react'
@@ -9,13 +9,20 @@ import { DocWordLimit, docCharCount } from '../docWordLimit'
 import DocCharCount from '../DocCharCount'
 import { EntityHighlight } from '../entities/entityHighlight'
 import { HoverCard } from '../entities/HoverCard'
-import { getQuotePool, randomQuoteIndex } from '../quotes'
 import { SaveStatus, type ChapterSaveState } from './SaveStatus'
 import ChapterActivityActions from './ChapterActivityActions'
 import ChaptersSearchView from './ChaptersSearchView'
 import { CleanWordMark } from './proofreadMark'
 import NewVolumeDialog from '../../../components/dialogs/NewVolumeDialog'
+import { SelectionContextMenu } from '../../../components/editor/SelectionContextMenu'
+import { ForeshadowMark } from '../../../components/editor/foreshadowMarks'
+import {
+  useForeshadowMarks,
+  type ForeshadowLabelResolver
+} from '../../../components/editor/useForeshadowMarks'
+import { useDocPlaceholder } from '../useDocPlaceholder'
 import { useChapterSearch, type ChapterSearchHit } from './useChapterSearch'
+import { useChapterSelectionMenu } from './useChapterSelectionMenu'
 import { useChapterDoc } from './useChapterDoc'
 import { useSyncFlushHandler } from '../../../shell/beforeCloseFlush'
 import { useEntityHover } from '../entities/useEntityHover'
@@ -57,7 +64,9 @@ const EDITOR_BASE_EXTENSIONS = [
   // 单篇正文有效字数上限（20 万；输入时拦截），与大纲编辑器共用同一扩展。
   DocWordLimit,
   // 违禁词命中标注（波浪下划线，只提示不阻断；词表与扫描调度见 proofreadMark.ts）。
-  CleanWordMark
+  CleanWordMark,
+  // 伏笔正文标记（锚定本章的伏笔区间，虚线下划线 + 悬停名称；数据经 meta 事务写入）。
+  ForeshadowMark
 ]
 
 /**
@@ -71,9 +80,6 @@ const EDITOR_BASE_EXTENSIONS = [
  */
 const EMPTY_CONTENT = { type: 'doc', content: [{ type: 'paragraph' }] }
 
-/** 空态提示轮换间隔（毫秒）：空状态停留时每 ~10s 换一条。 */
-const EMPTY_HINT_ROTATE_MS = 10000
-
 /**
  * 正文是否「空」：doc 仅一个顶层段落且该段无文本（`doc.childCount === 1`
  * 且首段 text 为空），与章节正文「每段一个 paragraph」的存储口径一致。
@@ -84,11 +90,6 @@ function isEmptyDoc(editor: Editor): boolean {
   if (doc.childCount !== 1) return false
   const first = doc.child(0)
   return first.type.name === 'paragraph' && first.textContent.length === 0
-}
-
-/** 把任意文本包成合法 CSS 字符串字面量，供 `content: var(--editor-placeholder)` 使用。 */
-function toCssString(value: string): string {
-  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 }
 
 export interface ChaptersViewProps {
@@ -112,6 +113,10 @@ export interface ChaptersViewProps {
   trashOpen: boolean
   /** 新建卷（标题栏「新建卷」弹窗提交，页面层调 `createVolume`）。 */
   onCreateVolume: (input: CreateVolumeInput) => void
+  /** 正文右键「添加伏笔」弹窗的关联展示串（页面层按卷 / 章行派生；空串 = 未关联）。 */
+  foreshadowContextLabel?: string
+  /** 伏笔正文标记的位置名解析（页面层注入；标记层不依赖具体数据源）。 */
+  resolveForeshadowTargetLabel?: ForeshadowLabelResolver
   /** 立即落盘入口（写入本视图 `flush`，卸载置空）：页面层关闭前统一 flush 用。 */
   flushRef?: RefObject<(() => Promise<void>) | null>
 }
@@ -133,6 +138,8 @@ export default function ChaptersView({
   onToggleTrash,
   trashOpen,
   onCreateVolume,
+  foreshadowContextLabel = '',
+  resolveForeshadowTargetLabel,
   flushRef
 }: ChaptersViewProps) {
   const { t, i18n } = useTranslation('chapters')
@@ -206,6 +213,9 @@ export default function ChaptersView({
     if (!editor) return
     editor.setEditable(!isDone)
   }, [editor, isDone])
+
+  // 伏笔正文标记：切章时按 chapterId 重拉锚点（埋设点 + 回收点）并写进插件 state（不参与 useEditor 选项）。
+  useForeshadowMarks(editor, chapterId, null, resolveForeshadowTargetLabel)
 
   const {
     status: docStatus,
@@ -290,6 +300,9 @@ export default function ChaptersView({
     }
   })
 
+  // 右键「选区菜单」的章节侧回调：搜索强制「本章」范围 + 违禁词入库（§3：逻辑在 hook 内，避免本文件超 500 行）。
+  const selectionMenu = useChapterSelectionMenu(search, setSearchOpen)
+
   // 撤销 / 重做可用态：随 editor transaction 同步（仅在能力变化的事务下更新，
   // 空闲时返回同一引用，避免重复渲染）。
   const [undoState, setUndoState] = useState({ canUndo: false, canRedo: false })
@@ -308,48 +321,13 @@ export default function ChaptersView({
     }
   }, [editor])
 
-  // 空态判定：监听 editor 的 transaction（覆盖输入 / 选区 / setContent 切章等一切状态变更）。
-  const [isEmpty, setIsEmpty] = useState(true)
-
-  useEffect(() => {
-    if (!editor) return undefined
-    const sync = (): void => setIsEmpty(isEmptyDoc(editor))
-    sync()
-    editor.on('transaction', sync)
-    editor.on('update', sync)
-    return () => {
-      editor.off('transaction', sync)
-      editor.off('update', sync)
-    }
-  }, [editor])
-
-  // 空态提示轮换：进入空态 / 切换章节时随机一条；空状态停留期间每 ~10s 换一条。
-  // 定时器只在空态存在：isEmpty 转 false（有内容）或组件卸载 / 切章时清除，避免泄漏。
-  const [rotateTick, setRotateTick] = useState(0)
-
-  useEffect(() => {
-    if (!isEmpty) return undefined
-    const timer = window.setInterval(() => setRotateTick((tick) => tick + 1), EMPTY_HINT_ROTATE_MS)
-    return () => window.clearInterval(timer)
-  }, [isEmpty])
-
-  // 当前提示：依赖 [isEmpty, chapterId, rotateTick, i18n.language] 派生——进入空态 / 换章 /
-  // 每次轮换 / 切换界面语言都会按当前语言池重新随机一条；phase 随 rotateTick 翻转，
-  // 令 ::before 的 animation-name 变更以重启淡入。
-  // （isEmpty / chapterId 虽不直接参与取样，但必须在依赖中：切章或由「有内容」回归空态时
-  //   需重新随机，故此处显式引用以满足 exhaustive-deps。语言同理：切语言须换池重取。）
-  const quote = useMemo(() => {
-    void isEmpty
-    void chapterId
-    const pool = getQuotePool(i18n.language)
-    return { index: randomQuoteIndex(-1, pool), pool, phase: rotateTick % 2 }
-  }, [isEmpty, chapterId, rotateTick, i18n.language])
-
-  const activeQuote = quote.pool[quote.index] ?? quote.pool[0]
-  const placeholder = `${activeQuote.text} —— ${activeQuote.source}`
-  const docBodyStyle = {
-    '--editor-placeholder': toCssString(placeholder)
-  } as CSSProperties
+  // 空态判定 + 诗词占位：与大纲编辑器共用（逻辑见 useDocPlaceholder）。
+  const { isEmpty, docBodyStyle, phase } = useDocPlaceholder(
+    editor,
+    isEmptyDoc,
+    chapterId,
+    i18n.language
+  )
 
   // 保存状态 → 编辑器脚注左侧（.editor-foot 内，与「本章共 X 字」同行）。
   // 归并为显示态：loading / saving / error 直接映射；ready 时按 dirty 分「未保存 / 已保存」。
@@ -425,6 +403,16 @@ export default function ChaptersView({
         onToggleTrash={onToggleTrash}
         trashOpen={trashOpen}
       />
+      {/* 正文右键「选区菜单」（搜索选中文字 / 加入违禁词库 / 添加伏笔）：仅当选区落在单个顶层段落内时接管。
+          回调见 useChapterSelectionMenu（搜索强制「本章」；违禁词分类在菜单二级面板内选）。 */}
+      <SelectionContextMenu
+        editor={editor}
+        bookId={safeBookId}
+        chapterId={chapterId}
+        contextLabel={foreshadowContextLabel}
+        resolveForeshadowTargetLabel={resolveForeshadowTargetLabel}
+        {...selectionMenu}
+      />
       {/* 「新建卷」弹窗：标题栏按钮触发（Modal 内部经 createPortal 挂 body）。 */}
       {newVolumeOpen && (
         <NewVolumeDialog
@@ -478,7 +466,7 @@ export default function ChaptersView({
             editor={editor}
             className={`doc-body${isEmpty ? ' is-empty' : ''}${isDone ? ' is-readonly' : ''}`}
             style={docBodyStyle}
-            data-placeholder-phase={quote.phase}
+            data-placeholder-phase={phase}
           />
         </div>
       </div>

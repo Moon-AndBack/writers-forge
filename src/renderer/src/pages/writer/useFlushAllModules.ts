@@ -16,6 +16,8 @@ export interface FlushAllModulesOptions {
   plotSaveRef: RefObject<(() => void | Promise<boolean>) | null>
   /** 设定档案草稿落库入口（`dossierBundle.saveDraft`；无装配包时为 null）。 */
   saveDossierDraft: (() => Promise<boolean>) | null
+  /** 伏笔草稿落库入口（`foreshadowBundle.saveDraft`；无装配包时为 null）。 */
+  saveForeshadowDraft: (() => Promise<boolean>) | null
 }
 
 /** 单个模块的落库步骤：`match` 判定归属模块，`run` 执行写入。 */
@@ -42,7 +44,7 @@ export interface FlushAllModulesResult {
 /**
  * 写作页「关闭前统一 flush」聚合：依次 await 各模块把未落库内容写入数据库。
  *
- * 顺序：章节正文 → 大纲正文 → 剧情场景草稿 → 设定档案草稿。串行（而非并发）是为了
+ * 顺序：章节正文 → 大纲正文 → 剧情场景草稿 → 设定档案草稿 → 伏笔草稿。串行（而非并发）是为了
  * 贴合各模块既有的写链语义（同一模块内的写请求本就串行），且失败定位更清晰。
  * **单个模块失败不阻断其它模块**：逐项 try/catch，仅记日志；整体 promise 恒 resolve
  * （外壳侧无需再兜 rejection，也不会因某个模块抛错卡住关闭流程）。
@@ -58,7 +60,8 @@ export function useFlushAllModules({
   chapterFlushRef,
   outlineFlushRef,
   plotSaveRef,
-  saveDossierDraft
+  saveDossierDraft,
+  saveForeshadowDraft
 }: FlushAllModulesOptions): FlushAllModulesResult {
   // 在途步骤：按步骤名复用 promise（步骤名与域一一对应，故等价于按域去重）。
   const inFlightRef = useRef(new Map<string, Promise<boolean>>())
@@ -84,9 +87,14 @@ export function useFlushAllModules({
         name: '设定档案',
         match: (module) => isDossierModule(module),
         run: () => saveDossierDraft?.()
+      },
+      {
+        name: '伏笔',
+        match: (module) => module === 'foreshadow',
+        run: () => saveForeshadowDraft?.()
       }
     ],
-    [chapterFlushRef, outlineFlushRef, plotSaveRef, saveDossierDraft]
+    [chapterFlushRef, outlineFlushRef, plotSaveRef, saveDossierDraft, saveForeshadowDraft]
   )
 
   /**
