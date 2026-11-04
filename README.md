@@ -63,6 +63,8 @@ npm run icon
 | `npm run build:win` | 构建并打包 Windows 安装包（输出到 `dist/`） |
 | `npm run start`     | 预览已构建产物（electron-vite preview）     |
 
+提交钩子（`.husky/pre-commit`）**只校验不写盘**：lint-staged 对暂存文件运行 `eslint`（不带 `--fix`）与 `prettier --check`，不合规即拒绝提交，且不会改动工作区。因此提交前请先运行 `npm run format`（自查可用 `npm run format:check`）。
+
 ## 目录结构
 
 ```text

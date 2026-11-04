@@ -77,16 +77,12 @@
     "electron_mirror": "https://npmmirror.com/mirrors/electron/"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{js,mjs,cjs,jsx}": [
-      "eslint --fix",
-      "prettier --write"
+    "*.{ts,tsx,js,mjs,cjs,jsx}": [
+      "eslint",
+      "prettier --check"
     ],
     "*.{css,md,json,yml,yaml,html}": [
-      "prettier --write"
+      "prettier --check"
     ]
   }
 }

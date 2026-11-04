@@ -84,6 +84,8 @@
 | `npm run format`    | Prettier 格式化                                 |
 | `npm run build:win` | 构建并打包 Windows 安装包到 `dist/`             |
 
+提交钩子（`.husky/pre-commit`）**只校验不写盘**：lint-staged 对暂存文件运行 `eslint`（不带 `--fix`）与 `prettier --check`，不合规即拒绝提交，且不会改动工作区；提交前请先运行 `npm run format`（自查可用 `npm run format:check`）。
+
 ## 数据目录
 
 用户数据（SQLite 数据库、日志、缓存）位置由 `src/main/appPaths.ts` 的 `configureAppPaths()` 决定：

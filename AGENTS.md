@@ -79,6 +79,8 @@ src/
 - `npm run format`：Prettier 格式化
 - `npm run build:win`：Windows 打包（build + electron-builder --win）
 
+**提交钩子只校验不写盘**：`.husky/pre-commit` → lint-staged 对暂存文件运行 `eslint`（无 `--fix`）与 `prettier --check`，不合规即拒绝提交，且不改动工作区；提交前先跑 `npm run format`。**禁止**改回 `--fix` / `--write`——钩子写盘会触发 lint-staged 的补丁回放，失配时回退 `git apply --3way`（隐含 `--index`）把未暂存改动写入索引，导致提交夹带 WIP。
+
 ## 6. 已知事项 / 技术备注
 
 - better-sqlite3 为 N-API 预编译，跨 Node / Electron ABI 稳定，无需 electron-rebuild（`electron-builder.yml` 中 `npmRebuild: false`）。
