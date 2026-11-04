@@ -9,6 +9,7 @@ import type { ZhCNWriterResources } from '../zh-CN/writerResources'
 import chapters from './chapters'
 import dossier from './dossier'
 import entities from './entities'
+import foreshadow from './foreshadow'
 import outline from './outline'
 import plot from './plot'
 import timeline from './timeline'
@@ -18,6 +19,7 @@ const enWriter = {
   chapters,
   dossier,
   entities,
+  foreshadow,
   outline,
   plot,
   timeline,

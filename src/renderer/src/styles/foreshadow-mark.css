@@ -1,0 +1,69 @@
+/* ============================================================
+   伏笔正文标记（Tiptap Decoration.inline，见 components/editor/foreshadowMarks.ts）
+   ------------------------------------------------------------------
+   只提示、不改内容：埋设点与回收点各铺一条 inline 装饰，四类变体只靠
+   **线型 + 颜色** 区分（悬停经 `title` 显示文案，本文件不承载交互逻辑）：
+
+   - 埋设中（`status === 'planted'`）：品牌色**虚线** —— 常态最轻；
+   - 埋设点·已废弃（`abandoned`）：浅灰**虚线** —— 比「已回收」的灰实线更浅一档；
+   - 埋设点·已回收（`recovered`）：中性灰**实线** —— 收束感，表示这条伏笔已经落地；
+   - 回收点（`recover-site`）：成就色**点线**（略粗）—— 与品牌色埋设线不同相，一眼可辨。
+
+   与既有正文装饰共存：
+   - 实体高亮 `.entity-highlight` 只设 background / color，
+     违禁词 `.wf-clean-hit` 设 wavy 下划线——本类刻意只改 `text-decoration` 的
+     线型 / 颜色（不设 background），三者叠在同一文本上不互相吞掉底色；
+   - 只取 `--brand` / `--text-mute` / `--ok` / `--doc-text` 主题令牌（四主题各自定义），
+     无 transform（AGENTS §8）。
+   ============================================================ */
+.wf-foreshadow-mark {
+  /* 虚线相对实线更「轻」，仍以品牌色为主体色、混入正文色压暗，保证四主题下不刺眼。 */
+  text-decoration: underline dashed color-mix(in srgb, var(--brand) 65%, var(--doc-text));
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--dur-fast) var(--ease);
+}
+
+.wf-foreshadow-mark:hover {
+  /* 悬停才加深到品牌原色：静止态尽量贴近正文观感。 */
+  text-decoration-color: var(--brand);
+}
+
+/* 埋设点·已废弃：浅灰虚线（与「已回收」的灰实线在线型 + 深浅上双重区分）。
+   半透明混色让线自动贴合四主题各自的正文底色，稳定退到「已废弃」的弱化档。 */
+.wf-foreshadow-mark--abandoned {
+  text-decoration-style: dashed;
+  text-decoration-color: color-mix(in srgb, var(--text-mute) 62%, transparent);
+}
+
+.wf-foreshadow-mark--abandoned:hover {
+  /* 悬停略微加深，仍浅于「已回收」的灰实线。 */
+  text-decoration-color: var(--text-mute);
+}
+
+/* 埋设点·已回收：灰色实线（不再抢品牌色，与「埋设中」的虚线形成线型 + 色相双差）。 */
+.wf-foreshadow-mark--recovered {
+  text-decoration-style: solid;
+  text-decoration-color: color-mix(in srgb, var(--text-mute) 85%, var(--doc-text));
+}
+
+.wf-foreshadow-mark--recovered:hover {
+  text-decoration-color: var(--text-dim);
+}
+
+/* 回收点：成就色点线（略粗），与埋设点的品牌色虚线在色相 / 线型 / 粗细上都可区分。 */
+.wf-foreshadow-mark--recover-site {
+  text-decoration-style: dotted;
+  text-decoration-thickness: 2px;
+  text-decoration-color: color-mix(in srgb, var(--ok) 80%, var(--doc-text));
+}
+
+.wf-foreshadow-mark--recover-site:hover {
+  text-decoration-color: var(--ok);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wf-foreshadow-mark {
+    transition: none;
+  }
+}

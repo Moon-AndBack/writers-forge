@@ -26,7 +26,8 @@
   background: transparent;
 }
 
-/* 浮层面板本体：fixed + 视口夹取后的内联 left / top。
+/* 浮层面板本体：fixed + 视口夹取后的内联 left / top；宽度恒由内联 style 给出
+   （FormatPopover / 表格菜单为固定 px，选区菜单为 `max-content` 的按内容自适应）。
    z-index 940：高于活动栏（100）与状态栏弹窗（900），低于自绘 tooltip（990）
    与抽屉 / 模态（1000）——面板由 body 直接承载，故与 .shell 内元素同处根层叠上下文。
 
@@ -87,6 +88,9 @@
 }
 
 /* ---------- 按钮网格 ---------- */
+/* 列宽用 `minmax(0, 1fr)`：面板宽度确定时各列等分撑满（FormatPopover 传固定宽）；
+   面板宽度为 `max-content` 时（右键菜单壳省略 width），1fr 轨道按内容的最大宽度
+   解析，即整个网格由最长的一项撑开——按钮本身已 `white-space: nowrap`，故不会换行。 */
 .wf-format-pop__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -285,6 +289,28 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+/* ============================================================
+   正文选区右键菜单（宽度内容自适应 + 菜单项左对齐）
+   ------------------------------------------------------------------
+   壳省略 `width` → 内联 `max-content`，宽度**严格按当前显示的内容**决定：
+   一级（三个菜单项）按最长项撑开，二级（类别标题 + 六类两列）按该面板撑开，
+   故展开类别时菜单会变宽（跳变可接受；壳的 ResizeObserver 会按新宽重夹位置）。
+   此处补两点，均限定在 `.wf-selectionmenu` 作用域内，表格菜单（固定 248px +
+   按钮居中）不受影响：
+   1. 两列网格（二级「违禁词类别」）的**列宽下限**：内容自适应宽度下若仍用
+      `minmax(0, 1fr)` 等分，较宽的一列会被挤出轨道（文字溢出按钮底色）；
+      改为 `minmax(max-content, 1fr)` 后每列至少容下本列最长项，剩余空间再等分。
+   2. 菜单项文字左对齐（`.wf-format-pop__btn` 默认居中；仅本菜单改为
+      `justify-content: flex-start`，不改全局按钮规则）。
+   ============================================================ */
+.wf-selectionmenu .wf-format-pop__grid--pair {
+  grid-template-columns: repeat(2, minmax(max-content, 1fr));
+}
+
+.wf-selectionmenu .wf-format-pop__btn {
+  justify-content: flex-start;
 }
 
 .wf-tablemenu .wf-format-pop__section + .wf-format-pop__section {

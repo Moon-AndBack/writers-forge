@@ -21,9 +21,11 @@
 @import './writer-dossier-relation.css';
 @import './writer-dossier-card.css';
 @import './writer-dossier-split.css';
+@import './writer-foreshadow.css';
 @import './writer-trash.css';
 @import './writer-search.css';
 @import './entity-highlight.css';
+@import './foreshadow-mark.css';
 
 /* ---------- 页面外壳 ----------
    `.app-view` 在本项目仅为路由标记类（无定位样式），故需自带
@@ -312,7 +314,7 @@ body.is-resizing .splitter {
   padding: 8px;
 }
 
-/* 无面板头的视图（当前仅设定档案五域，标题由中栏承载）：顶部内衬补 4px，
+/* 无面板头的视图（设定档案五域 / 伏笔详情，标题由中栏承载）：顶部内衬补 4px，
    避免首张详情卡直接贴住栏顶；其余视图沿用基准 8px。 */
 .rp-body--no-head {
   padding-top: 12px;

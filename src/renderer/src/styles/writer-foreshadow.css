@@ -1,0 +1,299 @@
+/* ============================================================
+   伏笔模块：中栏卡片网格 + 右栏详情
+   ------------------------------------------------------------------
+   中栏：`.foreshadow-grid` 定值轨道多列网格（范式同 `.dossier-grid`），
+   卡 `.foreshadow-item` 四行（名称 / 埋点位置 / 回收位置 / 描述），复用通用
+   `.wf-card--halo`（常态中性，hover / 选中仅描边环 + 外发光），全程无位移 / 缩放，
+   transition 只过渡阴影 / 颜色（AGENTS §8）。
+   右栏：无面板头（模块标题由中栏承载），四块独立底色卡 —— 可编辑块 + 埋点只读块 +
+   回收只读块 + 底部固定保存条；删掉标题栏让出的高度由可编辑块吸收（描述框撑满块内剩余），
+   只读块与保存条仍按内容高度，内容超出时字段区自身滚动。颜色一律取 theme.css 令牌，四主题通用。
+   ============================================================ */
+
+/* ---------- 中栏卡片网格 ---------- */
+/* 定值轨道 + 整块居中（口径同 `.dossier-grid`）：卡宽恒为 250px，拖动右栏时只有列数
+   增减，卡宽本身不随剩余空间连续变化。窄容器兜底：`min(250px, 100%)` 作 min，中栏
+   最窄（≈212px 内容宽）时轨道收至容器宽，不溢出、不出现横向滚动。 */
+.foreshadow-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 250px));
+  gap: 12px;
+  justify-content: center;
+  max-width: var(--page-width);
+  margin: 0 auto;
+}
+
+/* ---------- 列表卡（四行） ---------- */
+.foreshadow-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 14px 16px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: var(--soft-solid);
+  border: none;
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  /* 只过渡阴影 / 底色（hover / active 光晕），无 transform。 */
+  transition:
+    box-shadow 0.22s var(--ease),
+    background-color 0.22s var(--ease);
+}
+
+/* 卡高口径对齐设定档案卡（`.dossier-card`）：最小高 120px、不设上限，内容超出即
+   随内容增长；同一网格行内由 grid 默认 stretch 拉齐高度，卡内描述块撑满剩余空间，
+   故各行高度一致。 */
+.foreshadow-item.wf-card--halo {
+  min-height: 120px;
+  max-height: none;
+}
+
+.foreshadow-item:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+.foreshadow-item__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.foreshadow-item__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.foreshadow-item__status {
+  flex: none;
+}
+
+/* 删除按钮：常显（卡片第一行末尾），不参与标题省略计算。 */
+.foreshadow-item__delete {
+  flex: none;
+  margin-right: -4px;
+}
+
+/* 位置行：左侧固定标签 + 右侧单行截断值（埋点 / 回收两行同构）。 */
+.foreshadow-item__place {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.foreshadow-item__place-label {
+  flex: none;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+.foreshadow-item__place-value {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 占位（未锚定 / 未回收 / 锚点失效）：弱化色，不与真实位置争夺注意力。 */
+.foreshadow-item__place-value.is-empty {
+  color: var(--text-mute);
+}
+
+.foreshadow-item__desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  flex: 1 1 auto;
+  margin: 0;
+  overflow: hidden;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.foreshadow-loading {
+  padding: 24px 0;
+  font-size: 12px;
+  text-align: center;
+  color: var(--text-mute);
+}
+
+/* ---------- 右栏详情 ---------- */
+/* `.rp-body` 改为纵向 flex：字段区自身滚动，底部保存条固定。 */
+.rp-view[data-view='foreshadow'] .rp-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.foreshadow-panel {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 8px;
+  /* 切换条目时表单随 key 重建 → 挂进场动画即重播（纯上浮，非 hover 态）。 */
+  animation: wf-enter-up var(--dur-base) var(--ease) backwards;
+}
+
+.foreshadow-panel__scroll {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 2px 8px;
+  overflow-y: auto;
+}
+
+/* 四块底色卡：可编辑块与两个只读锚点块共享同一条外观规则。 */
+.foreshadow-fields,
+.foreshadow-anchor-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+.foreshadow-anchor-card {
+  flex: none;
+  gap: 8px;
+  padding: 12px 14px;
+}
+
+/* 可编辑块：`__scroll` 内唯一伸缩项 —— 吃掉右栏剩余高度（删掉面板头让出的空间归它）。
+   `flex: 1 0 auto`：有余量时拉满；内容超高时不压缩块内控件，改由 `__scroll` 的
+   `overflow-y: auto` 接管滚动，避免 flex 撑高把滚动区顶破。 */
+.foreshadow-fields {
+  flex: 1 0 auto;
+}
+
+/* 名称 / 状态：按内容高度，不参与剩余空间分配。 */
+.foreshadow-fields > .wf-field {
+  flex: none;
+}
+
+/* 描述：块内唯一伸缩字段，吃掉可编辑块的剩余高度。 */
+.foreshadow-fields > .wf-field.foreshadow-fields__desc {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 控件容器同步转纵向 flex（默认 block 无法把高度分给 Textarea）。 */
+.foreshadow-fields > .wf-field.foreshadow-fields__desc > .wf-field__control {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 描述输入框拉满控件容器：`rows` 只提供固有高度（无余量时的下限），实际高度由 flex 决定；
+   去掉手动 resize，避免与自动撑满互相打架。 */
+.foreshadow-fields > .wf-field.foreshadow-fields__desc .wf-textarea {
+  flex: 1 1 auto;
+  min-height: 82px;
+  resize: none;
+}
+
+.foreshadow-anchor-card__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.foreshadow-anchor-card__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.foreshadow-anchor-card__target {
+  min-width: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+/* 占位（未锚定 / 未回收）：弱化色。 */
+.foreshadow-anchor-card__target.is-empty {
+  color: var(--text-mute);
+}
+
+.foreshadow-anchor-card__quote {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--pane);
+  border-left: 2px solid color-mix(in srgb, var(--brand) 45%, transparent);
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.foreshadow-anchor-card__hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--danger);
+}
+
+/* 回收备注：只读块内的附加段落，用分隔线与大标题区分层级。 */
+.foreshadow-anchor-card__note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.foreshadow-anchor-card__note-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.foreshadow-save-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}

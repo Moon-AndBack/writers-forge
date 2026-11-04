@@ -1,0 +1,14 @@
+/* ---------- ForeshadowCreateDialog（「新建伏笔」弹窗） ----------
+   复用全局 Modal / FormField / Input / Textarea，仅补纵向排布；
+   样式自包含，随组件一同加载。 */
+.foreshadow-create-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 描述框随宽度撑满，纵向可拉伸；不改变全局 Textarea 默认最小高度。 */
+.foreshadow-create-dialog .wf-textarea {
+  width: 100%;
+  resize: vertical;
+}

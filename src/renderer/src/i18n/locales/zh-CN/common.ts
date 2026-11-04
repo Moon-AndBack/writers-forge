@@ -124,6 +124,25 @@ const common = {
       reasonNoBook: '未关联书籍，无法插入图片'
     }
   },
+  /**
+   * 编辑器正文右键「选区菜单」通用项（搜索选中文字 / 加入违禁词库）。
+   * 六个违禁词类别名不在此处：复用 `chapters` ns 的 `cleanWords.category.*`（词库单一真源）。
+   */
+  selectionMenu: {
+    title: '选中文字',
+    search: '搜索选中文字',
+    addWord: '加入违禁词库',
+    categoryTitle: '选择违禁词类别',
+    searchEmpty: '没有可搜索的文字',
+    wordEmpty: '没有可加入词库的文字',
+    wordTooShort: '选中的文字少于 2 个字，无法加入词库',
+    wordTooLong: '选中的文字超过 {{max}} 个字，请缩短后再加入',
+    wordMultiline: '选中的文字包含换行，请只选中同一段内的文字',
+    wordAdded: '已加入违禁词库',
+    wordUpdated: '词条已存在，已更新类别',
+    wordExists: '词条已存在，无需重复添加',
+    wordFailed: '加入违禁词库失败，请重试'
+  },
   loading: '加载中…',
   loadMore: '加载更多',
   restoreDefaultWidth: '双击恢复默认宽度',

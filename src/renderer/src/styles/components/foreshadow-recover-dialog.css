@@ -1,0 +1,80 @@
+/* ---------- ForeshadowRecoverDialog（「回收伏笔」弹窗） ----------
+   复用全局 Modal / FormField / SearchInput / Textarea / Tag；
+   列表行沿用通用光晕卡 `.wf-card--halo`（hover / 选中仅描边 + 外发光，无 transform，AGENTS §8）。
+   样式自包含，随组件一同加载。 */
+.foreshadow-recover-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* 列表固定最大高度、内部滚动：全书未回收伏笔较多时不撑破弹窗。 */
+.foreshadow-recover-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  padding: 2px;
+  overflow-y: auto;
+}
+
+/* 单行：名称 + 状态胶囊；通用 halo 卡的 120–240px 高度约束不适用于列表行。 */
+.foreshadow-recover-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  font: inherit;
+  text-align: left;
+  color: var(--text);
+  background: var(--soft-solid);
+  border: none;
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  /* 只过渡阴影 / 底色，无 transform。 */
+  transition:
+    box-shadow 0.22s var(--ease),
+    background-color 0.22s var(--ease);
+}
+
+.foreshadow-recover-item.wf-card--halo {
+  min-height: 0;
+  max-height: none;
+}
+
+.foreshadow-recover-item:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+.foreshadow-recover-item__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 空态 / 搜索无结果 / 加载中 / 加载失败：列表区域内的说明文字。 */
+.foreshadow-recover-note {
+  padding: 18px 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--text-mute);
+}
+
+/* 备注框随宽度撑满，纵向可拉伸；不改变全局 Textarea 默认最小高度。 */
+.foreshadow-recover-dialog .wf-textarea {
+  width: 100%;
+  resize: vertical;
+}

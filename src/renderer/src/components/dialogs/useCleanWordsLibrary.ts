@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next'
 import { useToast } from '../ui'
 import type { SegmentedOption, SelectOption } from '../ui'
 import type { CleanWordCount, CleanWordRow } from '../../../../preload/types/cleanWords'
-// 词库改动后令检测词表缓存失效（下次扫描重新走 IPC）。`proofreadMark` 属页面层，
-// 共享层引用页面层属分层倒挂，此处仅为单个副作用函数的例外（§9 例外条款）。
+// 词库改动后令检测词表缓存失效（`proofreadMark` 属页面层，共享层引用页面层属分层倒挂，
+// 此处仅为单个副作用函数的例外（§9 例外条款））。
 import { resetActiveCleanWords } from '../../pages/writer/chapters/proofreadMark'
+import { addCleanWords } from './cleanWordActions'
 import { CATEGORIES, CATEGORY_LABEL_KEYS, PAGE_SIZE, isCategory } from './cleanWordsMeta'
 import type { CategoryFilter, SourceFilter } from './cleanWordsMeta'
 import { parseImportText } from './cleanWordsImport'
@@ -214,7 +215,8 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
     }
     setImporting(true)
     try {
-      const result = await window.api.cleanWords.import(words)
+      // 入库动作与右键菜单共用（`addCleanWords` 内含 `resetActiveCleanWords()`）。
+      const result = await addCleanWords(words)
       if (!result) {
         showToast(t('cleanWords.importFailed'))
         return
@@ -229,7 +231,6 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
       )
       setImportText('')
       setImportOpen(false)
-      resetActiveCleanWords()
       await refresh()
     } finally {
       setImporting(false)

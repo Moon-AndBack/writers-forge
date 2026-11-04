@@ -119,6 +119,21 @@ const common = {
       reasonNoBook: 'No book context, cannot insert an image'
     }
   },
+  selectionMenu: {
+    title: 'Selected text',
+    search: 'Search selected text',
+    addWord: 'Add to banned words',
+    categoryTitle: 'Choose banned word category',
+    searchEmpty: 'No text to search',
+    wordEmpty: 'No text to add',
+    wordTooShort: 'Selection is shorter than 2 characters; cannot add to the word list',
+    wordTooLong: 'Selection exceeds {{max}} characters; shorten it before adding',
+    wordMultiline: 'Selection contains a line break; select text within a single paragraph',
+    wordAdded: 'Added to the banned word list',
+    wordUpdated: 'Word already existed; category updated',
+    wordExists: 'Word already exists; no need to add again',
+    wordFailed: 'Failed to add the word; please retry'
+  },
   loading: 'Loading…',
   loadMore: 'Load more',
   restoreDefaultWidth: 'Double-click to restore default width',
