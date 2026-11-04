@@ -16,6 +16,8 @@ import { CleanWordMark } from './proofreadMark'
 import NewVolumeDialog from '../../../components/dialogs/NewVolumeDialog'
 import { SelectionContextMenu } from '../../../components/editor/SelectionContextMenu'
 import { ForeshadowMark } from '../../../components/editor/foreshadowMarks'
+import { MarkHoverTip } from '../../../components/editor/MarkHoverTip'
+import { useMarkHover } from '../../../components/editor/useMarkHover'
 import {
   useForeshadowMarks,
   type ForeshadowLabelResolver
@@ -216,6 +218,8 @@ export default function ChaptersView({
 
   // 伏笔正文标记：切章时按 chapterId 重拉锚点（埋设点 + 回收点）并写进插件 state（不参与 useEditor 选项）。
   useForeshadowMarks(editor, chapterId, null, resolveForeshadowTargetLabel)
+  // 伏笔标记悬停浮层：事件委托挂在 editor.view.dom（不碰 editorProps），切章（resetKey）即收起。
+  const markTip = useMarkHover(editor, chapterId)
 
   const {
     status: docStatus,
@@ -476,6 +480,8 @@ export default function ChaptersView({
         {/* 单篇正文有效字数 / 上限：读数与输入拦截同源（`docCharCount` 读块级缓存）。 */}
         <DocCharCount count={docCharCount(editor)} scope="chapter" />
       </div>
+      {/* 伏笔标记悬停提示（自绘浮层，替代原生 title；pointer-events: none 不挡鼠标）。 */}
+      <MarkHoverTip tip={markTip} />
       <HoverCard
         anchor={hover.anchor}
         onClose={hover.close}

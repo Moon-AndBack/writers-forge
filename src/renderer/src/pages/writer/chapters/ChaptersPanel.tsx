@@ -17,6 +17,10 @@ import SpecialChapterDialog from './SpecialChapterDialog'
 import { useChapterDrag } from './useChapterDrag'
 import { useChapterLabels } from './useChapterLabels'
 import { useConfirm } from './useConfirm'
+import {
+  useForeshadowDeleteImpact,
+  withDeleteImpactWarning
+} from '../foreshadow/useForeshadowDeleteImpact'
 import type { CreateChapterInput } from './useChapterTree'
 
 export interface ChaptersPanelProps {
@@ -82,6 +86,8 @@ export default function ChaptersPanel({
   // 「新建特殊章」弹窗：目标正文卷（null = 关闭）。
   const [specialChapterVolume, setSpecialChapterVolume] = useState<VolumeRow | null>(null)
   const confirm = useConfirm()
+  // 删除确认前的双埋点伏笔查询（软删：伏笔保留，仅此处锚点失效）。
+  const { inspect: inspectForeshadowImpact } = useForeshadowDeleteImpact()
 
   const groups = groupChapters(volumes, chapters)
   // 两卡分组：上卡自定义卷（`custom`）/ 下卡正文卷（`normal`）（仅 filter，不重排）。
@@ -157,16 +163,24 @@ export default function ChaptersPanel({
 
   const requestDeleteChapter = useCallback(
     (chapter: ChapterRow): void => {
-      confirm.request(
-        {
-          title: t('dialog.deleteChapter.title'),
-          message: t('dialog.deleteChapter.message', { name: labels.chapterLabel(chapter) }),
-          confirmText: t('dialog.deleteChapter.confirm')
-        },
-        () => onDeleteChapter(chapter.id)
-      )
+      // 先查该章是否挂着双埋点伏笔：有则在现有删除确认框正文后追加影响提示，
+      // 无则原样展示（不额外弹框、不改删除流程）。
+      void (async (): Promise<void> => {
+        const warning = await inspectForeshadowImpact({ chapterId: chapter.id }, 'trash')
+        confirm.request(
+          {
+            title: t('dialog.deleteChapter.title'),
+            message: withDeleteImpactWarning(
+              t('dialog.deleteChapter.message', { name: labels.chapterLabel(chapter) }),
+              warning
+            ),
+            confirmText: t('dialog.deleteChapter.confirm')
+          },
+          () => onDeleteChapter(chapter.id)
+        )
+      })()
     },
-    [confirm, onDeleteChapter, t, labels]
+    [confirm, onDeleteChapter, t, labels, inspectForeshadowImpact]
   )
 
   // 单个卷分组的 `.vol` 块渲染：特殊卷卡 / 普通卷卡两卡共用（仅分组不同，

@@ -36,31 +36,52 @@ function hoverCardLeftInset(): number {
     : POPOVER_VIEWPORT_MARGIN
 }
 
+/** 水平钳制：把目标左缘夹在 `[minLeft, maxLeft]` 内（居中 / 左对齐两条分支共用）。 */
+function clampLeft(left: number, minLeft: number, maxLeft: number): number {
+  return Math.min(Math.max(left, minLeft), maxLeft)
+}
+
+/**
+ * 上方堆叠的相邻浮窗（可选）：供 `above` 放置的上层浮窗（实体悬停卡）让位。
+ *
+ * 只取「实测高度 + 相对锚点的上下方位」，**不取它的 top / bottom**：高度与滚动无关，
+ * 按高度计算可避免「两个浮窗各挂一个 scroll 监听、上层先跑读到下层上一帧位置」造成
+ * 的整段滚动错位；方位只用于判断它是否已翻到锚点下方（决定让位还是避让）。
+ * 前提：相邻浮窗与本浮窗由同一指针悬停触发，两者锚点同处一行 —— 此时
+ * 「让位量 = 相邻浮窗高度 + 间距」正是它的实际顶边关系（它自己也是贴锚点上方一个间距）。
+ */
+export interface StackedNeighbor {
+  /** 相邻浮窗实测高度（px）。 */
+  height: number
+  /** 相邻浮窗相对本浮窗锚点的位置：`above` = 贴锚点上方；`below` = 已翻到锚点下方。 */
+  side: 'above' | 'below'
+}
+
 /**
  * 计算弹窗 fixed 定位（视口坐标系）：`above` 底边距锚点 POPOVER_VIEWPORT_MARGIN、上方不足改放下方；
+ * `below` 顶边贴锚点下方（同间距）、下方不足改上方、上下都不够则贴底夹紧；
  * `right` 优先贴锚点右侧，右侧不足改下方 / 上方。水平默认居中并按视口边界钳制。
+ * `align` 选择水平基准：`center` = 居中于锚点（默认，原有行为）；`left` = 左缘贴锚点左缘，
+ * 供「上下叠放的两个浮窗（实体卡 + 伏笔提示）左边缘对齐」使用。两者都走同一套钳制。
+ * `neighbor` 见 {@link StackedNeighbor}：`above` 分支据此把本浮窗叠放到相邻浮窗之上
+ * （相邻浮窗翻到锚点下方时改叠放到它下方），间隔仍为 POPOVER_VIEWPORT_MARGIN；
+ * 其余分支忽略该参数（既有消费者行为不变）。
  * 尺寸由调用方传入实测值（对齐「渲染后测量再定位」口径）。
  */
 export function computeCardPosition(
   rect: DOMRect,
   height: number,
   width: number = CARD_WIDTH,
-  placement: 'above' | 'right' = 'above'
+  placement: 'above' | 'below' | 'right' = 'above',
+  align: 'center' | 'left' = 'center',
+  neighbor: StackedNeighbor | null = null
 ): { left: number; top: number } {
   const minLeft = hoverCardLeftInset()
   const maxLeft = Math.max(minLeft, window.innerWidth - width - POPOVER_VIEWPORT_MARGIN)
-  if (placement === 'right') {
-    const toRight = Math.max(rect.right + POPOVER_VIEWPORT_MARGIN, minLeft)
-    if (toRight + width + POPOVER_VIEWPORT_MARGIN <= window.innerWidth) {
-      const maxTop = Math.max(
-        POPOVER_VIEWPORT_MARGIN,
-        window.innerHeight - height - POPOVER_VIEWPORT_MARGIN
-      )
-      const top = Math.min(Math.max(rect.top, POPOVER_VIEWPORT_MARGIN), maxTop)
-      return { left: Math.round(toRight), top: Math.round(top) }
-    }
-    // 右侧空间不足：改放锚点下方（水平居中并夹紧）；下方也不够时上翻，仍不够则夹紧。
-    const left = Math.min(Math.max(rect.left + rect.width / 2 - width / 2, minLeft), maxLeft)
+  // 水平基准左缘：居中取锚点中心减半宽，左对齐直接取锚点左缘。
+  const baseLeft = align === 'left' ? rect.left : rect.left + rect.width / 2 - width / 2
+  if (placement === 'below') {
+    const left = clampLeft(baseLeft, minLeft, maxLeft)
     const below = rect.bottom + POPOVER_VIEWPORT_MARGIN
     const above = rect.top - POPOVER_VIEWPORT_MARGIN - height
     const top =
@@ -71,9 +92,38 @@ export function computeCardPosition(
           : Math.max(POPOVER_VIEWPORT_MARGIN, window.innerHeight - height - POPOVER_VIEWPORT_MARGIN)
     return { left: Math.round(left), top: Math.round(top) }
   }
-  const left = Math.min(Math.max(rect.left + rect.width / 2 - width / 2, minLeft), maxLeft)
-  const above = rect.top - POPOVER_VIEWPORT_MARGIN - height
-  const below = rect.bottom + POPOVER_VIEWPORT_MARGIN
+  if (placement === 'right') {
+    const toRight = Math.max(rect.right + POPOVER_VIEWPORT_MARGIN, minLeft)
+    if (toRight + width + POPOVER_VIEWPORT_MARGIN <= window.innerWidth) {
+      const maxTop = Math.max(
+        POPOVER_VIEWPORT_MARGIN,
+        window.innerHeight - height - POPOVER_VIEWPORT_MARGIN
+      )
+      const top = Math.min(Math.max(rect.top, POPOVER_VIEWPORT_MARGIN), maxTop)
+      return { left: Math.round(toRight), top: Math.round(top) }
+    }
+    // 右侧空间不足：改放锚点下方（水平按 align 基准并夹紧）；下方也不够时上翻，仍不够则夹紧。
+    const left = clampLeft(baseLeft, minLeft, maxLeft)
+    const below = rect.bottom + POPOVER_VIEWPORT_MARGIN
+    const above = rect.top - POPOVER_VIEWPORT_MARGIN - height
+    const top =
+      below + height <= window.innerHeight - POPOVER_VIEWPORT_MARGIN
+        ? below
+        : above >= POPOVER_VIEWPORT_MARGIN
+          ? above
+          : Math.max(POPOVER_VIEWPORT_MARGIN, window.innerHeight - height - POPOVER_VIEWPORT_MARGIN)
+    return { left: Math.round(left), top: Math.round(top) }
+  }
+  const left = clampLeft(baseLeft, minLeft, maxLeft)
+  // 上方堆叠：相邻浮窗贴锚点上方时让位（本浮窗底边 = 其顶边 − 间距）；
+  // 相邻浮窗已翻到锚点下方时本浮窗不上移，若也翻下则叠放到它下方，保证两者不重叠。
+  const stackedAbove = neighbor !== null && neighbor.side === 'above' ? neighbor.height : 0
+  const above = rect.top - POPOVER_VIEWPORT_MARGIN - height - stackedAbove
+  const belowBase = rect.bottom + POPOVER_VIEWPORT_MARGIN
+  const below =
+    neighbor !== null && neighbor.side === 'below'
+      ? belowBase + neighbor.height + POPOVER_VIEWPORT_MARGIN
+      : belowBase
   const top =
     above >= POPOVER_VIEWPORT_MARGIN
       ? above

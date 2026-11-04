@@ -7,6 +7,7 @@
  * 共享同一条底色卡规则），本组件不重复定义外观。
  */
 import { useTranslation } from 'react-i18next'
+import type { ReactNode } from 'react'
 import { Tag } from '../../../components/ui'
 import { useChapterLabels } from '../chapters/useChapterLabels'
 import {
@@ -27,6 +28,11 @@ export interface ForeshadowAnchorBlockProps {
   emptyText: string
   /** 可选附加只读段落（回收备注）：正文为空则不渲染。 */
   note?: { label: string; value: string }
+  /**
+   * 可选标题行右侧操作（如「移除大纲埋点」）。由调用方注入按钮并自行处理
+   * 二次确认 / 落库，本组件只负责布局（§9：差异经插槽表达，不复制组件）。
+   */
+  action?: ReactNode
 }
 
 export function ForeshadowAnchorBlock({
@@ -34,7 +40,8 @@ export function ForeshadowAnchorBlock({
   resolution,
   quote,
   emptyText,
-  note
+  note,
+  action
 }: ForeshadowAnchorBlockProps) {
   const { t } = useTranslation('foreshadow')
   const labels = useChapterLabels()
@@ -52,7 +59,12 @@ export function ForeshadowAnchorBlock({
 
   return (
     <div className="foreshadow-anchor-card">
-      <div className="foreshadow-anchor-card__label">{label}</div>
+      <div className="foreshadow-anchor-card__head">
+        <div className="foreshadow-anchor-card__label">{label}</div>
+        {action === undefined ? null : (
+          <div className="foreshadow-anchor-card__action">{action}</div>
+        )}
+      </div>
       <div className="foreshadow-anchor-card__row">
         {resolution.state === 'unanchored' ? (
           <span className="foreshadow-anchor-card__target is-empty">{emptyText}</span>

@@ -6,6 +6,10 @@ import { RestoreIcon } from '../icons'
 import { TrashIcon } from '../../../components/icons'
 import { useConfirm } from '../chapters/useConfirm'
 import { useChapterLabels } from '../chapters/useChapterLabels'
+import {
+  useForeshadowDeleteImpact,
+  withDeleteImpactWarning
+} from '../foreshadow/useForeshadowDeleteImpact'
 import { outlineItemLabel } from './outlineTree'
 import type { OutlineVolumeRow } from './outlineTree'
 
@@ -50,6 +54,8 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const confirm = useConfirm()
+  // 彻底删除确认前的双埋点伏笔查询（物理删：外键级联整条删除伏笔）。
+  const { inspect: inspectForeshadowImpact } = useForeshadowDeleteImpact()
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
@@ -123,17 +129,24 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
   }
 
   const requestPurgeChapter = (chapter: DeletedOutlineItemRow): void => {
-    confirm.request(
-      {
-        title: t('dialog.purgeChapter.title'),
-        message: t('dialog.purgeChapter.message', {
-          name: outlineItemLabel(chapter, tOutline('unnamedChapter'))
-        }),
-        confirmText: t('dialog.purgeChapter.confirm'),
-        tone: 'danger'
-      },
-      () => runAction(() => window.api.outline.purge(chapter.id))
-    )
+    // 彻底删除是物理删：伏笔行会随外键 CASCADE 整条消失（含另一处埋设点）。
+    void (async (): Promise<void> => {
+      const warning = await inspectForeshadowImpact({ outlineItemId: chapter.id }, 'purge')
+      confirm.request(
+        {
+          title: t('dialog.purgeChapter.title'),
+          message: withDeleteImpactWarning(
+            t('dialog.purgeChapter.message', {
+              name: outlineItemLabel(chapter, tOutline('unnamedChapter'))
+            }),
+            warning
+          ),
+          confirmText: t('dialog.purgeChapter.confirm'),
+          tone: 'danger'
+        },
+        () => runAction(() => window.api.outline.purge(chapter.id))
+      )
+    })()
   }
 
   const requestPurgeAll = (): void => {

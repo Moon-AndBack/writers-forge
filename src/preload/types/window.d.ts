@@ -98,10 +98,13 @@ import type {
   WorldSubtypeRow
 } from './worldSubtype'
 import type {
+  AttachForeshadowAnchorResult,
+  ForeshadowAnchor,
   ForeshadowCreatePayload,
   ForeshadowRow,
   ForeshadowUpdatePatch
 } from '../../main/database/foreshadows'
+import type { ForeshadowAnchorHit } from '../../main/database/foreshadowsQuery'
 
 /** 段落保存结果：`ok=false` 表示入参非法或章节不存在。 */
 interface SaveParagraphsResult {
@@ -361,8 +364,12 @@ export interface Api {
     create: (bookId: string, payload: ForeshadowCreatePayload) => Promise<ForeshadowRow | null>
     update: (id: number, patch: ForeshadowUpdatePatch) => Promise<ForeshadowRow | null>
     delete: (id: number) => Promise<boolean>
-    /** 按章节或大纲条目取锚定伏笔（两者都给时优先 chapterId） */
+    /** 按章节或大纲条目取锚定伏笔（章节 → 正文埋点 / 大纲 → 大纲埋点；优先 chapterId） */
     listByAnchor: (chapterId?: number, outlineItemId?: number) => Promise<ForeshadowRow[]>
+    /** 锚点反查命中（同上匹配，回传命中槽位 `body` / `outline`） */
+    listByAnchorHit: (chapterId?: number, outlineItemId?: number) => Promise<ForeshadowAnchorHit[]>
+    /** 给伏笔补缺失的埋点槽位（槽位由锚点 kind 决定；槽位已占用以 `{ ok: false }` 返回） */
+    attachAnchor: (id: number, anchor: ForeshadowAnchor) => Promise<AttachForeshadowAnchorResult>
     /** 回收点锚点反查（章节 / 大纲条目，两者都给时优先 chapterId） */
     listByRecoverAnchor: (chapterId?: number, outlineItemId?: number) => Promise<ForeshadowRow[]>
   }

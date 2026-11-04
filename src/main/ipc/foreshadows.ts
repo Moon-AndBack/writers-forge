@@ -1,21 +1,28 @@
 import { ipcMain } from 'electron'
 import { logger } from '../logger'
 import {
+  attachForeshadowAnchor,
   createForeshadow,
   deleteForeshadow,
+  updateForeshadow,
+  type ForeshadowAnchor,
+  type ForeshadowAnchorKind,
+  type ForeshadowBodyAnchor,
+  type ForeshadowCreatePayload,
+  type ForeshadowNoAnchor,
+  type ForeshadowOutlineAnchor,
+  type ForeshadowStatus,
+  type ForeshadowUpdatePatch
+} from '../database/foreshadows'
+import {
   getForeshadow,
   listForeshadows,
   listForeshadowsByChapter,
   listForeshadowsByOutlineItem,
   listForeshadowsByRecoverAnchorChapter,
   listForeshadowsByRecoverAnchorOutlineItem,
-  updateForeshadow,
-  type ForeshadowAnchor,
-  type ForeshadowAnchorKind,
-  type ForeshadowCreatePayload,
-  type ForeshadowStatus,
-  type ForeshadowUpdatePatch
-} from '../database/foreshadows'
+  type ForeshadowAnchorHit
+} from '../database/foreshadowsQuery'
 
 /** 伏笔域日志 scope。 */
 const log = logger.scope('foreshadow')
@@ -57,26 +64,37 @@ function isOptionalPositiveInt(value: unknown): value is number | null | undefin
 }
 
 const FORESHADOW_STATUSES: readonly string[] = ['planted', 'recovered', 'abandoned']
+/** 回收点锚点仍为三态（章节 / 大纲条目 / 未记录）。 */
 const FORESHADOW_ANCHOR_KINDS: readonly string[] = ['chapter', 'outline', 'none']
+/** 正文埋点只接受章节锚点。 */
+const BODY_ANCHOR_KINDS: readonly string[] = ['chapter', 'none']
+/** 大纲埋点只接受大纲条目锚点。 */
+const OUTLINE_ANCHOR_KINDS: readonly string[] = ['outline', 'none']
+/** 关联伏笔：只接受真实锚点（`none` 无意义，拒为 `invalid`）。 */
+const ATTACH_ANCHOR_KINDS: readonly string[] = ['chapter', 'outline']
 
 function isForeshadowStatus(value: unknown): value is ForeshadowStatus {
   return typeof value === 'string' && FORESHADOW_STATUSES.includes(value)
 }
 
-function isAnchorKind(value: unknown): value is ForeshadowAnchorKind {
-  return typeof value === 'string' && FORESHADOW_ANCHOR_KINDS.includes(value)
+function isAnchorKindOf(value: unknown, allowed: readonly string[]): value is ForeshadowAnchorKind {
+  return typeof value === 'string' && allowed.includes(value)
 }
 
 /**
  * 消毒锚点入参：undefined / null 原样返回；纯对象且字段类型合法 → 归一化对象；
- * 畸形 → undefined（调用方整包拒绝）。语义约束（目标是否同书）由数据层校验。
- * 埋设锚点与回收点锚点结构完全相同，故两者共用本函数（回收点复用同一份消毒逻辑）。
+ * 畸形 / `kind` 不在 `allowed` 集合 → undefined（调用方整包拒绝）。
+ * 语义约束（目标是否同书）由数据层校验；槽位归属由 `allowed` 收窄：
+ * 正文埋点只认 `chapter`、大纲埋点只认 `outline`、回收点三态皆可。
  */
-function sanitizeAnchor(value: unknown): ForeshadowAnchor | null | undefined {
+function sanitizeAnchor(
+  value: unknown,
+  allowed: readonly string[]
+): ForeshadowAnchor | null | undefined {
   if (value === undefined || value === null) return value
   if (typeof value !== 'object' || Array.isArray(value)) return undefined
   const record = value as Record<string, unknown>
-  if (!isAnchorKind(record.kind)) return undefined
+  if (!isAnchorKindOf(record.kind, allowed)) return undefined
   if (
     !isOptionalPositiveInt(record.chapterId) ||
     !isOptionalPositiveInt(record.outlineItemId) ||
@@ -87,19 +105,54 @@ function sanitizeAnchor(value: unknown): ForeshadowAnchor | null | undefined {
   ) {
     return undefined
   }
-  const anchor: ForeshadowAnchor = { kind: record.kind }
-  if (typeof record.chapterId === 'number') anchor.chapterId = record.chapterId
-  if (record.chapterId === null) anchor.chapterId = null
-  if (typeof record.outlineItemId === 'number') anchor.outlineItemId = record.outlineItemId
-  if (record.outlineItemId === null) anchor.outlineItemId = null
-  if (typeof record.paragraphIdx === 'number') anchor.paragraphIdx = record.paragraphIdx
-  if (record.paragraphIdx === null) anchor.paragraphIdx = null
-  if (typeof record.quote === 'string') anchor.quote = record.quote
-  if (typeof record.charStart === 'number') anchor.charStart = record.charStart
-  if (record.charStart === null) anchor.charStart = null
-  if (typeof record.charEnd === 'number') anchor.charEnd = record.charEnd
-  if (record.charEnd === null) anchor.charEnd = null
-  return anchor
+  if (record.kind === 'chapter') {
+    // 正文埋点：`chapterId` 必填（缺失直接拒，不再下抛到数据层）。
+    if (!isPositiveInt(record.chapterId)) return undefined
+    const anchor: ForeshadowBodyAnchor = { kind: 'chapter', chapterId: record.chapterId }
+    if (typeof record.paragraphIdx === 'number') anchor.paragraphIdx = record.paragraphIdx
+    if (record.paragraphIdx === null) anchor.paragraphIdx = null
+    if (typeof record.quote === 'string') anchor.quote = record.quote
+    if (typeof record.charStart === 'number') anchor.charStart = record.charStart
+    if (record.charStart === null) anchor.charStart = null
+    if (typeof record.charEnd === 'number') anchor.charEnd = record.charEnd
+    if (record.charEnd === null) anchor.charEnd = null
+    return anchor
+  }
+  if (record.kind === 'outline') {
+    // 大纲埋点：`outlineItemId` 必填。
+    if (!isPositiveInt(record.outlineItemId)) return undefined
+    const anchor: ForeshadowOutlineAnchor = {
+      kind: 'outline',
+      outlineItemId: record.outlineItemId
+    }
+    if (typeof record.paragraphIdx === 'number') anchor.paragraphIdx = record.paragraphIdx
+    if (record.paragraphIdx === null) anchor.paragraphIdx = null
+    if (typeof record.quote === 'string') anchor.quote = record.quote
+    if (typeof record.charStart === 'number') anchor.charStart = record.charStart
+    if (record.charStart === null) anchor.charStart = null
+    if (typeof record.charEnd === 'number') anchor.charEnd = record.charEnd
+    if (record.charEnd === null) anchor.charEnd = null
+    return anchor
+  }
+  return { kind: 'none' }
+}
+
+/** 正文埋点锚点消毒：`kind` 只允许 `chapter` / `none`。 */
+function sanitizeBodyAnchor(
+  value: unknown
+): ForeshadowBodyAnchor | ForeshadowNoAnchor | null | undefined {
+  const anchor = sanitizeAnchor(value, BODY_ANCHOR_KINDS)
+  if (anchor === undefined || anchor === null) return anchor
+  return anchor.kind === 'outline' ? undefined : anchor
+}
+
+/** 大纲埋点锚点消毒：`kind` 只允许 `outline` / `none`。 */
+function sanitizeOutlineAnchor(
+  value: unknown
+): ForeshadowOutlineAnchor | ForeshadowNoAnchor | null | undefined {
+  const anchor = sanitizeAnchor(value, OUTLINE_ANCHOR_KINDS)
+  if (anchor === undefined || anchor === null) return anchor
+  return anchor.kind === 'chapter' ? undefined : anchor
 }
 
 /** 消毒创建入参：标题须非空；其余字段可选，畸形 → undefined。 */
@@ -109,16 +162,19 @@ function sanitizeCreatePayload(value: unknown): ForeshadowCreatePayload | undefi
   if (!isNonEmptyString(record.title)) return undefined
   if (record.description !== undefined && typeof record.description !== 'string') return undefined
   if (record.status !== undefined && !isForeshadowStatus(record.status)) return undefined
-  const anchor = sanitizeAnchor(record.anchor)
+  const anchor = sanitizeBodyAnchor(record.anchor)
   if (record.anchor !== undefined && anchor === undefined) return undefined
+  const anchor2 = sanitizeOutlineAnchor(record.anchor2)
+  if (record.anchor2 !== undefined && anchor2 === undefined) return undefined
   const payload: ForeshadowCreatePayload = { title: record.title }
   if (typeof record.description === 'string') payload.description = record.description
   if (isForeshadowStatus(record.status)) payload.status = record.status
   if (anchor !== undefined && anchor !== null) payload.anchor = anchor
+  if (anchor2 !== undefined && anchor2 !== null) payload.anchor2 = anchor2
   return payload
 }
 
-/** 消毒更新补丁：字段缺省不变；`anchor` / `recoverAnchor` 为 null 清除对应锚点；畸形 → undefined。 */
+/** 消毒更新补丁：字段缺省不变；`anchor` / `anchor2` / `recoverAnchor` 为 null 清除对应锚点；畸形 → undefined。 */
 function sanitizeUpdatePatch(value: unknown): ForeshadowUpdatePatch | undefined {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined
   const record = value as Record<string, unknown>
@@ -126,9 +182,11 @@ function sanitizeUpdatePatch(value: unknown): ForeshadowUpdatePatch | undefined 
   if (record.description !== undefined && typeof record.description !== 'string') return undefined
   if (record.recoveryNote !== undefined && typeof record.recoveryNote !== 'string') return undefined
   if (record.status !== undefined && !isForeshadowStatus(record.status)) return undefined
-  const anchor = sanitizeAnchor(record.anchor)
+  const anchor = sanitizeBodyAnchor(record.anchor)
   if (record.anchor !== undefined && anchor === undefined) return undefined
-  const recoverAnchor = sanitizeAnchor(record.recoverAnchor)
+  const anchor2 = sanitizeOutlineAnchor(record.anchor2)
+  if (record.anchor2 !== undefined && anchor2 === undefined) return undefined
+  const recoverAnchor = sanitizeAnchor(record.recoverAnchor, FORESHADOW_ANCHOR_KINDS)
   if (record.recoverAnchor !== undefined && recoverAnchor === undefined) return undefined
   const patch: ForeshadowUpdatePatch = {}
   if (typeof record.title === 'string') patch.title = record.title
@@ -136,27 +194,47 @@ function sanitizeUpdatePatch(value: unknown): ForeshadowUpdatePatch | undefined 
   if (typeof record.recoveryNote === 'string') patch.recoveryNote = record.recoveryNote
   if (isForeshadowStatus(record.status)) patch.status = record.status
   if (record.anchor !== undefined) patch.anchor = anchor ?? null
+  if (record.anchor2 !== undefined) patch.anchor2 = anchor2 ?? null
   if (record.recoverAnchor !== undefined) patch.recoverAnchor = recoverAnchor ?? null
   return patch
+}
+
+/** 锚点反查命中（正文埋点 / 大纲埋点）：chapterId 优先；两者都非法 → 空数组。 */
+function resolveAnchorHits(chapterId: unknown, outlineItemId: unknown): ForeshadowAnchorHit[] {
+  if (isPositiveInt(chapterId)) return listForeshadowsByChapter(chapterId)
+  if (isPositiveInt(outlineItemId)) return listForeshadowsByOutlineItem(outlineItemId)
+  return []
 }
 
 /**
  * 伏笔域 IPC：通道前缀 `foreshadow:`。锚点存快照（章 / 大纲条目 + 段落序号 + 原文摘录
  * + 段内字符区间），**不存 `paragraph_id`**（段落每次保存 id 全变）。
  *
+ * 两个埋点槽位**语义固定**：`anchor` = 正文埋点（`body_*`，只收章节锚点）、
+ * `anchor2` = 大纲埋点（`outline_*`，只收大纲条目锚点）；跨类型入参在消毒层即拒绝。
+ *
  * 通道 → 入参 / 出参（非法入参一律回退安全默认，不抛异常；数据层校验失败抛错原样上抛）：
  * - foreshadow:list         (bookId: string)                       → ForeshadowRow[]（未删除，
  *                                                                     `updated_at DESC`）
  * - foreshadow:get          (id: number)                           → ForeshadowRow | null
  * - foreshadow:create       (bookId: string, payload: { title, description?, status?,
- *                            anchor?: { kind, chapterId?, outlineItemId?, paragraphIdx?,
- *                            quote?, charStart?, charEnd? } })      → ForeshadowRow | null
+ *                            anchor?: { kind: 'chapter', chapterId, paragraphIdx?,
+ *                            quote?, charStart?, charEnd? },
+ *                            anchor2?: { kind: 'outline', outlineItemId, … } })
+ *                                                                   → ForeshadowRow | null
  * - foreshadow:update       (id: number, patch?: { title?, description?, recoveryNote?,
- *                            status?, anchor?: … | null,
+ *                            status?, anchor?: … | null, anchor2?: … | null,
  *                            recoverAnchor?: … | null })         → ForeshadowRow | null
  * - foreshadow:delete       (id: number)                           → boolean（软删除）
+ * - foreshadow:attachAnchor (id: number, anchor: { kind, … })      → AttachForeshadowAnchorResult
+ *   （按锚点 `kind` 补对应槽位：目标槽位已占用 → `full`，`none` / 畸形 → `invalid`，
+ *    不存在 → `notFound`；以 `{ ok: false, reason }` 返回，不抛错）
  * - foreshadow:listByAnchor (chapterId?: number, outlineItemId?: number) → ForeshadowRow[]
- *   （两者都给时优先 chapterId；都非法 → 空数组；供后续批次正文标记使用）
+ *   （兼容通道：章节反查命中正文埋点、大纲反查命中大纲埋点；
+ *    两者都给时优先 chapterId；都非法 → 空数组）
+ * - foreshadow:listByAnchorHit (chapterId?: number, outlineItemId?: number)
+ *   → ForeshadowAnchorHit[]（同上匹配，并回传 `slot`（`body` / `outline`），
+ *    供标记层按槽位取快照字段）
  * - foreshadow:listByRecoverAnchor (chapterId?: number, outlineItemId?: number) → ForeshadowRow[]
  *   （**回收点**锚点反查；独立通道而非给 listByAnchor 加参数：正文里埋设处与回收处是
  *    两套互不替代的标记，调用方通常只查其中一类，独立通道语义清晰、无判别参数）
@@ -197,13 +275,29 @@ export function registerForeshadowsIpc(): void {
     return runWrite('foreshadow:delete', { id }, () => deleteForeshadow(id))
   })
 
+  ipcMain.handle('foreshadow:attachAnchor', (_event, id: unknown, anchor: unknown) => {
+    if (!isPositiveInt(id)) return { ok: false, reason: 'invalid' }
+    const parsed = sanitizeAnchor(anchor, ATTACH_ANCHOR_KINDS)
+    if (parsed === undefined || parsed === null || parsed.kind === 'none') {
+      log.warn('foreshadow:attachAnchor 入参消毒失败回 invalid', { id })
+      return { ok: false, reason: 'invalid' }
+    }
+    return runWrite('foreshadow:attachAnchor', { id }, () => attachForeshadowAnchor(id, parsed))
+  })
+
   ipcMain.handle(
     'foreshadow:listByAnchor',
     (_event, chapterId: unknown, outlineItemId: unknown) => {
-      if (isPositiveInt(chapterId)) return listForeshadowsByChapter(chapterId)
-      if (isPositiveInt(outlineItemId)) return listForeshadowsByOutlineItem(outlineItemId)
-      return []
+      // 兼容通道：语义固定后章节反查只命中正文埋点、大纲反查只命中大纲埋点，
+      // 故不再按槽位过滤（渲染层已改用 `listByAnchorHit`）。
+      return resolveAnchorHits(chapterId, outlineItemId).map((hit) => hit.row)
     }
+  )
+
+  ipcMain.handle(
+    'foreshadow:listByAnchorHit',
+    (_event, chapterId: unknown, outlineItemId: unknown) =>
+      resolveAnchorHits(chapterId, outlineItemId)
   )
 
   ipcMain.handle(

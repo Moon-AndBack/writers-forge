@@ -258,7 +258,7 @@ export function EditorPane({
   /* ---------- 伏笔创建弹窗「关联」展示串 ----------
      章节：卷在前、章在后（章名含「第X章 · 名」编号口径）；
      大纲：卷纲 / 分组行只有自身名；条目行 = 所属卷 / 分组名 + 条目名；
-     无上下文（手动新建 / 目标缺失）→ 空串（弹窗展示「未关联」）。 */
+     无上下文（目标缺失）→ 空串（弹窗展示「未关联」）。 */
   const foreshadowChapterContext = useMemo(() => {
     if (!chapter) return ''
     const volume = volumes.find((row) => row.id === chapter.volumeId)
@@ -393,7 +393,7 @@ export function EditorPane({
         </div>
       ) : null}
 
-      {/* 伏笔：中栏列表（标题栏「新建」+ 列表卡）；仅活动模块为伏笔时挂载
+      {/* 伏笔：中栏列表（列表卡，无标题栏动作）；仅活动模块为伏笔时挂载
           （选中 / 草稿真源在页面层装配包，视图无编辑器生命周期需常驻）。 */}
       {foreshadow ? (
         <div className="ep-view is-active" data-view="foreshadow">

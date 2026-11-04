@@ -6,7 +6,9 @@ import type { ForeshadowAnchor } from '../../../../main/database/foreshadows'
 import type { CleanWordCategory } from '../../../../preload/types/cleanWords'
 import { EditorContextMenu } from './EditorContextMenu'
 import { FormatButton } from './FormatPopover'
-import { resolveParagraphAnchor, type ParagraphAnchorInfo } from './paragraphAnchor'
+import { buildAnchor } from './foreshadowAnchor'
+import { resolveParagraphAnchor } from './paragraphAnchor'
+import { useAttachForeshadow } from './useAttachForeshadow'
 import {
   FORESHADOW_MARKS_REFRESH_EVENT,
   refreshForeshadowMarks,
@@ -31,10 +33,14 @@ import { useToast } from '../ui'
  *   大纲额外要求不在表格内（让给 `TableContextMenu`，经 `shouldOpenExtra` 传入）；
  * - **菜单内容**：
  *   1. 「添加伏笔」（`foreshadow` ns `contextMenu.add`，始终出现）；
- *   2. 「回收伏笔」（`foreshadow` ns `contextMenu.recover`，始终出现；当前书**没有**
- *      埋设中（`planted`）伏笔时置灰不可点，可回收性在 `bookId` 变化 / 伏笔写操作后重算）；
- *   3. 「搜索选中文字」（传 `onSearchText` 时出现）；
- *   4. 「加入违禁词库」（传 `onAddCleanWord` 时出现）——点击后**在同一浮层内**展开
+ *   2. 「关联伏笔」（`foreshadow` ns `contextMenu.attach`，始终出现）——点击后把**当前
+ *      选区快照**挂成某条伏笔的埋点（槽位由上下文决定：章节 → 正文埋点，大纲条目 → 大纲埋点；
+ *      弹窗内选目标，无可挂候选时由弹窗给空态提示）；
+ *   3. 「回收伏笔」（`foreshadow` ns `contextMenu.recover`，**仅章节编辑器**出现——回收是
+ *      「伏笔在正文里兑现」的事件、需要正文位置，大纲是规划层，故大纲不显示该项；当前书
+ *      **没有**埋设中（`planted`）伏笔时置灰不可点，可回收性在 `bookId` 变化 / 伏笔写操作后重算）；
+ *   4. 「搜索选中文字」（传 `onSearchText` 时出现）；
+ *   5. 「加入违禁词库」（传 `onAddCleanWord` 时出现）——点击后**在同一浮层内**展开
  *      六个类别按钮（二级选择），选完即入库并收起。
  * - **点击后**：`FormatButton` 已 `onMouseDown` 阻止默认，故编辑器选区在回调内仍有效；
  * - **创建伏笔成功后**：按本题 `chapterId` / `outlineItemId` 重拉伏笔并写回正文标记
@@ -48,7 +54,8 @@ import { useToast } from '../ui'
  *
  * 锚点载体：
  * - 传 `chapterId` → `kind: 'chapter'`（章 + 段落序号 + 段文本 + 段内字符区间）；
- * - 传 `outlineItemId` → `kind: 'outline'`（仅大纲**条目行**；卷纲 / 分组行不传，见下）；
+ * - 传 `outlineItemId` → `kind: 'outline'`（仅大纲**条目行**；卷纲 / 分组行不传，见下）——
+ *   同样写入 `paragraphIdx`（大纲正文是富文本，序号按顶层块计），否则正文标记无从定位；
  * - 两者皆无（如大纲的卷 / 分组目标）→ `kind: 'none'`（未锚定，正文标记批次不覆盖）。
  *
  * 约束：菜单 / 弹窗状态全部由 React `useState` 持有，**不得**塞进 `useEditor` 的
@@ -76,34 +83,6 @@ export interface SelectionContextMenuProps {
    * 只有挂 `CleanWordMark` 的编辑器（章节正文）才应传入——否则加了词也看不到标记。
    */
   onAddCleanWord?: (word: string, category: CleanWordCategory) => Promise<CleanWordAddOutcome>
-}
-
-/** 按「章节 / 大纲条目 / 未锚定」优先级把选区快照落成锚点。 */
-function buildAnchor(
-  info: ParagraphAnchorInfo,
-  chapterId: number | null,
-  outlineItemId: number | null
-): ForeshadowAnchor {
-  if (chapterId !== null) {
-    return {
-      kind: 'chapter',
-      chapterId,
-      paragraphIdx: info.paragraphIdx,
-      quote: info.quote,
-      charStart: info.charStart,
-      charEnd: info.charEnd
-    }
-  }
-  if (outlineItemId !== null) {
-    return {
-      kind: 'outline',
-      outlineItemId,
-      quote: info.quote,
-      charStart: info.charStart,
-      charEnd: info.charEnd
-    }
-  }
-  return { kind: 'none' }
 }
 
 /** 右键点开菜单时的锚点快照（弹窗据此构造落库 payload）。 */
@@ -165,6 +144,10 @@ interface SelectionMenuContentProps {
   close: () => void
   /** 打开伏笔创建弹窗（锚点快照在父组件内取，菜单先收起）。 */
   onAddForeshadow: () => void
+  /** 打开「关联伏笔」弹窗（把当前选区挂成某条伏笔的埋点）。 */
+  onAttachForeshadow: () => void
+  /** 当前上下文是否显示「回收伏笔」（仅章节编辑器；大纲是规划层，回收只在正文发生）。 */
+  showRecover: boolean
   /** 当前书是否有埋设中（`planted`）伏笔（false → 「回收伏笔」置灰，菜单项仍显示）。 */
   canRecover: boolean
   /** 打开回收伏笔弹窗（菜单先收起）。 */
@@ -187,6 +170,8 @@ function SelectionMenuContent({
   editor,
   close,
   onAddForeshadow,
+  onAttachForeshadow,
+  showRecover,
   canRecover,
   onRecoverForeshadow,
   onSearchText,
@@ -284,13 +269,19 @@ function SelectionMenuContent({
       <div className="wf-format-pop__section">
         <div className="wf-format-pop__grid wf-format-pop__grid--stack">
           <FormatButton label={tForeshadow('contextMenu.add')} onClick={onAddForeshadow} />
-          {/* 置灰项仍渲染（用户能看到入口）；`FormatButton` 原生 `disabled` 已排除 hover
+          {/* 「关联伏笔」始终显示、不置灰：没有可挂的候选时由弹窗给出空态提示
+              （`attach.empty`），比在菜单里猜「为什么不可点」更可解释。 */}
+          <FormatButton label={tForeshadow('contextMenu.attach')} onClick={onAttachForeshadow} />
+          {/* 「回收伏笔」只在章节上下文渲染（大纲是规划层，回收语义错位）；章节内当前书
+              没有埋设中伏笔时仍渲染并置灰——`FormatButton` 原生 `disabled` 已排除 hover
               并给出 not-allowed 光标，无需额外阻止点击（浏览器不派发 click）。 */}
-          <FormatButton
-            label={tForeshadow('contextMenu.recover')}
-            disabled={!canRecover}
-            onClick={onRecoverForeshadow}
-          />
+          {showRecover && (
+            <FormatButton
+              label={tForeshadow('contextMenu.recover')}
+              disabled={!canRecover}
+              onClick={onRecoverForeshadow}
+            />
+          )}
           {onSearchText !== undefined && (
             <FormatButton label={t('selectionMenu.search')} onClick={runSearch} />
           )}
@@ -324,10 +315,22 @@ export function SelectionContextMenu({
   const { t: tForeshadow } = useTranslation('foreshadow')
   // toast 由本组件持有（菜单卸载 / 弹窗卸载后提示仍可见）。
   const { show: showToast, node: toastNode } = useToast()
+  // 「关联伏笔」：选区快照 → 弹窗 → toast / 刷新标记，全部封装在 hook 内
+  // （第三个弹窗的状态不继续堆进本组件，见 `useAttachForeshadow`）。
+  const { openAttach, dialog: attachDialog } = useAttachForeshadow({
+    editor,
+    bookId,
+    chapterId,
+    outlineItemId,
+    resolveForeshadowTargetLabel,
+    showToast
+  })
   /** 非 null = 创建弹窗打开（同时持有右键时的选区快照）。 */
   const [pending, setPending] = useState<PendingAnchor | null>(null)
   /** 非 null = 回收弹窗打开（值 = 点菜单项时的选区快照，落库为回收锚点）。 */
   const [recoverAnchor, setRecoverAnchor] = useState<ForeshadowAnchor | null>(null)
+  /** 「回收伏笔」仅在章节上下文出现（大纲是规划层，回收只在正文发生；槽位语义固定）。 */
+  const showRecover = chapterId !== null
   /**
    * 当前书是否存在「埋设中」伏笔（`status === 'planted'`；软删除已由数据层过滤）。
    * 决定「回收伏笔」菜单项是否置灰；未就绪时按不可回收处理（保守，避免点开空列表）。
@@ -343,8 +346,9 @@ export function SelectionContextMenu({
     setHasRecoverable(next)
   }, [bookId])
 
-  // bookId 变化时重算一次（setState 只发生在异步回调内）。
+  // bookId 变化时重算一次（setState 只发生在异步回调内）；大纲上下文不显示该项，不查询。
   useEffect(() => {
+    if (!showRecover) return
     let cancelled = false
     const seq = ++recoverSeqRef.current
     void fetchRecoverable(bookId).then((next) => {
@@ -354,7 +358,7 @@ export function SelectionContextMenu({
     return () => {
       cancelled = true
     }
-  }, [bookId])
+  }, [bookId, showRecover])
 
   // 伏笔写操作（创建 / 回收 / 列表页编辑 / 删除）后经统一事件广播重算。
   useEffect(() => {
@@ -392,6 +396,14 @@ export function SelectionContextMenu({
               openDialog()
               close()
             }}
+            onAttachForeshadow={() => {
+              // 与「回收伏笔」同口径：先取选区快照（菜单按钮已阻止 mousedown 默认，
+              // 编辑器选区此刻仍有效），再收起菜单 / 打开弹窗，避免壳的「外部 pointerdown
+              // 关闭」监听把随后打开的 Modal 遮罩当成外部点击。
+              if (!openAttach()) showToast(tForeshadow('contextMenu.noSelection'))
+              close()
+            }}
+            showRecover={showRecover}
             canRecover={hasRecoverable}
             onRecoverForeshadow={() => {
               // 先取选区快照（菜单内按钮已阻止 mousedown 默认，编辑器选区此刻仍有效），
@@ -457,6 +469,7 @@ export function SelectionContextMenu({
           onFailed={() => showToast(tForeshadow('toast.recoverFailed'))}
         />
       )}
+      {attachDialog}
       {toastNode}
     </>
   )

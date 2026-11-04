@@ -4,6 +4,10 @@ import { IconButton } from '../../../components/ui'
 import { ChevronIcon, PencilIcon, PlusIcon } from '../icons'
 import { TrashIcon } from '../../../components/icons'
 import { useConfirm } from '../chapters/useConfirm'
+import {
+  useForeshadowDeleteImpact,
+  withDeleteImpactWarning
+} from '../foreshadow/useForeshadowDeleteImpact'
 import type { VolumeRow } from '../chapters/chapterTree'
 import type { TreeExpansion } from '../useTreeExpansion'
 import {
@@ -67,6 +71,8 @@ export default function OutlineNonVolumeList({
   const itemSettled = useRef(false)
   const groupSettled = useRef(false)
   const confirm = useConfirm()
+  // 删除确认前的双埋点伏笔查询（软删：伏笔保留，仅此处锚点失效）。
+  const { inspect: inspectForeshadowImpact } = useForeshadowDeleteImpact()
 
   const beginRenameItem = useCallback((item: OutlineItemRow): void => {
     setItemRenamingId(item.id)
@@ -124,18 +130,25 @@ export default function OutlineNonVolumeList({
 
   const requestDeleteEntry = useCallback(
     (id: number, title: string): void => {
-      confirm.request(
-        {
-          title: t('dialog.deleteChapter.title'),
-          message: t('dialog.deleteChapter.message', {
-            name: outlineItemLabel({ title }, t('unnamedChapter'))
-          }),
-          confirmText: t('dialog.deleteChapter.confirm')
-        },
-        () => onDeleteChapter(id)
-      )
+      // 先查该独立条目是否挂着双埋点伏笔：有则在现有删除确认框正文后追加影响提示。
+      void (async (): Promise<void> => {
+        const warning = await inspectForeshadowImpact({ outlineItemId: id }, 'trash')
+        confirm.request(
+          {
+            title: t('dialog.deleteChapter.title'),
+            message: withDeleteImpactWarning(
+              t('dialog.deleteChapter.message', {
+                name: outlineItemLabel({ title }, t('unnamedChapter'))
+              }),
+              warning
+            ),
+            confirmText: t('dialog.deleteChapter.confirm')
+          },
+          () => onDeleteChapter(id)
+        )
+      })()
     },
-    [confirm, onDeleteChapter, t]
+    [confirm, onDeleteChapter, t, inspectForeshadowImpact]
   )
 
   if (entries.length === 0) return null

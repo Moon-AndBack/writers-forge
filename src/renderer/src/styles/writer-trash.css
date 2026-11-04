@@ -129,3 +129,17 @@
   color: var(--text-dim);
   word-break: break-word;
 }
+
+/* 正文内的分段（基础说明 + 伏笔影响提示）：段落自带默认外边距，统一压平后只留段间距。 */
+.confirm-msg p {
+  margin: 0;
+}
+
+.confirm-msg p + p {
+  margin-top: 8px;
+}
+
+/* 双埋点伏笔影响：危险色强调（仍属同一确认框，不另起弹窗）。 */
+.confirm-msg__warning {
+  color: var(--danger);
+}

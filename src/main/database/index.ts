@@ -36,6 +36,7 @@ import { createWorldPowersSchema } from './schema/worldPowers'
 import { migrateDropLegacyDossierTables } from './legacyDossierDrop'
 import { migrateDropWorldRefAttrs } from './worldRefAttrsDrop'
 import { migrateBooksDropColumns } from './booksDropColumns'
+import { migrateForeshadowsBodyOutlineSlots } from './foreshadowsSlotMigration'
 import {
   migratePlotLinesTimeline,
   migratePlotSceneDescriptionRich,
@@ -127,6 +128,11 @@ export function getDb(): Database.Database {
     createParagraphSchema(instance)
     // 大纲域：outline_items，复用章节域卷池（引用 volumes / books，须在其后）。
     createOutlineItemsSchema(instance)
+    // 伏笔域：两个埋点槽位语义固定（`body_*` 仅章节 / `outline_*` 仅大纲条目）。
+    // 老库（`anchor_*` / `anchor2_*`）一次性整表重建 + 按 kind 归位（幂等、列探测判据、
+    // 失败回滚）；**必须早于** `createForeshadowsSchema`——后者会按新列名建索引，
+    // 老表尚无 `body_chapter_id` 列，先建索引会直接报错。
+    migrateForeshadowsBodyOutlineSlots(instance)
     // 伏笔域：foreshadows，锚点快照引用 chapters / outline_items，须在其后，幂等建表。
     createForeshadowsSchema(instance)
     // 实体三表：幂等建表。

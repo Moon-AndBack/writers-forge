@@ -41,10 +41,13 @@ import type {
 } from '../main/database/plot'
 import type { PlotSceneEntityInput, PlotSceneEntityRow } from '../main/database/plotSceneEntities'
 import type {
+  AttachForeshadowAnchorResult,
+  ForeshadowAnchor,
   ForeshadowCreatePayload,
   ForeshadowRow,
   ForeshadowUpdatePatch
 } from '../main/database/foreshadows'
+import type { ForeshadowAnchorHit } from '../main/database/foreshadowsQuery'
 import type { DiagnosticsReport } from '../main/database/diagnostics'
 import type {
   CreateEntityInput,
@@ -338,9 +341,15 @@ const api = {
     update: (id: number, patch: ForeshadowUpdatePatch): Promise<ForeshadowRow | null> =>
       ipcRenderer.invoke('foreshadow:update', id, patch),
     delete: (id: number): Promise<boolean> => ipcRenderer.invoke('foreshadow:delete', id),
-    /** 按章节或大纲条目取锚定伏笔（两者都给时优先 chapterId） */
+    /** 按章节或大纲条目取锚定伏笔（章节 → 正文埋点 / 大纲 → 大纲埋点；优先 chapterId） */
     listByAnchor: (chapterId?: number, outlineItemId?: number): Promise<ForeshadowRow[]> =>
       ipcRenderer.invoke('foreshadow:listByAnchor', chapterId, outlineItemId),
+    /** 锚点反查命中（同上匹配，回传命中槽位 `body` / `outline`） */
+    listByAnchorHit: (chapterId?: number, outlineItemId?: number): Promise<ForeshadowAnchorHit[]> =>
+      ipcRenderer.invoke('foreshadow:listByAnchorHit', chapterId, outlineItemId),
+    /** 给伏笔补缺失的埋点槽位（槽位由锚点 kind 决定；槽位已占用以 `{ ok: false }` 返回） */
+    attachAnchor: (id: number, anchor: ForeshadowAnchor): Promise<AttachForeshadowAnchorResult> =>
+      ipcRenderer.invoke('foreshadow:attachAnchor', id, anchor),
     /** 回收点锚点反查（章节 / 大纲条目，两者都给时优先 chapterId） */
     listByRecoverAnchor: (chapterId?: number, outlineItemId?: number): Promise<ForeshadowRow[]> =>
       ipcRenderer.invoke('foreshadow:listByRecoverAnchor', chapterId, outlineItemId)

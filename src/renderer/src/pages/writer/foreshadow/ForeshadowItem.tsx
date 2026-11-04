@@ -1,9 +1,10 @@
 /**
- * 伏笔列表单卡（中栏网格单元）：四行 ——
+ * 伏笔列表单卡（中栏网格单元）：
  * 1. 名称 + 状态胶囊 + 删除按钮（常显）；
  * 2. 埋点位置（「卷 · 章」完整位置 / 大纲条目名，未锚定显示占位）；
- * 3. 回收位置（同上，未回收显示占位）；
- * 4. 描述摘要（截断）。
+ * 3. 大纲埋点位置（**仅** `outlineKind !== 'none'` 时渲染，未使用大纲槽位不占行）；
+ * 4. 回收位置（同上，未回收显示占位）；
+ * 5. 描述摘要（截断）。
  *
  * 卡根为 `<article role="button">`：`<button>` 不能内嵌删除按钮，故改用可聚焦容器 +
  * 键盘（Enter / Space）选中；hover / 选中光晕复用通用 `.wf-card--halo`
@@ -21,6 +22,7 @@ import {
   FORESHADOW_STATUS_LABEL_KEYS,
   FORESHADOW_STATUS_TONES,
   resolveForeshadowAnchor,
+  resolveForeshadowAnchor2,
   resolveForeshadowRecoverAnchor,
   type ForeshadowRow
 } from './foreshadowTree'
@@ -74,15 +76,27 @@ export default function ForeshadowItem({
   const labels = useChapterLabels()
 
   const plant = resolveForeshadowAnchor(row, chapters, volumes, outlineItems)
+  // 大纲埋点按需解析：未使用大纲槽位（`none`）时不算、不渲染，避免每张卡多一行空占位。
+  const plant2 =
+    row.outlineKind === 'none'
+      ? null
+      : resolveForeshadowAnchor2(row, chapters, volumes, outlineItems)
   const recover = resolveForeshadowRecoverAnchor(row, chapters, volumes, outlineItems)
 
   // 位置串 = 完整锚点位置（章节「卷X 卷名 · 第X章 章名」/ 大纲条目名），
   // 行首已有「埋点位置 / 回收位置」标签，不再重复「章节 ·」前缀。
   const plantTarget = foreshadowPlaceLabel(plant, labels, t('anchor.unnamedTarget'))
+  const plant2Target =
+    plant2 === null ? null : foreshadowPlaceLabel(plant2, labels, t('anchor.unnamedTarget'))
   const recoverTarget = foreshadowPlaceLabel(recover, labels, t('anchor.unnamedTarget'))
   const plantText =
     plantTarget ??
     (plant.state === 'invalid' ? t('listItem.anchorInvalid') : t('detail.plantEmpty'))
+  const plant2Text =
+    plant2 === null
+      ? null
+      : (plant2Target ??
+        (plant2.state === 'invalid' ? t('listItem.anchorInvalid') : t('detail.plantEmpty')))
   const recoverText =
     recoverTarget ??
     (recover.state === 'invalid' ? t('listItem.anchorInvalid') : t('detail.recoverEmpty'))
@@ -128,6 +142,9 @@ export default function ForeshadowItem({
       </div>
 
       <PlaceLine label={t('detail.plant')} value={plantText} empty={plantTarget === null} />
+      {plant2Text === null ? null : (
+        <PlaceLine label={t('detail.plant2')} value={plant2Text} empty={plant2Target === null} />
+      )}
       <PlaceLine label={t('detail.recover')} value={recoverText} empty={recoverTarget === null} />
 
       {row.description.trim() === '' ? null : (

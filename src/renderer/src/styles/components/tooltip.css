@@ -42,6 +42,61 @@
   opacity: 1;
 }
 
+/* ---------- 伏笔正文标记悬停提示（components/editor/MarkHoverTip.tsx） ----------
+   与 .wf-tooltip 共用同一视觉底座（--pane 底 + --line 单环 + --r-xs + 小字号），
+   但**不**复用其类名：`.wf-tooltip` 带 `opacity: 0` 且需 `.is-ready` 才显形，与本浮层
+   「HoverPopupShell 只写 left/top、由 useMarkHover 控制显隐」的挂载方式冲突。
+   定位由 HoverPopupShell 内联写 left/top；宽度随内容，max-width 夹住长文案。
+   三行布局：第 1 行标题（强调）+ 第 2 行状态 / 位置（次要）+ 第 3 行描述（最弱、可省）。 */
+.wf-mark-tooltip {
+  position: fixed;
+  z-index: 990;
+  box-sizing: border-box;
+  max-width: 260px;
+  padding: 6px 10px;
+  background: var(--pane);
+  border-radius: var(--r-xs);
+  box-shadow:
+    var(--sh-popup),
+    0 0 0 1px var(--line);
+
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-align: left;
+
+  /* 不承接鼠标：否则「span → 浮层」往返会反复触发 mouseover / mouseout（闪烁）并干扰正文选区。 */
+  pointer-events: none;
+}
+
+/* 第 1 行：伏笔名，唯一强调行（比状态 / 描述重一档）。 */
+.wf-mark-tooltip__heading {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* 第 2 行：回收 / 埋设位置或状态，退到次要色。 */
+.wf-mark-tooltip__status {
+  margin-top: 2px;
+  color: var(--text-dim);
+}
+
+/* 第 3 行：描述，最弱色；**不内滚**（浮层 pointer-events: none，滚不动），
+   故超长时按行截断——6 行足以覆盖常见描述，又不让浮窗无限增高。 */
+.wf-mark-tooltip__desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  line-clamp: 6;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--text-mute);
+  overflow-wrap: anywhere;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wf-tooltip {
     transition: none;

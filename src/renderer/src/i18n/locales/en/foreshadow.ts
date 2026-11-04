@@ -27,9 +27,13 @@ const foreshadow = {
     abandoned: 'Abandoned'
   },
   mark: {
+    heading: 'Foreshadowing: {{name}}',
     recoveredAt: 'Recovered at {{place}}',
     recovered: 'Recovered',
-    plantedAt: 'Planted at {{place}} · {{title}}',
+    plantedPlace: 'Planted at {{place}}',
+    pending: 'Pending recovery',
+    abandoned: 'Abandoned',
+    secondary: 'Outline planting point · {{status}}',
     unknownPlace: 'unknown location'
   },
   field: {
@@ -48,7 +52,9 @@ const foreshadow = {
   detail: {
     emptyTitle: 'No foreshadowing selected',
     emptyDesc: 'Select a foreshadowing entry in the list to view and edit its details',
-    plant: 'Planting location',
+    plant: 'Body planting point',
+    plant2: 'Outline planting point',
+    plant2Remove: 'Remove',
     plantEmpty: 'Not anchored',
     recover: 'Recovery location',
     recoverEmpty: 'Not recovered',
@@ -67,7 +73,20 @@ const foreshadow = {
       title: 'Delete foreshadowing',
       message: 'Delete “{{title}}”? This cannot be undone.',
       confirm: 'Delete'
+    },
+    removeAnchor2: {
+      title: 'Remove outline planting point',
+      message:
+        'Remove the outline planting point of this foreshadowing? Its quoted text and position snapshot will be cleared.',
+      confirm: 'Remove'
     }
+  },
+  deleteImpact: {
+    soft: 'Double-planted foreshadowing detected: {{titles}}. After deletion, the planting point here will become invalid, but the foreshadowing entry and its other planting point will remain. You can view it in the “Foreshadowing” module.',
+    purge:
+      'Double-planted foreshadowing detected: {{titles}}. Permanently deleting will remove these foreshadowing entries entirely, including their other planting points, with no way to recover them.',
+    separator: ', ',
+    more: '{{titles}} and {{count}} more'
   },
   action: {
     save: 'Save',
@@ -95,8 +114,21 @@ const foreshadow = {
     notePlaceholder: 'Describe how this foreshadowing pays off (optional)',
     submit: 'Recover'
   },
+  attach: {
+    title: 'Link foreshadowing',
+    searchPlaceholder: 'Search foreshadowing by name',
+    listLabel: 'Foreshadowing available to link',
+    empty: 'No foreshadowing can be linked',
+    noResult: 'No matching foreshadowing',
+    loadFailed: 'Failed to load foreshadowing. Close and try again',
+    submit: 'Link',
+    success: 'Planting point linked',
+    full: 'This foreshadowing already has two planting locations',
+    failed: 'Failed to link. Please try again'
+  },
   contextMenu: {
     add: 'Add foreshadowing',
+    attach: 'Link foreshadowing',
     recover: 'Recover foreshadowing',
     hint: 'Right-click with text selected to use it as the anchor',
     noSelection: 'Please select a passage first'

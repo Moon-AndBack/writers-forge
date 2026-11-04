@@ -69,7 +69,8 @@ export default function ForeshadowCreateDialog({
         title: trimmedTitle,
         description: description.trim(),
         status: 'planted',
-        anchor
+        // 属性名即槽位：章节锚点 → 正文埋点（`anchor`），大纲锚点 → 大纲埋点（`anchor2`）。
+        ...(anchor.kind === 'outline' ? { anchor2: anchor } : { anchor })
       })
       if (row === null) {
         onFailed()

@@ -31,9 +31,13 @@ const foreshadow = {
     abandoned: '已废弃'
   },
   mark: {
+    heading: '伏笔：{{name}}',
     recoveredAt: '已回收于 {{place}}',
     recovered: '已回收',
-    plantedAt: '埋设于 {{place}} · {{title}}',
+    plantedPlace: '埋设于 {{place}}',
+    pending: '待回收',
+    abandoned: '已废弃',
+    secondary: '大纲埋点 · {{status}}',
     unknownPlace: '未知位置'
   },
   field: {
@@ -52,7 +56,9 @@ const foreshadow = {
   detail: {
     emptyTitle: '未选择伏笔',
     emptyDesc: '在列表中选择一条伏笔，查看并编辑详情',
-    plant: '埋点位置',
+    plant: '正文埋点',
+    plant2: '大纲埋点',
+    plant2Remove: '移除',
     plantEmpty: '未锚定',
     recover: '回收位置',
     recoverEmpty: '未回收',
@@ -70,7 +76,24 @@ const foreshadow = {
       title: '删除伏笔',
       message: '确定删除「{{title}}」？此操作不可撤销。',
       confirm: '删除'
+    },
+    removeAnchor2: {
+      title: '移除大纲埋点',
+      message: '确定移除这条伏笔的大纲埋点？该处的原文摘抄与位置快照会一并清除。',
+      confirm: '移除'
     }
+  },
+  /**
+   * 删除章节 / 大纲条目时的双埋点伏笔提示（追加在现有删除确认框正文后）：
+   * `soft` = 软删（进回收站，伏笔保留但此处锚点失效）；`purge` = 彻底删除
+   * （外键级联整条删除伏笔）；`separator` / `more` 用于多条目名称收口。
+   */
+  deleteImpact: {
+    soft: '检测到双埋点伏笔：{{titles}}。删除后此处埋设点会失效，但伏笔本身与另一处埋设点仍会保留，可在「伏笔」模块中查看。',
+    purge:
+      '检测到双埋点伏笔：{{titles}}。彻底删除后，这些伏笔会连同另一处埋设点一起被永久删除，无法恢复。',
+    separator: '、',
+    more: '{{titles}} 等 {{count}} 条'
   },
   action: {
     save: '保存',
@@ -98,8 +121,21 @@ const foreshadow = {
     notePlaceholder: '记录这条伏笔是如何回收的（可选）',
     submit: '回收'
   },
+  attach: {
+    title: '关联伏笔',
+    searchPlaceholder: '按名称搜索伏笔',
+    listLabel: '可关联的伏笔',
+    empty: '没有可关联的伏笔',
+    noResult: '没有匹配的伏笔',
+    loadFailed: '加载伏笔列表失败，请关闭后重试',
+    submit: '关联',
+    success: '已关联埋点',
+    full: '这条伏笔已有两个埋设点',
+    failed: '关联失败，请重试'
+  },
   contextMenu: {
     add: '添加伏笔',
+    attach: '关联伏笔',
     recover: '回收伏笔',
     hint: '选中一段文字后右键，可将其设为伏笔锚点',
     noSelection: '请先选中一段文字'

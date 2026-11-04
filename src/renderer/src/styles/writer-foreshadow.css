@@ -221,12 +221,28 @@
   resize: none;
 }
 
+.foreshadow-anchor-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
 .foreshadow-anchor-card__label {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-mute);
+}
+
+/* 标题行右侧操作（如「移除大纲埋点」）：按钮自带内边距，右对齐收边。 */
+.foreshadow-anchor-card__action {
+  display: flex;
+  flex: none;
+  align-items: center;
+  margin: -4px -6px -4px 0;
 }
 
 .foreshadow-anchor-card__row {

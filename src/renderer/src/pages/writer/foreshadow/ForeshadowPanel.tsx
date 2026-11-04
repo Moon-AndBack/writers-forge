@@ -16,8 +16,9 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FormField, Input, Select, Textarea } from '../../../components/ui'
+import { FormField, Input, Select, Textarea, Button, useToast } from '../../../components/ui'
 import SaveBar from '../SaveBar'
+import ConfirmDialog from '../ConfirmDialog'
 import type { ChapterRow, VolumeRow } from '../chapters/chapterTree'
 import type { OutlineItemRow } from '../outline/outlineTree'
 import ForeshadowAnchorBlock from './ForeshadowAnchorBlock'
@@ -27,6 +28,7 @@ import {
   FORESHADOW_STATUSES,
   FORESHADOW_STATUS_LABEL_KEYS,
   resolveForeshadowAnchor,
+  resolveForeshadowAnchor2,
   resolveForeshadowRecoverAnchor,
   type ForeshadowBundle,
   type ForeshadowDraft,
@@ -108,6 +110,10 @@ function ForeshadowPanelForm({
 
   const [draft, setDraft] = useState<ForeshadowDraft>(() => createForeshadowDraft(row))
   const [saving, setSaving] = useState(false)
+  /** 非 null = 「移除大纲埋点」二次确认打开。 */
+  const [removeAnchor2Open, setRemoveAnchor2Open] = useState(false)
+  const [removingAnchor2, setRemovingAnchor2] = useState(false)
+  const { show: showToast, node: toastNode } = useToast()
 
   const patch = useMemo(() => buildForeshadowPatch(row, draft), [row, draft])
   const changed = Object.keys(patch).length > 0
@@ -143,10 +149,30 @@ function ForeshadowPanelForm({
     () => resolveForeshadowAnchor(row, chapters, volumes, outlineItems),
     [row, chapters, volumes, outlineItems]
   )
+  // 大纲埋点仅在已使用大纲槽位时解析 / 渲染（`none` → 不占右栏空间）。
+  const plant2Resolution = useMemo(
+    () =>
+      row.outlineKind === 'none'
+        ? null
+        : resolveForeshadowAnchor2(row, chapters, volumes, outlineItems),
+    [row, chapters, volumes, outlineItems]
+  )
   const recoverResolution = useMemo(
     () => resolveForeshadowRecoverAnchor(row, chapters, volumes, outlineItems),
     [row, chapters, volumes, outlineItems]
   )
+
+  /**
+   * 移除大纲埋点：清空 `outline_*`（数据层 `anchor2: null`）。落库成功由 bundle
+   * 广播标记刷新，正文 / 大纲的大纲埋点标记随之消失；提示沿用通用的保存成功 / 失败口径。
+   */
+  const removeAnchor2 = useCallback(async (): Promise<void> => {
+    setRemovingAnchor2(true)
+    const ok = await onUpdate(row.id, { anchor2: null })
+    setRemovingAnchor2(false)
+    setRemoveAnchor2Open(false)
+    showToast(ok ? t('toast.updateSuccess') : t('toast.updateFailed'))
+  }, [onUpdate, row.id, showToast, t])
 
   return (
     <div className="foreshadow-panel">
@@ -204,9 +230,25 @@ function ForeshadowPanelForm({
         <ForeshadowAnchorBlock
           label={t('detail.plant')}
           resolution={plantResolution}
-          quote={row.quote}
+          quote={row.bodyQuote}
           emptyText={t('detail.plantEmpty')}
         />
+
+        {/* 大纲埋点：仅在已使用大纲槽位时渲染（与中栏卡同口径，不占空块）。
+            移除属破坏性操作，走通用 ConfirmDialog 二次确认后再清空 `outline_*`。 */}
+        {plant2Resolution === null ? null : (
+          <ForeshadowAnchorBlock
+            label={t('detail.plant2')}
+            resolution={plant2Resolution}
+            quote={row.outlineQuote}
+            emptyText={t('detail.plantEmpty')}
+            action={
+              <Button variant="ghost" size="sm" onClick={() => setRemoveAnchor2Open(true)}>
+                {t('detail.plant2Remove')}
+              </Button>
+            }
+          />
+        )}
 
         <ForeshadowAnchorBlock
           label={t('detail.recover')}
@@ -223,6 +265,24 @@ function ForeshadowPanelForm({
         saving={saving}
         onSave={saveNow}
       />
+
+      {removeAnchor2Open ? (
+        <ConfirmDialog
+          open
+          title={t('dialog.removeAnchor2.title')}
+          message={t('dialog.removeAnchor2.message')}
+          confirmText={t('dialog.removeAnchor2.confirm')}
+          confirming={removingAnchor2}
+          onConfirm={() => {
+            void removeAnchor2()
+          }}
+          onClose={() => {
+            if (!removingAnchor2) setRemoveAnchor2Open(false)
+          }}
+        />
+      ) : null}
+
+      {toastNode}
     </div>
   )
 }

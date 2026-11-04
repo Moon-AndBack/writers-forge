@@ -4,6 +4,10 @@ import { IconButton } from '../../../components/ui'
 import { ChevronIcon, DocIcon, PencilIcon, PlusIcon } from '../icons'
 import { TrashIcon } from '../../../components/icons'
 import { useConfirm } from '../chapters/useConfirm'
+import {
+  useForeshadowDeleteImpact,
+  withDeleteImpactWarning
+} from '../foreshadow/useForeshadowDeleteImpact'
 import { volumeNameLabel, type VolumeRow } from '../chapters/chapterTree'
 import { useChapterLabels } from '../chapters/useChapterLabels'
 import { useTreeExpansion } from '../useTreeExpansion'
@@ -77,6 +81,8 @@ export default function OutlinePanel({
   // 已结算标记：Enter / Escape 已提交或取消后，避免随后的 blur 再次提交（双写）。
   const renameSettled = useRef(false)
   const confirm = useConfirm()
+  // 删除确认前的双埋点伏笔查询（软删：伏笔保留，仅此处锚点失效）。
+  const { inspect: inspectForeshadowImpact } = useForeshadowDeleteImpact()
 
   // 卷池已由页面层过滤为大纲页可见卷（`normal` + `group`）。
   const tree = useMemo(() => buildOutlineTree(volumes, chapters), [volumes, chapters])
@@ -166,18 +172,25 @@ export default function OutlinePanel({
 
   const requestDeleteChapter = useCallback(
     (item: OutlineItemRow): void => {
-      confirm.request(
-        {
-          title: t('dialog.deleteChapter.title'),
-          message: t('dialog.deleteChapter.message', {
-            name: outlineItemLabel(item, t('unnamedChapter'))
-          }),
-          confirmText: t('dialog.deleteChapter.confirm')
-        },
-        () => onDeleteChapter(item.id)
-      )
+      // 先查该条目是否挂着双埋点伏笔：有则在现有删除确认框正文后追加影响提示。
+      void (async (): Promise<void> => {
+        const warning = await inspectForeshadowImpact({ outlineItemId: item.id }, 'trash')
+        confirm.request(
+          {
+            title: t('dialog.deleteChapter.title'),
+            message: withDeleteImpactWarning(
+              t('dialog.deleteChapter.message', {
+                name: outlineItemLabel(item, t('unnamedChapter'))
+              }),
+              warning
+            ),
+            confirmText: t('dialog.deleteChapter.confirm')
+          },
+          () => onDeleteChapter(item.id)
+        )
+      })()
     },
-    [confirm, onDeleteChapter, t]
+    [confirm, onDeleteChapter, t, inspectForeshadowImpact]
   )
 
   const isEmpty = tree.nonVolume.length === 0 && tree.volumes.length === 0

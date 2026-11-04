@@ -2,7 +2,8 @@
    伏笔正文标记（Tiptap Decoration.inline，见 components/editor/foreshadowMarks.ts）
    ------------------------------------------------------------------
    只提示、不改内容：埋设点与回收点各铺一条 inline 装饰，四类变体只靠
-   **线型 + 颜色** 区分（悬停经 `title` 显示文案，本文件不承载交互逻辑）：
+   **线型 + 颜色** 区分（悬停文案由 `components/editor/MarkHoverTip.tsx` 自绘浮层展示，
+   装饰本身不再挂原生 `title`；本文件不承载交互逻辑）：
 
    - 埋设中（`status === 'planted'`）：品牌色**虚线** —— 常态最轻；
    - 埋设点·已废弃（`abandoned`）：浅灰**虚线** —— 比「已回收」的灰实线更浅一档；

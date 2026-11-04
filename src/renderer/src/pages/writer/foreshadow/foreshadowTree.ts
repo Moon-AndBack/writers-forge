@@ -2,9 +2,10 @@
  * 伏笔域展示口径：类型别名 + 锚点解析 + 右栏草稿补丁（纯函数，不发起 IPC）。
  *
  * 锚点失效判定（本批口径）：
- * - `anchorKind === 'none'` → 未锚定；
- * - 章节锚点：目标章仍在当前未删除章列表、`paragraphIdx` / 字符区间完整、`quote` 非空 → 已锚定；
- * - 大纲锚点：目标条目仍在未删除列表、`quote` 非空 → 已锚定；
+ * - 锚点 `kind === 'none'` → 未锚定；
+ * - 章节锚点（正文埋点）：目标章仍在当前未删除章列表、`paragraphIdx` / 字符区间完整、
+ *   `quote` 非空 → 已锚定；
+ * - 大纲锚点（大纲埋点）：目标条目仍在未删除列表、`quote` 非空 → 已锚定；
  * - 其余 → 锚点失效（目标已删 / 快照不完整）。
  *
  * **不做正文逐字比对**：列表页逐条读取章节全文 / 大纲 JSON 成本高，且正文标记
@@ -14,6 +15,7 @@
 import type { RefObject } from 'react'
 import type { TagTone } from '../../../components/ui'
 import type {
+  ForeshadowAnchorKind,
   ForeshadowRow,
   ForeshadowStatus,
   ForeshadowUpdatePatch
@@ -77,29 +79,45 @@ export type ForeshadowAnchorResolution =
   | { state: 'invalid'; target: null; missing: 'chapter' | 'outline' | null }
 
 /**
- * 解析一条伏笔的锚点状态（目标存在性 + 快照完整性；见文件头）。
+ * 锚点快照的解析输入：正文埋点 `body_*`、大纲埋点 `outline_*`、回收点 `recover_*`
+ * 三套快照形状同构（字段语义见数据层 `ForeshadowRow`），故解析逻辑只此一份。
+ */
+export interface ForeshadowAnchorSnapshot {
+  kind: ForeshadowAnchorKind
+  chapterId: number | null
+  outlineItemId: number | null
+  paragraphIdx: number | null
+  quote: string
+  charStart: number | null
+  charEnd: number | null
+}
+
+/**
+ * 通用锚点解析（目标存在性 + 快照完整性；见文件头）。
  *
  * `volumes` 只用于补全章节锚点的所属卷（展示层据此拼「卷 · 章」位置串）；
  * 卷缺失不算失效——章仍在即已锚定，位置退化为「第X章 章名」。
  */
-export function resolveForeshadowAnchor(
-  row: ForeshadowRow,
+export function resolveAnchor(
+  anchor: ForeshadowAnchorSnapshot,
   chapters: readonly ChapterRow[],
   volumes: readonly VolumeRow[],
   outlineItems: readonly OutlineItemRow[]
 ): ForeshadowAnchorResolution {
-  if (row.anchorKind === 'none') {
+  if (anchor.kind === 'none') {
     return { state: 'unanchored', target: null, missing: null }
   }
 
-  if (row.anchorKind === 'chapter') {
+  if (anchor.kind === 'chapter') {
     const chapter =
-      row.chapterId === null ? null : (chapters.find((item) => item.id === row.chapterId) ?? null)
+      anchor.chapterId === null
+        ? null
+        : (chapters.find((item) => item.id === anchor.chapterId) ?? null)
     const snapshotOk =
-      row.quote.trim() !== '' &&
-      row.paragraphIdx !== null &&
-      row.charStart !== null &&
-      row.charEnd !== null
+      anchor.quote.trim() !== '' &&
+      anchor.paragraphIdx !== null &&
+      anchor.charStart !== null &&
+      anchor.charEnd !== null
     if (!chapter || !snapshotOk) {
       return { state: 'invalid', target: null, missing: chapter ? null : 'chapter' }
     }
@@ -108,19 +126,68 @@ export function resolveForeshadowAnchor(
   }
 
   const item =
-    row.outlineItemId === null
+    anchor.outlineItemId === null
       ? null
-      : (outlineItems.find((entry) => entry.id === row.outlineItemId) ?? null)
-  if (!item || row.quote.trim() === '') {
+      : (outlineItems.find((entry) => entry.id === anchor.outlineItemId) ?? null)
+  if (!item || anchor.quote.trim() === '') {
     return { state: 'invalid', target: null, missing: item ? null : 'outline' }
   }
   return { state: 'anchored', target: { kind: 'outline', item }, missing: null }
 }
 
+/** 正文埋点锚点状态（读取 `body_*` 列）。 */
+export function resolveForeshadowAnchor(
+  row: ForeshadowRow,
+  chapters: readonly ChapterRow[],
+  volumes: readonly VolumeRow[],
+  outlineItems: readonly OutlineItemRow[]
+): ForeshadowAnchorResolution {
+  return resolveAnchor(
+    {
+      kind: row.bodyKind,
+      chapterId: row.bodyChapterId,
+      outlineItemId: null,
+      paragraphIdx: row.bodyParagraphIdx,
+      quote: row.bodyQuote,
+      charStart: row.bodyCharStart,
+      charEnd: row.bodyCharEnd
+    },
+    chapters,
+    volumes,
+    outlineItems
+  )
+}
+
 /**
- * 解析一条伏笔的**回收点**锚点状态：判定口径与埋设锚点完全一致（目标存在性 + 快照完整性），
- * 只是读取 `recover*` 列（`recoverAnchorKind` / `recoverChapterId` / `recoverOutlineItemId` /
- * `recoverQuote` / `recoverParagraphIdx` / `recoverCharStart` / `recoverCharEnd`）。
+ * 大纲埋点锚点状态（读取 `outline_*` 列）：判定口径与正文埋点一致。
+ *
+ * `outlineKind === 'none'`（未使用大纲槽位）→ `unanchored`；调用方据此**不渲染**
+ * 大纲埋点行 / 右栏大纲块，避免每张卡都多一行空占位。
+ */
+export function resolveForeshadowAnchor2(
+  row: ForeshadowRow,
+  chapters: readonly ChapterRow[],
+  volumes: readonly VolumeRow[],
+  outlineItems: readonly OutlineItemRow[]
+): ForeshadowAnchorResolution {
+  return resolveAnchor(
+    {
+      kind: row.outlineKind,
+      chapterId: null,
+      outlineItemId: row.outlineItemId,
+      paragraphIdx: row.outlineParagraphIdx,
+      quote: row.outlineQuote,
+      charStart: row.outlineCharStart,
+      charEnd: row.outlineCharEnd
+    },
+    chapters,
+    volumes,
+    outlineItems
+  )
+}
+
+/**
+ * 回收点锚点状态（读取 `recover_*` 列）：判定口径同上。
  *
  * `recoverAnchorKind === 'none'`（尚未记录回收点）→ `unanchored`，由调用方显示「未回收」占位。
  */
@@ -130,35 +197,20 @@ export function resolveForeshadowRecoverAnchor(
   volumes: readonly VolumeRow[],
   outlineItems: readonly OutlineItemRow[]
 ): ForeshadowAnchorResolution {
-  if (row.recoverAnchorKind === 'none') {
-    return { state: 'unanchored', target: null, missing: null }
-  }
-
-  if (row.recoverAnchorKind === 'chapter') {
-    const chapter =
-      row.recoverChapterId === null
-        ? null
-        : (chapters.find((item) => item.id === row.recoverChapterId) ?? null)
-    const snapshotOk =
-      row.recoverQuote.trim() !== '' &&
-      row.recoverParagraphIdx !== null &&
-      row.recoverCharStart !== null &&
-      row.recoverCharEnd !== null
-    if (!chapter || !snapshotOk) {
-      return { state: 'invalid', target: null, missing: chapter ? null : 'chapter' }
-    }
-    const volume = volumes.find((entry) => entry.id === chapter.volumeId) ?? null
-    return { state: 'anchored', target: { kind: 'chapter', chapter, volume }, missing: null }
-  }
-
-  const item =
-    row.recoverOutlineItemId === null
-      ? null
-      : (outlineItems.find((entry) => entry.id === row.recoverOutlineItemId) ?? null)
-  if (!item || row.recoverQuote.trim() === '') {
-    return { state: 'invalid', target: null, missing: item ? null : 'outline' }
-  }
-  return { state: 'anchored', target: { kind: 'outline', item }, missing: null }
+  return resolveAnchor(
+    {
+      kind: row.recoverAnchorKind,
+      chapterId: row.recoverChapterId,
+      outlineItemId: row.recoverOutlineItemId,
+      paragraphIdx: row.recoverParagraphIdx,
+      quote: row.recoverQuote,
+      charStart: row.recoverCharStart,
+      charEnd: row.recoverCharEnd
+    },
+    chapters,
+    volumes,
+    outlineItems
+  )
 }
 
 /**
@@ -199,7 +251,8 @@ export function formatForeshadowPlace(
 }
 
 /**
- * 锚点位置串（中栏卡第二 / 三行与右栏只读块共用，AGENTS §9）：
+ * 锚点位置串（中栏卡的位置行与右栏只读块共用，AGENTS §9）：入参是**解析结果**而非行，
+ * 故正文埋点 / 大纲埋点 / 回收点三个槽位共用同一实现，调用方只换 `resolution`。
  * - 章节 → {@link formatForeshadowPlace}（「卷X 卷名 · 第X章 章名」）；
  * - 大纲 → 条目名本身（外层已有「埋点位置 / 回收位置」标签，不重复「大纲 ·」前缀）；
  * - 未锚定 / 失效（`target` 为空）→ null，由调用方显示各自占位文案。

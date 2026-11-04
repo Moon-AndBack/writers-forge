@@ -152,7 +152,8 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
       'deleted_at'
     ]
   },
-  // 伏笔域（埋设锚点 + 回收点锚点双重快照，不存段落外键）：见 `schema/foreshadows.ts`
+  // 伏笔域（正文埋点 body_* + 大纲埋点 outline_* + 回收点 recover_* 三重快照，不存段落外键）：
+  // 见 `schema/foreshadows.ts`
   {
     name: 'foreshadows',
     columns: [
@@ -162,13 +163,18 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
       'description',
       'recovery_note',
       'status',
-      'anchor_kind',
-      'chapter_id',
+      'body_kind',
+      'body_chapter_id',
+      'body_paragraph_idx',
+      'body_quote',
+      'body_char_start',
+      'body_char_end',
+      'outline_kind',
       'outline_item_id',
-      'paragraph_idx',
-      'quote',
-      'char_start',
-      'char_end',
+      'outline_paragraph_idx',
+      'outline_quote',
+      'outline_char_start',
+      'outline_char_end',
       'recover_anchor_kind',
       'recover_chapter_id',
       'recover_outline_item_id',
@@ -378,9 +384,9 @@ export const EXPECTED_INDEXES: readonly string[] = [
   'idx_outline_items_standalone',
   'idx_outline_items_trash',
   'idx_outline_items_volume_scope',
-  // schema/foreshadows.ts（3：按书取列表 / 章节锚点反查 / 大纲锚点反查）
+  // schema/foreshadows.ts（3：按书取列表 / 正文埋点按章反查 / 大纲埋点按条目反查）
   'idx_foreshadows_book',
-  'idx_foreshadows_chapter',
+  'idx_foreshadows_body_chapter',
   'idx_foreshadows_outline_item',
   // schema/entities.ts（6）
   'idx_entities_book',

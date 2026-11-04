@@ -229,6 +229,11 @@ export function HoverCard({
       elementRef={setCardRef}
       className={`entity-card${nested ? ' entity-card--nested' : ''}`}
       width={CARD_WIDTH}
+      align="left"
+      // 根卡（锚在正文标记行）参与上方堆叠：与伏笔提示同时显示时本卡叠到提示上方
+      // （本卡 → 10px → 提示 → 10px → 标记行）；单侧显示时位置与改造前一致。
+      // 嵌套卡锚在卡片内的关系胶囊上，不参与正文标记行的堆叠。
+      stackAbove={!nested}
       contentKey={contentKey}
       onPointerEnter={handleRootEnter}
       onPointerLeave={scheduleRootClose}

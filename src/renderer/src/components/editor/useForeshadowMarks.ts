@@ -2,7 +2,8 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Editor } from '@tiptap/core'
 import type { TFunction } from 'i18next'
-import type { ForeshadowRow } from '../../../../main/database/foreshadows'
+import type { ForeshadowAnchorKind, ForeshadowRow } from '../../../../main/database/foreshadows'
+import type { ForeshadowAnchorHit } from '../../../../main/database/foreshadowsQuery'
 import {
   updateForeshadowMarks,
   type ForeshadowMarkEntry,
@@ -13,15 +14,16 @@ import {
  * 伏笔正文标记的数据加载与刷新（章节编辑器 / 大纲编辑器共用，§9 唯一实现）。
  *
  * 一次刷新拉**两路**锚点（`Promise.all`，各自失败按空处理）：
- * - `listByAnchor` → 埋设点（含已回收 / 已废弃的伏笔，均落在埋设区间）；
+ * - `listByAnchorHit` → 埋点（正文 / 大纲槽位分别匹配，含已回收 / 已废弃的伏笔；
+ *   `slot` 决定取 `body_*` 还是 `outline_*` 快照，两槽位各铺一处标记）；
  * - `listByRecoverAnchor` → 回收点（`recoverAnchorKind !== 'none'` 且快照可解析才有区间）。
- * 两路合并为一条标记条目列表，同一伏笔可在两处各留一个标记（互不替代）。
+ * 两路合并为一条标记条目列表，同一伏笔可在多处各留一个标记（互不替代）。
  *
  * 数据一律经 `updateForeshadowMarks` 写进插件 state（meta 事务），**不碰** `useEditor` 的
  * `extensions` / `content` / `editorProps` 闭包（W11 中文输入法焦点修复硬约束）。
  *
  * 位置名解析走调用方注入的 `resolveLabel`（见 {@link ForeshadowLabelResolver}）：标记层
- * 不依赖 chapters / volumes / outlineItems 任何具体数据源，悬停文案的措辞（`foreshadow` ns
+ * 不依赖 chapters / volumes / outlineItems 任何具体数据源，悬停三行内容的措辞（`foreshadow` ns
  * `mark.*`）仍由本层经 `t()` 拼装。
  *
  * 刷新时机：
@@ -53,14 +55,15 @@ export interface ForeshadowMarkContext {
 
 /** 两路锚点拉取结果（同一条伏笔可能同时出现在两侧）。 */
 interface ForeshadowMarkData {
-  planted: ForeshadowRow[]
+  /** 埋点命中（含槽位：`body` = `body_*`，`outline` = `outline_*`）。 */
+  planted: ForeshadowAnchorHit[]
   recovered: ForeshadowRow[]
 }
 
 const EMPTY_DATA: ForeshadowMarkData = { planted: [], recovered: [] }
 
 /** 单个请求失败按空数组处理（永不抛错）。 */
-async function safeList(fn: () => Promise<ForeshadowRow[]>): Promise<ForeshadowRow[]> {
+async function safeList<T>(fn: () => Promise<T[]>): Promise<T[]> {
   try {
     return await fn()
   } catch {
@@ -76,7 +79,7 @@ async function fetchMarkData(
   if (chapterId === null && outlineItemId === null) return EMPTY_DATA
   const [planted, recovered] = await Promise.all([
     safeList(() =>
-      window.api.foreshadow.listByAnchor(chapterId ?? undefined, outlineItemId ?? undefined)
+      window.api.foreshadow.listByAnchorHit(chapterId ?? undefined, outlineItemId ?? undefined)
     ),
     safeList(() =>
       window.api.foreshadow.listByRecoverAnchor(chapterId ?? undefined, outlineItemId ?? undefined)
@@ -87,7 +90,7 @@ async function fetchMarkData(
 
 /** 锚点目标 → 位置名（`kind === 'none'` / 无解析回调 → 空串）。 */
 function resolvePlace(
-  targetKind: ForeshadowRow['anchorKind'],
+  targetKind: ForeshadowAnchorKind,
   targetId: number | null,
   resolveLabel: ForeshadowLabelResolver | undefined
 ): string {
@@ -98,11 +101,18 @@ function resolvePlace(
 /**
  * 两路数据 → 标记条目（埋设点在前，回收点在后；同区间去重由装饰构建层负责）。
  *
- * 变体判定：
- * - 埋设点 `status === 'recovered'` → `recovered`，悬停显示**回收位置**；
- * - 埋设点 `status === 'abandoned'` → `abandoned`，悬停显示**伏笔名称**（与埋设中一致）；
- * - 埋设点 `status === 'planted'` → `planted`，悬停显示**伏笔名称**（空名以「未命名伏笔」兜底）；
- * - 回收点（`recoverAnchorKind !== 'none'`）→ `recover-site`，悬停显示**原埋设位置 + 名称**。
+ * 埋点按命中槽位取快照字段：`body` → `body_*`（`kind: 'plant'`），
+ * `outline` → `outline_*`（`kind: 'plant2'`）；两者共用 `status` 判定的视觉变体。
+ *
+ * 变体判定与悬停三行：
+ * - 第 1 行恒为 `伏笔：名字`（空名以「未命名伏笔」兜底）；
+ * - 第 2 行按变体分支：
+ *   - 埋设点 `status === 'recovered'` → `recovered`，显示**回收位置**（解析不到 → 「已回收」）；
+ *   - 埋设点 `status === 'abandoned'` → `abandoned`，显示**已废弃**；
+ *   - 埋设点 `status === 'planted'` → `planted`，显示**待回收**；
+ *   - 大纲埋点：上述文案前加 `mark.secondary` 前缀（`大纲埋点 · …`）；
+ *   - 回收点（`recoverAnchorKind !== 'none'`）→ `recover-site`，显示**原埋设位置**；
+ * - 第 3 行为 `description`（已 trim；空串 = 浮窗不渲染该行）。
  */
 function buildMarkEntries(
   data: ForeshadowMarkData,
@@ -111,7 +121,8 @@ function buildMarkEntries(
   const { t, resolveLabel } = context
   const entries: ForeshadowMarkEntry[] = []
 
-  for (const row of data.planted) {
+  for (const { row, slot } of data.planted) {
+    const outlineSlot = slot === 'outline'
     const recovered = row.status === 'recovered'
     const name = row.title.trim()
     // 埋设点三种状态三分支：已回收 / 已废弃 / 埋设中（含兜底，避免未知状态漏标）。
@@ -120,24 +131,35 @@ function buildMarkEntries(
       : row.status === 'abandoned'
         ? 'abandoned'
         : 'planted'
-    let title = name === '' ? t('field.untitled') : name
+    let status: string
     if (recovered) {
       const place = resolvePlace(
         row.recoverAnchorKind,
         row.recoverAnchorKind === 'chapter' ? row.recoverChapterId : row.recoverOutlineItemId,
         resolveLabel
       )
-      title = place === '' ? t('mark.recovered') : t('mark.recoveredAt', { place })
+      status = place === '' ? t('mark.recovered') : t('mark.recoveredAt', { place })
+    } else if (variant === 'abandoned') {
+      status = t('mark.abandoned')
+    } else {
+      status = t('mark.pending')
     }
+    // 大纲埋点与正文埋点共用状态行措辞，仅加前缀：同一伏笔的两处埋点标记
+    // 悬停文案因此可区分（否则两处文字完全相同，看不出哪处是大纲埋点）。
+    if (outlineSlot) status = t('mark.secondary', { status })
     entries.push({
       id: row.id,
-      kind: 'plant',
+      kind: outlineSlot ? 'plant2' : 'plant',
       variant,
-      title,
-      paragraphIdx: row.paragraphIdx,
-      quote: row.quote,
-      charStart: row.charStart,
-      charEnd: row.charEnd
+      tip: {
+        heading: t('mark.heading', { name: name === '' ? t('field.untitled') : name }),
+        status,
+        description: row.description.trim()
+      },
+      paragraphIdx: outlineSlot ? row.outlineParagraphIdx : row.bodyParagraphIdx,
+      quote: outlineSlot ? row.outlineQuote : row.bodyQuote,
+      charStart: outlineSlot ? row.outlineCharStart : row.bodyCharStart,
+      charEnd: outlineSlot ? row.outlineCharEnd : row.bodyCharEnd
     })
   }
 
@@ -145,8 +167,8 @@ function buildMarkEntries(
     // 无回收点锚点的行不会命中 `listByRecoverAnchor`，此处再守一道（防御性）。
     if (row.recoverAnchorKind === 'none') continue
     const place = resolvePlace(
-      row.anchorKind,
-      row.anchorKind === 'chapter' ? row.chapterId : row.outlineItemId,
+      row.bodyKind,
+      row.bodyKind === 'chapter' ? row.bodyChapterId : row.outlineItemId,
       resolveLabel
     )
     const name = row.title.trim()
@@ -154,10 +176,13 @@ function buildMarkEntries(
       id: row.id,
       kind: 'recover',
       variant: 'recover-site',
-      title: t('mark.plantedAt', {
-        place: place === '' ? t('mark.unknownPlace') : place,
-        title: name === '' ? t('field.untitled') : name
-      }),
+      tip: {
+        heading: t('mark.heading', { name: name === '' ? t('field.untitled') : name }),
+        status: t('mark.plantedPlace', {
+          place: place === '' ? t('mark.unknownPlace') : place
+        }),
+        description: row.description.trim()
+      },
       paragraphIdx: row.recoverParagraphIdx,
       quote: row.recoverQuote,
       charStart: row.recoverCharStart,

@@ -23,6 +23,8 @@ import OutlineTrashView from './OutlineTrashView'
 import { TableContextMenu } from '../../../components/editor/TableContextMenu'
 import { SelectionContextMenu } from '../../../components/editor/SelectionContextMenu'
 import { ForeshadowMark } from '../../../components/editor/foreshadowMarks'
+import { MarkHoverTip } from '../../../components/editor/MarkHoverTip'
+import { useMarkHover } from '../../../components/editor/useMarkHover'
 import {
   useForeshadowMarks,
   type ForeshadowLabelResolver
@@ -154,6 +156,8 @@ export default function OutlineEditor({
 
   // 伏笔正文标记：仅条目行有锚点（卷 / 分组目标传 null → 清空标记）；埋设点与回收点一并加载。
   useForeshadowMarks(editor, null, outlineItemId, resolveForeshadowTargetLabel)
+  // 伏笔标记悬停浮层：事件委托挂在 editor.view.dom（不改 RICH_TEXT_EDITOR_PROPS），切条目即收起。
+  const markTip = useMarkHover(editor, contentId)
 
   const { status, dirty, lastSavedAt, onUpdate, flush, swapPhase } = useOutlineDoc({
     contentId,
@@ -368,6 +372,7 @@ export default function OutlineEditor({
                     <>
                       <TableContextMenu editor={editor} />
                       {/* 正文右键「选区菜单」：表格内让给表格菜单；卷 / 分组目标无条目锚点 → 未锚定。
+                          不传 `chapterId` → 不出现「回收伏笔」（回收只在正文发生，大纲是规划层）；
                           只传 `onSearchText`（大纲无 `CleanWordMark`，不提供「加入违禁词库」，避免加了看不到标记）。 */}
                       <SelectionContextMenu
                         editor={editor}
@@ -394,6 +399,8 @@ export default function OutlineEditor({
           )}
         </>
       )}
+      {/* 伏笔标记悬停提示（自绘浮层，替代原生 title；pointer-events: none 不挡鼠标）。 */}
+      <MarkHoverTip tip={markTip} />
     </>
   )
 }
