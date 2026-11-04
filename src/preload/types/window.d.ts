@@ -97,6 +97,11 @@ import type {
   WorldSubtypeDeleteOutcome,
   WorldSubtypeRow
 } from './worldSubtype'
+import type {
+  ForeshadowCreatePayload,
+  ForeshadowRow,
+  ForeshadowUpdatePatch
+} from '../../main/database/foreshadows'
 
 /** 段落保存结果：`ok=false` 表示入参非法或章节不存在。 */
 interface SaveParagraphsResult {
@@ -348,6 +353,18 @@ export interface Api {
       sceneId: number,
       rows: PlotSceneEntityInput[]
     ) => Promise<PlotSceneEntityRow[] | null>
+  }
+  /** 伏笔域：锚点快照（不存 paragraph_id）；本批仅数据层 / IPC，UI 后续批次接入 */
+  foreshadow: {
+    list: (bookId: string) => Promise<ForeshadowRow[]>
+    get: (id: number) => Promise<ForeshadowRow | null>
+    create: (bookId: string, payload: ForeshadowCreatePayload) => Promise<ForeshadowRow | null>
+    update: (id: number, patch: ForeshadowUpdatePatch) => Promise<ForeshadowRow | null>
+    delete: (id: number) => Promise<boolean>
+    /** 按章节或大纲条目取锚定伏笔（两者都给时优先 chapterId） */
+    listByAnchor: (chapterId?: number, outlineItemId?: number) => Promise<ForeshadowRow[]>
+    /** 回收点锚点反查（章节 / 大纲条目，两者都给时优先 chapterId） */
+    listByRecoverAnchor: (chapterId?: number, outlineItemId?: number) => Promise<ForeshadowRow[]>
   }
   settings: {
     get: (key: string) => Promise<string | null>

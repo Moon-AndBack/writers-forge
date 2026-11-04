@@ -8,6 +8,7 @@ import { registerChipColorsIpc } from './chipColors'
 import { registerCleanWordsIpc } from './cleanWords'
 import { registerDiagnosticsIpc } from './diagnostics'
 import { registerEntitiesIpc } from './entities'
+import { registerForeshadowsIpc } from './foreshadows'
 import { registerImagesIpc } from './images'
 import { registerOneDriveIpc } from './onedrive'
 import { registerOutlineIpc } from './outline'
@@ -36,6 +37,7 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
   registerCleanWordsIpc()
   registerDiagnosticsIpc(diagnosticsReport)
   registerEntitiesIpc()
+  registerForeshadowsIpc()
   registerImagesIpc()
   registerOneDriveIpc()
   registerOutlineIpc()

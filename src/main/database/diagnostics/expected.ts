@@ -10,6 +10,7 @@
  * - `volumes` / `chapters` → `schema/chapters.ts`
  * - `paragraphs` → `schema/paragraphs.ts`
  * - `outline_items` → `schema/outlineItems.ts`
+ * - `foreshadows`（伏笔 + 锚点快照）→ `schema/foreshadows.ts`
  * - `entities` / `entity_aliases` / `entity_relations` → `schema/entities.ts`
  * - `plot_lines` / `plot_scenes` / `plot_scene_world_entities` → `schema/plot.ts`
  * - `daily_stats` → `schema/dailyStats.ts`
@@ -146,6 +147,35 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
       'sort_order',
       'text',
       'content_json',
+      'created_at',
+      'updated_at',
+      'deleted_at'
+    ]
+  },
+  // 伏笔域（埋设锚点 + 回收点锚点双重快照，不存段落外键）：见 `schema/foreshadows.ts`
+  {
+    name: 'foreshadows',
+    columns: [
+      'id',
+      'book_id',
+      'title',
+      'description',
+      'recovery_note',
+      'status',
+      'anchor_kind',
+      'chapter_id',
+      'outline_item_id',
+      'paragraph_idx',
+      'quote',
+      'char_start',
+      'char_end',
+      'recover_anchor_kind',
+      'recover_chapter_id',
+      'recover_outline_item_id',
+      'recover_paragraph_idx',
+      'recover_quote',
+      'recover_char_start',
+      'recover_char_end',
       'created_at',
       'updated_at',
       'deleted_at'
@@ -330,9 +360,9 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
 
 /**
  * 设计命名索引清单（`sqlite_autoindex_*` 由 SQLite 自动生成，不在此列、自检时过滤）。
- * 计数：本文件静态清单 38（含违禁词库 2）+ `./expectedWorldSubtypes` 1
+ * 计数：本文件静态清单 41（含违禁词库 2 + 伏笔 3）+ `./expectedWorldSubtypes` 1
  * + `./expectedWorldPowers` 0 + `./expectedItemFactionSubtypes` 1（`world_custom`）
- * = **40**。
+ * = **43**。
  */
 export const EXPECTED_INDEXES: readonly string[] = [
   // schema/chapters.ts（6）
@@ -348,6 +378,10 @@ export const EXPECTED_INDEXES: readonly string[] = [
   'idx_outline_items_standalone',
   'idx_outline_items_trash',
   'idx_outline_items_volume_scope',
+  // schema/foreshadows.ts（3：按书取列表 / 章节锚点反查 / 大纲锚点反查）
+  'idx_foreshadows_book',
+  'idx_foreshadows_chapter',
+  'idx_foreshadows_outline_item',
   // schema/entities.ts（6）
   'idx_entities_book',
   'idx_entities_book_type',

@@ -40,6 +40,11 @@ import type {
   UpdatePlotScenePatch
 } from '../main/database/plot'
 import type { PlotSceneEntityInput, PlotSceneEntityRow } from '../main/database/plotSceneEntities'
+import type {
+  ForeshadowCreatePayload,
+  ForeshadowRow,
+  ForeshadowUpdatePatch
+} from '../main/database/foreshadows'
 import type { DiagnosticsReport } from '../main/database/diagnostics'
 import type {
   CreateEntityInput,
@@ -322,6 +327,23 @@ const api = {
       rows: PlotSceneEntityInput[]
     ): Promise<PlotSceneEntityRow[] | null> =>
       ipcRenderer.invoke('plot:setSceneEntities', sceneId, rows)
+  },
+  /** 伏笔域：锚点快照（不存 paragraph_id）；本批仅数据层 / IPC，UI 后续批次接入 */
+  foreshadow: {
+    list: (bookId: string): Promise<ForeshadowRow[]> =>
+      ipcRenderer.invoke('foreshadow:list', bookId),
+    get: (id: number): Promise<ForeshadowRow | null> => ipcRenderer.invoke('foreshadow:get', id),
+    create: (bookId: string, payload: ForeshadowCreatePayload): Promise<ForeshadowRow | null> =>
+      ipcRenderer.invoke('foreshadow:create', bookId, payload),
+    update: (id: number, patch: ForeshadowUpdatePatch): Promise<ForeshadowRow | null> =>
+      ipcRenderer.invoke('foreshadow:update', id, patch),
+    delete: (id: number): Promise<boolean> => ipcRenderer.invoke('foreshadow:delete', id),
+    /** 按章节或大纲条目取锚定伏笔（两者都给时优先 chapterId） */
+    listByAnchor: (chapterId?: number, outlineItemId?: number): Promise<ForeshadowRow[]> =>
+      ipcRenderer.invoke('foreshadow:listByAnchor', chapterId, outlineItemId),
+    /** 回收点锚点反查（章节 / 大纲条目，两者都给时优先 chapterId） */
+    listByRecoverAnchor: (chapterId?: number, outlineItemId?: number): Promise<ForeshadowRow[]> =>
+      ipcRenderer.invoke('foreshadow:listByRecoverAnchor', chapterId, outlineItemId)
   },
   stats: {
     /** 全书累计有效字数 */

@@ -21,6 +21,7 @@ import { createChipColorSchema } from './schema/chipColors'
 import { applyCleanWordsSetup } from './schema/cleanWords'
 import { createDailyStatsSchema } from './schema/dailyStats'
 import { createEntitySchema } from './schema/entities'
+import { createForeshadowsSchema } from './schema/foreshadows'
 import { createImagesSchema } from './schema/images'
 import { createOutlineItemsSchema } from './schema/outlineItems'
 import { createParagraphSchema } from './schema/paragraphs'
@@ -126,6 +127,8 @@ export function getDb(): Database.Database {
     createParagraphSchema(instance)
     // 大纲域：outline_items，复用章节域卷池（引用 volumes / books，须在其后）。
     createOutlineItemsSchema(instance)
+    // 伏笔域：foreshadows，锚点快照引用 chapters / outline_items，须在其后，幂等建表。
+    createForeshadowsSchema(instance)
     // 实体三表：幂等建表。
     createEntitySchema(instance)
     // 统一设定库：子类分类表（书 → 实体类型 → 子类），主表的 `subtype_id` 外键指向本表，
