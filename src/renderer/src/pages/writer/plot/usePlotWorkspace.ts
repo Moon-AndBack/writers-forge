@@ -183,7 +183,12 @@ export function usePlotWorkspace(bookId: string, activeTimelineId?: string | nul
       ? selectedLineId
       : (lines[0]?.id ?? null)
   const activeLine = lines.find((row) => row.id === activeLineId) ?? null
-  const activeScenes = activeLineId === null ? [] : scenesOfLine(scenes, activeLineId)
+  // 派生数组必须 `useMemo`：`scenesOfLine` 每次都返回新数组，直接透传给中栏会让
+  // `memo(EditorPane)` 的浅比较失效（三栏拖拽逐帧重渲染时白白全量 reconcile）。
+  const activeScenes = useMemo(
+    () => (activeLineId === null ? [] : scenesOfLine(scenes, activeLineId)),
+    [scenes, activeLineId]
+  )
   const activeSceneId =
     selectedSceneId !== null && activeScenes.some((row) => row.id === selectedSceneId)
       ? selectedSceneId

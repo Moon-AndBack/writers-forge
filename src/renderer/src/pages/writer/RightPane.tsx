@@ -51,12 +51,12 @@ const PANELS: Record<StaticPanelModule, () => ReactElement> = {
  *   未保存切换由 `ConfirmDialog` 两态确认）。
  * - **伏笔模块**：右栏为详情表单（名称 / 描述 / 状态 + 只读锚点 + 底部保存条；
  *   不设面板头，可编辑块吸收剩余高度；未保存切换同样两态确认）。
- * - 面板常驻，`is-active` 控制显示；宽度由页面 state 控制内联 `style.width`；
+ * - 面板常驻，`is-active` 控制显示；宽度由 `WorkspaceLayout` 经 `--wf-right-width`
+ *   下发（本栏内联 `style.width` 消费，拖拽改宽不触发本栏重渲染）；
  *   显隐由标题栏「隐藏/显示右栏」按钮的偏好驱动（`hidden` → `.is-hidden`）。
  */
 export function RightPane({
   module,
-  width,
   paneRef,
   hidden = false,
   bookId,
@@ -87,7 +87,6 @@ export function RightPane({
   foreshadow = null
 }: {
   module: WriterModule
-  width: number
   paneRef: RefObject<HTMLElement | null>
   /** 是否隐藏（标题栏面板开关的偏好；隐藏时挂 `.is-hidden`）。 */
   hidden?: boolean
@@ -164,7 +163,7 @@ export function RightPane({
     <aside
       ref={paneRef}
       className={`rightpane${hidden ? ' is-hidden' : ''}`}
-      style={{ width }}
+      style={{ width: 'var(--wf-right-width)' }}
       aria-label={t('rightPaneAria')}
       aria-hidden={hidden || undefined}
     >

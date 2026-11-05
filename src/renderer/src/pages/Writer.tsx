@@ -11,9 +11,9 @@ import EditorPane from './writer/EditorPane'
 import { ConfirmDialog } from './writer/ConfirmDialog'
 import RightPane from './writer/RightPane'
 import SidePane from './writer/SidePane'
-import Splitter from './writer/Splitter'
+import WorkspaceLayout from './writer/WorkspaceLayout'
 import { hasSidePane } from './writer/data'
-import type { CreateVolumeInput } from './writer/chapters/chapterTree'
+import type { ChapterStatus, CreateVolumeInput } from './writer/chapters/chapterTree'
 import { useChapterStatusBar } from './writer/chapters/useChapterStatusBar'
 import { useChapterWorkspace } from './writer/chapters/useChapterWorkspace'
 import { useVolumes } from './writer/volumes/useVolumes'
@@ -29,18 +29,6 @@ import { useFlushAllModules } from './writer/useFlushAllModules'
 import { useWriterModuleSwitch } from './writer/useWriterModuleSwitch'
 import '../styles/writer.css'
 
-/* 分隔条 clamp 边界与默认宽（宽度仅在本次运行内保留，不落库） */
-const SIDE_MIN = 180
-const SIDE_MAX = 480
-const SIDE_DEFAULT = 280
-const RIGHT_MIN = 450
-const RIGHT_MAX = 850
-/* 右栏默认 550：右栏可见的最小视口 1241px（断点 ≤1240px 隐藏）下，中栏约 303px
-   （活动栏固定时），仍高于 .editor-pane 的 280px 下限。默认 550 保证中栏 ≥300px 的
-   理论阈值为 550 + 300 + 280 + 16 + 64 + 28 = 1238px（活动栏固定时；悬浮时 1174px），
-   断点取 1240px，留 2px 余量。 */
-const RIGHT_DEFAULT = 550
-
 export interface WriterProps {
   /**
    * 当前写作的书籍 id（来自路由参数 `/write/:bookId`）。
@@ -53,7 +41,7 @@ export interface WriterProps {
  * 写作页外壳：三栏布局（左栏章节 / 中栏编辑 / 右栏大纲）+ 两个可拖拽分隔条。
  *
  * - 当前模块由外壳活动栏上下文 `useActivityBar().active` 决定；
- * - 三栏宽度由本页 state 持有（受控内联 `style.width`），切换模块不重置；
+ * - 三栏宽度由 `WorkspaceLayout` 持有（拖拽逐帧只重渲染该组件，本页不参与），切换模块不重置；
  * - 无实体左栏的模块（设定档案四域 / 时间线 / 伏笔 / 灵感）收起左栏并隐藏左分隔条；
  * - 章节树 / 正文接真实数据库（`chapters:*` + `documents:*`，见 `writer/chapters/`）；
  * - 章节页专属：标题栏按钮组（新建卷弹窗 / 保存 / 撤销 / 重做 / 搜索 / 回收站）、
@@ -64,8 +52,8 @@ export default function Writer({ bookId }: WriterProps) {
   useRegisterActivityBar(true)
   const { active, setActive } = useActivityBar()
 
-  const [sideWidth, setSideWidth] = useState(SIDE_DEFAULT)
-  const [rightWidth, setRightWidth] = useState(RIGHT_DEFAULT)
+  // 三栏宽度 state 下沉到 `WorkspaceLayout`（拖拽逐帧只重渲染布局壳，本页与三栏子树不参与）；
+  // 本页只持有两栏元素引用，供分隔条在按下时实测起始宽。
   const sideRef = useRef<HTMLElement | null>(null)
   const rightRef = useRef<HTMLElement | null>(null)
 
@@ -175,6 +163,16 @@ export default function Writer({ bookId }: WriterProps) {
     [deleteVolume]
   )
 
+  // 章节状态切换（中栏编辑头两态按钮）：包一层以稳定引用——`memo(EditorPane)` 的浅比较
+  // 依赖每个回调 prop 的引用稳定，内联箭头函数会让 memo 在每次页面重渲染（数据刷新、
+  // 模块切换等）时失效。
+  const handleStatusChange = useCallback(
+    (id: number, status: ChapterStatus): void => {
+      void setStatus(id, status)
+    },
+    [setStatus]
+  )
+
   /* ---------- 剧情页动作（左栏剧情线 / 中栏时间轴 / 右栏编辑器共享） ----------
      剧情装配见 usePlotWorkspace；剧情 / 时间线两处选中回调（更新选中 + 右栏隐藏时
      自动展开）收进 usePlotTimelineBundle，与 dossier 的 useDossierBundle 同款透传包。 ---------- */
@@ -275,147 +273,129 @@ export default function Writer({ bookId }: WriterProps) {
           （`PlotActivityActions` / `DossierActivityActions`）按槽位读取，供聚焦编辑时
           在标题栏左侧渲染富文本工具栏。 */}
       <RichTextEditorProvider bookId={bookId} slots={richTextEditorSlots}>
-        <div className="workspace">
-          <SidePane
-            bookId={bookId}
-            module={active}
-            width={sideWidth}
-            paneRef={sideRef}
-            autoHidden={sideHidden}
-            volumes={volumes}
-            chapters={chapters}
-            activeChapterId={activeChapterId}
-            onSelectChapter={handleSelectChapter}
-            onCreateChapter={handleCreateChapter}
-            onRenameVolume={handleRenameVolume}
-            onDeleteVolume={handleDeleteVolume}
-            onDeleteChapter={handleDeleteChapter}
-            onSetChapterPin={handleSetChapterPin}
-            onReorderChapter={handleReorderChapter}
-            isVolumeFull={isVolumeFull}
-            outlineVolumes={outlineVolumes}
-            outlineItems={outlineItems}
-            activeOutlineSelection={activeOutlineSelection}
-            onOpenOutlineTarget={handleOpenOutlineTarget}
-            onRenameOutlineVolume={handleRenameOutlineVolume}
-            onDeleteOutlineVolume={handleDeleteOutlineVolume}
-            onCreateOutlineChapter={handleCreateOutlineChapter}
-            onRenameOutlineItem={handleRenameOutlineItem}
-            onDeleteOutlineChapter={handleDeleteOutlineChapter}
-            onReorderOutlineChapter={handleReorderOutlineChapter}
-            onCreateOutlineEntryInGroup={handleCreateOutlineEntryInGroup}
-            plotLines={plot.lines}
-            plotScenes={plot.scenes}
-            activePlotLineId={plot.activeLineId}
-            onSelectPlotLine={plot.selectLine}
-            onUpdatePlotLine={plot.updateLine}
-            onDeletePlotLine={plot.deleteLine}
-            timelineEntries={timeline.list}
-            activeTimelineId={timeline.activeId}
-            onSelectTimeline={handleSelectTimeline}
-          />
-
-          <Splitter
-            side="left"
-            targetRef={sideRef}
-            min={SIDE_MIN}
-            max={SIDE_MAX}
-            value={sideWidth}
-            defaultValue={SIDE_DEFAULT}
-            onChange={setSideWidth}
-            hidden={sideHidden}
-          />
-
-          <EditorPane
-            module={active}
-            bookId={bookId}
-            chapter={activeChapter}
-            chapters={chapters}
-            volumes={volumes}
-            onStatusChange={(id, status) => {
-              void setStatus(id, status)
-            }}
-            onRenameChapter={handleRenameChapter}
-            onSelectChapter={handleSelectChapter}
-            onContentChanged={handleContentChanged}
-            onCreateVolume={handleCreateVolume}
-            onToggleTrash={handleToggleTrash}
-            trashOpen={trashOpen}
-            onTrashChanged={handleTrashChanged}
-            outlineSelection={activeOutlineSelection}
-            outlineVolumes={outlineVolumes}
-            outlineVolumeRows={outlineVolumeRows}
-            outlineItems={outlineItems}
-            onRenameOutlineChapter={handleRenameOutlineItem}
-            onRenameOutlineVolume={handleRenameOutlineVolume}
-            onOutlineTrashChanged={handleOutlineTrashChanged}
-            onOutlineVolumesRefresh={reloadOutlineVolumes}
-            onCreateOutlineNonVolumeChapter={handleCreateOutlineNonVolumeChapter}
-            onCreateOutlineGroup={handleCreateOutlineGroup}
-            plotLine={plot.activeLine}
-            plotScenes={plot.activeScenes}
-            activePlotSceneId={plot.activeSceneId}
-            onSelectPlotScene={handleSelectPlotScene}
-            onAddPlotScene={plot.addScene}
-            onUpdatePlotScene={plot.updateScene}
-            onDeletePlotScene={plot.deleteScene}
-            onCreatePlotLine={plot.createLine}
-            timelineSelectedSceneId={selectedTimelineSceneId}
-            onSelectTimelineScene={handleSelectTimelineScene}
-            timelineOrigin={timeline.origin}
-            activeTimelineName={timeline.activeEntry?.name}
-            activeTimelineId={timeline.activeId}
-            onCreateTimeline={handleCreateTimeline}
-            dossier={dossierBundle}
-            foreshadow={foreshadowBundle}
-            chapterFlushRef={chapterFlushRef}
-            outlineFlushRef={outlineFlushRef}
-          />
-
-          <Splitter
-            side="right"
-            targetRef={rightRef}
-            min={RIGHT_MIN}
-            max={RIGHT_MAX}
-            value={rightWidth}
-            defaultValue={RIGHT_DEFAULT}
-            onChange={setRightWidth}
-            hidden={rightPaneHidden}
-          />
-
-          <RightPane
-            module={active}
-            width={rightWidth}
-            paneRef={rightRef}
-            hidden={rightPaneHidden}
-            bookId={bookId}
-            chapterId={activeChapterId}
-            chapters={chapters}
-            volumes={volumes}
-            plotLine={plot.activeLine}
-            plotScene={plot.activeScene}
-            onUpdatePlotScene={plot.updateScene}
-            plotDirty={plot.dirty}
-            onPlotDirtyChange={plot.reportDirty}
-            plotSaveRef={plot.saveRef}
-            plotSwitchPending={plot.switchPending}
-            plotConfirming={plot.confirming}
-            plotDraftResetKey={plot.draftResetKey}
-            onResolvePlotSwitch={plot.resolveSwitch}
-            outlineVolumes={outlineVolumes}
-            outlineItems={outlineItems}
-            activeVolumeId={activeOutlineVolumeId}
-            plotAllLines={plot.allLines}
-            plotScenes={plot.scenes}
-            activePlotLineId={plot.activeLineId}
-            timelines={timeline.list}
-            timelineScene={timelineScene}
-            activeTimelineId={timeline.activeId}
-            onTimelineOriginChange={timeline.updateOrigin}
-            dossier={dossierBundle}
-            foreshadow={foreshadowBundle}
-          />
-        </div>
+        <WorkspaceLayout
+          left={
+            <SidePane
+              bookId={bookId}
+              module={active}
+              paneRef={sideRef}
+              autoHidden={sideHidden}
+              volumes={volumes}
+              chapters={chapters}
+              activeChapterId={activeChapterId}
+              onSelectChapter={handleSelectChapter}
+              onCreateChapter={handleCreateChapter}
+              onRenameVolume={handleRenameVolume}
+              onDeleteVolume={handleDeleteVolume}
+              onDeleteChapter={handleDeleteChapter}
+              onSetChapterPin={handleSetChapterPin}
+              onReorderChapter={handleReorderChapter}
+              isVolumeFull={isVolumeFull}
+              outlineVolumes={outlineVolumes}
+              outlineItems={outlineItems}
+              activeOutlineSelection={activeOutlineSelection}
+              onOpenOutlineTarget={handleOpenOutlineTarget}
+              onRenameOutlineVolume={handleRenameOutlineVolume}
+              onDeleteOutlineVolume={handleDeleteOutlineVolume}
+              onCreateOutlineChapter={handleCreateOutlineChapter}
+              onRenameOutlineItem={handleRenameOutlineItem}
+              onDeleteOutlineChapter={handleDeleteOutlineChapter}
+              onReorderOutlineChapter={handleReorderOutlineChapter}
+              onCreateOutlineEntryInGroup={handleCreateOutlineEntryInGroup}
+              plotLines={plot.lines}
+              plotScenes={plot.scenes}
+              activePlotLineId={plot.activeLineId}
+              onSelectPlotLine={plot.selectLine}
+              onUpdatePlotLine={plot.updateLine}
+              onDeletePlotLine={plot.deleteLine}
+              timelineEntries={timeline.list}
+              activeTimelineId={timeline.activeId}
+              onSelectTimeline={handleSelectTimeline}
+            />
+          }
+          center={
+            <EditorPane
+              module={active}
+              bookId={bookId}
+              chapter={activeChapter}
+              chapters={chapters}
+              volumes={volumes}
+              onStatusChange={handleStatusChange}
+              onRenameChapter={handleRenameChapter}
+              onSelectChapter={handleSelectChapter}
+              onContentChanged={handleContentChanged}
+              onCreateVolume={handleCreateVolume}
+              onToggleTrash={handleToggleTrash}
+              trashOpen={trashOpen}
+              onTrashChanged={handleTrashChanged}
+              outlineSelection={activeOutlineSelection}
+              outlineVolumes={outlineVolumes}
+              outlineVolumeRows={outlineVolumeRows}
+              outlineItems={outlineItems}
+              onRenameOutlineChapter={handleRenameOutlineItem}
+              onRenameOutlineVolume={handleRenameOutlineVolume}
+              onOutlineTrashChanged={handleOutlineTrashChanged}
+              onOutlineVolumesRefresh={reloadOutlineVolumes}
+              onCreateOutlineNonVolumeChapter={handleCreateOutlineNonVolumeChapter}
+              onCreateOutlineGroup={handleCreateOutlineGroup}
+              plotLine={plot.activeLine}
+              plotScenes={plot.activeScenes}
+              activePlotSceneId={plot.activeSceneId}
+              onSelectPlotScene={handleSelectPlotScene}
+              onAddPlotScene={plot.addScene}
+              onUpdatePlotScene={plot.updateScene}
+              onDeletePlotScene={plot.deleteScene}
+              onCreatePlotLine={plot.createLine}
+              timelineSelectedSceneId={selectedTimelineSceneId}
+              onSelectTimelineScene={handleSelectTimelineScene}
+              timelineOrigin={timeline.origin}
+              activeTimelineName={timeline.activeEntry?.name}
+              activeTimelineId={timeline.activeId}
+              onCreateTimeline={handleCreateTimeline}
+              dossier={dossierBundle}
+              foreshadow={foreshadowBundle}
+              chapterFlushRef={chapterFlushRef}
+              outlineFlushRef={outlineFlushRef}
+            />
+          }
+          right={
+            <RightPane
+              module={active}
+              paneRef={rightRef}
+              hidden={rightPaneHidden}
+              bookId={bookId}
+              chapterId={activeChapterId}
+              chapters={chapters}
+              volumes={volumes}
+              plotLine={plot.activeLine}
+              plotScene={plot.activeScene}
+              onUpdatePlotScene={plot.updateScene}
+              plotDirty={plot.dirty}
+              onPlotDirtyChange={plot.reportDirty}
+              plotSaveRef={plot.saveRef}
+              plotSwitchPending={plot.switchPending}
+              plotConfirming={plot.confirming}
+              plotDraftResetKey={plot.draftResetKey}
+              onResolvePlotSwitch={plot.resolveSwitch}
+              outlineVolumes={outlineVolumes}
+              outlineItems={outlineItems}
+              activeVolumeId={activeOutlineVolumeId}
+              plotAllLines={plot.allLines}
+              plotScenes={plot.scenes}
+              activePlotLineId={plot.activeLineId}
+              timelines={timeline.list}
+              timelineScene={timelineScene}
+              activeTimelineId={timeline.activeId}
+              onTimelineOriginChange={timeline.updateOrigin}
+              dossier={dossierBundle}
+              foreshadow={foreshadowBundle}
+            />
+          }
+          leftHidden={sideHidden}
+          rightHidden={rightPaneHidden}
+          sideRef={sideRef}
+          rightRef={rightRef}
+        />
       </RichTextEditorProvider>
 
       {/* 模块切换未保存守卫确认框（两态：保存并切换 / 放弃并切换）；Esc / 遮罩 = 放弃并切换。

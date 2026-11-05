@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SelectOption } from '../../../components/ui'
+import { useStableMeasure } from '../../../components/useStableMeasure'
 import type { VolumeRow } from '../chapters/chapterTree'
 import { useChapterLabels } from '../chapters/useChapterLabels'
 import { outlineItemLabel, type OutlineItemRow } from '../outline/outlineTree'
@@ -39,6 +40,8 @@ function hasOption(options: SelectOption[], value: string): boolean {
 const MIN_PANE_HEIGHT = 80
 /** 水平分隔条高度（px）：与 `.splitter-horizontal` 同步，用于换算上下两栏可用高度。 */
 const SPLITTER_SIZE = 8
+/** `.rp-panel` 上下内衬合计（px）：`.rp-panel { padding: 8px }`（writer-right-panels.css）。 */
+const PANEL_PADDING_Y = 8 * 2
 /** 上下两栏默认比例：各占一半。 */
 const DEFAULT_SPLIT_RATIO = 50
 
@@ -92,22 +95,13 @@ export function OutlineRightPanel({
   const rootRef = useRef<HTMLDivElement | null>(null)
   const [splitRatio, setSplitRatio] = useState(DEFAULT_SPLIT_RATIO)
   // 上下两栏可用高度（内容高 − 上下内衬 − 分隔条），用于把最小高度换算成百分比下限。
-  const [splitSpace, setSplitSpace] = useState(0)
-
-  useEffect(() => {
-    const node = rootRef.current
-    if (!node) return
-    const measure = (): void => {
-      const styles = getComputedStyle(node)
-      const padding = Number.parseFloat(styles.paddingTop) + Number.parseFloat(styles.paddingBottom)
-      setSplitSpace(Math.max(0, node.clientHeight - padding - SPLITTER_SIZE))
-    }
-    measure()
-    // 容器总高变化（窗口 / 右栏拖拽）时只重算下限；比例保持百分比，无需改写状态。
-    const observer = new ResizeObserver(measure)
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [])
+  // 复用 `useStableMeasure`：拖拽分隔条期间（`body.is-resizing`）只登记「结束后补测」，
+  // 不在每帧读写布局——否则右栏宽度逐帧变化会形成「测量 → 写 state → 再布局」的逐帧自反馈；
+  // 松手后由它的 rAF 补测链读到最终布局再写回。内衬是 `.rp-panel` 的常量 padding，
+  // 直接用常量换算，省掉每帧一次 `getComputedStyle` 强制样式解析。
+  const splitSpace = useStableMeasure(rootRef, true, (el) =>
+    Math.max(0, el.clientHeight - PANEL_PADDING_Y - SPLITTER_SIZE)
+  )
 
   // 条目 / 卷显示名（i18n）：条目空名回退占位；卷沿用章节域编号口径（分组走大纲卷名口径）。
   const entryLabel = useCallback(

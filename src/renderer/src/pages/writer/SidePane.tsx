@@ -16,8 +16,6 @@ interface SidePaneProps {
   bookId?: string
   /** 当前激活模块。 */
   module: WriterModule
-  /** 左栏宽度（受控，页面持有）。 */
-  width: number
   /** 左栏元素引用（供分隔条读取起始宽）。 */
   paneRef: React.RefObject<HTMLElement | null>
   /** 是否自动收起（无实体左栏的模块）。 */
@@ -95,7 +93,6 @@ interface SidePaneProps {
 export function SidePane({
   bookId,
   module,
-  width,
   paneRef,
   autoHidden,
   volumes,
@@ -139,7 +136,7 @@ export function SidePane({
     <aside
       ref={paneRef}
       className={classes}
-      style={{ width: autoHidden ? 0 : width }}
+      style={{ width: autoHidden ? 0 : 'var(--wf-side-width)' }}
       aria-label={t('sidePaneAria')}
     >
       <div

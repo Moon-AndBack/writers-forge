@@ -46,6 +46,12 @@
   gap: 0;
   /* 为三栏向外扩 1px 的描边环留出可见空间，避免顶部被 .app-viewport 的 overflow 裁掉 */
   padding-top: 1px;
+  /* 三栏宽度真源在 WorkspaceLayout（React state）：拖拽逐帧只由该组件更新这两条
+     自定义属性（React `style` prop 下发），由 .sidepane / .rightpane 消费，三栏与页面
+     本身不参与重渲染。此处为兜底初值（与 WorkspaceLayout 的 SIDE_DEFAULT /
+     RIGHT_DEFAULT 一致）。 */
+  --wf-side-width: 280px;
+  --wf-right-width: 550px;
 }
 
 /* ---------- 分隔条 ---------- */
@@ -146,6 +152,13 @@ body.is-resizing .splitter {
    「主题切换不做过渡」。若只让三栏底色渐变而栏内文字、描边、图标瞬变，会出现
    「同一块面板一部分动、一部分不动」的割裂；三栏的过渡仅保留布局与显隐
    （width / min-width / margin / opacity）。 */
+/* ---------- 三栏 containment ----------
+   三栏各挂 `contain: layout paint`：把布局 / 绘制与栏外隔离，横向拖拽改宽时浏览器只需在
+   栏内重算，不回溯整页（中栏正文逐帧重新折行是拖拽的主要成本，隔离后不牵动左右栏与外壳）。
+   `paint` 的安全性：三栏本就 `overflow: hidden`，绘制裁剪范围与之前一致（**没有新增裁剪**）；
+   所有浮层（Select / Tooltip / 右键菜单 / 格式浮层 / 悬停卡 / 模态）均经 `createPortal`
+   挂到 `document.body`，不受栏内 containment 的包含块 / 裁剪影响；`.ep-search` 本就在中栏
+   内绝对定位、且早已被 `overflow: hidden` 裁剪，行为不变。 */
 .sidepane {
   flex: none;
   width: 280px;
@@ -156,6 +169,7 @@ body.is-resizing .splitter {
   border-radius: var(--r-lg);
   box-shadow: var(--sh-sm), var(--panel-ring);
   overflow: hidden;
+  contain: layout paint;
   min-width: 180px;
   max-width: 480px;
   transition:
@@ -184,13 +198,15 @@ body.is-resizing .splitter {
   border-radius: var(--r-lg);
   box-shadow: var(--sh-sm), var(--panel-ring);
   overflow: hidden;
+  contain: layout paint;
   /* 无 transition：原有两条（background / box-shadow）只服务于主题切换，
      已随「主题切换整体瞬变」一并移除；本栏无布局 / 显隐过渡需求。 */
 }
 
 .rightpane {
   flex: none;
-  width: 550px; /* 与 Writer.tsx 的 RIGHT_DEFAULT 同步（内联 width 为真源，此处兜底） */
+  width: 550px; /* 与 WorkspaceLayout 的 RIGHT_DEFAULT 同步（真源为 .workspace 的
+                   --wf-right-width，此处兜底） */
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -198,6 +214,7 @@ body.is-resizing .splitter {
   border-radius: var(--r-lg);
   box-shadow: var(--sh-sm), var(--panel-ring);
   overflow: hidden;
+  contain: layout paint;
   min-width: 450px;
   max-width: 850px;
   /* min-width 必须与 width 同步插值：展开时二者都从 0 起插（min-width 450·p /

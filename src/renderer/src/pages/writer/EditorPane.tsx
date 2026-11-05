@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { memo, useCallback, useMemo } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { WriterModule } from '../../shell/activityBar'
@@ -134,7 +134,7 @@ const PLACEHOLDER_MODULES: readonly WriterModule[] = ['inspiration']
  * 复用 `dossier/DossierView.tsx`（卡片网格，按 module 参数化）；伏笔为独立列表视图；
  * 灵感仍为占位。
  */
-export function EditorPane({
+function EditorPaneComponent({
   module,
   bookId,
   chapter,
@@ -418,5 +418,15 @@ export function EditorPane({
     </main>
   )
 }
+
+/**
+ * 以 `memo` 包裹：中栏本身**不接收宽度 prop**，三栏拖拽只重渲染 `WorkspaceLayout`
+ * （宽度经 `.workspace` 的自定义属性下发），本页不参与，本栏 5+ 个常驻视图（章节 /
+ * 大纲 / 剧情 / 时间线 / 设定档案 / 伏笔）的 reconcile 被完全跳过。页面因其它原因
+ * 重渲染（数据刷新、模块切换）时再由浅比较挡掉——其传入的 props 均已引用稳定：
+ * 回调为 `useCallback` / 装配 hook 内的 `useCallback`，装配包为 `useMemo`，
+ * 数据数组来自 state 或 `useMemo`。
+ */
+export const EditorPane = memo(EditorPaneComponent)
 
 export default EditorPane

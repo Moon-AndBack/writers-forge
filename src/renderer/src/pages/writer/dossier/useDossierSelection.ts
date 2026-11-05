@@ -165,17 +165,24 @@ export function useDossierSelection(
   const detailLoaded =
     detailState !== null && detailState.module === active && detailState.id === activeId
 
-  const detail = detailLoaded
-    ? detailState.detail === null
-      ? null
-      : {
-          ...detailState.detail,
-          relations:
-            refsState !== null && refsState.module === active && refsState.id === activeId
-              ? refsState.refs
-              : detailState.detail.relations
-        }
-    : null
+  // 详情对象必须 `useMemo`：每次渲染新建 `{...detail, relations}` 会让上层
+  // `useDossierBundle` 的 `useMemo` 与 `memo(EditorPane)` 的浅比较逐帧失效
+  // （三栏拖拽逐帧提交宽度时白白全量 reconcile 中栏卡片网格）。
+  const detail = useMemo(
+    () =>
+      detailLoaded
+        ? detailState.detail === null
+          ? null
+          : {
+              ...detailState.detail,
+              relations:
+                refsState !== null && refsState.module === active && refsState.id === activeId
+                  ? refsState.refs
+                  : detailState.detail.relations
+            }
+        : null,
+    [detailLoaded, detailState, refsState, active, activeId]
+  )
 
   // 选中行已定、详情态尚未命中该行 = 正在加载（渲染层据此跳过空态，避免闪帧）。
   const detailPending = activeId !== null && !detailLoaded
