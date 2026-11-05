@@ -14,6 +14,7 @@ import PlotEditor from './plot/PlotEditor'
 import type { PlotLineRow, PlotSceneRow, UpdatePlotScenePatch } from './plot/plotTree'
 import { ModulePlaceholder } from './right/ModulePlaceholder'
 import { AiPanel } from './right/AiPanel'
+import { ForeshadowOverviewPanel } from './right/ForeshadowOverviewPanel'
 import { OutlineRightPanel } from './right/OutlineRightPanel'
 import { PlotFilterPanel } from './right/PlotFilterPanel'
 import { RightPaneTabs, type RightPaneTab } from './right/RightPaneTabs'
@@ -23,7 +24,7 @@ import type { TimelineEntry } from './timeline/timelineOrigin'
 /** 调用方未传保存入口时的占位 ref（仅保证必填契约，编辑器写入无副作用）。 */
 const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { current: null }
 
-/** 静态映射可承载的模块：排除章节（大纲 / 剧情 / AI 三页签）、大纲（剧情筛选面板）、剧情
+/** 静态映射可承载的模块：排除章节（大纲 / 剧情 / 伏笔 / AI 四页签）、大纲（剧情筛选面板）、剧情
  *  （节点正文编辑器）、时间线（props 单独渲染）、设定档案五域（右栏详情单独渲染）与伏笔
  *  （右栏详情单独渲染）。 */
 type StaticPanelModule = Exclude<
@@ -39,12 +40,15 @@ const PANELS: Record<StaticPanelModule, () => ReactElement> = {
  * 写作页右栏：按模块渲染对应 `.rp-view`（面板头 `.pane-head` + 内容 `.rp-body`；
  * 设定档案五域与伏笔详情两个视图不设面板头，模块标题由中栏承载）。
  *
- * - **章节模块**：右栏为「大纲 / 剧情 / AI」三页签（页签条 + 大纲面板 + 剧情面板 + AI 面板）。
+ * - **章节模块**：右栏为「大纲 / 剧情 / 伏笔 / AI」四页签（页签条 + 大纲面板 + 剧情面板 +
+ *   伏笔总览面板 + AI 面板）。
  *   剧情页签走 `PlotFilterPanel`（时间线 + 剧情线双下拉筛选 + 只读时间轴卡片 + 悬停正文浮窗），
- *   与大纲模块右栏同款面板，只是多一层页签条。三个面板**始终挂载**，只用 `hidden` 切换显隐，
+ *   与大纲模块右栏同款面板，只是多一层页签条。四个面板**始终挂载**，只用 `hidden` 切换显隐，
  *   列表滚动位置不因页签切换丢失；页签状态只在章节模块内记忆（`chapterTab`，默认「大纲」）。
  *   AI 页签挂载 `AiPanel`（模型 / 功能下拉 + 快捷结果 / 对话两种模式，结果可回插正文），
  *   惰性加载：`active` 仅在页签可见时为真，不可见时不发起任何模型 / 会话请求。
+ *   伏笔页签挂载 `ForeshadowOverviewPanel`（全书伏笔按派生状态分组的只读卡片总览），
+ *   同样惰性加载，且切离章节模块时不拉数据。
  * - **大纲模块**：右栏直接挂载同一 `PlotFilterPanel`（无页签条）：时间线 + 剧情线双下拉筛选 +
  *   只读时间轴卡片 + 实体胶囊 + 悬停正文浮窗，点击只选中，不提供正文编辑器。
  * - **剧情模块**：右栏为节点正文富文本编辑器（`PlotEditor`：正文 + 底部保存条；
@@ -167,7 +171,7 @@ export function RightPane({
       aria-label={t('rightPaneAria')}
       aria-hidden={hidden || undefined}
     >
-      {/* 章节模块：右栏内「大纲 | 剧情 | AI」三页签；三面板常驻，切页签不卸载。 */}
+      {/* 章节模块：右栏内「大纲 | 剧情 | 伏笔 | AI」四页签；四面板常驻，切页签不卸载。 */}
       <div className={`rp-view${module === 'chapters' ? ' is-active' : ''}`} data-view="chapters">
         <RightPaneTabs value={chapterTab} onChange={setChapterTab} />
         <div className="rp-tabpanel" hidden={chapterTab !== 'outline'}>
@@ -185,6 +189,19 @@ export function RightPane({
             activeTimelineId={activeTimelineId}
             activeLineId={activePlotLineId}
             bookId={bookId ?? ''}
+          />
+        </div>
+        {/* 伏笔页签：全书伏笔按派生状态分组的只读卡片总览。
+            `active` 仅在「章节模块 + 伏笔页签可见」时为真（惰性加载，切离章节模块即停拉）；
+            面板常驻，切页签不丢滚动位置。数据由面板自行拉取（不启用 `useForeshadowBundle`，
+            避免顺带挂载伏笔详情面板）。 */}
+        <div className="rp-tabpanel" hidden={chapterTab !== 'foreshadow'}>
+          <ForeshadowOverviewPanel
+            bookId={bookId ?? ''}
+            active={module === 'chapters' && chapterTab === 'foreshadow'}
+            chapters={chapters}
+            volumes={volumes}
+            outlineItems={outlineItems}
           />
         </div>
         {/* AI 页签：模型 / 功能下拉 + 快捷结果或对话列表，结果可回插正文。

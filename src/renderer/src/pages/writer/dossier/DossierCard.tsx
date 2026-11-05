@@ -12,7 +12,7 @@ import { useEffect, useRef } from 'react'
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LinkIcon, TrashIcon } from '../../../components/icons'
-import { Tag } from '../../../components/ui'
+import { EntityStyleCard, IconButton, Tag } from '../../../components/ui'
 import { useChipOverflow } from '../../../components/useChipOverflow'
 import { useOverflowPopup } from '../../../components/useOverflowPopup'
 import type { OverflowPopupControl } from '../../../components/useOverflowPopup'
@@ -126,129 +126,137 @@ export function DossierCard({
   }, [onPopupControl, row.id, cancelMoreClose, scheduleCloseMore])
 
   return (
-    <article
-      className={`dossier-card wf-card--halo${active ? ' is-active' : ''}`}
-      onClick={() => onSelect(row.id)}
-    >
-      <div className="dossier-card__head">
-        <h3 className="dossier-card__name">{hasName ? row.name : t('unnamed')}</h3>
-        {typeLabel ? (
-          <Tag tone="neutral" className={`dossier-card__type ${ownChipClass}`}>
-            {typeLabel}
-          </Tag>
-        ) : null}
-        {onEdit || onRelations || onDelete ? (
-          <span className="dossier-card__actions">
+    <EntityStyleCard
+      className="dossier-card"
+      active={active}
+      cardProps={{ onClick: () => onSelect(row.id) }}
+      head={
+        <>
+          <h3 className="wf-entity-card__title dossier-card__name">
+            {hasName ? row.name : t('unnamed')}
+          </h3>
+          {typeLabel ? (
+            <Tag tone="neutral" className={`dossier-card__type ${ownChipClass}`}>
+              {typeLabel}
+            </Tag>
+          ) : null}
+        </>
+      }
+      actions={
+        onEdit || onRelations || onDelete ? (
+          <>
             {onEdit ? (
-              <button
-                type="button"
-                className="dossier-card__edit"
-                aria-label={t('editAction')}
-                title={t('editAction')}
+              <IconButton
+                size="sm"
+                label={t('editAction')}
                 onClick={(event) => {
                   event.stopPropagation()
                   onEdit(row.id)
                 }}
               >
-                <PencilIcon width={13} />
-              </button>
+                <PencilIcon width={14} />
+              </IconButton>
             ) : null}
             {onRelations ? (
-              <button
-                type="button"
-                className="dossier-card__edit"
-                aria-label={t('relationsAction')}
-                title={t('relationsAction')}
+              <IconButton
+                size="sm"
+                label={t('relationsAction')}
                 onClick={(event) => {
                   event.stopPropagation()
                   onRelations(row.id)
                 }}
               >
                 <LinkIcon />
-              </button>
+              </IconButton>
             ) : null}
             {onDelete ? (
-              <button
-                type="button"
-                className="dossier-card__edit dossier-card__delete"
-                aria-label={t('detail.delete')}
-                title={t('detail.delete')}
+              <IconButton
+                size="sm"
+                tone="danger"
+                label={t('detail.delete')}
                 onClick={(event) => {
                   event.stopPropagation()
                   onDelete(row.id)
                 }}
               >
                 <TrashIcon />
-              </button>
+              </IconButton>
             ) : null}
-          </span>
-        ) : null}
-      </div>
-      {aliasChips.length > 0 ? (
-        <div className="dossier-card__chips">
-          {aliasChips.map((alias, index) => (
-            <Tag
-              key={`alias-${index}`}
-              tone="neutral"
-              className="dossier-card__chip dossier-card__chip--alias"
-            >
-              {alias}
-            </Tag>
-          ))}
-        </div>
-      ) : null}
-      {hasDesc ? (
-        <div className="dossier-card__desc">
-          {paragraphs.map((paragraph, index) => (
+          </>
+        ) : undefined
+      }
+      meta={
+        aliasChips.length > 0
+          ? aliasChips.map((alias, index) => (
+              <Tag
+                key={`alias-${index}`}
+                tone="neutral"
+                className="dossier-card__chip dossier-card__chip--alias"
+              >
+                {alias}
+              </Tag>
+            ))
+          : undefined
+      }
+      description={
+        hasDesc ? (
+          paragraphs.map((paragraph, index) => (
             <p className="dossier-card__para" key={`para-${index}`}>
               {paragraph}
             </p>
-          ))}
-        </div>
-      ) : (
-        <p className="dossier-card__desc is-empty">{t('cardEmptyDesc')}</p>
-      )}
-      {relations.items.length > 0 ? (
-        <div className="dossier-card__chips dossier-card__chips--relations" ref={listRef}>
-          {visibleItems.map((item, index) => (
-            <Tag
-              key={`relation-${index}`}
-              tone="neutral"
-              className={`dossier-card__chip ${item.chipClass}`}
-              onMouseEnter={(event) => onChipEnter(event, item.peerId)}
-              onMouseLeave={onChipLeave}
-            >
-              {item.label}
-            </Tag>
-          ))}
-          {hiddenCount > 0 ? (
-            <Tag
-              tone="neutral"
-              className={`dossier-card__chip ${MORE_CHIP_CLASS} chip-pill--neutral`}
-              onMouseEnter={(event) => {
-                onPopupOpen?.()
-                openMore(event.currentTarget)
-              }}
-              onMouseLeave={scheduleCloseMore}
-            >
-              +{hiddenCount}
-            </Tag>
-          ) : null}
-        </div>
-      ) : null}
-      {moreAnchor !== null && moreAnchor.isConnected && hiddenItems.length > 0 ? (
-        <EntityCardMorePopup
-          anchorEl={moreAnchor}
-          items={hiddenItems}
-          onPointerEnter={cancelMoreClose}
-          onPointerLeave={scheduleCloseMore}
-          onItemEnter={
-            onMoreItemEnter ? (el, peerId) => onMoreItemEnter(el, peerId, row.id) : undefined
-          }
-          onItemLeave={onMoreItemEnter ? onMoreItemLeave : undefined}
-        />
-      ) : null}
-    </article>
+          ))
+        ) : (
+          <p className="dossier-card__desc is-empty">{t('cardEmptyDesc')}</p>
+        )
+      }
+      descriptionClassName="dossier-card__desc"
+      chips={
+        relations.items.length > 0 ? (
+          <>
+            {visibleItems.map((item, index) => (
+              <Tag
+                key={`relation-${index}`}
+                tone="neutral"
+                className={`dossier-card__chip ${item.chipClass}`}
+                onMouseEnter={(event) => onChipEnter(event, item.peerId)}
+                onMouseLeave={onChipLeave}
+              >
+                {item.label}
+              </Tag>
+            ))}
+            {hiddenCount > 0 ? (
+              <Tag
+                tone="neutral"
+                className={`dossier-card__chip ${MORE_CHIP_CLASS} chip-pill--neutral`}
+                onMouseEnter={(event) => {
+                  onPopupOpen?.()
+                  openMore(event.currentTarget)
+                }}
+                onMouseLeave={scheduleCloseMore}
+              >
+                +{hiddenCount}
+              </Tag>
+            ) : null}
+          </>
+        ) : undefined
+      }
+      chipsRef={listRef}
+      chipsClassName="dossier-card__chips--relations"
+      popup={
+        moreAnchor !== null && moreAnchor.isConnected && hiddenItems.length > 0 ? (
+          <EntityCardMorePopup
+            anchorEl={moreAnchor}
+            items={hiddenItems}
+            onPointerEnter={cancelMoreClose}
+            onPointerLeave={scheduleCloseMore}
+            onItemEnter={
+              onMoreItemEnter ? (el, peerId) => onMoreItemEnter(el, peerId, row.id) : undefined
+            }
+            onItemLeave={onMoreItemEnter ? onMoreItemLeave : undefined}
+          />
+        ) : undefined
+      }
+    />
   )
 }
 

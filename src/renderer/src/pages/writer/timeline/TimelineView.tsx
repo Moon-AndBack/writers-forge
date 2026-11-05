@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { EntityStyleCard } from '../../../components/ui'
 import TimelineActivityActions from './TimelineActivityActions'
 import NewTimelineDialog from './NewTimelineDialog'
 import {
@@ -39,7 +40,8 @@ export interface TimelineViewProps {
  * 独立时间线中栏：元年行 + 全书剧情按年聚合（跨线同年一排，只读）。
  *
  * - 样式复用剧情时间线（`plot-timeline` / `plot-row` / `plot-col-time` /
- *   `plot-col-node` / `plot-dot` / `plot-col-content` / `plot-scene-card`），
+ *   `plot-col-node` / `plot-dot` / `plot-col-content`），卡片统一走通用壳
+ *   `EntityStyleCard`（与剧情 / 伏笔 / 设定卡同一套骨架与视觉规格），
  *   不新增全局 token；独立 `is-origin` 类区分首段；
  * - 首段：起点时间 + 元年说明卡 + 人物无；不渲染「＋」缝、不绑定选中；
  * - 次段：全书剧情经 `api.plot.listLines/listScenes` 按年分组跨线聚合
@@ -182,10 +184,18 @@ export default function TimelineView({
                   </div>
                   <div className="plot-col-content">
                     {group.absoluteYear === 0 ? (
-                      <article className="plot-scene-card is-origin" title={originDisplay}>
-                        <h3 className="plot-scene-title">{t('originTitle')}</h3>
-                        <p className="plot-scene-desc">{t('originNote')}</p>
-                      </article>
+                      <EntityStyleCard
+                        className="plot-scene-card is-origin"
+                        readonly
+                        cardProps={{ title: originDisplay }}
+                        head={
+                          <h3 className="wf-entity-card__title plot-scene-title">
+                            {t('originTitle')}
+                          </h3>
+                        }
+                        description={t('originNote')}
+                        descriptionClassName="plot-scene-body"
+                      />
                     ) : null}
                     {group.scenes.map((scene) => {
                       const line = lineById.get(scene.lineId)
@@ -199,39 +209,45 @@ export default function TimelineView({
                         ? getPlotLineColorValue(normalizePlotLineColor(line.lineColor))
                         : null
                       return (
-                        <article
-                          className={`plot-scene-card is-readonly${scene.id === selectedSceneId ? ' is-active' : ''}`}
+                        <EntityStyleCard
                           key={scene.id}
-                          onClick={() => onSelectScene?.(scene.id)}
-                        >
-                          {line ? (
-                            <span
-                              className="plot-line-tag"
-                              style={
-                                tagColor
-                                  ? {
-                                      color: tagColor,
-                                      backgroundColor: `${tagColor}1f`
-                                    }
-                                  : undefined
-                              }
-                            >
-                              {plotLineLabel(line, tPlot('unnamedLine'))}
-                            </span>
-                          ) : null}
-                          <h3 className="plot-scene-title">
-                            {plotSceneTitle(scene, tPlot('unnamedScene'))}
-                          </h3>
-                          {paragraphs.length > 0 ? (
-                            <div className="plot-scene-desc plot-scene-body">
-                              {paragraphs.map((paragraph, index) => (
-                                <p className="plot-scene-para" key={`para-${index}`}>
-                                  {paragraph}
-                                </p>
-                              ))}
+                          className="plot-scene-card"
+                          active={scene.id === selectedSceneId}
+                          readonly
+                          cardProps={{ onClick: () => onSelectScene?.(scene.id) }}
+                          head={
+                            <div className="plot-scene-heading">
+                              {line ? (
+                                <span
+                                  className="plot-line-tag"
+                                  style={
+                                    tagColor
+                                      ? {
+                                          color: tagColor,
+                                          backgroundColor: `${tagColor}1f`
+                                        }
+                                      : undefined
+                                  }
+                                >
+                                  {plotLineLabel(line, tPlot('unnamedLine'))}
+                                </span>
+                              ) : null}
+                              <h3 className="wf-entity-card__title plot-scene-title">
+                                {plotSceneTitle(scene, tPlot('unnamedScene'))}
+                              </h3>
                             </div>
-                          ) : null}
-                        </article>
+                          }
+                          description={
+                            paragraphs.length > 0
+                              ? paragraphs.map((paragraph, index) => (
+                                  <p className="plot-scene-para" key={`para-${index}`}>
+                                    {paragraph}
+                                  </p>
+                                ))
+                              : undefined
+                          }
+                          descriptionClassName="plot-scene-body"
+                        />
                       )
                     })}
                   </div>

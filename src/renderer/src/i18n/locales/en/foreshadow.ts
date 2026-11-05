@@ -16,6 +16,9 @@ const foreshadow = {
     relatedEntities: 'Related entities',
     moreEntities: '{{n}} more related entities'
   },
+  overview: {
+    empty: 'No foreshadowing in this book yet'
+  },
   anchor: {
     invalid: 'The source text has changed; the anchor is invalid',
     missing: 'Anchored text not found',

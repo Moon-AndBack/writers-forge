@@ -2,7 +2,7 @@
    写作视图 · 剧情（plot）— 中栏年组舞台 / 卡选中态 / 标签
    ------------------------------------------------------------------
    自 `writer-plot.css` 原样搬移（保持单文件 ≤500 行，§3）。
-   年组行、剧情线视图舞台（宽屏 / 紧凑）、卡选中态、只读卡、线标签。
+   年组行、剧情线视图舞台（纵向单列）、来源线标签。
    依赖 writer-plot-timeline.css 的纵线 / 圆点 / 卡片基础规则（导入顺序在其前）。
    ============================================================ */
 
@@ -14,8 +14,9 @@
 /* 剧情线视图舞台（`.plot-scene-wrap`，仅该视图使用；独立只读时间线视图
    `.timeline-main` 无此结构，不受影响）：每卡独占一行——舞台取满内容列一行
    （配合内容列既有 `flex-wrap`），卡宽由 clamp(220px, 100%, 420px) 收口（超
-   420px 右侧留白），纵向单列、不再横向堆叠。模式由 JS 按内容列可用宽判定并落
-   `is-wide` / `is-compact`：宽屏「卡在左 + 胶囊在右」同行，紧凑「胶囊在卡下」。 */
+   420px 右侧留白），纵向单列、不再横向堆叠。
+   卡片已统一走通用壳 `EntityStyleCard`，实体胶囊固定在卡内描述下方，不再随
+   宽度切换「卡左 + 胶囊右」双栏，故宽屏 / 紧凑模式（`is-wide` / `is-compact`）已移除。 */
 .plot-scene-wrap {
   display: flex;
   flex-direction: column;
@@ -25,72 +26,29 @@
   min-width: 0;
 }
 
-/* 宽屏：卡与人物胶囊同行并排（胶囊块吃满卡右侧剩余宽度）。 */
-.plot-scene-wrap.is-wide {
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 14px;
-}
-
+/* 卡宽收口（首行满宽、超 420px 留白）；高度不设上限，内容（描述 4 行 +
+   卡内胶囊）自然撑高，避免裁掉胶囊行。 */
 .plot-scene-wrap .plot-scene-card {
   flex: none;
   width: clamp(220px, 100%, 420px);
   max-width: min(420px, 100%);
-  /* 高度上限：超限内容截断（描述行数见下方 line-clamp），不撑高卡片。 */
-  max-height: 240px;
-  overflow: hidden;
 }
 
-/* 描述多行截断：作用于正文容器 `.plot-scene-body`（标题 / 时间 / 说明文案仍走
-   `.plot-scene-desc` 基类，不受影响）。⚠️ 右栏剧情页签复用同一 `SceneCard`，
-   根节点同样是 `.plot-scene-wrap`，故此处同样生效（右栏另有字号 / 裁切高度覆盖）；
-   只读时间线卡片的根节点不是 `.plot-scene-wrap`，其截断由 `.plot-scene-body` 基类承担。 */
-.plot-scene-wrap .plot-scene-body {
-  display: block;
-  line-clamp: 4;
-  max-height: calc(4 * 1.65em);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 紧凑：人物胶囊块与卡同宽（同 clamp），落在卡下方。 */
-.plot-scene-wrap .plot-char-block {
-  flex: none;
+/* 剧情线来源标签（跨线聚合时标明来源线）与标题纵向组合：
+   壳的 `head` 是横向标题行，来源标签挂标题上方时用纵向包裹容器。 */
+.plot-scene-heading {
+  display: flex;
+  flex: 1;
   min-width: 0;
-  padding-top: 8px;
-  width: clamp(220px, 100%, 420px);
-  max-width: min(420px, 100%);
-}
-
-/* 宽屏：胶囊块吃满卡右侧剩余宽度（覆盖紧凑同宽约束），顶部对齐卡首行。 */
-.plot-scene-wrap.is-wide .plot-char-block {
-  flex: 1 1 0;
-  width: auto;
-  max-width: none;
-  min-width: 150px;
-  padding-top: 0;
-}
-
-/* 卡选中态（年组一排多卡时落卡自身，与行选中同辉光；仅颜色 / 描边 / 阴影过渡）。 */
-.plot-scene-card.is-active {
-  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--brand) 30%, transparent),
-    0 0 26px -8px color-mix(in srgb, var(--brand) 55%, transparent),
-    var(--sh-sm),
-    var(--panel-ring);
-}
-
-/* 主时间线只读卡（无点击）与剧情线标签（跨线聚合时标明来源线）。 */
-.timeline-main .plot-scene-card.is-readonly {
-  cursor: default;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
 }
 
 .plot-line-tag {
   display: inline-flex;
   align-items: center;
   max-width: 100%;
-  margin-bottom: 6px;
   padding: 2px 9px;
   border-radius: 999px;
   font-size: 10.5px;

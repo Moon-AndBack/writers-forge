@@ -9,26 +9,12 @@
    hover 仅颜色 / 描边变化，无位移 / 缩放（§8）。
    ============================================================ */
 
-/* 标签行：横向排列 + 自动换行；卡片高度随内容增长，不再被 240px 上限裁切。 */
-.dossier-card.wf-card--halo {
-  max-height: none;
-}
-
-.dossier-card__chips {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-}
-
 /* 关系行（关系胶囊 + 「+N」）：单行自适应，容量由 `useChipOverflow` 按容器实测宽得出。
+   基础布局（flex / 换行 / 4px 间距）由通用壳 `.wf-entity-card__chips` 提供。
    **必须保留 flex-wrap: wrap**——该 hook 靠「全量渲染后的换行位置」测量单行容量；
    改成 nowrap 会让所有胶囊永远排在同一行、容量恒等于总数，「+N」永不出现。
    折叠后行内只剩「容量−1 条关系 + 更窄的计数胶囊」，实际只占一行：
-   单行效果由容量保证，而非 nowrap。别名行（无修饰类）仍按 `.dossier-card__chips` 换行。 */
+   单行效果由容量保证，而非 nowrap。别名行走 `.wf-entity-card__meta`，同样换行。 */
 .dossier-card__chips--relations {
   flex-wrap: wrap;
 }

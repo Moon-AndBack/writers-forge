@@ -22,6 +22,10 @@ const foreshadow = {
     relatedEntities: '相关实体',
     moreEntities: '还有 {{n}} 个相关实体'
   },
+  /** 章节模块右栏「伏笔」页签（全书只读总览）：仅空态（分组不显示标题 / 条数）。 */
+  overview: {
+    empty: '全书还没有伏笔'
+  },
   anchor: {
     invalid: '原文已改动，锚点已失效',
     missing: '找不到锚定的原文',

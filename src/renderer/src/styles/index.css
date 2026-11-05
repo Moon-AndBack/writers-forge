@@ -21,6 +21,8 @@
 @import './components/motion.css';
 /* 通用卡片网格（设定档案五域 / 伏笔共用）：定值轨道 + 左对齐。 */
 @import './components/card-grid.css';
+/* 通用实体样式卡壳（剧情 / 伏笔 / 设定档案共用）：骨架与公共视觉规格。 */
+@import './components/entity-card.css';
 @import './global.css';
 @import './chip-pill.css';
 @import './chip-preset-colors.css';

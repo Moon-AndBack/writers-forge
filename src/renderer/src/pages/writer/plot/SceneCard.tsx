@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TrashIcon } from '../../../components/icons'
+import { EntityStyleCard, IconButton } from '../../../components/ui'
 import { PencilIcon } from '../icons'
 // 跨域复用：剧情实体胶囊直接复用「设定档案」域的配色类名计算（模块基色 + 预设分类色），
 // 不复制实现；依赖方向（剧情 → 档案）为临时态，待后续把 `relationChip` 上提到共享层收敛。
@@ -13,13 +14,10 @@ import { useChipOverflow } from '../../../components/useChipOverflow'
 import { useOverflowPopup } from '../../../components/useOverflowPopup'
 import { plotSceneTitle, type PlotSceneRow } from './plotTree'
 import { usePlotBodyEntities } from './usePlotBodyEntities'
-import type { SceneCardMode } from './useSceneCardMode'
 
 interface SceneCardProps {
   scene: PlotSceneRow
   active: boolean
-  /** 卡模式（宽屏 / 紧凑）。 */
-  mode: SceneCardMode
   /** 布局签名（可用宽 key）：变化时触发胶囊溢出重测。 */
   layoutKey: number
   /** 归属书 id（实体匹配按书隔离；空串 = 不匹配）。 */
@@ -29,7 +27,7 @@ interface SceneCardProps {
   onSelect: (id: number) => void
   /** 打开节点弹窗（改该场景时间 / 标题）。 */
   onEditNode: (scene: PlotSceneRow) => void
-  /** 胶囊悬停委托（`.plot-char-list` 级 `onMouseOver` / `onMouseLeave`）。 */
+  /** 胶囊悬停委托（壳的胶囊容器级 `onMouseOver` / `onMouseLeave`）。 */
   charHover: ReturnType<typeof useEntityHover>
   /** 删除该场景节点（经卡内删除按钮二次确认后调用）。 */
   onDeleteScene: (id: number) => void
@@ -42,6 +40,10 @@ interface SceneCardProps {
 }
 
 /** 单场景卡（标题 + 编辑入口 / 描述 / 正文自动匹配的实体胶囊）；选中态落卡自身。
+ * 结构 / 公共视觉规格统一由通用壳 `EntityStyleCard` 提供（与设定档案卡 / 伏笔卡同款）：
+ * 标题行走 `head`、编辑 / 删除走 `actions`（`IconButton size="sm"`）、描述走
+ * `description`（4 行裁剪由 `.plot-scene-body` 控制）、实体胶囊走 `chips`
+ * （卡内底部，描述下方），不再作为卡片兄弟节点悬挂在卡外。
  * 胶囊来源为**正文实体匹配结果**（实时、不落库；按 `entityId` 去重、按首次出现排序，见
  * `usePlotBodyEntities`），无手动添加 / 删除入口；溢出时仅「＋N」占 1 槽（不溢出则全显），
  * 悬停「＋N」浮窗列出被收口的实体（复用实体域的 `EntityCardMorePopup`），
@@ -50,7 +52,6 @@ interface SceneCardProps {
 export function SceneCard({
   scene,
   active,
-  mode,
   layoutKey,
   bookId,
   bodyText,
@@ -73,7 +74,7 @@ export function SceneCard({
   // 胶囊数据：正文实体匹配结果（去重），不读 / 不写库。
   const characters = usePlotBodyEntities(bookId, bodyText)
   const charListRef = useRef<HTMLDivElement>(null)
-  // 胶囊容量（宽窄两模式统一按实际宽测量、限 2 行）；溢出时「＋N」占 1 槽，不溢出则全显。
+  // 胶囊容量（按壳内胶囊容器实测宽测量、限 2 行）；溢出时「＋N」占 1 槽，不溢出则全显。
   const capacity = useChipOverflow(charListRef, characters.length, layoutKey, {
     maxRows: 2,
     moreSelector: '.plot-char-more'
@@ -104,111 +105,118 @@ export function SceneCard({
       : []
 
   return (
-    <div className={`plot-scene-wrap${mode === 'wide' ? ' is-wide' : ' is-compact'}`}>
-      <article
-        className={`plot-scene-card wf-card--halo${active ? ' is-active' : ''}`}
-        onClick={() => onSelect(scene.id)}
-        onMouseEnter={(event) => onHoverStart?.(event.currentTarget, event.target as HTMLElement)}
-        onMouseLeave={onLeave}
-      >
-        <div className="plot-scene-head">
-          <h3 className="plot-scene-title">{plotSceneTitle(scene, t('unnamedScene'))}</h3>
-          {showActions ? (
+    <div className="plot-scene-wrap">
+      <EntityStyleCard
+        className="plot-scene-card"
+        active={active}
+        readonly={readonly}
+        cardProps={{
+          onClick: () => onSelect(scene.id),
+          onMouseEnter: (event) => onHoverStart?.(event.currentTarget, event.target as HTMLElement),
+          onMouseLeave: onLeave
+        }}
+        head={
+          <h3 className="wf-entity-card__title plot-scene-title">
+            {plotSceneTitle(scene, t('unnamedScene'))}
+          </h3>
+        }
+        actions={
+          showActions ? (
             <>
-              <button
-                type="button"
-                className="plot-scene-edit"
-                title={t('timeline.editTitle')}
-                aria-label={t('timeline.editTitle')}
+              <IconButton
+                size="sm"
+                label={t('timeline.editTitle')}
                 onClick={(event) => {
                   event.stopPropagation()
                   onEditNode(scene)
                 }}
               >
-                <PencilIcon width={13} />
-              </button>
-              <button
-                type="button"
-                className="plot-scene-delete"
-                title={t('editor.deleteScene')}
-                aria-label={t('editor.deleteScene')}
+                <PencilIcon width={14} />
+              </IconButton>
+              <IconButton
+                size="sm"
+                tone="danger"
+                label={t('editor.deleteScene')}
                 onClick={(event) => {
                   event.stopPropagation()
                   onDeleteScene(scene.id)
                 }}
               >
                 <TrashIcon />
-              </button>
+              </IconButton>
             </>
-          ) : null}
-        </div>
-        {bodyParagraphs.length > 0 ? (
-          <div className="plot-scene-desc plot-scene-body">
-            {bodyParagraphs.map((paragraph, index) => (
-              <p className="plot-scene-para" key={`para-${index}`}>
-                {paragraph}
-              </p>
-            ))}
-          </div>
-        ) : null}
-      </article>
-
-      {characters.length > 0 ? (
-        <div className="plot-char-block">
-          <div
-            className="plot-char-list"
-            ref={charListRef}
-            onMouseOver={charHover.onMouseOver}
-            onMouseLeave={charHover.onMouseLeave}
-          >
-            {visibleCharacters.map((character) => (
-              <span
-                className={`plot-char-card chip-pill ${entityChipClass(
-                  character.type,
-                  character.presetKey
-                )}`}
-                key={character.entityId}
-                data-entity-id={character.entityId}
-              >
-                <span className="plot-char-name">{character.name}</span>
-              </span>
-            ))}
-            {hiddenCount > 0 ? (
-              <span
-                className="plot-char-more chip-pill chip-pill--neutral"
-                onMouseEnter={(event) => {
-                  // 收掉可能残留的实体悬停卡：从角色胶囊直接移到「＋N」时，useEntityHover 找不到
-                  // data-entity-id 会提前 return、不安排隐藏，卡片会一直挂着。
-                  charHover.close()
-                  openMore(event.currentTarget)
-                }}
-                onMouseLeave={scheduleCloseMore}
-              >
-                {t('timeline.moreCharacters', { n: hiddenCount })}
-              </span>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
-      {moreAnchor !== null && moreAnchor.isConnected && moreItems.length > 0 ? (
-        <EntityCardMorePopup
-          anchorEl={moreAnchor}
-          items={moreItems}
-          onPointerEnter={() => {
-            cancelMoreClose()
-            charHover.cancelHide()
-          }}
-          onPointerLeave={() => {
-            scheduleCloseMore()
-            charHover.onMouseLeave()
-          }}
-          // 浮窗内胶囊经 portal 渲染、事件不冒泡到 `.plot-char-list`：显式给锚点，
-          // 详情卡锚在本条胶囊上（真元素，滚动 / 重定位有效）。
-          onItemEnter={charHover.showFor}
-          onItemLeave={charHover.onMouseLeave}
-        />
-      ) : null}
+          ) : undefined
+        }
+        description={
+          bodyParagraphs.length > 0
+            ? bodyParagraphs.map((paragraph, index) => (
+                <p className="plot-scene-para" key={`para-${index}`}>
+                  {paragraph}
+                </p>
+              ))
+            : undefined
+        }
+        descriptionClassName="plot-scene-body"
+        chips={
+          characters.length > 0 ? (
+            <>
+              {visibleCharacters.map((character) => (
+                <span
+                  className={`plot-char-card chip-pill ${entityChipClass(
+                    character.type,
+                    character.presetKey
+                  )}`}
+                  key={character.entityId}
+                  data-entity-id={character.entityId}
+                >
+                  <span className="plot-char-name">{character.name}</span>
+                </span>
+              ))}
+              {hiddenCount > 0 ? (
+                <span
+                  className="plot-char-more chip-pill chip-pill--neutral"
+                  onMouseEnter={(event) => {
+                    // 收掉可能残留的实体悬停卡：从角色胶囊直接移到「＋N」时，useEntityHover 找不到
+                    // data-entity-id 会提前 return、不安排隐藏，卡片会一直挂着。
+                    charHover.close()
+                    openMore(event.currentTarget)
+                  }}
+                  onMouseLeave={scheduleCloseMore}
+                >
+                  {t('timeline.moreCharacters', { n: hiddenCount })}
+                </span>
+              ) : null}
+            </>
+          ) : undefined
+        }
+        chipsRef={charListRef}
+        chipsProps={{
+          onMouseOver: charHover.onMouseOver,
+          onMouseLeave: charHover.onMouseLeave
+        }}
+        popup={
+          moreAnchor !== null && moreAnchor.isConnected && moreItems.length > 0 ? (
+            <EntityCardMorePopup
+              anchorEl={moreAnchor}
+              items={moreItems}
+              onPointerEnter={() => {
+                cancelMoreClose()
+                charHover.cancelHide()
+              }}
+              onPointerLeave={() => {
+                scheduleCloseMore()
+                charHover.onMouseLeave()
+              }}
+              // 浮窗内胶囊经 portal 渲染、事件不冒泡到胶囊容器：显式给锚点，
+              // 详情卡锚在本条胶囊上（真元素，滚动 / 重定位有效）。
+              onItemEnter={charHover.showFor}
+              onItemLeave={charHover.onMouseLeave}
+            />
+          ) : undefined
+        }
+      />
     </div>
   )
 }
+
+export default SceneCard

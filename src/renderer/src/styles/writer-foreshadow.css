@@ -3,9 +3,11 @@
    ------------------------------------------------------------------
    中栏：`.foreshadow-grid` 弹性轨道多列网格（布局走通用 `.wf-card-grid`，与
    设定档案五域共用），
-   卡 `.foreshadow-item` 五行（名称 / 埋点位置 / 回收位置 / 描述 / 相关实体；用了
-   大纲埋点再多一行「大纲埋点」），复用通用
-   `.wf-card--halo`（常态中性，hover / 选中仅描边环 + 外发光），全程无位移 / 缩放，
+   卡 `.foreshadow-item` 五行（名称 / 描述 / 埋点位置 / 回收位置 / 相关实体；用了
+   大纲埋点再多一行「大纲埋点」）。卡片结构 / 内衬 / 阴影 / 进场动画 / 标题行由
+   通用壳 `EntityStyleCard`（`styles/components/entity-card.css`）承载，本文件只覆写
+   位置行、描述 4 行裁剪与实体胶囊等域内细节，并复用通用 `.wf-card--halo`
+   （常态中性，hover / 选中仅描边环 + 外发光），全程无位移 / 缩放，
    transition 只过渡阴影 / 颜色（AGENTS §8）。
    右栏：无面板头（模块标题由中栏承载），四块独立底色卡 —— 可编辑块 + 埋点只读块 +
    回收只读块 + 底部固定保存条；删掉标题栏让出的高度由可编辑块吸收（描述框撑满块内剩余），
@@ -18,33 +20,10 @@
    钩子保留，不设宽度上限：网格吃满 `.editor-inner.is-full` 的可用宽，列数由 `auto-fit`
    随中栏宽度增减（与五域 `.dossier-grid` 同口径）。 */
 
-/* ---------- 列表卡（五行） ---------- */
-.foreshadow-item {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  padding: 14px 16px;
-  font: inherit;
-  text-align: left;
-  color: var(--text);
-  background: var(--soft-solid);
-  border: none;
-  border-radius: var(--r-lg);
-  cursor: pointer;
-  /* 只过渡阴影 / 底色（hover / active 光晕），无 transform。 */
-  transition:
-    box-shadow 0.22s var(--ease),
-    background-color 0.22s var(--ease);
-}
-
-/* 卡高口径对齐设定档案卡（`.dossier-card`）：最小高 120px、不设上限，内容超出即
-   随内容增长；同一网格行内由 grid 默认 stretch 拉齐高度，卡内描述块撑满剩余空间，
-   故各行高度一致。 */
-.foreshadow-item.wf-card--halo {
-  min-height: 120px;
-  max-height: none;
-}
+/* ---------- 列表卡（五行：名称 / 描述 / 埋点 / 回收 / 实体） ---------- */
+/* 结构 / 内衬 / 圆角 / 柔和底 / 常态阴影 / 进场动画 / 标题行布局统一由通用壳
+   `EntityStyleCard` 提供（styles/components/entity-card.css）；本域只在 `.foreshadow-item`
+   钩子上保留焦点环、位置行、描述 4 行裁剪与实体胶囊等域特有规则（AGENTS §9）。 */
 
 .foreshadow-item:focus-visible {
   outline: none;
@@ -55,33 +34,8 @@
     var(--panel-ring);
 }
 
-.foreshadow-item__head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.foreshadow-item__title {
-  flex: 1;
-  min-width: 0;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .foreshadow-item__status {
   flex: none;
-}
-
-/* 删除按钮：常显（卡片第一行末尾），不参与标题省略计算。 */
-.foreshadow-item__delete {
-  flex: none;
-  margin-right: -4px;
 }
 
 /* 位置行：左侧固定标签 + 右侧单行截断值（埋点 / 回收两行同构）。 */
@@ -114,30 +68,23 @@
   color: var(--text-mute);
 }
 
+/* 描述：紧跟名称下方（壳的 head → description → info → chips 顺序），统一 4 行裁剪；
+   字号 / 行高 / 颜色 / 外边距由壳的 `.wf-entity-card__desc` 提供，此处只管裁剪。
+   描述是纯文本（非多段 `<p>`），`-webkit-box` 按行计行可靠。 */
 .foreshadow-item__desc {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
   flex: 1 1 auto;
-  margin: 0;
   overflow: hidden;
-  font-size: 12.5px;
-  line-height: 1.6;
-  color: var(--text-dim);
-  overflow-wrap: anywhere;
 }
 
-/* 相关实体行：描述之后一行（无实体不渲染，不占空位）。单行、按卡内容实测宽收口，
-   溢出由「+N」计数胶囊占 1 槽；悬停「+N」浮窗列出被收口的实体。
-   卡片无 max-height、同行网格默认 stretch 拉齐，故新增这一行只抬高整卡的最小内容高，
-   描述仍保持三行 clamp（无需下调行数上限）；无实体的卡高度完全不变。 */
+/* 相关实体行：描述与三处锚点之后一行（无实体不渲染，不占空位）。单行、按卡内容实测宽
+   收口，溢出由「+N」计数胶囊占 1 槽；行内换行 / 4px 间距由壳的
+   `.wf-entity-card__chips` 提供。卡片无 max-height、同行网格默认 stretch 拉齐，故新增
+   这一行只抬高整卡的最小内容高。 */
 .foreshadow-item__entities {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
   overflow: hidden;
 }
 
@@ -403,4 +350,89 @@
 .foreshadow-save-bar__abandon .wf-btn:disabled {
   background: var(--control-on-soft);
   box-shadow: none;
+}
+
+/* ============================================================
+   章节模块右栏「伏笔」页签：全书伏笔只读总览
+   ------------------------------------------------------------------
+   列表卡（`.rp-card--list`）内按派生状态分组：组容器沿用回收站视图既有的
+   `.trash-group` 块级语义，但**不渲染组标题与条数**（状态由卡片自带胶囊表达）；
+   组间间距由本面板专属的 `.foreshadow-overview-group` 覆盖，不改动
+   `styles/writer-trash.css` 的 `.trash-group`（两处回收站仍在用其 18px 底距）。
+   卡片复用 `ForeshadowItem` 的 `readonly` / `compact` 变体，只做右栏
+   覆盖，不另造平行卡片（AGENTS §9）。只读卡不需要 hover 反馈：常态与 hover /
+   键盘焦点均无投影，仅保留 `--line` 描边作为边界（无 transform，AGENTS §8）。
+   ============================================================ */
+
+/* 组间距：原 `.trash-group` 的 18px 底距按「组标题（10.5px 字号 + 上下衬 4 / 8px）
+   + 列表」设计，删标题后直接用会显得松散。此处收到 14px——略大于网格自身的
+   12px `gap`，使组内卡片与组间形成 12 / 14 的可辨认层级；两个类连写把特异性
+   提到 (0,2,0)，压过后加载的 `.trash-group` 同特异性规则，无需 !important；
+   末组归零，避免滚动到底部多出一段空白。 */
+.trash-group.foreshadow-overview-group {
+  margin-bottom: 14px;
+}
+
+.trash-group.foreshadow-overview-group:last-child {
+  margin-bottom: 0;
+}
+
+/* 右栏网格：轨道上限由 320px 放开为 `1fr`——最窄右栏（内容宽约 422px）下
+   `.wf-card-grid` 的单列会被封在 320px、右侧留白约 100px；改 `1fr` 后单列
+   吃满容器，两列及以上仍按 250px 下限自动分列。 */
+.wf-card-grid.foreshadow-overview-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+}
+
+/* 总览卡底色改 `--pane`：列表卡已由通用 `pane-region` 提供 `--soft-solid` 软底
+   （与剧情 / AI 页签同款）。卡若仍用中栏的 `--soft-solid`，会与容器同色，故改
+   `--pane` 让卡成为软底之上的内容层。根节点仍带 `foreshadow-item` 类（由
+   `EntityStyleCard` 的 `className` 透传），覆盖选择器口径不变。
+   只读总览卡**不要投影**：显式撤掉通用 `.wf-card--halo` 的常态 `--sh-sm`，hover /
+   键盘焦点也一并置 `none`（只读卡无按钮语义，不需要光晕反馈，AGENTS §8 只约束
+   卡片不得位移 / 缩放，此处按用户要求连颜色类阴影反馈也去掉）。
+   覆盖优先级：本选择器 0,2,0（两个类）已高于基类 `.wf-card--halo` 的 0,1,0；hover /
+   focus 追加伪类后为 0,3,0，高于 `.wf-card--halo:hover` 的 0,2,0 与同文件
+   `.foreshadow-item:focus-visible` 的 0,2,0，无需 `!important`。
+   边框承担边缘区分：壳根元素本身 `border: none`，无阴影后卡身会糊进 `--soft-solid`
+   容器，故补一条 `--line` 细描边（四主题令牌，非硬编码色）。 */
+.foreshadow-overview-grid > .foreshadow-item {
+  background: var(--pane);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.foreshadow-overview-grid > .foreshadow-item:hover,
+.foreshadow-overview-grid > .foreshadow-item:focus-visible {
+  box-shadow: none;
+}
+
+/* 紧凑变体：右栏 2 列（每列约 255px）下收窄内衬 / 字号，描述只留两行——
+   右栏总览是浏览态，4 行会把右栏卡抬到比中栏卡更高，且挤压实体胶囊行。
+   壳的紧凑钩子是 `wf-entity-card--compact`；`.foreshadow-item` 前缀把特异性提到
+   (0,2,0)，压过壳的 `.wf-entity-card` (0,1,0)。 */
+.foreshadow-item.wf-entity-card--compact {
+  gap: 6px;
+  padding: 11px 12px;
+  /* 右栏卡不需要中栏的 120px 最小高（`.wf-card--halo`），内容少时保持紧凑。 */
+  min-height: 0;
+}
+
+.foreshadow-item.wf-entity-card--compact .wf-entity-card__title {
+  font-size: 13px;
+}
+
+.foreshadow-item.wf-entity-card--compact .foreshadow-item__place-label {
+  font-size: 10.5px;
+}
+
+.foreshadow-item.wf-entity-card--compact .foreshadow-item__place-value {
+  font-size: 11.5px;
+}
+
+.foreshadow-item.wf-entity-card--compact .foreshadow-item__desc {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 11.5px;
+  line-height: 1.55;
 }

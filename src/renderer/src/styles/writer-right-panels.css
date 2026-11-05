@@ -145,23 +145,26 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--line-color, var(--brand)) 20%, transparent);
 }
 
-/* 卡片吃满内容列（覆盖中栏 clamp 宽），底改 `--pane` 与列表卡底色区分。 */
-.rp-plot-timeline .plot-scene-wrap .plot-scene-card {
+/* 卡片吃满内容列（覆盖中栏 clamp 宽），底改 `--pane` + `--line` 描边，
+   与伏笔右栏总览卡同一观感；壳的内衬 / 最小高按右栏收窄，且不再限制最大高
+   （内容自然撑高，卡内胶囊不会被裁掉）。 */
+.rp-plot-timeline .plot-scene-card.wf-entity-card {
   flex: 0 0 100%;
   width: 100%;
   max-width: 100%;
   min-height: 0;
-  max-height: 220px;
+  max-height: none;
+  gap: 6px;
   padding: 11px 13px;
   background: var(--pane);
+  border: 1px solid var(--line);
 }
 
 .rp-plot-timeline .plot-scene-title {
   font-size: 12.5px;
-  letter-spacing: 0.2px;
 }
 
-/* 正文容器收窄字号（标题 / 时间 / 说明文案不在此列）；行高收窄后同步收窄
+/* 正文容器收窄字号（标题 / 时间 / 说明文案不在此列）；行高 1.6 下同步收窄
    裁切高度，保证窄栏下仍恰好 4 行。 */
 .rp-plot-timeline .plot-scene-body {
   font-size: 11px;
@@ -169,15 +172,7 @@
   max-height: calc(4 * 1.6em);
 }
 
-/* 胶囊块与卡同宽（右栏恒紧凑：胶囊落在卡下）。 */
-.rp-plot-timeline .plot-scene-wrap .plot-char-block {
-  flex: 0 0 100%;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  padding-top: 6px;
-}
-
+/* 卡内胶囊（壳的胶囊容器）：右栏沿用壳的换行 + 4px 间距，只收小胶囊尺寸。 */
 .rp-plot-timeline .plot-char-card {
   min-height: 21px;
   max-width: 128px;

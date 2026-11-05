@@ -15,7 +15,7 @@ import {
   type PlotLineRow,
   type PlotSceneRow
 } from '../plot/plotTree'
-import { useSceneCardMode } from '../plot/useSceneCardMode'
+import { useSceneContentWidth } from '../plot/useSceneContentWidth'
 import type { TimelineEntry } from '../timeline/timelineOrigin'
 import { PlotSceneHoverCard, type PlotHoverAnchor } from './PlotSceneHoverCard'
 
@@ -85,9 +85,9 @@ export function PlotFilterPanel({
   const [lineChoice, setLineChoice] = useState<string | null>(null)
   const [selectedSceneId, setSelectedSceneId] = useState<number | null>(null)
   const [hover, setHover] = useState<PlotHoverAnchor | null>(null)
-  // 时间轴根引用：复用中栏的卡模式 / 胶囊容量测量（按实际可用宽）。
+  // 时间轴根引用：胶囊容量按内容列实际可用宽测量（右栏窄，胶囊仍在卡内底部）。
   const timelineRef = useRef<HTMLDivElement>(null)
-  // 胶囊悬停实体信息卡（与中栏同源，事件委托在 `.plot-char-list`）。
+  // 胶囊悬停实体信息卡（与中栏同源，事件委托在壳的胶囊容器）。
   const charHover = useEntityHover()
 
   const timelineValue = useMemo(() => {
@@ -127,8 +127,8 @@ export function PlotFilterPanel({
     return groupScenesByYear(scoped).flatMap((group) => group.scenes)
   }, [filteredLines, scenes, lineValue])
 
-  // 卡模式 / 胶囊容量签名：按时间轴根的实际可用宽判定（右栏窄，通常落到紧凑模式）。
-  const { mode, key: layoutKey } = useSceneCardMode(timelineRef, filteredScenes.length > 0)
+  // 胶囊容量签名：按时间轴根的内容列实际可用宽测量，变化时触发重测。
+  const layoutKey = useSceneContentWidth(timelineRef, filteredScenes.length > 0)
 
   const timelineOptions = useMemo(
     () => [
@@ -254,7 +254,6 @@ export function PlotFilterPanel({
                   <SceneCard
                     scene={scene}
                     active={scene.id === activeSceneId}
-                    mode={mode}
                     layoutKey={layoutKey}
                     bookId={bookId}
                     bodyText={scene.description}
@@ -264,8 +263,8 @@ export function PlotFilterPanel({
                     onDeleteScene={() => undefined}
                     readonly
                     onHoverStart={(el, target) => {
-                      // 胶囊区让给实体信息卡，避免同时浮出正文浮窗。
-                      if (target.closest('.plot-char-block') !== null) return
+                      // 胶囊区（壳的胶囊容器）让给实体信息卡，避免同时浮出正文浮窗。
+                      if (target.closest('.wf-entity-card__chips') !== null) return
                       handleHover({
                         scene,
                         el,

@@ -37,138 +37,23 @@
   color: var(--text-dim);
 }
 
-/* ---------- 设定卡 ---------- */
-.dossier-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 120px;
-  max-height: 240px;
-  padding: 14px 16px;
-  background: var(--soft-solid);
-  border-radius: var(--r-lg);
-  cursor: pointer;
-  box-shadow: var(--sh-xs);
-  /* 只过渡投影 / 描边（hover / active 光晕）；底色仅随主题变化，不加过渡
-     （主题切换整体瞬变，见 theme.css「主题切换不做过渡」）。 */
-  transition:
-    box-shadow 0.22s var(--ease),
-    border-color 0.22s var(--ease);
-}
-
-/* 进场：卡片挂载（切模块 / 新建档案 / 子类分组重排后新增项）时淡入 + 8px 上浮，
-   取 motion.css 的 `wf-enter-up`。**只加 animation，不动上面的 transition**（§8：
-   transform 不得进入 hover 过渡）。
-   fill-mode 取 backwards：动画结束即交还常态声明，不残留 transform / opacity，
-   因此 `.is-active` 等状态类与减动效兜底都按常态求值。
+/* ---------- 设定卡 ----------
+   卡片外壳（布局 / 内衬 / 圆角 / 柔和底 / 常态阴影 / 进场动画 / hover 与选中光晕）
+   统一由通用壳 `EntityStyleCard` 提供（`styles/components/entity-card.css`）；
+   本域只保留类别标签、正文裁剪与胶囊等域特有规则；操作按钮统一走壳的
+   `actions` 槽（`IconButton size="sm"`，删除 tone="danger"）。
    重排不重播：`DossierView` 的 map 用 `key={row.id}`，仅重新排序不会重挂载。 */
-.dossier-card {
-  animation: wf-enter-up var(--dur-base) var(--ease-out) backwards;
-}
-
-/* hover / active 与通用光晕（`.wf-card--halo`）逐字同值，避免样式加载次序影响观感。 */
-.dossier-card:hover {
-  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
-    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
-    var(--sh-sm),
-    var(--panel-ring);
-}
-
-.dossier-card.is-active {
-  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--brand) 30%, transparent),
-    0 0 26px -8px color-mix(in srgb, var(--brand) 55%, transparent),
-    var(--sh-sm),
-    var(--panel-ring);
-}
-
-.dossier-card__head {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.dossier-card__name {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .dossier-card__type {
   flex: none;
   margin-left: auto;
 }
 
-/* 卡片编辑 / 删除按钮：22x22 透明底 icon 按钮，hover 仅颜色 / 底色 / 透明度
-   （与时间线 SceneCard 对齐，无位移 / 缩放，§8）。 */
-.dossier-card__edit {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: none;
-  border-radius: var(--r-xs);
-  font-size: 11px;
-  line-height: 1;
-  color: var(--text-mute);
-  background: transparent;
-  cursor: pointer;
-  opacity: 0.6;
-  transition:
-    color 0.15s var(--ease),
-    background 0.15s var(--ease),
-    opacity 0.15s var(--ease);
-}
-
-.dossier-card__edit svg {
-  display: block;
-  width: 13px;
-  height: 13px;
-}
-
-.dossier-card__edit:hover {
-  color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
-  opacity: 1;
-}
-
-/* 卡片操作组（编辑 / 关联关系 / 删除并排，紧跟子类型标签，无位移 / 缩放，§8）。 */
-.dossier-card__actions {
-  display: flex;
-  flex: none;
-  align-items: center;
-  gap: 6px;
-  margin-left: 4px;
-}
-
-/* 卡片删除按钮：复用编辑按钮盒模型，hover 呈危险色（仅颜色 / 底色 / 透明度，§8）。 */
-.dossier-card__delete:hover {
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 12%, var(--pane));
-  opacity: 1;
-}
-
 /* 正文容器：承载 4 行截断（多段 `<p>` 子元素下 `-webkit-box` 跨元素计行不可靠，
    故用行高倍数 `max-height` 硬裁：第 5 行整行落在裁切线之外，恰好 4 行；
-   `line-clamp` 仅在浏览器支持块级裁切时补省略号，不支持即降级为无省略号硬裁）。 */
+   `line-clamp` 仅在浏览器支持块级裁切时补省略号，不支持即降级为无省略号硬裁）。
+   字号 / 行高 / 颜色 / 外边距由通用壳 `.wf-entity-card__desc` 提供，此处只管裁剪。 */
 .dossier-card__desc {
-  margin: 0;
-  font-size: 12.5px;
-  line-height: 1.6;
-  color: var(--text-dim);
-  display: block;
   line-clamp: 4;
   max-height: calc(4 * 1.6em);
   overflow: hidden;

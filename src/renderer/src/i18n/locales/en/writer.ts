@@ -36,7 +36,8 @@ const writer = {
     aria: 'Right pane tabs',
     outline: 'Outline',
     plot: 'Plot',
-    ai: 'AI'
+    ai: 'AI',
+    foreshadow: 'Foreshadowing'
   },
   rightOutline: {
     outlineLabel: 'Outline',

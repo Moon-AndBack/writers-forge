@@ -1,17 +1,28 @@
 /**
  * 伏笔列表单卡（中栏网格单元）：
  * 1. 名称 + 状态胶囊 + 删除按钮（常显）；
- * 2. 埋点位置（「卷 · 章」完整位置 / 大纲条目名，未锚定显示占位）；
- * 3. 大纲埋点位置（**仅** `outlineKind !== 'none'` 时渲染，未使用大纲槽位不占行）；
- * 4. 回收位置（同上，未回收显示占位）；
- * 5. 描述摘要（截断）；
+ * 2. 描述摘要（**紧跟名称下方**，统一 4 行裁剪）；
+ * 3. 埋点位置（「卷 · 章」完整位置 / 大纲条目名，未锚定显示占位）；
+ * 4. 大纲埋点位置（**仅** `outlineKind !== 'none'` 时渲染，未使用大纲槽位不占行）；
+ * 5. 回收位置（同上，未回收显示占位）；
  * 6. 相关实体（描述与三处锚点摘抄里出现的实体；无实体不渲染该行）。
  *
- * 卡根为 `<article role="button">`：`<button>` 不能内嵌删除按钮，故改用可聚焦容器 +
- * 键盘（Enter / Space）选中；hover / 选中光晕复用通用 `.wf-card--halo`
- * （仅描边 / 阴影变化，无 transform，AGENTS §8）。删除按钮自身按键不冒泡到卡片。
- * 实体胶囊按 `useChipOverflow` 单行收口，「+N」悬停浮窗列出被收口的实体；实体悬停卡
- * 由列表层统一挂一个 `HoverCard`（网格事件委托），本卡只透传控制器给「+N」浮窗使用。
+ * 结构 / 公共视觉规格统一由通用壳 `EntityStyleCard` 提供（标题行、描述区、元信息区、
+ * 底部胶囊区与操作按钮槽）；本文件只组合域内内容，并挂 `foreshadow-item` 语义类供
+ * `writer-foreshadow.css` 做域内覆写（AGENTS §9：不复制平行卡片）。
+ *
+ * 卡根是壳输出的 `<article>`：可选中变体带 `role="button"`（`<button>` 不能内嵌
+ * 删除按钮，故改用可聚焦容器 + 键盘 Enter / Space 选中）；hover / 选中光晕复用通用
+ * `.wf-card--halo`（仅描边 / 阴影变化，无 transform，AGENTS §8）。删除按钮自身按键
+ * 不冒泡到卡片。实体胶囊按 `useChipOverflow` 单行收口，「+N」悬停浮窗列出被收口的实体；
+ * 实体悬停卡由列表层统一挂一个 `HoverCard`（网格事件委托），本卡只透传控制器给
+ * 「+N」浮窗使用。
+ *
+ * 变体（AGENTS §9：同组件按参数覆写，不复制平行卡片）：
+ * - `readonly`：章节右栏「伏笔」总览用——不渲染删除按钮、不绑定选中 / 键盘处理，
+ *   根元素去掉 `role="button"` / `tabIndex` / `aria-pressed` 等按钮语义（单纯展示卡）；
+ * - `compact`：右栏窄栏用——收窄内衬 / 字号，描述由 4 行降为 2 行
+ *   （样式见 `writer-foreshadow.css`）。
  */
 import { useRef } from 'react'
 import type { KeyboardEvent } from 'react'
@@ -20,7 +31,7 @@ import { deriveForeshadowStatus } from '../../../../../shared/foreshadowStatus'
 import { TrashIcon } from '../../../components/icons'
 import { useChipOverflow } from '../../../components/useChipOverflow'
 import { useOverflowPopup } from '../../../components/useOverflowPopup'
-import { IconButton, Tag } from '../../../components/ui'
+import { EntityStyleCard, IconButton, Tag } from '../../../components/ui'
 import { EntityCardMorePopup } from '../entities/EntityCardMorePopup'
 import type { EntityCardMoreItem } from '../entities/EntityCardMorePopup'
 import type { useEntityHover } from '../entities/useEntityHover'
@@ -57,9 +68,13 @@ export interface ForeshadowItemProps {
   layoutKey: number
   /** 列表层共用的实体悬停控制器（悬停卡由列表层渲染；卡内仅「+N」浮窗使用）。 */
   entityHover: ReturnType<typeof useEntityHover>
-  onSelect: (id: number) => void
+  /** 只读变体：不绑定选中 / 删除，根元素不带按钮语义（章节右栏总览用）。 */
+  readonly?: boolean
+  /** 紧凑变体：收窄内衬 / 字号与描述行数（右栏窄栏用）。 */
+  compact?: boolean
+  onSelect?: (id: number) => void
   /** 请求删除（由中栏视图弹二次确认，本卡不直接落库）。 */
-  onDelete: (id: number) => void
+  onDelete?: (id: number) => void
 }
 
 interface PlaceLineProps {
@@ -93,6 +108,8 @@ export default function ForeshadowItem({
   entities,
   layoutKey,
   entityHover,
+  readonly = false,
+  compact = false,
   onSelect,
   onDelete
 }: ForeshadowItemProps) {
@@ -163,104 +180,126 @@ export default function ForeshadowItem({
     if (event.target !== event.currentTarget) return
     if (event.key !== 'Enter' && event.key !== ' ') return
     event.preventDefault()
-    onSelect(row.id)
+    onSelect?.(row.id)
   }
 
   return (
-    <article
-      className={`foreshadow-item wf-card--halo${active ? ' is-active' : ''}`}
-      role="button"
-      tabIndex={0}
-      aria-pressed={active}
-      onClick={() => onSelect(row.id)}
-      onKeyDown={handleKeyDown}
-    >
-      <div className="foreshadow-item__head">
-        <span className="foreshadow-item__title">
-          {row.title.trim() === '' ? t('field.untitled') : row.title}
-        </span>
-        <Tag tone={FORESHADOW_STATUS_TONES[displayStatus]} className="foreshadow-item__status">
-          {t(FORESHADOW_STATUS_LABEL_KEYS[displayStatus])}
-        </Tag>
-        <IconButton
-          size="sm"
-          tone="danger"
-          className="foreshadow-item__delete"
-          label={t('action.delete')}
-          tooltipPlacement="top"
-          onClick={(event) => {
-            event.stopPropagation()
-            onDelete(row.id)
-          }}
-          onKeyDown={(event) => event.stopPropagation()}
-        >
-          <TrashIcon />
-        </IconButton>
-      </div>
-
-      <PlaceLine label={t('detail.plant')} value={plantText} empty={plantTarget === null} />
-      {plant2Text === null ? null : (
-        <PlaceLine label={t('detail.plant2')} value={plant2Text} empty={plant2Target === null} />
-      )}
-      <PlaceLine label={t('detail.recover')} value={recoverText} empty={recoverTarget === null} />
-
-      {row.description.trim() === '' ? null : (
-        <p className="foreshadow-item__desc">{row.description}</p>
-      )}
-
-      {entities.length === 0 ? null : (
-        // 胶囊只提供悬停（实体卡）；点击落在胶囊上时不触发卡片选中。
-        <div
-          className="foreshadow-item__entities"
-          ref={entityListRef}
-          role="group"
-          aria-label={t('listItem.relatedEntities')}
-          onClick={(event) => event.stopPropagation()}
-        >
-          {visibleEntities.map((entity) => (
-            <span
-              key={entity.entityId}
-              className={`foreshadow-item__entity chip-pill ${entityChipClass(entity.type, entity.presetKey)}`}
-              data-entity-id={entity.entityId}
-            >
-              <span className="foreshadow-item__entity-name">{entity.name}</span>
-            </span>
-          ))}
-          {hiddenCount > 0 ? (
-            <span
-              className={`foreshadow-item__entity-more chip-pill chip-pill--neutral`}
-              title={t('listItem.moreEntities', { n: hiddenCount })}
-              aria-label={t('listItem.moreEntities', { n: hiddenCount })}
-              onMouseEnter={(event) => {
-                // 收掉可能残留的实体悬停卡（「+N」没有 data-entity-id，委托不会自动隐藏）。
-                entityHover.close()
-                openMore(event.currentTarget)
-              }}
-              onMouseLeave={scheduleCloseMore}
-            >
-              +{hiddenCount}
-            </span>
-          ) : null}
-        </div>
-      )}
-
-      {moreAnchor !== null && moreAnchor.isConnected && moreItems.length > 0 ? (
-        // 浮窗内胶囊经 portal 渲染、事件不冒泡到网格委托：显式给锚点展示实体卡。
-        <EntityCardMorePopup
-          anchorEl={moreAnchor}
-          items={moreItems}
-          onPointerEnter={() => {
-            cancelMoreClose()
-            entityHover.cancelHide()
-          }}
-          onPointerLeave={() => {
-            scheduleCloseMore()
-            entityHover.onMouseLeave()
-          }}
-          onItemEnter={entityHover.showFor}
-          onItemLeave={entityHover.onMouseLeave}
-        />
-      ) : null}
-    </article>
+    <EntityStyleCard
+      className="foreshadow-item"
+      active={active}
+      readonly={readonly}
+      compact={compact}
+      cardProps={{
+        // 只读变体去掉按钮语义（单纯展示卡）；可选中变体保留 role / 键盘选中。
+        role: readonly ? undefined : 'button',
+        tabIndex: readonly ? undefined : 0,
+        'aria-pressed': readonly ? undefined : active,
+        onClick: readonly ? undefined : () => onSelect?.(row.id),
+        onKeyDown: readonly ? undefined : handleKeyDown
+      }}
+      head={
+        <>
+          <span className="wf-entity-card__title foreshadow-item__title">
+            {row.title.trim() === '' ? t('field.untitled') : row.title}
+          </span>
+          <Tag tone={FORESHADOW_STATUS_TONES[displayStatus]} className="foreshadow-item__status">
+            {t(FORESHADOW_STATUS_LABEL_KEYS[displayStatus])}
+          </Tag>
+        </>
+      }
+      actions={
+        readonly || onDelete === undefined ? undefined : (
+          <IconButton
+            size="sm"
+            tone="danger"
+            label={t('action.delete')}
+            tooltipPlacement="top"
+            onClick={(event) => {
+              event.stopPropagation()
+              onDelete(row.id)
+            }}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
+            <TrashIcon />
+          </IconButton>
+        )
+      }
+      description={row.description.trim() === '' ? undefined : row.description}
+      descriptionClassName="foreshadow-item__desc"
+      info={
+        <>
+          <PlaceLine label={t('detail.plant')} value={plantText} empty={plantTarget === null} />
+          {plant2Text === null ? null : (
+            <PlaceLine
+              label={t('detail.plant2')}
+              value={plant2Text}
+              empty={plant2Target === null}
+            />
+          )}
+          <PlaceLine
+            label={t('detail.recover')}
+            value={recoverText}
+            empty={recoverTarget === null}
+          />
+        </>
+      }
+      chips={
+        entities.length === 0 ? undefined : (
+          // 胶囊只提供悬停（实体卡）；点击落在胶囊上时不触发卡片选中。
+          <>
+            {visibleEntities.map((entity) => (
+              <span
+                key={entity.entityId}
+                className={`foreshadow-item__entity chip-pill ${entityChipClass(entity.type, entity.presetKey)}`}
+                data-entity-id={entity.entityId}
+              >
+                <span className="foreshadow-item__entity-name">{entity.name}</span>
+              </span>
+            ))}
+            {hiddenCount > 0 ? (
+              <span
+                className={`foreshadow-item__entity-more chip-pill chip-pill--neutral`}
+                title={t('listItem.moreEntities', { n: hiddenCount })}
+                aria-label={t('listItem.moreEntities', { n: hiddenCount })}
+                onMouseEnter={(event) => {
+                  // 收掉可能残留的实体悬停卡（「+N」没有 data-entity-id，委托不会自动隐藏）。
+                  entityHover.close()
+                  openMore(event.currentTarget)
+                }}
+                onMouseLeave={scheduleCloseMore}
+              >
+                +{hiddenCount}
+              </span>
+            ) : null}
+          </>
+        )
+      }
+      chipsRef={entityListRef}
+      chipsClassName="foreshadow-item__entities"
+      chipsProps={{
+        role: 'group',
+        'aria-label': t('listItem.relatedEntities'),
+        onClick: (event) => event.stopPropagation()
+      }}
+      popup={
+        moreAnchor !== null && moreAnchor.isConnected && moreItems.length > 0 ? (
+          // 浮窗内胶囊经 portal 渲染、事件不冒泡到网格委托：显式给锚点展示实体卡。
+          <EntityCardMorePopup
+            anchorEl={moreAnchor}
+            items={moreItems}
+            onPointerEnter={() => {
+              cancelMoreClose()
+              entityHover.cancelHide()
+            }}
+            onPointerLeave={() => {
+              scheduleCloseMore()
+              entityHover.onMouseLeave()
+            }}
+            onItemEnter={entityHover.showFor}
+            onItemLeave={entityHover.onMouseLeave}
+          />
+        ) : undefined
+      }
+    />
   )
 }

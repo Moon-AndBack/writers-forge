@@ -1,0 +1,127 @@
+/* ============================================================
+   通用实体样式卡壳（EntityStyleCard）
+   ------------------------------------------------------------------
+   剧情卡 / 伏笔卡 / 设定档案卡共用同一套卡片骨架与公共视觉规格。
+   本文件只定义「结构与公共视觉规格」：
+   - 根：纵向 flex + 8px 间距 + 14/16 内衬 + 120px 最小高 + 无最大高；
+     圆角 / 柔和底 / 常态阴影 / 进场动画；hover / 选中光晕复用通用
+     `.wf-card--halo`（仅阴影 / 描边，无 transform，AGENTS §8）；
+   - 标题行：14px / 600 单行省略；
+   - 次级胶囊行与底部胶囊行：换行 + 4px 间距（测量钩子由调用方提供）；
+   - 描述区：只给字号 / 行高 / 颜色，**不写死行数**（由调用方类裁剪）；
+   - 元信息区：纵向 8px 间距（伏笔位置行等）。
+   颜色全部取 theme.css 令牌，四主题通用。
+   ============================================================ */
+
+.wf-entity-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px 16px;
+  color: var(--text);
+  background: var(--soft-solid);
+  border: none;
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-xs);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  /* 只过渡投影 / 描边（hover / active 光晕）；底色仅随主题变化，不加过渡
+     （主题切换整体瞬变，见 theme.css「主题切换不做过渡」）。 */
+  transition:
+    box-shadow 0.22s var(--ease),
+    border-color 0.22s var(--ease);
+  /* 进场：卡片挂载时淡入 + 8px 上浮，取 motion.css 的 `wf-enter-up`。
+     fill-mode 取 backwards：动画结束即交还常态声明，不残留 transform / opacity。
+     重排不重播由调用方稳定 key 保证。 */
+  animation: wf-enter-up var(--dur-base) var(--ease-out) backwards;
+}
+
+/* 最大高度：通用光晕底座（`.wf-card--halo`）默认 240px，统一壳不设上限。
+   双类选择器（0,2,0）确保压过底座，不受样式加载次序影响。 */
+.wf-entity-card.wf-card--halo {
+  max-height: none;
+}
+
+.wf-entity-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* 标题：与设定档案卡同口径（14/600、单行省略）；域内可覆写字号 / 字距。 */
+.wf-entity-card__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 卡片操作按钮组（编辑 / 关联关系 / 删除等）：三个域统一由本类收口。
+   尺寸钉在 IconButton 的 `sm` 档（24px 盒 / 14px 图标），即使调用方误传
+   `md` 也不会破坏卡片标题行；tone 语义由调用方按约定传参
+   （删除 danger / 其余默认）。hover 与 focus-visible 交给 IconButton 统一提供。 */
+.wf-entity-card__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  margin-left: 2px;
+}
+
+.wf-entity-card__actions .wf-iconbtn {
+  width: 24px;
+  height: 24px;
+}
+
+.wf-entity-card__actions .wf-iconbtn > svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* 次级胶囊行（别名等）与底部胶囊行（关系 / 实体等）共用同一布局。
+   底部行需按容器实测宽收口时，调用方以 `chipsClassName` 挂域内修饰类；
+   **必须保留 flex-wrap: wrap**：`useChipOverflow` 靠换行位置测量单行容量。 */
+.wf-entity-card__meta,
+.wf-entity-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* 描述：只给公共排版，不做行数裁剪（实体 4 行 / 剧情 4 行 / 伏笔 3 行
+   由调用方 `descriptionClassName` 控制）。 */
+.wf-entity-card__desc {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+/* 元信息区：伏笔「埋点 / 回收位置」等多行信息纵向排列。 */
+.wf-entity-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* 只读变体：无按钮语义，光标保持默认箭头（不暗示可点）。 */
+.wf-entity-card--readonly {
+  cursor: default;
+}
+
+/* 紧凑变体：只提供类名钩子，具体收窄内衬 / 字号由各域按右栏宽度覆写。 */

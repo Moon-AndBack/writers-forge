@@ -44,7 +44,8 @@ const writer = {
     aria: '右栏页签',
     outline: '大纲',
     plot: '剧情',
-    ai: 'AI'
+    ai: 'AI',
+    foreshadow: '伏笔'
   },
   rightOutline: {
     outlineLabel: '大纲',

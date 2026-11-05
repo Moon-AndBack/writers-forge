@@ -124,130 +124,35 @@
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--line-color, var(--brand)) 20%, transparent);
 }
 
-/* 场景卡：常态中性线 + sh-xs（口径同书籍卡常态 / 人物胶囊常态），
-   仅 hover / active 显品牌边缘光晕，无位移 / 缩放。 */
+/* 场景卡：结构 / 内衬 / 圆角 / 柔和底 / 常态阴影 / 进场动画 / hover 与选中光晕
+   统一由通用壳 `EntityStyleCard`（styles/components/entity-card.css）提供，
+   与设定档案卡 / 伏笔卡同一套视觉规格；本域只保留时间线列内的尺寸约束
+   （`--plot-card-w`）、描述 4 行裁剪与实体胶囊尺寸。
+   重排不重播：场景 key 为 `scene.id`、年组 key 为 `group.key`，仅排序 / 换组不会重挂载。 */
 .plot-scene-card {
   flex: 0 0 var(--plot-card-w);
   width: var(--plot-card-w);
   max-width: 100%;
-  min-height: 120px;
-  max-height: 240px;
-  background: var(--soft-solid);
-  border-radius: var(--r-lg);
-  padding: 15px 17px;
-  cursor: pointer;
-  box-shadow: var(--sh-xs);
-  /* 只过渡投影 / 描边（hover / active 光晕）；底色仅随主题变化，不加过渡
-     （主题切换整体瞬变，见 theme.css「主题切换不做过渡」）。 */
-  transition:
-    box-shadow 0.22s var(--ease),
-    border-color 0.22s var(--ease);
 }
 
-/* 进场：场景卡挂载（切书 / 切时间线 / 新建节点）时淡入 + 8px 上浮，
-   取 motion.css 的 `wf-enter-up`。**只加 animation，不动上面的 transition**——
-   §8 禁止 transform 进入 hover 过渡；进场位移发生在挂载瞬间，与 hover 无关。
-   fill-mode 取 backwards：结束后不残留 transform / opacity，`.is-active` 与
-   减动效兜底均按常态求值。
-   重排不重播：场景 key 为 `scene.id`、年组 key 为 `group.key`，仅排序 / 换组不会重挂载。 */
-.plot-scene-card {
-  animation: wf-enter-up var(--dur-base) var(--ease-out) backwards;
-}
-
-.plot-scene-card:hover {
-  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
-    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
-    var(--sh-sm),
-    var(--panel-ring);
-}
-
-.plot-row.is-active .plot-scene-card {
-  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--brand) 30%, transparent),
-    0 0 26px -8px color-mix(in srgb, var(--brand) 55%, transparent),
-    var(--sh-sm),
-    var(--panel-ring);
-}
-
-.plot-scene-title {
-  margin: 0 0 5px;
-  font-size: 14.5px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  color: var(--text);
-}
-
-/* 卡内标题行：标题 + 「改标题」/「删除节点」小按钮（hover 仅颜色 / 底色 / 透明度，无位移）。 */
-.plot-scene-head {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  margin-bottom: 5px;
-}
-
-.plot-scene-head .plot-scene-title {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-}
-
-.plot-scene-edit,
-.plot-scene-delete {
-  flex: none;
-  width: 22px;
-  height: 22px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-xs);
-  color: var(--text-mute);
-  background: transparent;
-  cursor: pointer;
-  opacity: 0.6;
-  transition:
-    color 0.15s var(--ease),
-    background 0.15s var(--ease),
-    opacity 0.15s var(--ease);
-}
-
-/* 垃圾桶图标无 width prop，尺寸由 CSS 收口（与铅笔 13px 对齐）。 */
-.plot-scene-delete > svg {
-  width: 13px;
-  height: 13px;
-}
-
-.plot-scene-edit:hover {
-  color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
-  opacity: 1;
-}
-
-/* 删除按钮 hover：危险色（§8：仅颜色 / 底色 / 透明度，无位移）。 */
-.plot-scene-delete:hover {
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 12%, var(--pane));
-  opacity: 1;
-}
-
-.plot-scene-desc {
-  margin: 0;
-  font-size: 12.8px;
-  line-height: 1.65;
-  color: var(--text-dim);
-  white-space: pre-wrap;
-}
-
-/* 正文容器（仅卡片正文挂 `.plot-scene-body`，标题 / 时间 / 说明文案仍只用
-   `.plot-scene-desc`）：4 行截断挂容器，内部逐段 `<p>` 各自缩进。
-   不用 `-webkit-box`（其子元素会被当作 flex item，跨元素计行不可靠），
+/* 正文容器：4 行截断（壳的描述字号 / 行高为 12.5 / 1.6）。
+   不用 `-webkit-box`（多段 `<p>` 会被当作 flex item，跨元素计行不可靠），
    改按行高倍数硬裁：第 5 行整行落在裁切线外，恰好 4 行（无省略号）。 */
 .plot-scene-body {
   display: block;
   line-clamp: 4;
-  max-height: calc(4 * 1.65em);
+  max-height: calc(4 * 1.6em);
   overflow: hidden;
+}
+
+/* 只读说明文本（时间线起点面板 / 右栏只读详情等）：与壳的描述同口径
+   （12.5 / 1.6 / 弱化色），不参与卡内 4 行裁剪。 */
+.plot-scene-desc {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  white-space: pre-wrap;
 }
 
 /* 正文单段：段首缩进两字，无段间距；`white-space` 归一（容器继承的 pre-wrap
@@ -259,27 +164,10 @@
   overflow-wrap: anywhere;
 }
 
-/* 出场实体胶囊区（仅正文匹配到实体时渲染；无匹配则不占位）。 */
-.plot-char-block {
-  flex: 1 1 170px;
-  min-width: 150px;
-  padding-top: 13px;
-  display: flex;
-  align-items: flex-start;
-  gap: 7px;
-}
+/* 出场实体胶囊区（仅正文匹配到实体时渲染；无匹配则不占位）：
+   位置 / 换行 / 4px 间距由壳的 `.wf-entity-card__chips` 提供（卡片描述下方），
+   此处只定义胶囊自身（宽度随内容 + 上限截断）与层次感投影（胶囊层不提供投影）。 */
 
-.plot-char-list {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-/* 实体胶囊：形 / 色统一交给全局胶囊层（`.chip-pill` 形态 + `.chip-m-*` 模块基色 +
-   `.chip-p-*` 23 个预设子类的独立颜色，类名由 `dossier/relationChip.entityChipClass` 算出）；
-   本域只保留布局（宽度随内容 + 上限截断）与层次感投影（胶囊层不提供投影）。 */
 .plot-char-card {
   position: relative;
   flex: none;
@@ -311,7 +199,7 @@
 
 /* 溢出计数胶囊（＋N）：与实体胶囊同形同尺寸，底色交给胶囊层中性变体
    `.chip-pill--neutral`；虚边 + 弱化文字仅示意被隐藏数量。
-   注意：`plot-char-more` 类名被 `useSceneCardMode` 测宽逻辑依赖（排除计数胶囊），勿改名。 */
+   注意：`plot-char-more` 类名被 `useChipOverflow` 的 `moreSelector` 依赖（排除计数胶囊），勿改名。 */
 .plot-char-more {
   display: flex;
   align-items: center;

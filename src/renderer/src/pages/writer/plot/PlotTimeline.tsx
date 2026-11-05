@@ -22,7 +22,7 @@ import {
   type PlotSceneRow,
   type UpdatePlotScenePatch
 } from './plotTree'
-import { useSceneCardMode, type SceneCardMode } from './useSceneCardMode'
+import { useSceneContentWidth } from './useSceneContentWidth'
 
 export interface PlotTimelineProps {
   /** 当前选中剧情线；null = 未选中 / 无线（渲染空态）。 */
@@ -80,11 +80,11 @@ export default function PlotTimeline({
   const { t } = useTranslation('plot')
   // 卡内删除按钮的二次确认（集中一个弹窗实例，避免每卡各挂一个 Modal）。
   const confirm = useConfirm()
-  // 胶囊悬停实体信息卡（事件委托在 `.plot-char-list`，弹窗经 portal 挂 body）。
+  // 胶囊悬停实体信息卡（事件委托在壳的胶囊容器，弹窗经 portal 挂 body）。
   const hover = useEntityHover()
-  // 中栏根引用 + 卡模式（按内容列可用宽判定宽屏 / 紧凑；`key` 变化触发胶囊重测）。
+  // 中栏根引用 + 内容列可用宽（仅作布局签名，变化时触发卡内胶囊重测）。
   const timelineRef = useRef<HTMLDivElement>(null)
-  const { mode, key: layoutKey } = useSceneCardMode(timelineRef, line !== null)
+  const layoutKey = useSceneContentWidth(timelineRef, line !== null)
   // 「新建剧情线」弹窗开关（标题栏「＋」按钮触发，弹窗经 Modal portal 挂 body）。
   const [createOpen, setCreateOpen] = useState(false)
   // 节点弹窗：`createNode` = 新建（空表单）；`nodeTarget` 非空 = 编辑该场景时间 / 标题。
@@ -230,7 +230,6 @@ export default function PlotTimeline({
                     key={scene.id}
                     scene={scene}
                     active={scene.id === activeSceneId}
-                    mode={mode}
                     layoutKey={layoutKey}
                     eraLabels={eraLabels}
                     bookId={bookId}
@@ -275,8 +274,7 @@ function buildNodePatch(scene: PlotSceneRow, input: SceneNodeDialogInput): Updat
 interface SceneRowProps {
   scene: PlotSceneRow
   active: boolean
-  /** 卡模式（宽屏 / 紧凑）与布局签名（可用宽 key），下传至场景卡。 */
-  mode: SceneCardMode
+  /** 布局签名（可用宽 key），下传至场景卡触发胶囊重测。 */
   layoutKey: number
   /** 结构化时间纪元标签（`plotSceneTime` 派生时间文案用）。 */
   eraLabels: PlotEraLabels
@@ -287,7 +285,7 @@ interface SceneRowProps {
   onSelect: (id: number) => void
   /** 打开节点弹窗（改该场景时间 / 标题）。 */
   onEditNode: (scene: PlotSceneRow) => void
-  /** 胶囊悬停委托（`.plot-char-list` 级 `onMouseOver` / `onMouseLeave` + 信息卡锚点）。 */
+  /** 胶囊悬停委托（壳的胶囊容器级 `onMouseOver` / `onMouseLeave` + 信息卡锚点）。 */
   charHover: ReturnType<typeof useEntityHover>
   /** 删除该场景节点（经卡内删除按钮二次确认后调用）。 */
   onDeleteScene: (id: number) => void
@@ -297,7 +295,6 @@ interface SceneRowProps {
 function SceneRow({
   scene,
   active,
-  mode,
   layoutKey,
   eraLabels,
   bookId,
@@ -330,7 +327,6 @@ function SceneRow({
         <SceneCard
           scene={scene}
           active={active}
-          mode={mode}
           layoutKey={layoutKey}
           bookId={bookId}
           bodyText={bodyText}

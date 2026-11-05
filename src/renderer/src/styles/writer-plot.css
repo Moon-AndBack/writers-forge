@@ -30,9 +30,4 @@
     --plot-col-node: 42px;
     --plot-card-w: 100%;
   }
-
-  .plot-char-block {
-    flex-basis: 100%;
-    padding-top: 8px;
-  }
 }

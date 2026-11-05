@@ -9,22 +9,10 @@
 /* ============================================================
    独立时间线只读首段（复用纵线 / 圆点 / 卡片，仅 is-origin 区分）
    ============================================================ */
+/* 元年说明卡不可点击：壳的 hover / 选中光晕由 `.wf-card--halo` 统一提供，
+   此处只把光标改回默认箭头（卡片视觉规格与其余场景卡一致）。 */
 .timeline-main .plot-row.is-origin .plot-scene-card.is-origin {
   cursor: default;
-  /* 只过渡投影 / 描边（hover 光晕）；底色仅随主题变化，不加过渡
-     （主题切换整体瞬变，见 theme.css「主题切换不做过渡」）。 */
-  transition:
-    box-shadow 0.22s var(--ease),
-    border-color 0.22s var(--ease);
-}
-
-.timeline-main .plot-row.is-origin .plot-scene-card.is-origin:hover {
-  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
-    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
-    var(--sh-sm),
-    var(--panel-ring);
 }
 
 /* 中栏内容整体右移：给独立时间线加左侧内衬（纵线随之右移，与圆点保持对齐）。
