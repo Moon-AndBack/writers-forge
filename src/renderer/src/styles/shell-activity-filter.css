@@ -3,27 +3,32 @@
    ------------------------------------------------------------------
    自 shell.css 拆出（单文件 500 行上限，AGENTS §3）。
    供 shell/ActivityBarFilterPopover.tsx 使用：五个实体模块图标 hover 触发的
-   可交互浮层（搜索框 + 结果计数 + 列表），视觉与 `.wf-tooltip` 同源，定位由
-   HoverPopupShell 以 fixed + 视口避让内联写入。由 App.tsx 在 shell.css 之后导入。
+   可交互浮层（第一行模块名 + 搜索框 + 圆形按钮，第二行「全部」+ 全部分类），
+   视觉与 `.wf-tooltip` 同源，定位由 HoverPopupShell 以 fixed + 视口避让内联写入。
+   由 App.tsx 在 shell.css 之后导入。
    ============================================================ */
 
 /* ---------- 活动栏模块筛选浮层（五个实体模块图标 hover 触发） ----------
-   视觉与 `.wf-tooltip` 同源（--pane 底 + --sh-popup + 单环描边 + --r-xs），
-   区别是**可交互**（含搜索框、结果计数与列表）且定宽；定位由 HoverPopupShell 以
-   fixed + 视口避让内联写入，此处只管外观。层级低于 tooltip（990），高于内容与下拉（60）。
-   宽度收窄到 204px（原 236px）：浮层贴着活动栏右侧，过宽会整列盖住中栏首列 250px 卡片。 */
+   视觉与 `.wf-tooltip` 同源（--pane 底 + --sh-popup + 单环描边），圆角跟三栏一致
+   （`.sidepane` / `.editor-pane` / `.rightpane` 均用 `--r-lg`）；定位由 HoverPopupShell
+   以 fixed + 视口避让内联写入，此处只管外观。层级低于 tooltip（990），高于内容与下拉（60）。
+   宽度 300px：第一行要同时放下模块名 + 搜索框 + 圆形按钮，第二行分类为横向 chip，
+   宽度自适应、超出自动换行（详见 `.act-filter__list`）。
+   `--filter-input-h` 是搜索框高度真源，圆形按钮尺寸由它 `calc(+2px)` 推导。 */
 .act-filter {
+  --filter-input-h: 32px;
   position: fixed;
   z-index: 980;
   box-sizing: border-box;
-  width: 204px;
+  width: 300px;
+  max-width: calc(100vw - 20px);
   max-height: min(60vh, 420px);
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 8px;
   background: var(--pane);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   box-shadow:
     var(--sh-popup),
     0 0 0 1px var(--line);
@@ -41,43 +46,57 @@
   }
 }
 
-/* 模块名：说明筛选作用于哪个实体域。 */
-.act-filter__head {
-  padding: 0 2px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text-mute);
-}
-
-/* 搜索框：通用 `.wf-search` 已是 100% 宽，此处固定其纵向尺寸不被压缩，
-   并收紧内衬（浮层收窄后避免输入区被挤得过短）。选择器多带一层 `.act-filter`
-   提高权重，压过 form-extras 的 `.wf-search` 默认内衬。 */
-.act-filter .act-filter__search {
-  flex: none;
-  gap: 6px;
-  padding: 5px 8px;
-}
-
-/* 搜索框 + 提交按钮同一行：输入框占满剩余宽度，按钮固定不压缩。
-   浮层总宽仍是 `.act-filter` 的 204px 定宽，按钮 26px 不会加宽浮层。 */
-.act-filter__searchrow {
+/* 第一行：模块名 + 搜索框 + 圆形按钮。模块名不压缩，输入框占满剩余宽度。
+   行高由 34px 的按钮撑开，32px 的搜索框在其中垂直居中 → 按钮相对输入框
+   上下各外露 1px（无需负 margin，避免与浮层内衬 / 换行间距打架）。 */
+.act-filter__headrow {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
-.act-filter .act-filter__searchrow .act-filter__search {
+/* 模块名：说明筛选作用于哪个实体域。做成独立的标签块（底色 + 1px 内描边 + 圆角），
+   与右侧搜索框在视觉上分开。高度对齐搜索框（同取 `--filter-input-h`），上下内衬
+   交给固定高度承担，`padding` 只管左右；文字用 flex 垂直居中（行盒高度随字号变化
+   时也不偏）。文字色保持 `--text-mute`：它是说明性标签而非可交互主文案，压暗一级
+   可让搜索框继续作为第一行的视觉重心。 */
+.act-filter__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: var(--filter-input-h);
+  padding: 0 8px;
+  border-radius: var(--r-xs);
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text-mute);
+  background: var(--soft-solid);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* 搜索框：通用 `.wf-search` 已是 100% 宽，此处固定其高度为 `--filter-input-h`
+   （按钮尺寸的真源），并收紧内衬（浮层内避免输入区被挤得过短）。选择器多带一层
+   `.act-filter` 提高权重，压过 form-extras 的 `.wf-search` 默认内衬。
+   前置图标已由 `showIcon={false}` 关闭（右侧圆形按钮已表达搜索语义），故不再为图标
+   预留 `gap` / 左内衬：`gap` 只留输入区与清除按钮之间的 4px 细缝，左侧内衬由 8px
+   提到 10px，避免文字紧贴浮层内边、与右侧 8px + 清除按钮的留白失衡。 */
+.act-filter .act-filter__search {
   flex: 1 1 auto;
   min-width: 0;
+  height: var(--filter-input-h);
+  gap: 4px;
+  padding: 0 8px 0 10px;
 }
 
-/* 搜索提交按钮：把输入框里的关键词落库并切到该模块（无障碍名 + title 走 i18n）。 */
+/* 搜索提交按钮：圆形，直径 = 输入框高度 + 2px（上下各溢出 1px）。
+   点击 = 把输入框里的关键词落库并切到该模块（无障碍名 + title 走 i18n）。 */
 .act-filter__search-btn {
   flex: none;
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: calc(var(--filter-input-h) + 2px);
+  height: calc(var(--filter-input-h) + 2px);
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -110,59 +129,84 @@
   cursor: not-allowed;
 }
 
-/* 结果计数（搜索框下方）：与中栏网格同一过滤口径，只报数不列条目；
-   浮层模块不是当前模块时提示切换后生效。预留一行高度避免计数出现时列表跳动。 */
-.act-filter__status {
-  min-height: 15px;
-  margin: 0;
-  padding: 0 2px;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--text-mute);
-}
-
-/* 列表：高度由浮层 max-height 收口，超出滚动。 */
+/* 第二行：分类横向 chip 流式排布，「全部」在最前，超出浮层宽度自动换行。
+   `min-height: 0` 让列表在浮层 `max-height` 内可收缩，分类很多（行数超出剩余高度）
+   时由 `overflow-y: auto` 在列表内纵向滚动，浮层本身不动。
+   `align-content: flex-start`：换行后各行按内容高度从顶部堆叠，不因高度受限被均分拉伸。
+   间距取 6px（横纵同值）：浮层内容宽约 284px，短标签 chip 约 40-50px 宽，6px 能一行
+   放下 4-5 个并保持分组感；4px 在深浅主题下会显得粘连。 */
 .act-filter__list {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 6px;
   min-height: 0;
   overflow-y: auto;
 }
 
+/* 每个分类是一枚独立 chip：自带细描边 + 圆角 + 内衬，宽度随文字自适应
+   （`flex: 0 0 auto` 不拉伸不压缩），不再占满整行。
+   未选中态：透明底 + `--line` 内描边（inset 阴影不占布局，与 `.act-filter__head`
+   描边口径一致），文字用正文色；hover 只加中性淡底，弱于选中态的品牌底。
+   `padding: 3px 9px` + `line-height: 1.4`（12px × 1.4 ≈ 17px）→ chip 高约 23px，
+   比原单列行（约 27px）更紧凑，适合横向铺排。 */
 .act-filter__item {
-  display: flex;
+  flex: 0 0 auto;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 6px 8px;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 9px;
   border: 0;
   border-radius: var(--r-xs);
   background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
 
   font-family: inherit;
   font-size: 12px;
   line-height: 1.4;
+  white-space: nowrap;
   color: var(--text);
   text-align: left;
   cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
 .act-filter__item:hover {
   background: var(--soft-hover-solid);
 }
 
+/* 选中态用品牌色三重标记（淡底 + 描边 + 文字色）与未选中拉开层级；
+   描边同样走 inset，hover 只加深底色、不改几何。勾选标记 `✓` 紧跟文字
+   （横向 chip 内不再推到行尾）。 */
 .act-filter__item.is-active {
   color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent);
 }
 
+.act-filter__item.is-active:hover {
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+}
+
+/* 键盘焦点环：与搜索按钮同口径（品牌色 60% + 1px 外扩），选中 / 未选中均可辨。 */
+.act-filter__item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: 1px;
+}
+
+/* 标签只负责在 chip 内省略：chip 受 `max-width: 100%` 限制时，`min-width: 0`
+   让文字块可收缩并出省略号（长分类如 `Power system`）。不再用 `flex: 1 1 auto`
+   —— chip 宽度由内容决定，标签不负责撑满剩余空间。 */
 .act-filter__item-label {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .act-filter__check {
@@ -173,6 +217,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .act-filter,
+  .act-filter__item,
   .act-filter__search-btn {
     animation: none;
     transition: none;

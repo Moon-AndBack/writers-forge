@@ -79,17 +79,13 @@ export function buildInspirationPatch(
  */
 export interface InspirationBundle {
   bookId: string
-  /** 当前筛选标签（null = 全部）。 */
-  activeTag: string | null
-  /** 全书去重标签（筛选下拉选项）。 */
-  tags: string[]
-  /** 当前筛选下的未删除灵感（后端顺序：`updated_at DESC, id DESC`）。 */
+  /** 当前筛选（标签 + 关键词）下可见的未删除灵感（本地派生）。 */
   rows: InspirationRow[]
-  /** 当前选中项 id（null = 列表为空）。 */
+  /** 当前选中项 id（null = 全书列表为空；筛选不改变选中项）。 */
   activeId: number | null
-  /** 当前选中行（null = 列表为空）。 */
+  /** 当前选中行（null = 全书列表为空）。 */
   activeRow: InspirationRow | null
-  /** 首次加载 / 切筛选加载中（列表为空时渲染加载态，不闪空态）。 */
+  /** 首次加载 / 换书加载中（列表为空时渲染加载态，不闪空态）。 */
   loading: boolean
   /** 右栏是否有未保存改动。 */
   dirty: boolean
@@ -113,14 +109,12 @@ export interface InspirationBundle {
   confirming: boolean
   /** 选中一条灵感（不自动展开右栏，展开由 bundle hook 包装）。 */
   onSelect: (id: number) => void
-  /** 切换标签筛选（null = 全部；有脏草稿时先走两态确认）。 */
-  onFilterChange: (tag: string | null) => void
   /** 新建一条空白灵感（成功后清筛选并选中新行）；返回是否成功。 */
   onCreate: () => Promise<boolean>
   /** 更新补丁；返回是否落库成功。 */
   onUpdate: (id: number, patch: InspirationUpdatePatch) => Promise<boolean>
   /** 软删除；返回是否落库成功。 */
   onDelete: (id: number) => Promise<boolean>
-  /** 重新拉取列表与标签（新建 / 删除后同步）。 */
+  /** 重新拉取全书列表（新建 / 删除后同步；本地筛选自动重算）。 */
   reload: (selectFirst?: boolean) => Promise<void>
 }

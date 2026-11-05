@@ -9,6 +9,7 @@ const common = {
   noOptions: '暂无选项',
   chipPlaceholder: '输入后回车添加',
   removeTag: '移除 {{tag}}',
+  suggestionsLabel: '常用标签',
   stepperLabel: '数值',
   stepperDecrease: '{{label}}减少',
   stepperEdit: '编辑{{label}}',

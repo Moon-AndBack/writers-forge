@@ -8,8 +8,8 @@ import { POPOVER_SHOW_DELAY } from '../components/popoverTiming'
 import { ActivityBarContext, useActivityBar } from './activityBarContext'
 import type { ActivityBarContextValue } from './activityBarContext'
 import ActivityBarFilterPopover from './ActivityBarFilterPopover'
-import { WRITER_MODULES, isDossierModule } from './activityBarModules'
-import type { DossierModule, WriterModule } from './activityBarModules'
+import { WRITER_MODULES, isFilterableModule } from './activityBarModules'
+import type { FilterableModule, WriterModule } from './activityBarModules'
 import { useActivityPinned } from './activityPinned'
 import { MODULE_MORPH_ICONS } from './moduleIcons'
 import { useRequestSwitch } from './unsavedSwitchGuard'
@@ -49,12 +49,12 @@ function cn(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(' ')
 }
 
-/** 判定事件落点是否落在实体模块图标上（`IconButton` 的 `data-module` 钩子）。 */
-function isDossierIconTarget(target: EventTarget | null): boolean {
+/** 判定事件落点是否落在可筛选模块图标上（`IconButton` 的 `data-module` 钩子）。 */
+function isFilterableIconTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false
   const host = target.closest<HTMLElement>('[data-module]')
   const id = host?.dataset.module
-  return id !== undefined && isDossierModule(id as WriterModule)
+  return id !== undefined && isFilterableModule(id as WriterModule)
 }
 
 /**
@@ -75,7 +75,7 @@ export function ActivityBar(): ReactElement {
   const [shown, setShown] = useState(false)
   // 模块筛选浮层：目标模块 + 锚点（活元素优先，快照兜底）。
   const [filterTarget, setFilterTarget] = useState<{
-    module: DossierModule
+    module: FilterableModule
     anchorEl: HTMLElement
     anchorRect: DOMRect
   } | null>(null)
@@ -182,7 +182,7 @@ export function ActivityBar(): ReactElement {
     }, HIDE_DELAY)
   }, [isFilterEngaged, pinned])
 
-  // ---------- 模块筛选浮层（五个实体模块图标 hover） ----------
+  // ---------- 模块筛选浮层（可筛选模块图标 hover：实体五域 + 灵感） ----------
 
   const cancelFilterHide = useCallback((): void => {
     if (filterHideTimer.current !== null) {
@@ -215,13 +215,13 @@ export function ActivityBar(): ReactElement {
     cancelHide()
   }, [cancelFilterHide, cancelHide])
 
-  /** 指针离开浮层：落点仍在浮层内 / 实体图标上时不算离开；否则重算 engaged 并排计时。 */
+  /** 指针离开浮层：落点仍在浮层内 / 可筛选图标上时不算离开；否则重算 engaged 并排计时。 */
   const releaseFilter = useCallback(
     (event: ReactMouseEvent<HTMLDivElement>): void => {
       const next: EventTarget | null = event.relatedTarget
       if (next instanceof Node) {
         if (filterNodeRef.current?.contains(next)) return
-        if (isDossierIconTarget(next)) return
+        if (isFilterableIconTarget(next)) return
       }
       // 指针已离开：仅当焦点仍在浮层内时保持「保持打开」，计时器守卫据此放行或拦截。
       filterEngagedRef.current = isFilterFocused()
@@ -230,13 +230,13 @@ export function ActivityBar(): ReactElement {
     [isFilterFocused, scheduleFilterHide]
   )
 
-  /** 指针离开实体模块图标：只有落点既不在浮层内、也不在实体图标上时才排收起。 */
+  /** 指针离开可筛选模块图标：只有落点既不在浮层内、也不在可筛选图标上时才排收起。 */
   const handleIconLeave = useCallback(
     (event: ReactMouseEvent<HTMLButtonElement>): void => {
       const next: EventTarget | null = event.relatedTarget
       if (next instanceof Node) {
         if (filterNodeRef.current?.contains(next)) return
-        if (isDossierIconTarget(next)) return
+        if (isFilterableIconTarget(next)) return
       }
       filterEngagedRef.current = isFilterFocused()
       scheduleFilterHide()
@@ -289,7 +289,7 @@ export function ActivityBar(): ReactElement {
   }, [filterTarget])
 
   /** 在图标上停留 `POPOVER_SHOW_DELAY` 后展开该模块的筛选浮层。 */
-  const openFilter = (module: DossierModule, anchorEl: HTMLElement): void => {
+  const openFilter = (module: FilterableModule, anchorEl: HTMLElement): void => {
     if (filterShowTimer.current !== null) window.clearTimeout(filterShowTimer.current)
     cancelFilterHide()
     filterShowTimer.current = window.setTimeout(() => {
@@ -332,28 +332,31 @@ export function ActivityBar(): ReactElement {
         {WRITER_MODULES.map((id) => {
           const icons = MODULE_MORPH_ICONS[id]
           const isActive = active === id
-          // 实体模块（五域）额外挂「模块筛选」hover 浮层；`data-module` 供状态定位 / 样式钩子。
-          const dossier = isDossierModule(id)
+          // 可筛选模块（实体五域 + 灵感）额外挂「模块筛选」hover 浮层；
+          // `data-module` 供状态定位 / 样式钩子。
+          const filterModule: FilterableModule | null = isFilterableModule(id) ? id : null
           return (
             <IconButton
               key={id}
               variant="ghost"
               className={cn('act-btn', isActive && 'is-active')}
               label={tModule(id)}
-              // 实体模块的自绘 tooltip 让位给筛选浮层，避免两层浮层在同一锚点重叠。
-              tooltip={dossier ? '' : undefined}
+              // 可筛选模块的自绘 tooltip 让位给筛选浮层，避免两层浮层在同一锚点重叠。
+              tooltip={filterModule ? '' : undefined}
               tooltipPlacement="right"
               aria-pressed={isActive}
               data-module={id}
               onClick={() => requestSwitch(id)}
-              onMouseEnter={dossier ? (event) => openFilter(id, event.currentTarget) : undefined}
-              onMouseLeave={dossier ? handleIconLeave : undefined}
+              onMouseEnter={
+                filterModule ? (event) => openFilter(filterModule, event.currentTarget) : undefined
+              }
+              onMouseLeave={filterModule ? handleIconLeave : undefined}
               onFocus={
-                dossier
+                filterModule
                   ? (event) => {
                       // 仅键盘聚焦（`:focus-visible`）展开，指针路径交给 hover。
                       if (event.currentTarget.matches(':focus-visible')) {
-                        openFilter(id, event.currentTarget)
+                        openFilter(filterModule, event.currentTarget)
                       }
                     }
                   : undefined

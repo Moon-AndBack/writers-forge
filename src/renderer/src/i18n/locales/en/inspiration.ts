@@ -8,13 +8,15 @@ import type { ZhCNResources } from '../zh-CN'
 const inspiration = {
   emptyTitle: 'No inspiration yet',
   emptyDesc: 'Click “+” in the title bar to create one and jot down fragments and ideas',
-  emptyFilteredTitle: 'No inspiration with this tag',
-  emptyFilteredDesc: 'Switch to “All”, or add this tag to an item',
+  emptyFilteredTitle: 'No inspiration matches the current filter',
+  emptyFilteredDesc:
+    'Change the tag in the activity bar filter popover, or clear the search keyword',
   filter: {
-    label: 'Filter by tag',
     all: 'All',
-    empty: 'No tags available',
-    resultCount: '{{n}} items'
+    tagAria: 'Filter by tag',
+    searchPlaceholder: 'Search titles, content or tags',
+    searchAria: 'Search titles, content or tags',
+    search: 'Search'
   },
   field: {
     untitled: 'Untitled inspiration',
@@ -29,8 +31,7 @@ const inspiration = {
   },
   detail: {
     emptyTitle: 'No inspiration selected',
-    emptyDesc: 'Select an inspiration in the list to view and edit its details',
-    delete: 'Delete'
+    emptyDesc: 'Select an inspiration in the list to view and edit its details'
   },
   action: {
     create: 'New inspiration',

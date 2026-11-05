@@ -1,10 +1,13 @@
 /**
- * 灵感模块装配 hook：列表加载（按标签筛选）+ 选中 + 增删改 + 右栏草稿脏态 / 切换守卫。
+ * 灵感模块装配 hook：全书列表加载 + 本地筛选 + 选中 + 增删改 + 右栏草稿脏态 / 切换守卫。
  *
- * 口径与伏笔（`useForeshadowWorkspace`）/ 设定档案一致：
- * - 列表态按 `bookId + 筛选标签` 打标，派生时标记不一致即视为加载中，换书 / 切筛选不闪旧数据；
- * - 选中为派生值：显式选中项仍在当前列表中则用之，否则回退首行（删除 / 筛选后自动回退）；
- * - 右栏只改本地草稿，点保存才落库；切条目 / 切筛选有脏则挂起两态确认（`guardSwitch` /
+ * 筛选口径与设定档案五域一致：
+ * - 列表**一次拉全书**（`inspiration.list(bookId)`，不带标签），筛选 / 搜索在渲染层
+ *   用纯函数 `filterInspirationRows` 本地派生；
+ * - 条件真源在外壳层 `InspirationFilterProvider`（活动栏浮层写入），本 hook 只读；
+ * - 列表态按 `bookId` 打标，派生时标记不一致即视为加载中，换书不闪旧数据；
+ * - **选中为派生值且按全量 `allRows` 计算**：筛选 / 搜索不改变选中项（对齐实体五域）；
+ * - 右栏只改本地草稿，点保存才落库；切条目有脏则挂起两态确认（`guardSwitch` /
  *   `resolveSwitch`）；切模块 / 换书时右栏卸载前自动保存兜底（`saveRef` 不随表单注销）。
  *
  * 仅活动模块为 `inspiration` 时发起 IPC（`enabled`），其余模块返回 null、视图不挂载。
@@ -13,6 +16,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLogger } from '@renderer/lib/log'
 import type { WriterModule } from '../../../shell/activityBarModules'
 import { useUnsavedGuard } from '../../../shell/useUnsavedGuard'
+import { useInspirationFilters } from './inspirationFilterContext'
+import { filterInspirationRows } from './inspirationFilterMatch'
 import type { InspirationBundle, InspirationRow, InspirationUpdatePatch } from './inspirationTree'
 
 /** 灵感域装配日志（转发至主进程落盘）。 */
@@ -20,25 +25,11 @@ const log = createLogger('inspiration')
 
 /** 稳定空数组（避免每次渲染新建引用）。 */
 const EMPTY_ROWS: InspirationRow[] = []
-const EMPTY_TAGS: string[] = []
 
-/** 一次查询的结果：当前筛选下的行 + 全书去重标签。 */
-interface InspirationQueryResult {
-  rows: InspirationRow[]
-  tags: string[]
-}
-
-/** 列表态：带书 / 筛选标签标记，派生时仅标记一致才采用。 */
+/** 列表态：带书标记，派生时仅标记一致才采用。 */
 interface InspirationRowsState {
   bookId: string
-  tag: string | null
   rows: InspirationRow[]
-}
-
-/** 标签态：仅采用当前书的标签集合。 */
-interface InspirationTagsState {
-  bookId: string | null
-  tags: string[]
 }
 
 export function useInspirationBundle(
@@ -48,18 +39,12 @@ export function useInspirationBundle(
   showRightPane: () => void
 ): InspirationBundle | null {
   const enabled = module === 'inspiration'
+  const { filters, clearAll: clearInspirationFilters, refreshTags } = useInspirationFilters()
 
   const [rowsState, setRowsState] = useState<InspirationRowsState>({
     bookId: '',
-    tag: null,
     rows: EMPTY_ROWS
   })
-  const [tagsState, setTagsState] = useState<InspirationTagsState>({
-    bookId: null,
-    tags: EMPTY_TAGS
-  })
-  /** 当前筛选标签（null = 全部）。 */
-  const [activeTag, setActiveTagState] = useState<string | null>(null)
   /** 显式选中项 id（null = 尚未选择 → 派生回退首行）。 */
   const [selectedId, setSelectedId] = useState<number | null>(null)
 
@@ -71,82 +56,61 @@ export function useInspirationBundle(
   // 草稿重置键：放弃时递增，右栏表单以它为 key 重挂、草稿回退到行值。
   const [draftResetKey, setDraftResetKey] = useState(0)
 
-  const rowsMatch = enabled && rowsState.bookId === bookId && rowsState.tag === activeTag
-  const rows = rowsMatch ? rowsState.rows : EMPTY_ROWS
-  const tags = enabled && tagsState.bookId === bookId ? tagsState.tags : EMPTY_TAGS
+  const rowsMatch = enabled && rowsState.bookId === bookId
+  const allRows = rowsMatch ? rowsState.rows : EMPTY_ROWS
+  // 筛选 / 搜索只影响网格可见行；全量 `allRows` 留给选中派生与写操作。
+  const rows = useMemo(
+    () => filterInspirationRows(allRows, filters.tag, filters.query),
+    [allRows, filters]
+  )
   const loading = enabled && bookId !== '' && !rowsMatch
 
-  // 选中口径（派生）：显式选中项仍在列表中则用之，否则回退首行。
+  /** 拉取全书列表（本地筛选前的全量）；加载 effect 与新建 / 删除后的 reload 共用。 */
+  const fetchRows = useCallback(
+    async (): Promise<InspirationRow[]> => window.api.inspiration.list(bookId),
+    [bookId]
+  )
+
+  // 选中口径（派生）：显式选中项仍在全量列表中则用之，否则回退全量首行。
+  // 筛选 / 搜索不改变选中项（与实体五域一致）；被筛掉的行仍可在右栏继续编辑。
   const activeId =
-    selectedId !== null && rows.some((row) => row.id === selectedId)
+    selectedId !== null && allRows.some((row) => row.id === selectedId)
       ? selectedId
-      : (rows[0]?.id ?? null)
-  const activeRow = rows.find((row) => row.id === activeId) ?? null
+      : (allRows[0]?.id ?? null)
+  const activeRow = allRows.find((row) => row.id === activeId) ?? null
 
-  /** 并行拉取「筛选列表 + 全书标签」（两个 IPC 互不阻塞）。 */
-  const query = useCallback(
-    async (tag: string | null): Promise<InspirationQueryResult> => {
-      const [nextRows, nextTags] = await Promise.all([
-        window.api.inspiration.list(bookId, tag ?? undefined),
-        window.api.inspiration.tags(bookId)
-      ])
-      return { rows: nextRows, tags: nextTags }
-    },
-    [bookId]
-  )
-
-  /** 落列查询结果；当前筛选标签已不存在（标签被删空）时回退「全部」。 */
-  const applyQuery = useCallback(
-    (tag: string | null, data: InspirationQueryResult): void => {
-      setRowsState({ bookId, tag, rows: data.rows })
-      setTagsState({ bookId, tags: data.tags })
-      if (tag !== null && !data.tags.includes(tag)) setActiveTagState(null)
-    },
-    [bookId]
-  )
-
-  // 切模块 / 换书 / 切筛选：拉取当前筛选下的列表并打标（派生侧按标记自然置空）。
-  useEffect(() => {
-    if (!enabled || bookId === '') return undefined
-    let cancelled = false
-    void query(activeTag)
-      .then((data) => {
-        if (!cancelled) applyQuery(activeTag, data)
-      })
-      .catch((error) => {
-        log.warn('灵感列表加载失败', error)
-        if (!cancelled) setRowsState({ bookId, tag: activeTag, rows: EMPTY_ROWS })
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [enabled, bookId, activeTag, query, applyQuery])
-
-  /** 重新拉取列表与标签（新建 / 删除后调用）；`selectFirst` = 选中刷新后首条。 */
+  /** 拉取全书列表（本地筛选前）；新建 / 删除后同样复用。 */
   const reload = useCallback(
     async (selectFirst = false): Promise<void> => {
       if (!enabled || bookId === '') return
       try {
-        const data = await query(activeTag)
-        applyQuery(activeTag, data)
-        if (selectFirst) setSelectedId(data.rows[0]?.id ?? null)
+        const nextRows = await fetchRows()
+        setRowsState({ bookId, rows: nextRows })
+        if (selectFirst) setSelectedId(nextRows[0]?.id ?? null)
       } catch (error) {
-        log.warn('灵感列表刷新失败', error)
+        log.warn('灵感列表加载失败', error)
+        setRowsState({ bookId, rows: EMPTY_ROWS })
       }
     },
-    [enabled, bookId, activeTag, query, applyQuery]
+    [enabled, bookId, fetchRows]
   )
 
-  /** 仅刷新标签集合（写操作后同步筛选下拉）；当前筛选标签消失则回退「全部」。 */
-  const refreshTags = useCallback(async (): Promise<void> => {
-    try {
-      const next = await window.api.inspiration.tags(bookId)
-      setTagsState({ bookId, tags: next })
-      if (activeTag !== null && !next.includes(activeTag)) setActiveTagState(null)
-    } catch (error) {
-      log.warn('灵感标签加载失败', error)
+  // 切模块 / 换书：拉取全书列表并打标（派生侧按标记自然置空）。
+  useEffect(() => {
+    if (!enabled || bookId === '') return undefined
+    let cancelled = false
+    void fetchRows()
+      .then((nextRows) => {
+        if (!cancelled) setRowsState({ bookId, rows: nextRows })
+      })
+      .catch((error) => {
+        log.warn('灵感列表加载失败', error)
+        if (!cancelled) setRowsState({ bookId, rows: EMPTY_ROWS })
+      })
+    return () => {
+      cancelled = true
     }
-  }, [bookId, activeTag])
+  }, [enabled, bookId, fetchRows])
 
   const reportDirty = useCallback((next: boolean): void => {
     dirtyRef.current = next
@@ -201,46 +165,33 @@ export function useInspirationBundle(
     [activeId, guard]
   )
 
-  /** 切换筛选：有未保存草稿时挂起两态确认（筛选会切走当前选中行）。 */
-  const changeFilter = useCallback(
-    (tag: string | null): void => {
-      if (tag === activeTag) return
-      guard(() => setActiveTagState(tag))
-    },
-    [activeTag, guard]
-  )
-
-  /** 新建空白灵感：清筛选确保新行可见，并立即选中它。 */
+  /** 新建空白灵感：清筛选（含关键词）确保新行可见，并立即选中它。 */
   const create = useCallback(async (): Promise<boolean> => {
     if (!enabled || bookId === '') return false
     try {
       const created = await window.api.inspiration.create(bookId)
       if (!created) return false
-      setActiveTagState(null)
+      clearInspirationFilters()
       setSelectedId(created.id)
-      const data = await query(null)
-      applyQuery(null, data)
+      await reload()
       return true
     } catch (error) {
       log.warn('新建灵感失败', error)
       return false
     }
-  }, [enabled, bookId, query, applyQuery])
+  }, [enabled, bookId, clearInspirationFilters, reload])
 
   const update = useCallback(
     async (id: number, patch: InspirationUpdatePatch): Promise<boolean> => {
       try {
         const updated = await window.api.inspiration.update(id, patch)
         if (!updated) return false
-        setRowsState((prev) => {
-          if (prev.bookId !== bookId || prev.tag !== activeTag) return prev
-          // 当前筛选下标签已不再匹配：按 `list(bookId, tag)` 口径移出列表。
-          if (activeTag !== null && !updated.tags.includes(activeTag)) {
-            return { ...prev, rows: prev.rows.filter((row) => row.id !== id) }
-          }
-          return { ...prev, rows: prev.rows.map((row) => (row.id === id ? updated : row)) }
-        })
-        // 标签集合可能变化：同步下拉选项（异步，不阻塞保存返回）。
+        setRowsState((prev) =>
+          prev.bookId === bookId
+            ? { ...prev, rows: prev.rows.map((row) => (row.id === id ? updated : row)) }
+            : prev
+        )
+        // 标签集合可能变化：同步活动栏浮层的分类选项（异步，不阻塞保存返回）。
         void refreshTags()
         return true
       } catch (error) {
@@ -248,7 +199,7 @@ export function useInspirationBundle(
         return false
       }
     },
-    [bookId, activeTag, refreshTags]
+    [bookId, refreshTags]
   )
 
   const remove = useCallback(
@@ -284,8 +235,6 @@ export function useInspirationBundle(
     if (!enabled) return null
     return {
       bookId,
-      activeTag,
-      tags,
       rows,
       activeId,
       activeRow,
@@ -301,7 +250,6 @@ export function useInspirationBundle(
       guardSwitch: guard,
       confirming,
       onSelect: handleSelect,
-      onFilterChange: changeFilter,
       onCreate: create,
       onUpdate: update,
       onDelete: remove,
@@ -310,8 +258,6 @@ export function useInspirationBundle(
   }, [
     enabled,
     bookId,
-    activeTag,
-    tags,
     rows,
     activeId,
     activeRow,
@@ -327,7 +273,6 @@ export function useInspirationBundle(
     guard,
     confirming,
     handleSelect,
-    changeFilter,
     create,
     update,
     remove,

@@ -7,6 +7,7 @@ import { useOnboarding } from './onboarding/useOnboarding'
 import Bookshelf from './pages/Bookshelf'
 import { TimelineCardSizeProvider } from './pages/writer/timeline/TimelineCardSizeProvider'
 import { DossierFilterProvider } from './pages/writer/dossier/DossierFilterProvider'
+import { InspirationFilterProvider } from './pages/writer/inspiration/InspirationFilterProvider'
 import { ActivityBar, ActivityBarProvider } from './shell/activityBar'
 import { useActivityBar } from './shell/activityBarContext'
 import { ActivityActionsProvider } from './shell/activityActionsProvider'
@@ -167,56 +168,59 @@ export default function App({ initialActivityPinned }: { initialActivityPinned?:
                       {/* 设定档案筛选条件：入口在活动栏、消费在中栏，Provider 挂在两者共同祖先
                         （口径同 TimelineCardSizeProvider）；bookId 由 pathname 解析，唯一真源。 */}
                       <DossierFilterProvider>
-                        <ActivityActionsProvider>
-                          <div className="shell">
-                            <TitleBar settingsLocked={status !== 'done'} />
+                        {/* 灵感筛选条件与已用标签：与设定档案同一范式，入口活动栏浮层、消费中栏网格。 */}
+                        <InspirationFilterProvider>
+                          <ActivityActionsProvider>
+                            <div className="shell">
+                              <TitleBar settingsLocked={status !== 'done'} />
 
-                            <ActivityBarSlot />
+                              <ActivityBarSlot />
 
-                            <main className="app-viewport">
-                              {status === 'loading' ? (
-                                <ViewportPlaceholder />
-                              ) : (
-                                /* 路由页懒加载：只包裹路由出口，标题栏 / 活动栏 / 状态栏外壳
-                                   首帧即渲染；fallback 与上面的引导占位同款，衔接无跳变。 */
-                                <Suspense fallback={<ViewportPlaceholder />}>
-                                  <Routes>
-                                    <Route
-                                      path="/"
-                                      element={
-                                        status === 'required' ? (
-                                          <Welcome onFinish={complete} />
-                                        ) : (
-                                          <Bookshelf />
-                                        )
-                                      }
-                                    />
-                                    <Route
-                                      path="/write/:bookId"
-                                      element={
-                                        status === 'required' ? (
-                                          <Navigate to="/" replace />
-                                        ) : (
-                                          <WriteRoute />
-                                        )
-                                      }
-                                    />
-                                    {/* 设置已改为标题栏齿轮唤起的弹窗（`SettingsDialog`），
-                                    不再占用路由；未匹配路径一律回首页。 */}
-                                    <Route path="*" element={<Navigate to="/" replace />} />
-                                  </Routes>
-                                </Suspense>
-                              )}
-                            </main>
+                              <main className="app-viewport">
+                                {status === 'loading' ? (
+                                  <ViewportPlaceholder />
+                                ) : (
+                                  /* 路由页懒加载：只包裹路由出口，标题栏 / 活动栏 / 状态栏外壳
+                                     首帧即渲染；fallback 与上面的引导占位同款，衔接无跳变。 */
+                                  <Suspense fallback={<ViewportPlaceholder />}>
+                                    <Routes>
+                                      <Route
+                                        path="/"
+                                        element={
+                                          status === 'required' ? (
+                                            <Welcome onFinish={complete} />
+                                          ) : (
+                                            <Bookshelf />
+                                          )
+                                        }
+                                      />
+                                      <Route
+                                        path="/write/:bookId"
+                                        element={
+                                          status === 'required' ? (
+                                            <Navigate to="/" replace />
+                                          ) : (
+                                            <WriteRoute />
+                                          )
+                                        }
+                                      />
+                                      {/* 设置已改为标题栏齿轮唤起的弹窗（`SettingsDialog`），
+                                      不再占用路由；未匹配路径一律回首页。 */}
+                                      <Route path="*" element={<Navigate to="/" replace />} />
+                                    </Routes>
+                                  </Suspense>
+                                )}
+                              </main>
 
-                            <StatusBar
-                              className={isWriter ? 'is-writer' : undefined}
-                              leading={isWriter ? <StatusBarLeading /> : undefined}
-                            >
-                              <StatusBarWidgets />
-                            </StatusBar>
-                          </div>
-                        </ActivityActionsProvider>
+                              <StatusBar
+                                className={isWriter ? 'is-writer' : undefined}
+                                leading={isWriter ? <StatusBarLeading /> : undefined}
+                              >
+                                <StatusBarWidgets />
+                              </StatusBar>
+                            </div>
+                          </ActivityActionsProvider>
+                        </InspirationFilterProvider>
                       </DossierFilterProvider>
                     </UnsavedSwitchGuardProvider>
                   </BeforeCloseFlushProvider>

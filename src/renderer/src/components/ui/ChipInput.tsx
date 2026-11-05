@@ -20,6 +20,11 @@ export interface ChipInputProps {
   id?: string
   /** 无可见标签时提供给无障碍。 */
   ariaLabel?: string
+  /**
+   * 常用标签快捷建议：显示在输入区下方，点击即加入；
+   * 已选中的不重复显示，达到 `max` 后按钮禁用。不传时行为与旧版一致。
+   */
+  suggestions?: readonly string[]
   className?: string
 }
 
@@ -35,6 +40,7 @@ export function ChipInput({
   invalid = false,
   id,
   ariaLabel,
+  suggestions,
   className
 }: ChipInputProps) {
   const { t } = useTranslation('common')
@@ -42,6 +48,10 @@ export function ChipInput({
   const entryRef = useRef<HTMLInputElement | null>(null)
 
   const atMax = max !== undefined && value.length >= max
+  // 去重 + 排除已选 / 空串；建议来自调用方的静态常量或数据，顺序保持不变。
+  const visibleSuggestions = (suggestions ?? []).filter(
+    (tag, index, all) => tag !== '' && !value.includes(tag) && all.indexOf(tag) === index
+  )
 
   const commit = (raw: string) => {
     const text = raw.trim()
@@ -134,6 +144,22 @@ export function ChipInput({
           onPaste={handlePaste}
         />
       </div>
+      {visibleSuggestions.length > 0 ? (
+        <div className="wf-chipinput__suggestions">
+          <span className="wf-chipinput__suggestions-label">{t('suggestionsLabel')}</span>
+          {visibleSuggestions.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              className="wf-chipinput__suggestion"
+              disabled={disabled || atMax}
+              onClick={() => commit(tag)}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

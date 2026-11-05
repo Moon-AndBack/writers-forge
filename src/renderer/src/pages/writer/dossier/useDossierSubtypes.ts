@@ -21,12 +21,18 @@ interface SubtypesState {
   rows: WorldSubtypeRow[]
 }
 
-/** 拉取当前书 + 当前实体类型的未删除子类分类（`sort_order, id` 由 IPC 保证）。 */
-export function useDossierSubtypes(bookId: string, entityType: WorldEntityType): WorldSubtypeRow[] {
+/**
+ * 拉取当前书 + 当前实体类型的未删除子类分类（`sort_order, id` 由 IPC 保证）。
+ * `entityType = null`（活动栏浮层当前服务于灵感等非实体模块）时不发起请求。
+ */
+export function useDossierSubtypes(
+  bookId: string,
+  entityType: WorldEntityType | null
+): WorldSubtypeRow[] {
   const [state, setState] = useState<SubtypesState | null>(null)
 
   useEffect(() => {
-    if (bookId === '') return undefined
+    if (bookId === '' || entityType === null) return undefined
     const api = window.api?.worldSubtype
     if (!api) return undefined
     let cancelled = false

@@ -1,5 +1,5 @@
 /**
- * 灵感右栏详情：标题 + 纯文本正文 + 标签编辑 + 底部保存条（含删除入口）。
+ * 灵感右栏详情：标题 + 纯文本正文 + 标签编辑 + 底部保存条。
  *
  * 保存口径与伏笔 / 剧情 / 设定档案一致：
  * - 表单只改本地草稿，点保存条才组装「仅变更字段」补丁落库；
@@ -7,15 +7,14 @@
  *   `saveNow`（域内切换确认 / 关闭前 flush / 切模块兜底调用）；
  * - ⚠️ 卸载时**不注销** `saveRef`：右栏条件挂载，切模块时先卸载表单、后执行装配清理，
  *   workspace 仍需取到最后一笔草稿做自动保存兜底；
- * - 删除确认与 toast 挂在**外层**（表单按 `row.id + draftResetKey` 重建，删除成功后表单
- *   会随选中行切换而重挂，toast 放在表单内会被一起卸载）。
+ * - 删除入口只在中栏卡片（`InspirationView` 持确认框），右栏不提供删除，故本文件无删除相关状态。
  */
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, ChipInput, FormField, Input, Textarea, useToast } from '../../../components/ui'
-import ConfirmDialog from '../ConfirmDialog'
+import { ChipInput, FormField, Input, Textarea, useToast } from '../../../components/ui'
 import SaveBar from '../SaveBar'
+import { PRESET_INSPIRATION_TAGS } from './inspirationPresets'
 import {
   buildInspirationPatch,
   createInspirationDraft,
@@ -34,48 +33,31 @@ export default function InspirationPanel({ bundle }: InspirationPanelProps) {
   const { t } = useTranslation('inspiration')
   const row = bundle.activeRow
   const { onDirtyChange } = bundle
-  const { show: showToast, node: toastNode } = useToast()
 
   // 空态（无选中条目 / 条目被删）= 无草稿：上报净态，避免切走后守卫仍持过期脏标记。
   useEffect(() => {
     if (row === null) onDirtyChange(false)
   }, [row, onDirtyChange])
 
-  const handleDelete = useCallback(
-    async (id: number): Promise<boolean> => {
-      const ok = await bundle.onDelete(id)
-      showToast(ok ? t('toast.deleteSuccess') : t('toast.deleteFailed'))
-      return ok
-    },
-    [bundle, showToast, t]
-  )
-
-  return (
-    <>
-      {row === null ? (
-        <div className="placeholder-view is-compact" role="note">
-          <div className="placeholder-title">{t('detail.emptyTitle')}</div>
-          <div className="placeholder-desc">{t('detail.emptyDesc')}</div>
-        </div>
-      ) : (
-        <InspirationPanelForm
-          key={`${row.id}-${bundle.draftResetKey}`}
-          row={row}
-          onUpdate={bundle.onUpdate}
-          onDelete={handleDelete}
-          onDirtyChange={bundle.onDirtyChange}
-          saveRef={bundle.saveRef}
-        />
-      )}
-      {toastNode}
-    </>
+  return row === null ? (
+    <div className="placeholder-view is-compact" role="note">
+      <div className="placeholder-title">{t('detail.emptyTitle')}</div>
+      <div className="placeholder-desc">{t('detail.emptyDesc')}</div>
+    </div>
+  ) : (
+    <InspirationPanelForm
+      key={`${row.id}-${bundle.draftResetKey}`}
+      row={row}
+      onUpdate={bundle.onUpdate}
+      onDirtyChange={bundle.onDirtyChange}
+      saveRef={bundle.saveRef}
+    />
   )
 }
 
 interface InspirationPanelFormProps {
   row: InspirationRow
   onUpdate: (id: number, patch: InspirationUpdatePatch) => Promise<boolean>
-  onDelete: (id: number) => Promise<boolean>
   onDirtyChange: (dirty: boolean) => void
   saveRef: RefObject<(() => void | Promise<boolean>) | null>
 }
@@ -84,19 +66,15 @@ interface InspirationPanelFormProps {
 function InspirationPanelForm({
   row,
   onUpdate,
-  onDelete,
   onDirtyChange,
   saveRef
 }: InspirationPanelFormProps) {
   const { t } = useTranslation('inspiration')
-  const { t: tCommon } = useTranslation('common')
   const fieldId = useId()
   const { show: showToast, node: toastNode } = useToast()
 
   const [draft, setDraft] = useState<InspirationDraft>(() => createInspirationDraft(row))
   const [saving, setSaving] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [deleting, setDeleting] = useState(false)
 
   const patch = useMemo(() => buildInspirationPatch(row, draft), [row, draft])
   const changed = Object.keys(patch).length > 0
@@ -124,13 +102,6 @@ function InspirationPanelForm({
       else if (ok === true) showToast(t('toast.saveSuccess'))
     })
   }, [saveNow, showToast, t])
-
-  const handleDeleteConfirm = useCallback(async (): Promise<void> => {
-    setDeleting(true)
-    await onDelete(row.id)
-    setDeleting(false)
-    setDeleteOpen(false)
-  }, [onDelete, row.id])
 
   return (
     <div className="inspiration-panel">
@@ -174,6 +145,7 @@ function InspirationPanelForm({
               max={INSPIRATION_MAX_TAGS}
               placeholder={t('field.tagsPlaceholder')}
               ariaLabel={t('field.tags')}
+              suggestions={PRESET_INSPIRATION_TAGS}
               onChange={(tags) => setDraft((prev) => ({ ...prev, tags }))}
             />
           </FormField>
@@ -185,30 +157,6 @@ function InspirationPanelForm({
         dirty={changed}
         saving={saving}
         onSave={handleSave}
-        leading={
-          <span className="inspiration-save-bar__delete">
-            <Button variant="ghost" size="sm" onClick={() => setDeleteOpen(true)}>
-              {t('detail.delete')}
-            </Button>
-          </span>
-        }
-      />
-
-      <ConfirmDialog
-        open={deleteOpen}
-        title={t('dialog.delete.title')}
-        message={t('dialog.delete.message', {
-          title: row.title.trim() === '' ? t('field.untitled') : row.title
-        })}
-        confirmText={t('dialog.delete.confirm')}
-        cancelText={tCommon('cancel')}
-        confirming={deleting}
-        onConfirm={() => {
-          void handleDeleteConfirm()
-        }}
-        onClose={() => {
-          if (!deleting) setDeleteOpen(false)
-        }}
       />
 
       {toastNode}

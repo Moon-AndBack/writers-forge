@@ -9,13 +9,14 @@
 const inspiration = {
   emptyTitle: '还没有灵感',
   emptyDesc: '点标题栏「+」新建一条灵感，随手记下片段与想法',
-  emptyFilteredTitle: '该标签下还没有灵感',
-  emptyFilteredDesc: '切换到「全部」，或为灵感添加这个标签',
+  emptyFilteredTitle: '当前筛选下还没有灵感',
+  emptyFilteredDesc: '在活动栏筛选浮窗切换标签，或清空搜索关键词',
   filter: {
-    label: '标签筛选',
     all: '全部',
-    empty: '暂无可用标签',
-    resultCount: '共 {{n}} 条'
+    tagAria: '按标签筛选',
+    searchPlaceholder: '搜索标题、内容或标签',
+    searchAria: '搜索标题、内容或标签',
+    search: '搜索'
   },
   field: {
     untitled: '未命名灵感',
@@ -30,8 +31,7 @@ const inspiration = {
   },
   detail: {
     emptyTitle: '未选择灵感',
-    emptyDesc: '在列表中选择一条灵感，查看并编辑详情',
-    delete: '删除'
+    emptyDesc: '在列表中选择一条灵感，查看并编辑详情'
   },
   action: {
     create: '新建灵感',

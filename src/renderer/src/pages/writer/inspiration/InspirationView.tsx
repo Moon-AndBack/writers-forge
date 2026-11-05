@@ -1,18 +1,19 @@
 /**
- * 灵感中栏视图：标题栏「新建」动作 + 标签筛选 + 灵感卡片网格。
+ * 灵感中栏视图：标题栏「新建」动作 + 灵感卡片网格。
  *
  * - 卡片结构见 `InspirationCard`（通用壳 `EntityStyleCard`，与伏笔 / 设定档案同款）；
- * - 顶部筛选下拉列出全书去重标签（`inspiration.tags`），选中后按标签拉列表；
- *   选「全部」清除筛选；筛选控件在空态下仍保留，避免筛空后无法切回；
+ * - 筛选 / 搜索入口在活动栏模块浮层（`ActivityBarFilterPopover` + `InspirationFilterProvider`），
+ *   中栏只读条件并消费已过滤的行；不再保留顶部下拉筛选条；
  * - 选中 / 详情编辑在右栏（`InspirationPanel`），中栏只做列表；
  * - 删除入口在卡片上（二次确认在本视图持有 `deleteId`）。
  */
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Select, useToast } from '../../../components/ui'
+import { useToast } from '../../../components/ui'
 import ConfirmDialog from '../ConfirmDialog'
 import InspirationActivityActions from './InspirationActivityActions'
 import InspirationCard from './InspirationCard'
+import { useInspirationFilters } from './inspirationFilterContext'
 import type { InspirationBundle } from './inspirationTree'
 
 export interface InspirationViewProps {
@@ -22,18 +23,16 @@ export interface InspirationViewProps {
 export default function InspirationView({ bundle }: InspirationViewProps) {
   const { t } = useTranslation('inspiration')
   const { t: tCommon } = useTranslation('common')
+  const { filters } = useInspirationFilters()
   const { show: showToast, node: toastNode } = useToast()
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleting, setDeleting] = useState(false)
+  /** 当前是否有筛选条件（标签或非空关键词）：用于区分「无数据」与「筛空」空态。 */
+  const hasFilter = filters.tag !== null || filters.query.trim() !== ''
 
   // 待删除行按 id 从当前列表派生：行已被删除 / 列表刷新后自动失效，不会悬空。
   const deleteRow =
     deleteId === null ? null : (bundle.rows.find((row) => row.id === deleteId) ?? null)
-
-  const filterOptions = [
-    { value: '', label: t('filter.all') },
-    ...bundle.tags.map((tag) => ({ value: tag, label: tag }))
-  ]
 
   const handleCreate = useCallback((): void => {
     // 有未保存草稿时先挂起（新建会切走当前详情，交右栏两态确认后再创建）。
@@ -59,35 +58,15 @@ export default function InspirationView({ bundle }: InspirationViewProps) {
 
       <div className="editor-scroll">
         <div className="editor-inner is-full">
-          <div className="inspiration-toolbar">
-            <span className="inspiration-toolbar__label">{t('filter.label')}</span>
-            <Select
-              className="inspiration-toolbar__select"
-              size="sm"
-              value={bundle.activeTag ?? ''}
-              options={filterOptions}
-              ariaLabel={t('filter.label')}
-              emptyText={t('filter.empty')}
-              onChange={(value) => {
-                bundle.onFilterChange(value === '' ? null : value)
-              }}
-            />
-            {bundle.loading ? null : (
-              <span className="inspiration-toolbar__count">
-                {t('filter.resultCount', { n: bundle.rows.length })}
-              </span>
-            )}
-          </div>
-
           {bundle.loading ? (
             <div className="inspiration-loading">{tCommon('loading')}</div>
           ) : bundle.rows.length === 0 ? (
             <div className="placeholder-view" role="note">
               <div className="placeholder-title">
-                {bundle.activeTag === null ? t('emptyTitle') : t('emptyFilteredTitle')}
+                {hasFilter ? t('emptyFilteredTitle') : t('emptyTitle')}
               </div>
               <div className="placeholder-desc">
-                {bundle.activeTag === null ? t('emptyDesc') : t('emptyFilteredDesc')}
+                {hasFilter ? t('emptyFilteredDesc') : t('emptyDesc')}
               </div>
             </div>
           ) : (

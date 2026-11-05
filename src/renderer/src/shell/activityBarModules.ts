@@ -61,6 +61,14 @@ export function isDossierModule(module: WriterModule): module is DossierModule {
   return (DOSSIER_MODULES as readonly WriterModule[]).includes(module)
 }
 
+/** 使用活动栏筛选浮层的模块：实体五域 + 灵感（分类分别为子类 / 标签）。 */
+export type FilterableModule = DossierModule | 'inspiration'
+
+/** 判定模块是否挂活动栏筛选浮层（hover 打开、搜索 / 分类写条件）。 */
+export function isFilterableModule(module: WriterModule): module is FilterableModule {
+  return isDossierModule(module) || module === 'inspiration'
+}
+
 /** 活动栏模块清单（顺序即渲染顺序）：章节 / 大纲 / 剧情 / 世界观 / 角色 / 势力 /
  *  境界体系 / 物品功法 / 时间线 / 伏笔 / 灵感。实体模块段落直接展开 `DOSSIER_MODULES`，
  *  避免同一顺序维护两份清单。 */

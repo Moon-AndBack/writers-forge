@@ -8,7 +8,9 @@ export interface SearchInputProps extends InputHTMLAttributes<HTMLInputElement> 
   onClear?: () => void
   /** 是否显示清除按钮，默认 true。 */
   clearable?: boolean
-  /** 前置图标，默认放大镜。 */
+  /** 是否显示前置图标，默认 true；图标重复的场景（如外层已有搜索按钮）可关闭。 */
+  showIcon?: boolean
+  /** 前置图标，默认放大镜。`showIcon={false}` 时不渲染。 */
   icon?: ReactNode
 }
 
@@ -59,13 +61,14 @@ function ClearIcon() {
 }
 
 /**
- * 搜索输入框：前置图标 + 输入 + 可选清除按钮。
+ * 搜索输入框：可选前置图标 + 输入 + 可选清除按钮。
  * 透传原生 <input> 属性，支持受控 / 非受控与 ref 转发。
  */
 export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(function SearchInput(
   {
     onClear,
     clearable = true,
+    showIcon = true,
     icon,
     className,
     value,
@@ -107,9 +110,11 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
 
   return (
     <div className={classes}>
-      <span className="wf-search__icon" aria-hidden="true">
-        {icon ?? <DefaultSearchIcon />}
-      </span>
+      {showIcon ? (
+        <span className="wf-search__icon" aria-hidden="true">
+          {icon ?? <DefaultSearchIcon />}
+        </span>
+      ) : null}
       <input
         {...rest}
         ref={setRef}

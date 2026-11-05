@@ -1,7 +1,8 @@
 /* ============================================================
-   灵感模块：中栏卡片网格 + 标签筛选 + 右栏详情
+   灵感模块：中栏卡片网格 + 右栏详情
    ------------------------------------------------------------------
-   中栏：顶部标签筛选条 + `.wf-card-grid` 弹性轨道多列网格（与伏笔 / 设定档案五域共用）；
+   中栏：`.wf-card-grid` 弹性轨道多列网格（与伏笔 / 设定档案五域共用）；
+   筛选 / 搜索入口在活动栏模块浮层，中栏不再保留顶部筛选条；
    卡 `.inspiration-card` 三行（标题 / 正文摘要 / 标签），结构 / 内衬 / 阴影 / 标题行 /
    胶囊规格由通用壳 `EntityStyleCard` 承载，本文件只覆写摘要 3 行裁剪与域内类。
    右栏：无面板头（模块标题由中栏承载），单块软底编辑卡（标题 / 正文 / 标签）+ 底部保存条；
@@ -9,38 +10,7 @@
    hover / 选中仅描边环 + 外发光，全程无位移 / 缩放（AGENTS §8）。
    ============================================================ */
 
-/* ---------- 中栏：标签筛选条 ---------- */
-.inspiration-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  padding: 2px 0 12px;
-}
-
-.inspiration-toolbar__label {
-  flex: none;
-  font-size: 11px;
-  line-height: 1.5;
-  letter-spacing: 0.06em;
-  color: var(--text-mute);
-}
-
-/* 下拉按内容收口，不占满整行；窄栏下允许收缩并由内部省略。 */
-.inspiration-toolbar__select {
-  flex: 0 1 220px;
-  width: 220px;
-  min-width: 120px;
-}
-
-.inspiration-toolbar__count {
-  flex: none;
-  margin-left: auto;
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--text-mute);
-}
+/* ---------- 中栏：加载态 ---------- */
 
 .inspiration-loading {
   padding: 24px 0;
@@ -164,7 +134,8 @@
   resize: none;
 }
 
-/* 保存条：与伏笔 / 剧情右栏同款软底卡片（--soft-solid + --line + --r-lg）。 */
+/* 保存条：与伏笔 / 剧情右栏同款软底卡片（--soft-solid + --line + --r-lg）。
+   仅剩右侧「保存」按钮（自带 margin-left: auto 靠右），左侧无其它动作。 */
 .inspiration-save-bar {
   display: flex;
   flex: none;
@@ -174,22 +145,4 @@
   background: var(--soft-solid);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-}
-
-/* 删除按钮的软底容器（保存条左侧次要动作）。 */
-.inspiration-save-bar__delete {
-  display: inline-flex;
-}
-
-/* 软底容器里的次要按钮：底色改用「软底上的控件」令牌，避免与容器同色（同 foreshadow 口径）。 */
-.inspiration-save-bar__delete .wf-btn {
-  color: var(--text-dim);
-  background: var(--control-on-soft);
-  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
-}
-
-.inspiration-save-bar__delete .wf-btn:hover:not(:disabled),
-.inspiration-save-bar__delete .wf-btn:active:not(:disabled) {
-  background: var(--control-on-soft-hover);
-  color: var(--text);
 }

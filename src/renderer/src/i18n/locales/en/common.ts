@@ -14,6 +14,7 @@ const common = {
   noOptions: 'No options',
   chipPlaceholder: 'Type and press Enter to add',
   removeTag: 'Remove {{tag}}',
+  suggestionsLabel: 'Common tags',
   stepperLabel: 'Value',
   stepperDecrease: 'Decrease {{label}}',
   stepperEdit: 'Edit {{label}}',
