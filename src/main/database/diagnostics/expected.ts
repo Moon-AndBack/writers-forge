@@ -11,6 +11,7 @@
  * - `paragraphs` → `schema/paragraphs.ts`
  * - `outline_items` → `schema/outlineItems.ts`
  * - `foreshadows`（伏笔 + 锚点快照）→ `schema/foreshadows.ts`
+ * - `inspirations`（灵感：碎片速记 + JSON 标签）→ `schema/inspirations.ts`
  * - `entities` / `entity_aliases` / `entity_relations` → `schema/entities.ts`
  * - `plot_lines` / `plot_scenes` / `plot_scene_world_entities` → `schema/plot.ts`
  * - `daily_stats` → `schema/dailyStats.ts`
@@ -187,6 +188,11 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
       'updated_at',
       'deleted_at'
     ]
+  },
+  // 灵感域（碎片速记 + JSON 标签数组）：见 `schema/inspirations.ts`
+  {
+    name: 'inspirations',
+    columns: ['id', 'book_id', 'title', 'content', 'tags', 'created_at', 'updated_at', 'deleted_at']
   },
   {
     name: 'entities',
@@ -367,9 +373,9 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
 
 /**
  * 设计命名索引清单（`sqlite_autoindex_*` 由 SQLite 自动生成，不在此列、自检时过滤）。
- * 计数：本文件静态清单 41（含违禁词库 2 + 伏笔 3）+ `./expectedWorldSubtypes` 1
+ * 计数：本文件静态清单 43（含违禁词库 2 + 伏笔 3 + 灵感 2）+ `./expectedWorldSubtypes` 1
  * + `./expectedWorldPowers` 0 + `./expectedItemFactionSubtypes` 1（`world_custom`）
- * = **43**。
+ * = **45**。
  */
 export const EXPECTED_INDEXES: readonly string[] = [
   // schema/chapters.ts（6）
@@ -389,6 +395,9 @@ export const EXPECTED_INDEXES: readonly string[] = [
   'idx_foreshadows_book',
   'idx_foreshadows_body_chapter',
   'idx_foreshadows_outline_item',
+  // schema/inspirations.ts（2：按书取未删除列表 / 按最近编辑排序）
+  'idx_inspirations_book',
+  'idx_inspirations_updated',
   // schema/entities.ts（6）
   'idx_entities_book',
   'idx_entities_book_type',

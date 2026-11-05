@@ -50,6 +50,11 @@ import type {
 } from '../main/database/foreshadows'
 import type { ClearForeshadowAnchorResult } from '../main/database/foreshadowsClear'
 import type { ForeshadowAnchorHit } from '../main/database/foreshadowsQuery'
+import type {
+  InspirationCreatePayload,
+  InspirationRow,
+  InspirationUpdatePatch
+} from '../main/database/inspirations'
 import type { DiagnosticsReport } from '../main/database/diagnostics'
 import type {
   CreateEntityInput,
@@ -370,6 +375,22 @@ const api = {
     /** 回收点锚点反查（章节 / 大纲条目，两者都给时优先 chapterId） */
     listByRecoverAnchor: (chapterId?: number, outlineItemId?: number): Promise<ForeshadowRow[]> =>
       ipcRenderer.invoke('foreshadow:listByRecoverAnchor', chapterId, outlineItemId)
+  },
+  /** 灵感域：碎片速记 + JSON 标签；本批仅数据层 / IPC，UI 后续批次接入 */
+  inspiration: {
+    /** 列出未删除灵感（`updated_at DESC`）；`tag` 非空时按标签筛选 */
+    list: (bookId: string, tag?: string): Promise<InspirationRow[]> =>
+      ipcRenderer.invoke('inspiration:list', bookId, tag),
+    /** 列出该书已使用的去重标签（供筛选下拉） */
+    tags: (bookId: string): Promise<string[]> => ipcRenderer.invoke('inspiration:tags', bookId),
+    /** 新建灵感（标题 / 正文 / 标签均可选） */
+    create: (bookId: string, payload?: InspirationCreatePayload): Promise<InspirationRow | null> =>
+      ipcRenderer.invoke('inspiration:create', bookId, payload),
+    /** 更新灵感（仅覆盖提供的字段） */
+    update: (id: number, patch?: InspirationUpdatePatch): Promise<InspirationRow | null> =>
+      ipcRenderer.invoke('inspiration:update', id, patch),
+    /** 软删除灵感 */
+    delete: (id: number): Promise<boolean> => ipcRenderer.invoke('inspiration:delete', id)
   },
   stats: {
     /** 全书累计有效字数 */

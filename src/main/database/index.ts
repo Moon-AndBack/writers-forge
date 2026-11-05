@@ -23,6 +23,7 @@ import { createDailyStatsSchema } from './schema/dailyStats'
 import { createEntitySchema } from './schema/entities'
 import { createForeshadowsSchema } from './schema/foreshadows'
 import { createImagesSchema } from './schema/images'
+import { createInspirationsSchema } from './schema/inspirations'
 import { createOutlineItemsSchema } from './schema/outlineItems'
 import { createParagraphSchema } from './schema/paragraphs'
 import { createPlotSchema } from './schema/plot'
@@ -136,6 +137,9 @@ export function getDb(): Database.Database {
     migrateForeshadowsBodyOutlineSlots(instance)
     // 伏笔域：foreshadows，锚点快照引用 chapters / outline_items，须在其后，幂等建表。
     createForeshadowsSchema(instance)
+    // 灵感域：inspirations（碎片速记 + JSON 标签），按书隔离（引用 books，须在其后），
+    // 幂等建表。
+    createInspirationsSchema(instance)
     // 伏笔描述富文本化：既有纯文本 `description` 包成富文本写入 `description_json`
     //（幂等、事务、失败回滚；须在 createForeshadowsSchema 建表 / 补列之后；
     //  早于后续任何读取，保证列表读到的 `description_json` 已就绪）。

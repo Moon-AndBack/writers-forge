@@ -1,0 +1,195 @@
+/* ============================================================
+   灵感模块：中栏卡片网格 + 标签筛选 + 右栏详情
+   ------------------------------------------------------------------
+   中栏：顶部标签筛选条 + `.wf-card-grid` 弹性轨道多列网格（与伏笔 / 设定档案五域共用）；
+   卡 `.inspiration-card` 三行（标题 / 正文摘要 / 标签），结构 / 内衬 / 阴影 / 标题行 /
+   胶囊规格由通用壳 `EntityStyleCard` 承载，本文件只覆写摘要 3 行裁剪与域内类。
+   右栏：无面板头（模块标题由中栏承载），单块软底编辑卡（标题 / 正文 / 标签）+ 底部保存条；
+   正文 textarea 吃掉剩余高度，内容超高时自身滚动。颜色一律取 theme.css 令牌，四主题通用。
+   hover / 选中仅描边环 + 外发光，全程无位移 / 缩放（AGENTS §8）。
+   ============================================================ */
+
+/* ---------- 中栏：标签筛选条 ---------- */
+.inspiration-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 2px 0 12px;
+}
+
+.inspiration-toolbar__label {
+  flex: none;
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+}
+
+/* 下拉按内容收口，不占满整行；窄栏下允许收缩并由内部省略。 */
+.inspiration-toolbar__select {
+  flex: 0 1 220px;
+  width: 220px;
+  min-width: 120px;
+}
+
+.inspiration-toolbar__count {
+  flex: none;
+  margin-left: auto;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+.inspiration-loading {
+  padding: 24px 0;
+  font-size: 12px;
+  text-align: center;
+  color: var(--text-mute);
+}
+
+/* ---------- 中栏：列表卡 ---------- */
+/* 结构 / 内衬 / 圆角 / 柔和底 / 常态阴影 / 进场动画 / 标题行布局统一由通用壳
+   `EntityStyleCard` 提供；本域只保留焦点环与摘要裁剪（AGENTS §9）。 */
+.inspiration-card:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+/* 正文摘要：统一 3 行裁剪（纯文本，保留换行）；吃满卡片剩余高度，同行卡片底部对齐。 */
+.inspiration-card__desc {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: pre-line;
+}
+
+/* 空正文占位：弱化色，不与真实内容争夺注意力。 */
+.inspiration-card__empty {
+  color: var(--text-mute);
+}
+
+/* 标签行：壳已提供换行 + 4px 间距 + 统一胶囊规格；此处只保证不参与卡片高度拉伸。 */
+.inspiration-card__tags {
+  overflow: hidden;
+}
+
+.inspiration-card__tag {
+  flex: none;
+  max-width: 160px;
+}
+
+/* 标签名按胶囊宽截断（flex 子项需 min-width: 0 才能收缩）。 */
+.inspiration-card__tag .wf-tag__label {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- 右栏详情 ---------- */
+/* `.rp-body` 改为纵向 flex：字段区自身滚动，底部保存条固定。 */
+.rp-view[data-view='inspiration'] .rp-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.inspiration-panel {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 8px;
+  /* 切换条目时表单随 key 重建 → 挂进场动画即重播（纯上浮，非 hover 态）。 */
+  animation: wf-enter-up var(--dur-base) var(--ease) backwards;
+}
+
+.inspiration-panel__scroll {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 2px 8px;
+  overflow-y: auto;
+}
+
+/* 单块软底编辑卡：标题 / 正文 / 标签三字段共享同一底色。 */
+.inspiration-fields {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+/* 标题 / 标签按内容高度，不参与剩余空间分配。 */
+.inspiration-fields > .wf-field {
+  flex: none;
+}
+
+/* 正文：块内唯一伸缩字段，吃掉可编辑块的剩余高度。 */
+.inspiration-fields > .wf-field.inspiration-fields__content {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 控件容器同步转纵向 flex（默认 block 无法把高度分给 textarea）。 */
+.inspiration-fields > .wf-field.inspiration-fields__content > .wf-field__control {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 正文多行输入：撑满控件容器剩余高度，内容超高时自身滚动；
+   关闭手动拖拽（右栏高度由布局分配，手拖会破坏保存条固定位）。 */
+.inspiration-content {
+  flex: 1 1 auto;
+  min-height: 132px;
+  line-height: 1.7;
+  resize: none;
+}
+
+/* 保存条：与伏笔 / 剧情右栏同款软底卡片（--soft-solid + --line + --r-lg）。 */
+.inspiration-save-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+/* 删除按钮的软底容器（保存条左侧次要动作）。 */
+.inspiration-save-bar__delete {
+  display: inline-flex;
+}
+
+/* 软底容器里的次要按钮：底色改用「软底上的控件」令牌，避免与容器同色（同 foreshadow 口径）。 */
+.inspiration-save-bar__delete .wf-btn {
+  color: var(--text-dim);
+  background: var(--control-on-soft);
+  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
+}
+
+.inspiration-save-bar__delete .wf-btn:hover:not(:disabled),
+.inspiration-save-bar__delete .wf-btn:active:not(:disabled) {
+  background: var(--control-on-soft-hover);
+  color: var(--text);
+}

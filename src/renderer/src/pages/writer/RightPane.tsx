@@ -1,18 +1,19 @@
 import { useState } from 'react'
-import type { ReactElement, RefObject } from 'react'
+import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../components/ui'
 import type { WriterModule } from '../../shell/activityBar'
 import type { ChapterRow, VolumeRow } from './chapters/chapterTree'
 import ConfirmDialog from './ConfirmDialog'
 import DossierDetail from './dossier/DossierDetail'
-import type { DossierBundle, DossierModule } from './dossier/dossierTree'
+import type { DossierBundle } from './dossier/dossierTree'
 import ForeshadowPanel from './foreshadow/ForeshadowPanel'
 import type { ForeshadowBundle } from './foreshadow/foreshadowTree'
+import InspirationPanel from './inspiration/InspirationPanel'
+import type { InspirationBundle } from './inspiration/inspirationTree'
 import type { OutlineItemRow } from './outline/outlineTree'
 import PlotEditor from './plot/PlotEditor'
 import type { PlotLineRow, PlotSceneRow, UpdatePlotScenePatch } from './plot/plotTree'
-import { ModulePlaceholder } from './right/ModulePlaceholder'
 import { AiPanel } from './right/AiPanel'
 import { ForeshadowOverviewPanel } from './right/ForeshadowOverviewPanel'
 import { OutlineRightPanel } from './right/OutlineRightPanel'
@@ -24,21 +25,9 @@ import type { TimelineEntry } from './timeline/timelineOrigin'
 /** 调用方未传保存入口时的占位 ref（仅保证必填契约，编辑器写入无副作用）。 */
 const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { current: null }
 
-/** 静态映射可承载的模块：排除章节（大纲 / 剧情 / 伏笔 / AI 四页签）、大纲（剧情筛选面板）、剧情
- *  （节点正文编辑器）、时间线（props 单独渲染）、设定档案五域（右栏详情单独渲染）与伏笔
- *  （右栏详情单独渲染）。 */
-type StaticPanelModule = Exclude<
-  WriterModule,
-  'chapters' | 'outline' | 'plot' | 'timeline' | 'foreshadow' | DossierModule
->
-
-const PANELS: Record<StaticPanelModule, () => ReactElement> = {
-  inspiration: () => <ModulePlaceholder id="inspiration" />
-}
-
 /**
  * 写作页右栏：按模块渲染对应 `.rp-view`（面板头 `.pane-head` + 内容 `.rp-body`；
- * 设定档案五域与伏笔详情两个视图不设面板头，模块标题由中栏承载）。
+ * 设定档案五域 / 伏笔 / 灵感详情不设面板头，模块标题由中栏承载）。
  *
  * - **章节模块**：右栏为「大纲 / 剧情 / 伏笔 / AI」四页签（页签条 + 大纲面板 + 剧情面板 +
  *   伏笔总览面板 + AI 面板）。
@@ -55,6 +44,8 @@ const PANELS: Record<StaticPanelModule, () => ReactElement> = {
  *   未保存切换由 `ConfirmDialog` 两态确认）。
  * - **伏笔模块**：右栏为详情表单（名称 / 描述 / 状态 + 只读锚点 + 底部保存条；
  *   不设面板头，可编辑块吸收剩余高度；未保存切换同样两态确认）。
+ * - **灵感模块**：右栏为详情表单（标题 / 纯文本正文 / 标签 + 底部保存条与删除入口；
+ *   不设面板头，正文 textarea 吸收剩余高度；未保存切换同样两态确认）。
  * - 面板常驻，`is-active` 控制显示；宽度由 `WorkspaceLayout` 经 `--wf-right-width`
  *   下发（本栏内联 `style.width` 消费，拖拽改宽不触发本栏重渲染）；
  *   显隐由标题栏「隐藏/显示右栏」按钮的偏好驱动（`hidden` → `.is-hidden`）。
@@ -88,7 +79,8 @@ export function RightPane({
   activeTimelineId = null,
   onTimelineOriginChange,
   dossier = null,
-  foreshadow = null
+  foreshadow = null,
+  inspiration = null
 }: {
   module: WriterModule
   paneRef: RefObject<HTMLElement | null>
@@ -149,6 +141,8 @@ export function RightPane({
   dossier?: DossierBundle | null
   /** 伏笔装配包（仅活动模块为伏笔时非空；详情面板消费）。 */
   foreshadow?: ForeshadowBundle | null
+  /** 灵感装配包（仅活动模块为灵感时非空；详情面板消费）。 */
+  inspiration?: InspirationBundle | null
 }) {
   // 面板标题 / aria / 分段按钮为固定标签（i18n）；面板内容为演示数据或子组件（不译）。
   const { t } = useTranslation('writer')
@@ -156,6 +150,7 @@ export function RightPane({
   const { t: tPlot } = useTranslation('plot')
   const { t: tDossier } = useTranslation('dossier')
   const { t: tForeshadow } = useTranslation('foreshadow')
+  const { t: tInspiration } = useTranslation('inspiration')
 
   // 域内切条目的「保存」失败提示：不切换、脏态保留，可直接再点一次重试。
   const { show: showSaveFailed, node: saveFailedToast } = useToast()
@@ -346,21 +341,37 @@ export function RightPane({
         </div>
       ) : null}
 
-      {(Object.keys(PANELS) as StaticPanelModule[]).map((id) => {
-        const Panel = PANELS[id]
-        return (
-          <div key={id} className={`rp-view${module === id ? ' is-active' : ''}`} data-view={id}>
-            <div className="pane-head">
-              <span className="pane-title">{t(`right.${id}`)}</span>
-            </div>
-            <div className="rp-body">
-              <Panel />
-            </div>
+      {/* 灵感详情面板：标题 / 正文 / 标签（草稿态 + 底部保存条与删除） + 删除 / 切换确认。
+          条件挂载（活动模块为灵感时），选中项 / 草稿真源在页面层装配包。 */}
+      {inspiration ? (
+        <div className="rp-view is-active" data-view="inspiration">
+          {/* 不设面板头（模块标题由中栏承载）：`.rp-body--no-head` 补顶部内衬，
+              正文 textarea 吸收剩余高度（见 writer-inspiration.css）。 */}
+          <div className="rp-body rp-body--no-head">
+            <InspirationPanel bundle={inspiration} />
           </div>
-        )
-      })}
+          {/* 域内切换未保存确认（两态：保存并切换 / 不保存）；Esc / 遮罩视为「不保存」。 */}
+          <ConfirmDialog
+            open={inspiration.switchPending}
+            title={tInspiration('dialog.unsavedSwitch.title')}
+            message={tInspiration('dialog.unsavedSwitch.message')}
+            confirmText={tCommon('save')}
+            cancelText={tInspiration('dialog.unsavedSwitch.discard')}
+            tone="default"
+            confirming={inspiration.confirming}
+            onConfirm={() => {
+              void inspiration.onResolveSwitch(true).then((switched) => {
+                if (!switched) showSaveFailed(tCommon('saveFailed'))
+              })
+            }}
+            onClose={() => {
+              void inspiration.onResolveSwitch(false)
+            }}
+          />
+        </div>
+      ) : null}
 
-      {/* 域内切换「保存」失败提示：剧情 / 设定档案 / 伏笔共用，toast 走 portal，位置不影响视觉。 */}
+      {/* 域内切换「保存」失败提示：剧情 / 设定档案 / 伏笔 / 灵感共用，toast 走 portal，位置不影响视觉。 */}
       {saveFailedToast}
     </aside>
   )

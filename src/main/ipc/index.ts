@@ -10,6 +10,7 @@ import { registerDiagnosticsIpc } from './diagnostics'
 import { registerEntitiesIpc } from './entities'
 import { registerForeshadowsIpc } from './foreshadows'
 import { registerImagesIpc } from './images'
+import { registerInspirationsIpc } from './inspirations'
 import { registerOneDriveIpc } from './onedrive'
 import { registerOutlineIpc } from './outline'
 import { registerPlotIpc } from './plot'
@@ -39,6 +40,7 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
   registerEntitiesIpc()
   registerForeshadowsIpc()
   registerImagesIpc()
+  registerInspirationsIpc()
   registerOneDriveIpc()
   registerOutlineIpc()
   registerPlotIpc()

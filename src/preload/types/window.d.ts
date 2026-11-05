@@ -107,6 +107,11 @@ import type {
 } from '../../main/database/foreshadows'
 import type { ClearForeshadowAnchorResult } from '../../main/database/foreshadowsClear'
 import type { ForeshadowAnchorHit } from '../../main/database/foreshadowsQuery'
+import type {
+  InspirationCreatePayload,
+  InspirationRow,
+  InspirationUpdatePatch
+} from '../../main/database/inspirations'
 
 /** 段落保存结果：`ok=false` 表示入参非法或章节不存在。 */
 interface SaveParagraphsResult {
@@ -384,6 +389,19 @@ export interface Api {
     setAbandoned: (id: number, abandoned: boolean) => Promise<SetForeshadowAbandonedResult>
     /** 回收点锚点反查（章节 / 大纲条目，两者都给时优先 chapterId） */
     listByRecoverAnchor: (chapterId?: number, outlineItemId?: number) => Promise<ForeshadowRow[]>
+  }
+  /** 灵感域：碎片速记 + JSON 标签；本批仅数据层 / IPC，UI 后续批次接入 */
+  inspiration: {
+    /** 列出未删除灵感（`updated_at DESC`）；`tag` 非空时按标签筛选 */
+    list: (bookId: string, tag?: string) => Promise<InspirationRow[]>
+    /** 列出该书已使用的去重标签（供筛选下拉） */
+    tags: (bookId: string) => Promise<string[]>
+    /** 新建灵感（标题 / 正文 / 标签均可选） */
+    create: (bookId: string, payload?: InspirationCreatePayload) => Promise<InspirationRow | null>
+    /** 更新灵感（仅覆盖提供的字段） */
+    update: (id: number, patch?: InspirationUpdatePatch) => Promise<InspirationRow | null>
+    /** 软删除灵感 */
+    delete: (id: number) => Promise<boolean>
   }
   settings: {
     get: (key: string) => Promise<string | null>

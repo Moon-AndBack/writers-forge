@@ -10,6 +10,7 @@ import chapters from './chapters'
 import dossier from './dossier'
 import entities from './entities'
 import foreshadow from './foreshadow'
+import inspiration from './inspiration'
 import outline from './outline'
 import plot from './plot'
 import timeline from './timeline'
@@ -20,6 +21,7 @@ const enWriter = {
   dossier,
   entities,
   foreshadow,
+  inspiration,
   outline,
   plot,
   timeline,

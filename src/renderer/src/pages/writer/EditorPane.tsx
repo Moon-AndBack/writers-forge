@@ -2,7 +2,6 @@ import { memo, useCallback, useMemo } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { WriterModule } from '../../shell/activityBar'
-import PlaceholderView from './PlaceholderView'
 import ChaptersView from './chapters/ChaptersView'
 import ChaptersTrashView from './chapters/ChaptersTrashView'
 import { useChapterLabels } from './chapters/useChapterLabels'
@@ -35,6 +34,8 @@ import DossierView from './dossier/DossierView'
 import type { DossierBundle } from './dossier/dossierTree'
 import ForeshadowView from './foreshadow/ForeshadowView'
 import { formatForeshadowPlace, type ForeshadowBundle } from './foreshadow/foreshadowTree'
+import InspirationView from './inspiration/InspirationView'
+import type { InspirationBundle } from './inspiration/inspirationTree'
 import type { ForeshadowLabelResolver } from '../../components/editor/useForeshadowMarks'
 
 export interface EditorPaneProps {
@@ -116,14 +117,13 @@ export interface EditorPaneProps {
   dossier?: DossierBundle | null
   /** 伏笔装配包（仅活动模块为伏笔时非空；中栏列表视图消费）。 */
   foreshadow?: ForeshadowBundle | null
+  /** 灵感装配包（仅活动模块为灵感时非空；中栏列表视图消费）。 */
+  inspiration?: InspirationBundle | null
   /** 章节正文立即落盘入口（视图写入；页面层「关闭前统一 flush」聚合用）。 */
   chapterFlushRef?: RefObject<(() => Promise<void>) | null>
   /** 大纲正文立即落盘入口（视图写入；页面层「关闭前统一 flush」聚合用）。 */
   outlineFlushRef?: RefObject<(() => Promise<void>) | null>
 }
-
-/** 骨架阶段占位视图的模块（当前仅「灵感」）。 */
-const PLACEHOLDER_MODULES: readonly WriterModule[] = ['inspiration']
 
 /**
  * 写作页中栏：按模块渲染对应 `.ep-view`（常驻，`is-active` 控制显示）。
@@ -131,8 +131,7 @@ const PLACEHOLDER_MODULES: readonly WriterModule[] = ['inspiration']
  * 章节视图已拆分至 `chapters/ChaptersView.tsx`（Tiptap 正文 + 持久化 + 实体高亮）；
  * 大纲视图为 `outline/OutlineEditor.tsx`（选中大纲章 → 编辑其关联文档正文）；
  * 剧情 / 时间线各有独立视图；设定档案五域（世界观 / 角色 / 势力 / 境界体系 / 物品功法）
- * 复用 `dossier/DossierView.tsx`（卡片网格，按 module 参数化）；伏笔为独立列表视图；
- * 灵感仍为占位。
+ * 复用 `dossier/DossierView.tsx`（卡片网格，按 module 参数化）；伏笔 / 灵感为独立列表视图。
  */
 function EditorPaneComponent({
   module,
@@ -174,11 +173,10 @@ function EditorPaneComponent({
   onCreateTimeline,
   dossier = null,
   foreshadow = null,
+  inspiration = null,
   chapterFlushRef,
   outlineFlushRef
 }: EditorPaneProps) {
-  // 占位模块显示名走 `module` i18n 命名空间（键即模块 id），随界面语言切换。
-  const { t: tModule } = useTranslation('module')
   // 大纲条目的空名兜底（与 `OutlineEditor` 编辑头同口径）。
   const { t: tOutline } = useTranslation('outline')
   const { t: tForeshadow } = useTranslation('foreshadow')
@@ -406,15 +404,13 @@ function EditorPaneComponent({
         </div>
       ) : null}
 
-      {PLACEHOLDER_MODULES.map((id) => (
-        <div key={id} className={`ep-view${module === id ? ' is-active' : ''}`} data-view={id}>
-          <div className="editor-scroll">
-            <div className="editor-inner is-full">
-              <PlaceholderView label={tModule(id)} />
-            </div>
-          </div>
+      {/* 灵感：中栏列表（标签筛选 + 卡片网格，无标题栏常驻动作）；仅活动模块为灵感时挂载
+          （选中 / 草稿真源在页面层装配包，视图无编辑器生命周期需常驻）。 */}
+      {inspiration ? (
+        <div className="ep-view is-active" data-view="inspiration">
+          <InspirationView bundle={inspiration} />
         </div>
-      ))}
+      ) : null}
     </main>
   )
 }
@@ -422,7 +418,7 @@ function EditorPaneComponent({
 /**
  * 以 `memo` 包裹：中栏本身**不接收宽度 prop**，三栏拖拽只重渲染 `WorkspaceLayout`
  * （宽度经 `.workspace` 的自定义属性下发），本页不参与，本栏 5+ 个常驻视图（章节 /
- * 大纲 / 剧情 / 时间线 / 设定档案 / 伏笔）的 reconcile 被完全跳过。页面因其它原因
+ * 大纲 / 剧情 / 时间线 / 设定档案 / 伏笔 / 灵感）的 reconcile 被完全跳过。页面因其它原因
  * 重渲染（数据刷新、模块切换）时再由浅比较挡掉——其传入的 props 均已引用稳定：
  * 回调为 `useCallback` / 装配 hook 内的 `useCallback`，装配包为 `useMemo`，
  * 数据数组来自 state 或 `useMemo`。

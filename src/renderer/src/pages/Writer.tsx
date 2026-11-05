@@ -24,6 +24,7 @@ import { useTimelineStatusBar } from './writer/timeline/useTimelineStatusBar'
 import { useTimelineWorkspace } from './writer/timeline/useTimelineWorkspace'
 import { useDossierBundle } from './writer/dossier/useDossierBundle'
 import { useForeshadowBundle } from './writer/foreshadow/useForeshadowBundle'
+import { useInspirationBundle } from './writer/inspiration/useInspirationBundle'
 import { usePlotTimelineBundle } from './writer/usePlotTimelineBundle'
 import { useFlushAllModules } from './writer/useFlushAllModules'
 import { useWriterModuleSwitch } from './writer/useWriterModuleSwitch'
@@ -217,10 +218,18 @@ export default function Writer({ bookId }: WriterProps) {
   // 伏笔透传包（仅活动模块为伏笔时非空；选中 + 右栏隐藏时自动展开已收进 hook）。
   const foreshadowBundle = useForeshadowBundle(active, bookId ?? '', rightPaneHidden, showRightPane)
 
+  // 灵感透传包（仅活动模块为灵感时非空；选中 + 右栏隐藏时自动展开已收进 hook）。
+  const inspirationBundle = useInspirationBundle(
+    active,
+    bookId ?? '',
+    rightPaneHidden,
+    showRightPane
+  )
+
   /* ---------- 关闭前统一 flush（外壳调用；主进程生命周期接线在下一步） ----------
      各模块未落库内容统一在此聚合落库：章节 / 大纲由中栏常驻视图经 ref 写入落盘入口，
-     剧情用右栏表单的保存入口，设定档案 / 伏笔用各自装配包的 `saveDraft`；任一模块失败
-     不阻断其它，整体恒 resolve（见 `useFlushAllModules`）。 */
+     剧情用右栏表单的保存入口，设定档案 / 伏笔 / 灵感用各自装配包的 `saveDraft`；任一模块
+     失败不阻断其它，整体恒 resolve（见 `useFlushAllModules`）。 */
   const chapterFlushRef = useRef<(() => Promise<void>) | null>(null)
   const outlineFlushRef = useRef<(() => Promise<void>) | null>(null)
   const { flushAll, flushModule } = useFlushAllModules({
@@ -228,7 +237,8 @@ export default function Writer({ bookId }: WriterProps) {
     outlineFlushRef,
     plotSaveRef: plot.saveRef,
     saveDossierDraft: dossierBundle?.saveDraft ?? null,
-    saveForeshadowDraft: foreshadowBundle?.saveDraft ?? null
+    saveForeshadowDraft: foreshadowBundle?.saveDraft ?? null,
+    saveInspirationDraft: inspirationBundle?.saveDraft ?? null
   })
   useRegisterBeforeCloseFlush(flushAll)
 
@@ -248,7 +258,7 @@ export default function Writer({ bookId }: WriterProps) {
 
   /* ---------- 模块切换未保存守卫（活动栏图标 / 筛选浮层发起） ----------
      外壳经 `useRequestSwitch` 把目标模块交给本页裁决：
-     同模块 / 无脏 → 直接切；当前模块（五域 / 剧情 / 伏笔）有脏草稿 → 弹两态确认。
+     同模块 / 无脏 → 直接切；当前模块（五域 / 剧情 / 伏笔 / 灵感）有脏草稿 → 弹两态确认。
      脏态判定、保存 / 放弃分派与章节 / 大纲切走前强制落库均收进
      `useWriterModuleSwitch`；与右栏域内 `switchPending`（切条目）是两个独立场景。 */
   // 保存失败提示（不切换、脏态保留，可重试）。
@@ -262,6 +272,7 @@ export default function Writer({ bookId }: WriterProps) {
     plot,
     dossier: dossierBundle,
     foreshadow: foreshadowBundle,
+    inspiration: inspirationBundle,
     flushModule,
     onSaveFailed: () => showSaveFailed(tCommon('saveFailed'))
   })
@@ -354,6 +365,7 @@ export default function Writer({ bookId }: WriterProps) {
               onCreateTimeline={handleCreateTimeline}
               dossier={dossierBundle}
               foreshadow={foreshadowBundle}
+              inspiration={inspirationBundle}
               chapterFlushRef={chapterFlushRef}
               outlineFlushRef={outlineFlushRef}
             />
@@ -389,6 +401,7 @@ export default function Writer({ bookId }: WriterProps) {
               onTimelineOriginChange={timeline.updateOrigin}
               dossier={dossierBundle}
               foreshadow={foreshadowBundle}
+              inspiration={inspirationBundle}
             />
           }
           leftHidden={sideHidden}
