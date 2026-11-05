@@ -70,7 +70,6 @@
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.13.0",
     "husky": "^9.1.7",
-    "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.1",
@@ -79,14 +78,5 @@
   },
   "config": {
     "electron_mirror": "https://npmmirror.com/mirrors/electron/"
-  },
-  "lint-staged": {
-    "*.{ts,tsx,js,mjs,cjs,jsx}": [
-      "eslint",
-      "prettier --check"
-    ],
-    "*.{css,md,json,yml,yaml,html}": [
-      "prettier --check"
-    ]
   }
 }

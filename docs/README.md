@@ -84,7 +84,7 @@
 | `npm run format`    | Prettier 格式化                                 |
 | `npm run build:win` | 构建并打包 Windows 安装包到 `dist/`             |
 
-提交钩子（`.husky/pre-commit`）**只校验不写盘**：lint-staged 对暂存文件运行 `eslint`（不带 `--fix`）与 `prettier --check`，不合规即拒绝提交，且不会改动工作区；提交前请先运行 `npm run format`（自查可用 `npm run format:check`）。
+提交钩子（`.husky/pre-commit`）**只校验不写盘**：脚本用 `git diff --cached` 读取暂存文件，对代码运行 `eslint`（不带 `--fix`）与 `prettier --check`，对样式 / 文档 / 配置运行 `prettier --check`，最后执行 `npm run typecheck`；不合规即拒绝提交，且不会改动工作区；提交前请先运行 `npm run format`（自查可用 `npm run format:check`）。
 
 ## 数据目录
 

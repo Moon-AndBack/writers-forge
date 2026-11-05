@@ -79,7 +79,7 @@ src/
 - `npm run format`：Prettier 格式化
 - `npm run build:win`：Windows 打包（build + electron-builder --win）
 
-**提交钩子只校验不写盘**：`.husky/pre-commit` → lint-staged 对暂存文件运行 `eslint`（无 `--fix`）与 `prettier --check`，不合规即拒绝提交，且不改动工作区；提交前先跑 `npm run format`。**禁止**改回 `--fix` / `--write`——钩子写盘会触发 lint-staged 的补丁回放，失配时回退 `git apply --3way`（隐含 `--index`）把未暂存改动写入索引，导致提交夹带 WIP。
+**提交钩子只校验不写盘**：`.husky/pre-commit` 用 `git diff --cached --name-only --diff-filter=ACMR -z` 读取暂存文件，按扩展名分组：`*.ts/tsx/js/mjs/cjs/jsx` 跑 `eslint`（无 `--fix`）与 `prettier --check`，`*.css/md/json/yml/yaml/html` 跑 `prettier --check`，最后执行 `npm run typecheck`；不合规即拒绝提交。脚本只读，不 `git stash`、不 `git add`、不写任何文件；提交前先跑 `npm run format`。**禁止**改回 `--fix` / `--write` 或任何会写盘 / 改索引的方案（2026-11 已移除 lint-staged：其 `updateIndex` 以任务前后 `git diff` 字符串比对判断改动文件，而底层 `tinyexec` 按 64KB 管道块解码 UTF-8，跨块的多字节字符被截断成替换符，使未改动文件也被误判并 `git add` 进索引，夹带未暂存改动；`--no-stash` / `--diff` 均无法绕过）。
 
 ## 6. 已知事项 / 技术备注
 

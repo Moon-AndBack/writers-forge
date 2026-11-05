@@ -1,2 +1,20 @@
-npx lint-staged
+#!/usr/bin/env sh
+# 只读校验：不 stash、不 add、不写任何文件。
+# 以 -z 读取暂存文件并用 xargs -0 批量传入，兼容含空格 / 特殊字符的路径。
+
+set -e
+
+has_code=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.js' '*.mjs' '*.cjs' '*.jsx')
+has_fmt=$(git diff --cached --name-only --diff-filter=ACMR -- '*.css' '*.md' '*.json' '*.yml' '*.yaml' '*.html')
+
+# NUL 字节无法存入 shell 变量，故先用非 -z 输出判断分组是否为空，再用 -z 管道交给 xargs。
+if [ -n "$has_code" ]; then
+  git diff --cached --name-only --diff-filter=ACMR -z -- '*.ts' '*.tsx' '*.js' '*.mjs' '*.cjs' '*.jsx' | xargs -0 npx eslint
+  git diff --cached --name-only --diff-filter=ACMR -z -- '*.ts' '*.tsx' '*.js' '*.mjs' '*.cjs' '*.jsx' | xargs -0 npx prettier --check
+fi
+
+if [ -n "$has_fmt" ]; then
+  git diff --cached --name-only --diff-filter=ACMR -z -- '*.css' '*.md' '*.json' '*.yml' '*.yaml' '*.html' | xargs -0 npx prettier --check
+fi
+
 npm run typecheck
