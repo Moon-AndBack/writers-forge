@@ -1,7 +1,8 @@
 /* ============================================================
    伏笔模块：中栏卡片网格 + 右栏详情
    ------------------------------------------------------------------
-   中栏：`.foreshadow-grid` 定值轨道多列网格（范式同 `.dossier-grid`），
+   中栏：`.foreshadow-grid` 弹性轨道多列网格（布局走通用 `.wf-card-grid`，与
+   设定档案五域共用），
    卡 `.foreshadow-item` 四行（名称 / 埋点位置 / 回收位置 / 描述），复用通用
    `.wf-card--halo`（常态中性，hover / 选中仅描边环 + 外发光），全程无位移 / 缩放，
    transition 只过渡阴影 / 颜色（AGENTS §8）。
@@ -11,17 +12,10 @@
    ============================================================ */
 
 /* ---------- 中栏卡片网格 ---------- */
-/* 定值轨道 + 整块居中（口径同 `.dossier-grid`）：卡宽恒为 250px，拖动右栏时只有列数
-   增减，卡宽本身不随剩余空间连续变化。窄容器兜底：`min(250px, 100%)` 作 min，中栏
-   最窄（≈212px 内容宽）时轨道收至容器宽，不溢出、不出现横向滚动。 */
-.foreshadow-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 250px));
-  gap: 12px;
-  justify-content: center;
-  max-width: var(--page-width);
-  margin: 0 auto;
-}
+/* 网格布局统一走通用 `.wf-card-grid`（styles/components/card-grid.css：弹性轨道
+   250~320px + 左对齐，与设定档案五域共用）。`.foreshadow-grid` 仅作伏笔模块的语义
+   钩子保留，不设宽度上限：网格吃满 `.editor-inner.is-full` 的可用宽，列数由 `auto-fit`
+   随中栏宽度增减（与五域 `.dossier-grid` 同口径）。 */
 
 /* ---------- 列表卡（四行） ---------- */
 .foreshadow-item {

@@ -19,6 +19,8 @@
    置于基础重置之后、既有组件 / 布局样式之前：工具类均为单类选择器且当前无元素挂载，
    排在前面可让任何业务样式按「后加载者胜」正常覆盖，不夺走既有规则的优先级。 */
 @import './components/motion.css';
+/* 通用卡片网格（设定档案五域 / 伏笔共用）：定值轨道 + 左对齐。 */
+@import './components/card-grid.css';
 @import './global.css';
 @import './chip-pill.css';
 @import './chip-preset-colors.css';

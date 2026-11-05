@@ -62,7 +62,7 @@ export default function ForeshadowView({
               <div className="placeholder-desc">{t('emptyDesc')}</div>
             </div>
           ) : (
-            <div className="foreshadow-grid">
+            <div className="wf-card-grid foreshadow-grid">
               {bundle.rows.map((row) => (
                 <ForeshadowItem
                   key={row.id}

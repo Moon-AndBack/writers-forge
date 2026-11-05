@@ -12,23 +12,9 @@
 }
 
 /* ---------- 卡片网格 ---------- */
-/* 定值轨道 + 整块居中，与书籍卡 `.book-grid` / 剧情卡同范式（`repeat(auto-fit, 200px)`
-   + `justify-content: center`）：卡宽恒为 250px，拖动右栏时只有列数增减，卡宽本身
-   不再随剩余空间连续变化——原 `minmax(…, 1fr)` 会让每列吃满剩余空间，容器变宽时
-   列宽连续变大，直到容纳下一列 → 列数 +1、每列瞬间跌回 250px（2↔3 列约 ±131px、
-   3↔4 列约 ±87px）。
-   窄容器兜底：`min(250px, 100%)` 作 min。容器 ≥250px 时 min 解析为 250px，
-   即 `minmax(250px, 250px)` 定值轨道；容器 <250px（中栏最窄，≈224px 内容宽，
-   算上 `scrollbar-gutter: stable` 约 212px）时 min 收至 100%，轨道宽度 = 容器宽，
-   不溢出、不出现横向滚动。
-   必须用 `auto-fit`（不可用 `auto-fill`）：空轨道被折叠后，`justify-content: center`
-   才能让未排满的整块居中留白；`auto-fill` 会保留空轨道把整块撑宽、卡片左偏。 */
-.dossier-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 250px));
-  gap: 12px;
-  justify-content: center;
-}
+/* 网格布局统一走通用 `.wf-card-grid`（styles/components/card-grid.css：弹性轨道
+   250~320px + 左对齐，与伏笔模块共用）。`.dossier-grid` 仅作五域的语义钩子保留：
+   关系行宽度测量经 `gridRef` 读计算样式，不依赖该类名。 */
 
 /* ---------- 世界观子类分组 ---------- */
 .dossier-groups {

@@ -327,7 +327,7 @@ export default function DossierView({ bundle }: DossierViewProps) {
             </div>
           ) : (
             <div
-              className="dossier-grid"
+              className="wf-card-grid dossier-grid"
               ref={gridRef}
               aria-label={t('gridAria', { module: moduleLabel })}
             >
