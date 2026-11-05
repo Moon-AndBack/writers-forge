@@ -26,6 +26,15 @@ export const POPOVER_VIEWPORT_MARGIN = 10
 /** 锚点与「+N」浮窗之间的垂直间隙（px）。 */
 export const ANCHOR_GAP = 6
 
+/**
+ * 「实体悬停卡 + 伏笔悬停提示」上下堆叠时两者的垂直间隙（px）。
+ *
+ * 只作用于堆叠路径（`computeCardPosition` 的 `neighbor.side === 'above'` 分支）：
+ * 上层浮窗底边 = 下层浮窗顶边 − 本值。单侧显示时 `neighbor` 为 null，本值不参与计算，
+ * 浮层相对锚点的位置与改造前一致（不会整体下移）。
+ */
+export const STACKED_POPOVER_GAP = 8
+
 /** 固定态活动栏占位：左缘 8 + 栏宽 48 + 与浮窗间距 8 = 64px（同 shell.css 几何口径）。 */
 const ACTIVITY_BAR_PINNED_INSET = 64
 
@@ -64,7 +73,7 @@ export interface StackedNeighbor {
  * `align` 选择水平基准：`center` = 居中于锚点（默认，原有行为）；`left` = 左缘贴锚点左缘，
  * 供「上下叠放的两个浮窗（实体卡 + 伏笔提示）左边缘对齐」使用。两者都走同一套钳制。
  * `neighbor` 见 {@link StackedNeighbor}：`above` 分支据此把本浮窗叠放到相邻浮窗之上
- * （相邻浮窗翻到锚点下方时改叠放到它下方），间隔仍为 POPOVER_VIEWPORT_MARGIN；
+ * （相邻浮窗翻到锚点下方时改叠放到它下方），`above` 分支的层间间隔为 STACKED_POPOVER_GAP；
  * 其余分支忽略该参数（既有消费者行为不变）。
  * 尺寸由调用方传入实测值（对齐「渲染后测量再定位」口径）。
  */
@@ -115,10 +124,11 @@ export function computeCardPosition(
     return { left: Math.round(left), top: Math.round(top) }
   }
   const left = clampLeft(baseLeft, minLeft, maxLeft)
-  // 上方堆叠：相邻浮窗贴锚点上方时让位（本浮窗底边 = 其顶边 − 间距）；
+  // 上方堆叠：相邻浮窗贴锚点上方时让位（本浮窗底边 = 其顶边 − STACKED_POPOVER_GAP）；
   // 相邻浮窗已翻到锚点下方时本浮窗不上移，若也翻下则叠放到它下方，保证两者不重叠。
   const stackedAbove = neighbor !== null && neighbor.side === 'above' ? neighbor.height : 0
-  const above = rect.top - POPOVER_VIEWPORT_MARGIN - height - stackedAbove
+  const stackGap = neighbor !== null && neighbor.side === 'above' ? STACKED_POPOVER_GAP : 0
+  const above = rect.top - POPOVER_VIEWPORT_MARGIN - height - stackedAbove - stackGap
   const belowBase = rect.bottom + POPOVER_VIEWPORT_MARGIN
   const below =
     neighbor !== null && neighbor.side === 'below'

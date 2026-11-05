@@ -28,7 +28,7 @@ export interface HoverPopupShellProps {
   align?: 'center' | 'left'
   /**
    * 是否为其上方已显示的「贴锚点浮窗」（伏笔悬停提示，见 `popoverStack`）让位（默认 false）：
-   * true 时按该浮窗实测高度把本浮窗叠放到它上方（间隔同 `POPOVER_VIEWPORT_MARGIN`），
+   * true 时按该浮窗实测高度把本浮窗叠放到它上方（层间间隔 `STACKED_POPOVER_GAP`），
    * 它已翻到锚点下方时本浮窗翻下则叠放到它下方 —— 两者不重叠，也不遮挡标记行。
    * 默认关闭，`PlotSceneHoverCard` / `ActivityBarFilterPopover` / `EntityCardMorePopup` 行为不变。
    */

@@ -5,7 +5,7 @@
  *
  * ```
  *        [实体卡]
- *          ↕ POPOVER_VIEWPORT_MARGIN
+ *          ↕ STACKED_POPOVER_GAP
  *        [伏笔提示]
  *          ↕ POPOVER_VIEWPORT_MARGIN
  *   ——— 标记所在行 ———

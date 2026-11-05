@@ -16,9 +16,10 @@ export interface MarkHoverTipProps {
  * - 定位复用 `HoverPopupShell`（portal 到 body + fixed + 视口避让 + 滚动 / 缩放跟随），
  *   `placement="above"` + `align="left"`：底边贴标记顶边上方（间隔 10px）、左缘贴锚点左缘；
  *   上方不足时由 `above` 的兜底翻到标记下方；
- * - **与实体悬停卡上下堆叠**：本提示永远紧贴标记上方，实体卡再叠到本提示上方（间隔同为 10px）。
- *   为此本组件把自己登记进 `popoverStack`（贴锚点上方的浮窗），实体卡据此按本提示实测高度
- *   向上让位 —— 两者同时出现时「实体卡 → 10px → 提示 → 10px → 标记行」，互不遮挡；
+ * - **与实体悬停卡上下堆叠**：本提示永远紧贴标记上方，实体卡再叠到本提示上方（层间间隔 8px，
+ *   见 `STACKED_POPOVER_GAP`）。为此本组件把自己登记进 `popoverStack`（贴锚点上方的浮窗），
+ *   实体卡据此按本提示实测高度向上让位 —— 两者同时出现时「实体卡 → 8px → 提示 → 10px → 标记行」，
+ *   互不遮挡；
  * - **`pointer-events: none`**（`.wf-mark-tooltip`）：浮层不承接鼠标，否则会在
  *   「span → 浮层」之间来回触发 mouseover / mouseout 造成闪烁，并干扰正文选区；
  *   也因此第 3 行过长时**不能**内滚，改由 CSS `line-clamp` 截断（见 `tooltip.css`）；
