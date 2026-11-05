@@ -19,15 +19,13 @@
   flex-wrap: wrap;
 }
 
-/* 别名 / 关系标签：略小于类别 Tag；底色、描边、hover 交给全局胶囊层。 */
+/* 别名 / 关系标签：尺寸（10.5px / 1px 8px / 1.6 / 500）由壳
+   `.wf-entity-card__chips` / `__meta` 的统一胶囊规格提供；底色、描边、hover
+   交给全局胶囊层。此处只保留收缩与宽度约束。 */
 .dossier-card__chip.wf-tag {
   flex: 0 1 auto;
   min-width: 0;
   max-width: 100%;
-  padding: 1px 8px;
-  font-size: 10.5px;
-  font-weight: 500;
-  line-height: 1.6;
 }
 
 /* 别名标签：不参与胶囊实色配色（别名不带分类语义），保持无底色 + 淡描边 +

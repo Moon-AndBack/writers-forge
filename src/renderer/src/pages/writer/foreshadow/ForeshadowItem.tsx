@@ -19,8 +19,9 @@
  * 「+N」浮窗使用。
  *
  * 变体（AGENTS §9：同组件按参数覆写，不复制平行卡片）：
- * - `readonly`：章节右栏「伏笔」总览用——不渲染删除按钮、不绑定选中 / 键盘处理，
- *   根元素去掉 `role="button"` / `tabIndex` / `aria-pressed` 等按钮语义（单纯展示卡）；
+ * - `readonly`：章节右栏「伏笔」总览用——**只**负责不渲染删除按钮；卡片是否可交互
+ *   由 `onSelect` 是否存在决定（有 `onSelect` 仍保留 `role="button"` / 键盘选中，
+ *   先例见剧情只读卡 `SceneCard`）；
  * - `compact`：右栏窄栏用——收窄内衬 / 字号，描述由 4 行降为 2 行
  *   （样式见 `writer-foreshadow.css`）。
  */
@@ -31,7 +32,7 @@ import { deriveForeshadowStatus } from '../../../../../shared/foreshadowStatus'
 import { TrashIcon } from '../../../components/icons'
 import { useChipOverflow } from '../../../components/useChipOverflow'
 import { useOverflowPopup } from '../../../components/useOverflowPopup'
-import { EntityStyleCard, IconButton, Tag } from '../../../components/ui'
+import { EntityStyleCard, IconButton, Tag, useTooltip } from '../../../components/ui'
 import { EntityCardMorePopup } from '../entities/EntityCardMorePopup'
 import type { EntityCardMoreItem } from '../entities/EntityCardMorePopup'
 import type { useEntityHover } from '../entities/useEntityHover'
@@ -68,7 +69,7 @@ export interface ForeshadowItemProps {
   layoutKey: number
   /** 列表层共用的实体悬停控制器（悬停卡由列表层渲染；卡内仅「+N」浮窗使用）。 */
   entityHover: ReturnType<typeof useEntityHover>
-  /** 只读变体：不绑定选中 / 删除，根元素不带按钮语义（章节右栏总览用）。 */
+  /** 只读变体：不渲染删除按钮；可交互性由 `onSelect` 是否存在决定（章节右栏总览用）。 */
   readonly?: boolean
   /** 紧凑变体：收窄内衬 / 字号与描述行数（右栏窄栏用）。 */
   compact?: boolean
@@ -84,18 +85,35 @@ interface PlaceLineProps {
   empty: boolean
 }
 
-/** 单行「位置」：左侧固定标签 + 右侧单行截断值。 */
+/**
+ * 单行「位置」：左侧固定标签 + 右侧单行截断值。
+ *
+ * tooltip 挂在**值元素**而非整行：截断（`text-overflow: ellipsis`）只发生在值上，
+ * 悬停左侧标签不应弹出位置；且锚点宽就是值本身，浮层水平居中更贴合被截断的文本。
+ * 空占位（未锚定 / 未回收 / 锚点失效）不给 `content`，`useTooltip` 即不显示浮层。
+ * 无障碍：值文本在 DOM 中始终完整（省略号只是视觉裁剪），读屏本就能取到全值；
+ * 另由 `anchorProps` 附带 `aria-describedby`（指向浮层），与项目其它 tooltip 同口径。
+ */
 function PlaceLine({ label, value, empty }: PlaceLineProps) {
+  const { anchorRef, anchorProps, tooltip } = useTooltip<HTMLSpanElement>({
+    content: empty ? '' : value,
+    placement: 'top'
+  })
+
   return (
-    <div className="foreshadow-item__place">
-      <span className="foreshadow-item__place-label">{label}</span>
-      <span
-        className={`foreshadow-item__place-value${empty ? ' is-empty' : ''}`}
-        title={empty ? undefined : value}
-      >
-        {value}
-      </span>
-    </div>
+    <>
+      {tooltip}
+      <div className="foreshadow-item__place">
+        <span className="foreshadow-item__place-label">{label}</span>
+        <span
+          ref={anchorRef}
+          {...anchorProps}
+          className={`foreshadow-item__place-value${empty ? ' is-empty' : ''}`}
+        >
+          {value}
+        </span>
+      </div>
+    </>
   )
 }
 
@@ -175,6 +193,10 @@ export default function ForeshadowItem({
         }))
       : []
 
+  // 卡片交互性与 `readonly` 解耦：只有传了 `onSelect` 才是可点 / 可键盘选中的卡
+  // （右栏总览既是 `readonly`（无删除按钮）又可点进只读详情）。无 `onSelect` = 纯展示。
+  const interactive = onSelect !== undefined
+
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>): void => {
     // 只处理卡片自身获得焦点时的按键；卡内删除按钮的 Enter / Space 不触发选中。
     if (event.target !== event.currentTarget) return
@@ -187,15 +209,16 @@ export default function ForeshadowItem({
     <EntityStyleCard
       className="foreshadow-item"
       active={active}
-      readonly={readonly}
+      // 壳的 `readonly` 只管光标（不暗示可点）：有 `onSelect` 时仍按可交互卡渲染。
+      readonly={!interactive}
       compact={compact}
       cardProps={{
-        // 只读变体去掉按钮语义（单纯展示卡）；可选中变体保留 role / 键盘选中。
-        role: readonly ? undefined : 'button',
-        tabIndex: readonly ? undefined : 0,
-        'aria-pressed': readonly ? undefined : active,
-        onClick: readonly ? undefined : () => onSelect?.(row.id),
-        onKeyDown: readonly ? undefined : handleKeyDown
+        // 交互性只看 `onSelect`：有则保留按钮语义与键盘选中，无则纯展示。
+        role: interactive ? 'button' : undefined,
+        tabIndex: interactive ? 0 : undefined,
+        'aria-pressed': interactive ? active : undefined,
+        onClick: interactive ? () => onSelect?.(row.id) : undefined,
+        onKeyDown: interactive ? handleKeyDown : undefined
       }}
       head={
         <>
@@ -259,7 +282,6 @@ export default function ForeshadowItem({
             {hiddenCount > 0 ? (
               <span
                 className={`foreshadow-item__entity-more chip-pill chip-pill--neutral`}
-                title={t('listItem.moreEntities', { n: hiddenCount })}
                 aria-label={t('listItem.moreEntities', { n: hiddenCount })}
                 onMouseEnter={(event) => {
                   // 收掉可能残留的实体悬停卡（「+N」没有 data-entity-id，委托不会自动隐藏）。

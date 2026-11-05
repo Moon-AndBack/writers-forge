@@ -172,21 +172,10 @@
   max-height: calc(4 * 1.6em);
 }
 
-/* 卡内胶囊（壳的胶囊容器）：右栏沿用壳的换行 + 4px 间距，只收小胶囊尺寸。 */
+/* 卡内胶囊（壳的胶囊容器）：右栏沿用壳的统一尺寸 / 换行 / 4px 间距，
+   只把内容宽度上限收到 128px。 */
 .rp-plot-timeline .plot-char-card {
-  min-height: 21px;
   max-width: 128px;
-  padding: 4px 10px;
-}
-
-.rp-plot-timeline .plot-char-name {
-  font-size: 11px;
-}
-
-.rp-plot-timeline .plot-char-more {
-  min-height: 21px;
-  padding: 4px 10px;
-  font-size: 10.5px;
 }
 
 /* ---------- 悬停正文浮窗（pointer-events: none，不挡鼠标） ----------

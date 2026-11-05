@@ -11,10 +11,54 @@
   row-gap: 16px;
 }
 
+/* ---------- 剧情线视图：卡片恰好居中（仅剧情模块中栏 `data-view='plot'`） ----------
+   目标：卡片（`.plot-scene-card`）中心 = 中栏中心；时间列 + 圆点列贴左保留，
+   右侧自然留出与左侧轴宽等宽的空白。
+
+   做法（对称预留）：`.plot-row` 在内容列右侧再预留一列「时间列 + 圆点列」——
+   `grid-template-columns` 尾部追加两条空轨（无子元素落位，见下方 `@container`），
+   内容列因此关于整块对称；块宽上限 = 2 × 轴宽 + 卡宽上限，块用 `margin-inline: auto`
+   居中后，内容盒 ≥ 该上限时卡恰为上限宽、两侧各留一份轴宽 ⇒ 卡中心 = 块中心。
+   内容盒更窄时块退化为满宽，卡吃满内容列（宽度仍由卡自身 `max-width: 100%` 收口），
+   卡中心随内容列对称同样落在容器中心。
+   极窄（内容盒 < 496px = 2 × (86 + 52) + 220 卡最小宽）时退回三列左起满宽排布
+   （见 `@container`），不产生横向滚动。
+   独立只读时间线（`.timeline-main`，年组一行多卡）与右栏剧情页签
+   （`.rp-plot-timeline`，卡吃满内容列）不命中本规则。 */
+.ep-view[data-view='plot'] .plot-timeline {
+  max-width: calc(2 * var(--plot-axis-w) + var(--plot-card-max-w));
+  margin-inline: auto;
+}
+
+/* 中栏滚动区全局为 `scrollbar-gutter: stable`，槽只占右侧 12px，使滚动内容盒的
+   中心比中栏中心左移 6px（上批观测到的 6px 偏差即此）。改为两侧各留一槽后内容盒
+   回到中栏正中，`margin-inline: auto` 的块中心才与中栏中心重合——卡片居中因此以
+   中栏为准，而不是以偏移过的滚动内容盒为准。 */
+.ep-view[data-view='plot'] .editor-scroll {
+  scrollbar-gutter: stable both-edges;
+}
+
+/* 容器查询以版心 `.editor-inner.is-full` 的内容盒宽为准（= 中栏宽 − 滚动槽 − 版心
+   内衬）：≥ 496px 时启用右侧等宽预留（对称五轨），更窄时保持三列（卡贴左满宽）。
+   496px = 2 × (--plot-col-time 86 + --plot-col-node 52) + 卡最小宽 220，即「能在
+   轴右侧再放下一张不小于设计最小宽的居中卡」的下限；阈值须为字面量（容器查询条件
+   不支持 var()），故按默认列宽写死并在此说明来源。 */
+.ep-view[data-view='plot'] .editor-inner.is-full {
+  container-type: inline-size;
+}
+
+@container (min-width: 496px) {
+  .ep-view[data-view='plot'] .plot-row {
+    grid-template-columns:
+      var(--plot-col-time) var(--plot-col-node) 1fr var(--plot-col-time)
+      var(--plot-col-node);
+  }
+}
+
 /* 剧情线视图舞台（`.plot-scene-wrap`，仅该视图使用；独立只读时间线视图
    `.timeline-main` 无此结构，不受影响）：每卡独占一行——舞台取满内容列一行
-   （配合内容列既有 `flex-wrap`），卡宽由 clamp(220px, 100%, 420px) 收口（超
-   420px 右侧留白），纵向单列、不再横向堆叠。
+   （配合内容列既有 `flex-wrap`），卡宽由 clamp(220px, 100%, var(--plot-card-max-w))
+   收口，纵向单列、不再横向堆叠。
    卡片已统一走通用壳 `EntityStyleCard`，实体胶囊固定在卡内描述下方，不再随
    宽度切换「卡左 + 胶囊右」双栏，故宽屏 / 紧凑模式（`is-wide` / `is-compact`）已移除。 */
 .plot-scene-wrap {
@@ -26,12 +70,12 @@
   min-width: 0;
 }
 
-/* 卡宽收口（首行满宽、超 420px 留白）；高度不设上限，内容（描述 4 行 +
-   卡内胶囊）自然撑高，避免裁掉胶囊行。 */
+/* 卡宽收口（超过 `--plot-card-max-w` 时由整块居中规则在两侧均分留白）；
+   高度不设上限，内容（描述 4 行 + 卡内胶囊）自然撑高，避免裁掉胶囊行。 */
 .plot-scene-wrap .plot-scene-card {
   flex: none;
-  width: clamp(220px, 100%, 420px);
-  max-width: min(420px, 100%);
+  width: clamp(220px, 100%, var(--plot-card-max-w));
+  max-width: min(var(--plot-card-max-w), 100%);
 }
 
 /* 剧情线来源标签（跨线聚合时标明来源线）与标题纵向组合：

@@ -1,0 +1,105 @@
+/* ============================================================
+   章节模块右栏「伏笔」页签：全书伏笔只读总览
+   ------------------------------------------------------------------
+   自 writer-foreshadow.css 抽出（该文件受 AGENTS §3 的单文件 500 行上限约束），
+   规则逐字未改；导入顺序仍在 writer-foreshadow.css 之后、writer-trash.css 之前。
+   ------------------------------------------------------------------
+   列表卡（`.rp-card--list`）内按派生状态分组：组容器沿用回收站视图既有的
+   `.trash-group` 块级语义，但**不渲染组标题与条数**（状态由卡片自带胶囊表达）；
+   组间间距由本面板专属的 `.foreshadow-overview-group` 覆盖，不改动
+   `styles/writer-trash.css` 的 `.trash-group`（两处回收站仍在用其 18px 底距）。
+   卡片复用 `ForeshadowItem` 的 `readonly` / `compact` 变体，只做右栏
+   覆盖，不另造平行卡片（AGENTS §9）。`readonly` 只隐藏删除按钮，卡片传入
+   `onSelect` 后仍是可点 / 可键盘选中的卡（点击进只读详情），故恢复 hover / 键盘
+   焦点的边缘光晕（仅描边 / 阴影，无 transform，AGENTS §8）。
+   ============================================================ */
+
+/* 组间距：原 `.trash-group` 的 18px 底距按「组标题（10.5px 字号 + 上下衬 4 / 8px）
+   + 列表」设计，删标题后直接用会显得松散。此处收到 14px——略大于网格自身的
+   12px `gap`，使组内卡片与组间形成 12 / 14 的可辨认层级；两个类连写把特异性
+   提到 (0,2,0)，压过后加载的 `.trash-group` 同特异性规则，无需 !important；
+   末组归零，避免滚动到底部多出一段空白。 */
+.trash-group.foreshadow-overview-group {
+  margin-bottom: 14px;
+}
+
+.trash-group.foreshadow-overview-group:last-child {
+  margin-bottom: 0;
+}
+
+/* 右栏网格：轨道上限由 320px 放开为 `1fr`——最窄右栏（内容宽约 422px）下
+   `.wf-card-grid` 的单列会被封在 320px、右侧留白约 100px；改 `1fr` 后单列
+   吃满容器，两列及以上仍按下限自动分列。
+   用 `auto-fill` 而非 `auto-fit`：总览按派生状态分组，各组条数不均（经常每组
+   只有一张）。`auto-fit` 会折叠空轨道，把组内单卡拉成整行宽，观感就是「一排
+   一张、右侧没有并排」；`auto-fill` 保留空轨道，单卡仍是标准列宽，跨组卡片宽度
+   一致。最窄栏只有一条轨道时该轨道仍被 `1fr` 拉满，「单列吃满容器」的意图不变。
+   下限取 240px：右栏默认 600px（内容宽约 570px）时落 2 列（每列约 276px），800px
+   栏宽（内容宽约 772px）时稳定落 3 列（每列约 249px，与原设计 2 列约 255px
+   同级）；2 列阈值随之降到内容宽约 492px，避免栏宽略窄时直接掉成单列。 */
+.wf-card-grid.foreshadow-overview-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+}
+
+/* 总览卡底色改 `--pane`：列表卡已由通用 `pane-region` 提供 `--soft-solid` 软底
+   （与剧情 / AI 页签同款）。卡若仍用中栏的 `--soft-solid`，会与容器同色，故改
+   `--pane` 让卡成为软底之上的内容层。根节点仍带 `foreshadow-item` 类（由
+   `EntityStyleCard` 的 `className` 透传），覆盖选择器口径不变。
+   常态**不要投影**：显式撤掉通用 `.wf-card--halo` 的常态 `--sh-sm`，只留 `--line`
+   细描边作为边界（壳根元素本身 `border: none`，无阴影后卡身会糊进 `--soft-solid`
+   容器）。卡片现在可点进只读详情，故 hover / 键盘焦点**恢复**通用
+   `.wf-card--halo:hover` 的同一套边缘光晕（品牌色描边环 + 外发光，纯阴影，无
+   transform，AGENTS §8）；下方规则以 0,3,0 显式回写，避免被常态 0,2,0 的
+   `box-shadow: none` 压住（`surface.css` 与本文样式加载次序不定）。 */
+.foreshadow-overview-grid > .foreshadow-item {
+  background: var(--pane);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.foreshadow-overview-grid > .foreshadow-item:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+.foreshadow-overview-grid > .foreshadow-item:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+/* 紧凑变体：右栏 2 列（每列约 255px）下收窄内衬 / 字号，描述只留两行——
+   右栏总览是浏览态，4 行会把右栏卡抬到比中栏卡更高，且挤压实体胶囊行。
+   壳的紧凑钩子是 `wf-entity-card--compact`；`.foreshadow-item` 前缀把特异性提到
+   (0,2,0)，压过壳的 `.wf-entity-card` (0,1,0)。 */
+.foreshadow-item.wf-entity-card--compact {
+  gap: 6px;
+  padding: 11px 12px;
+  /* 右栏卡不需要中栏的 120px 最小高（`.wf-card--halo`），内容少时保持紧凑。 */
+  min-height: 0;
+}
+
+.foreshadow-item.wf-entity-card--compact .wf-entity-card__title {
+  font-size: 13px;
+}
+
+.foreshadow-item.wf-entity-card--compact .foreshadow-item__place-label {
+  font-size: 10.5px;
+}
+
+.foreshadow-item.wf-entity-card--compact .foreshadow-item__place-value {
+  font-size: 11.5px;
+}
+
+.foreshadow-item.wf-entity-card--compact .foreshadow-item__desc {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 11.5px;
+  line-height: 1.55;
+}

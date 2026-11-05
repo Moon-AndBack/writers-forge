@@ -64,6 +64,8 @@ const foreshadow = {
   detail: {
     emptyTitle: '未选择伏笔',
     emptyDesc: '在列表中选择一条伏笔，查看并编辑详情',
+    descriptionEmpty: '暂无描述',
+    back: '返回',
     plant: '正文埋点',
     plant2: '大纲埋点',
     remove: '移除',

@@ -1,4 +1,6 @@
+import { useMemo } from 'react'
 import type { ReactElement } from 'react'
+import type { Extensions } from '@tiptap/core'
 import { EditorContent } from '@tiptap/react'
 import { RICH_TEXT_EXTENSIONS } from './richTextExtensions'
 import { useRichTextBodyEditor } from './useRichTextBodyEditor'
@@ -23,6 +25,12 @@ export interface ReadonlyRichTextProps {
   emptyText: string
   /** 追加类名（宽度 / 间距等布局差异由调用方覆写）。 */
   className?: string
+  /**
+   * 追加扩展（如 `EntityHighlight.configure({ getBookId })`）；不传 = 仅底座
+   * `RICH_TEXT_EXTENSIONS`，现有调用点行为不变。⚠️ 必须是模块级常量或 `useMemo`
+   * 恒等引用（`useEditor` 按引用比对选项，同 `ShortRichTextField` 口径）。
+   */
+  extensions?: Extensions
 }
 
 /** 只读实例不产生变更，`onChange` 恒为空实现（hook 的必填项）。 */
@@ -31,7 +39,8 @@ const NOOP = (): void => {}
 export function ReadonlyRichText({
   json,
   emptyText,
-  className
+  className,
+  extensions
 }: ReadonlyRichTextProps): ReactElement {
   return (
     <ReadonlyRichTextBody
@@ -40,15 +49,31 @@ export function ReadonlyRichText({
       json={json}
       emptyText={emptyText}
       className={className}
+      extensions={extensions}
     />
   )
 }
 
 /** 只读正文实例（按 `json` 的 key 由外层重建）。 */
-function ReadonlyRichTextBody({ json, emptyText, className }: ReadonlyRichTextProps): ReactElement {
+function ReadonlyRichTextBody({
+  json,
+  emptyText,
+  className,
+  extensions
+}: ReadonlyRichTextProps): ReactElement {
+  // 底座 + 调用方追加扩展：`useEditor` 需恒等引用，故按 `extensions` 引用缓存
+  // （与 `ShortRichTextField` 同一口径；未传时仍是模块级常量本身）。
+  const mergedExtensions = useMemo(
+    () =>
+      extensions !== undefined && extensions.length > 0
+        ? [...RICH_TEXT_EXTENSIONS, ...extensions]
+        : RICH_TEXT_EXTENSIONS,
+    [extensions]
+  )
+
   const { editor, isEmpty } = useRichTextBodyEditor({
     initialJson: json,
-    extensions: RICH_TEXT_EXTENSIONS,
+    extensions: mergedExtensions,
     onChange: NOOP,
     editable: false
   })

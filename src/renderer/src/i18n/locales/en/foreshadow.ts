@@ -57,6 +57,8 @@ const foreshadow = {
   detail: {
     emptyTitle: 'No foreshadowing selected',
     emptyDesc: 'Select a foreshadowing entry in the list to view and edit its details',
+    descriptionEmpty: 'No description yet',
+    back: 'Back',
     plant: 'Body planting point',
     plant2: 'Outline planting point',
     remove: 'Remove',

@@ -22,6 +22,7 @@
 @import './writer-dossier-card.css';
 @import './writer-dossier-split.css';
 @import './writer-foreshadow.css';
+@import './writer-foreshadow-overview.css';
 @import './writer-trash.css';
 @import './writer-search.css';
 @import './entity-highlight.css';
@@ -48,10 +49,11 @@
   padding-top: 1px;
   /* 三栏宽度真源在 WorkspaceLayout（React state）：拖拽逐帧只由该组件更新这两条
      自定义属性（React `style` prop 下发），由 .sidepane / .rightpane 消费，三栏与页面
-     本身不参与重渲染。此处为兜底初值（与 WorkspaceLayout 的 SIDE_DEFAULT /
-     RIGHT_DEFAULT 一致）。 */
-  --wf-side-width: 280px;
-  --wf-right-width: 550px;
+     本身不参与重渲染。此处为兜底初值，与 WorkspaceLayout 的 SIDE_DEFAULT（300px）/
+     RIGHT_DEFAULT（600px）一致，只在变量尚未注入时生效；下方 .sidepane / .rightpane
+     的 px 兜底值同理。 */
+  --wf-side-width: 300px;
+  --wf-right-width: 600px;
 }
 
 /* ---------- 分隔条 ---------- */
@@ -161,7 +163,8 @@ body.is-resizing .splitter {
    内绝对定位、且早已被 `overflow: hidden` 裁剪，行为不变。 */
 .sidepane {
   flex: none;
-  width: 280px;
+  width: 300px; /* 与 WorkspaceLayout 的 SIDE_DEFAULT 同步（真源为 .workspace 的
+                   --wf-side-width，此处兜底） */
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -205,7 +208,7 @@ body.is-resizing .splitter {
 
 .rightpane {
   flex: none;
-  width: 550px; /* 与 WorkspaceLayout 的 RIGHT_DEFAULT 同步（真源为 .workspace 的
+  width: 600px; /* 与 WorkspaceLayout 的 RIGHT_DEFAULT 同步（真源为 .workspace 的
                    --wf-right-width，此处兜底） */
   min-height: 0;
   display: flex;
@@ -218,7 +221,7 @@ body.is-resizing .splitter {
   min-width: 450px;
   max-width: 850px;
   /* min-width 必须与 width 同步插值：展开时二者都从 0 起插（min-width 450·p /
-     width 550·p），全程 min-width ≤ width，钳位不会把 width 卡在下限上
+     width W·p，W 为当前栏宽），全程 min-width ≤ width，钳位不会把 width 卡在下限上
      （否则前 ~73% 视觉僵停、末段才滑出）。 */
   transition:
     width var(--dur-slow) var(--ease),
@@ -464,8 +467,10 @@ body.is-resizing .splitter {
 }
 
 /* ---------- 断点（对齐原型） ---------- */
-/* 右栏在 ≤1240px 隐藏：默认宽 550 时，固定活动栏下中栏需 550 + 300 + 280 + 16 + 64 + 28
-   = 1238px 才保 ≥300px 余量，故取 1240px（留 2px），可见最小视口 1241px 时中栏约 303px。 */
+/* 右栏在 ≤1240px 隐藏：左栏默认 300px、右栏默认 600px，可见最小视口 1241px 时
+   中栏约 297px（悬浮活动栏）/ 253px（固定活动栏，被 .editor-pane 的 280px 下限兜住，
+   超出部分由 .app-viewport 的 overflow 裁掉）。该断点同时是「窄窗下右栏自动让位」
+   的用户可见边界。 */
 @media (max-width: 1240px) {
   .rightpane {
     display: none;

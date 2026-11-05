@@ -5,9 +5,13 @@
  * - 分组只保留容器 `section`（复用 `.trash-group` 的块级语义），**不显示分组标题与
  *   条数**——状态已由卡片自带的胶囊（`ForeshadowItem` 内 `Tag`）表达；组间间距由
  *   本面板专属类 `.foreshadow-overview-group` 覆盖（不改进两处回收站共用的 `.trash-group`）；
+ * - **两级视图**：列表 → 只读详情（`selectedId` 切换，右栏内完成，不离开章节模块）；
+ *   有选中行时渲染 `ForeshadowReadonlyDetail`（无任何编辑 / 保存 / 废弃 / 删除 / 移除入口，
+ *   底部独立底色返回栏回列表）。列表只被 `hidden`、常驻挂载，返回时**保留滚动位置**；
+ *   选中行被删 / 刷新后 `selectedRow` 自然为 `null`，自动回落列表；
  * - 每组 = 卡片网格；卡片复用中栏 `ForeshadowItem` 的
- *   `readonly` / `compact` 变体（AGENTS §9：不复制平行组件）——不选中、不跳转、
- *   不展开、无删除按钮，根元素也没有按钮语义；
+ *   `readonly` / `compact` 变体（AGENTS §9：不复制平行组件）——`readonly` 仅隐藏删除按钮，
+ *   传 `onSelect` 后卡片仍保留按钮语义（点击进只读详情）；
  * - **相关实体同中栏口径**：三组卡片先摊平成 `rows` 交 `useForeshadowEntityMatches`
  *   批量匹配（缓存共享，一次 `entities:revision` + 一次 `entities:matchMany`），
  *   每卡传自己的胶囊；悬停实体胶囊经事件委托（整组网格挂一个 `HoverCard`）显示实体卡；
@@ -24,6 +28,7 @@ import type { ChapterRow, VolumeRow } from '../chapters/chapterTree'
 import { HoverCard } from '../entities/HoverCard'
 import { useEntityHover } from '../entities/useEntityHover'
 import ForeshadowItem from '../foreshadow/ForeshadowItem'
+import ForeshadowReadonlyDetail from '../foreshadow/ForeshadowReadonlyDetail'
 import type { ForeshadowRow } from '../foreshadow/foreshadowTree'
 import { useForeshadowEntityMatches } from '../foreshadow/useForeshadowEntityMatches'
 import type { ForeshadowEntityChip } from '../foreshadow/useForeshadowEntityMatches'
@@ -46,7 +51,7 @@ export interface ForeshadowOverviewPanelProps {
   outlineItems: readonly OutlineItemRow[]
 }
 
-/** 伏笔右栏总览（只读卡片 + 相关实体胶囊，无选中态 / 无删除入口）。 */
+/** 伏笔右栏总览（可点卡片 → 右栏内只读详情；列表无删除入口）。 */
 export function ForeshadowOverviewPanel({
   bookId,
   active,
@@ -59,6 +64,13 @@ export function ForeshadowOverviewPanel({
   const { groups, total, loading } = useBookForeshadowGroups(bookId, active)
   // 摊平分组：实体匹配按「行」批量计算（与中栏共用同一批量通道与段落缓存）。
   const rows = useMemo(() => groups.flatMap((group) => group.rows), [groups])
+  // 列表 → 只读详情：`selectedId` 只在右栏内切换；行被删 / 刷新后按 id 派生为 `null`，
+  // 无需同步 effect 即自动回落列表（与中栏 `deleteRow` 同一派生口径）。
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const selectedRow = useMemo(
+    () => (selectedId === null ? null : (rows.find((row) => row.id === selectedId) ?? null)),
+    [rows, selectedId]
+  )
   const entityMatches = useForeshadowEntityMatches(bookId, rows)
   // 布局签名：首个分组网格的单卡内容可用宽（各组同宽）。`gridNode` 变化时重建 RefObject，
   // 让 `useStableMeasure` 重新绑定观察目标——分组状态变化会让首个 `section` 换 key，
@@ -73,8 +85,9 @@ export function ForeshadowOverviewPanel({
     <>
       <div className="rp-panel">
         {/* 列表卡底座：`pane-region`（--soft-solid 软底 + --r-lg 圆角）与剧情 / 大纲 /
-            AI 三个页签同款，缺了它 `.rp-card` 只剩一圈内描边、透出栏底（AGENTS §9：复用通用类）。 */}
-        <div className="pane-region rp-card rp-card--list">
+            AI 三个页签同款，缺了它 `.rp-card` 只剩一圈内描边、透出栏底（AGENTS §9：复用通用类）。
+            进入详情时只加 `hidden`、不卸载：返回列表时滚动位置仍在。 */}
+        <div className="pane-region rp-card rp-card--list" hidden={selectedRow !== null}>
           {loading && total === 0 ? (
             <div className="rp-list-empty">{tCommon('loading')}</div>
           ) : total === 0 ? (
@@ -102,6 +115,11 @@ export function ForeshadowOverviewPanel({
                         entities={entityMatches.get(row.id) ?? EMPTY_ENTITIES}
                         layoutKey={layoutKey}
                         entityHover={entityHover}
+                        onSelect={(id) => {
+                          // 切换视图前收掉可能残留的实体悬停卡（列表即将 hidden）。
+                          entityHover.close()
+                          setSelectedId(id)
+                        }}
                       />
                     ))}
                   </div>
@@ -110,6 +128,23 @@ export function ForeshadowOverviewPanel({
             })
           )}
         </div>
+
+        {/* 只读详情：与列表共用一个实体悬停控制器（`HoverCard` 仍只挂在本面板一次）。 */}
+        {selectedRow === null ? null : (
+          <ForeshadowReadonlyDetail
+            row={selectedRow}
+            bookId={bookId}
+            chapters={chapters}
+            volumes={volumes}
+            outlineItems={outlineItems}
+            entities={entityMatches.get(selectedRow.id) ?? EMPTY_ENTITIES}
+            entityHover={entityHover}
+            onBack={() => {
+              entityHover.close()
+              setSelectedId(null)
+            }}
+          />
+        )}
       </div>
 
       {/* 实体悬停卡：整个总览共用一个（数据走 `entities.get`，经 LRU 缓存）。 */}

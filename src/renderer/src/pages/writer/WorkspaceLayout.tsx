@@ -2,17 +2,18 @@ import { useState } from 'react'
 import type { CSSProperties, ReactNode, RefObject } from 'react'
 import Splitter from './Splitter'
 
-/* 分隔条 clamp 边界与默认宽（宽度仅在本次运行内保留，不落库） */
+/* 分隔条 clamp 边界与固定默认宽（宽度仅在本次运行内保留，不落库）。
+   宽度常量集中在本区块，writer.css 的 px 兜底与之同名同值。 */
 const SIDE_MIN = 180
 const SIDE_MAX = 480
-const SIDE_DEFAULT = 280
+const SIDE_DEFAULT = 300
 const RIGHT_MIN = 450
 const RIGHT_MAX = 850
-/* 右栏默认 550：右栏可见的最小视口 1241px（断点 ≤1240px 隐藏）下，中栏约 303px
-   （活动栏固定时），仍高于 .editor-pane 的 280px 下限。默认 550 保证中栏 ≥300px 的
-   理论阈值为 550 + 300 + 280 + 16 + 64 + 28 = 1238px（活动栏固定时；悬浮时 1174px），
-   断点取 1240px，留 2px 余量。 */
-const RIGHT_DEFAULT = 550
+/* 右栏默认 600px。断点 ≤1240px 隐藏右栏，故可见最小视口 1241px：悬浮活动栏时
+   中栏约 297px；固定活动栏时仅约 253px，低于 .editor-pane 的 280px 下限，超出部分
+   由 .app-viewport 的 overflow 裁掉（视口 ≥1268px 才完全容纳）。窗口缩放时左右两栏
+   保持像素宽，多出 / 少掉的宽度由中栏（flex: 1）承担。 */
+const RIGHT_DEFAULT = 600
 
 export interface WorkspaceLayoutProps {
   /**
@@ -44,6 +45,9 @@ export interface WorkspaceLayoutProps {
  * 宽度下发：本组件把宽度写进 `.workspace` 的自定义属性（React `style` prop，state 为唯一
  * 真源），`.sidepane` / `.rightpane` 以 `var(--wf-side-width)` / `var(--wf-right-width)`
  * 消费——宽度变更无需重渲染三栏，且不绕过 React（无命令式 DOM 写入）。
+ *
+ * 初始宽度：左栏固定 300px、右栏固定 600px（中栏 `flex: 1` 自适应），窗口缩放不重算；
+ * 用户拖拽后自由，双击分隔条复位到默认值。
  *
  * 栏内容不在本组件内创建：三栏的 props / 数据全部由页面持有，本组件只负责布局与宽度。
  */

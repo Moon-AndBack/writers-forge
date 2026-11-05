@@ -88,25 +88,24 @@
   overflow: hidden;
 }
 
-/* 实体胶囊：尺寸比剧情卡胶囊紧一档；形态 / 配色统一交给全局胶囊层
-   （`.chip-pill` + `.chip-m-*` / `.chip-p-*`，类名由 `relationChip.entityChipClass` 算出）。 */
-.foreshadow-item__entity {
+/* 实体胶囊：形态 / 配色交给全局胶囊层（`.chip-pill` + `.chip-m-*` / `.chip-p-*`，
+   类名由 `relationChip.entityChipClass` 算出）；尺寸由壳的统一胶囊规格提供
+   （10.5px / 1px 8px / 1.6 / 500），中栏卡与只读详情共用，差异只在容器换行策略。 */
+.foreshadow-item__entity,
+.foreshadow-detail__entity {
   flex: none;
-  min-height: 22px;
-  padding: 3px 10px;
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.3;
 }
 
 /* `chip-pill.css` 晚于 writer 样式导入，其 `max-width: 100%` 会盖掉内容上限；
    提高一级特异性把「按内容截断」语义要回来（与剧情胶囊同一处理）。 */
-.foreshadow-item__entity.chip-pill {
+.foreshadow-item__entity.chip-pill,
+.foreshadow-detail__entity.chip-pill {
   max-width: 160px;
 }
 
 /* 名称按胶囊宽截断（flex 子项需 min-width: 0 才能收缩）。 */
-.foreshadow-item__entity-name {
+.foreshadow-item__entity-name,
+.foreshadow-detail__entity-name {
   min-width: 0;
   color: inherit;
   white-space: nowrap;
@@ -114,13 +113,9 @@
   text-overflow: ellipsis;
 }
 
-/* 「+N」计数胶囊：中性虚边 + 弱化文字，仅示意被隐藏数量（悬停可展开）。 */
+/* 「+N」计数胶囊：中性虚边 + 弱化文字；尺寸同样由壳的统一胶囊规格提供。 */
 .foreshadow-item__entity-more {
   flex: none;
-  min-height: 22px;
-  padding: 3px 10px;
-  font-size: 11.5px;
-  font-weight: 600;
   color: var(--text-mute);
   cursor: pointer;
   white-space: nowrap;
@@ -315,7 +310,11 @@
   white-space: pre-wrap;
 }
 
-.foreshadow-save-bar {
+/* 保存条 / 只读详情底部返回栏共用同一套容器（--soft-solid 软底 + --line 细描边 +
+   --r-lg 圆角 + 10 / 12 内衬）；两者语义不同（一个含保存与废弃动作，一个只放返回），
+   只共享外观、不共享组件（`SaveBar` 固定带 primary 保存按钮，不适用于只读详情）。 */
+.foreshadow-save-bar,
+.foreshadow-detail-bar {
   display: flex;
   flex: none;
   align-items: center;
@@ -331,108 +330,124 @@
   display: inline-flex;
 }
 
-/* 保存条内的「废弃 / 恢复」次按钮：尺寸（高 / 内边距 / 圆角 / 字号 / 过渡）全部由
-   统一 `.wf-btn` 决定，与右侧保存按钮同为默认 md 规格、同用 `Button` 组件，此处**只**
-   换底色 —— 容器已是 --soft-solid 软底，`secondary` 的 --soft-solid 填充会与容器同色，
-   故改用「软底上的控件」令牌 --control-on-soft 灰底 + --control-on-soft-line 细描边
-   （取值口径同 form.css 的 `.on-soft`）；文字色沿用 secondary 的 --text。
-   容器前缀把特异性提到 (0,2,0)，压过 `.wf-btn--secondary` 的底色，无需 !important。 */
-.foreshadow-save-bar__abandon .wf-btn {
+/* 软底容器内的次按钮（保存条「废弃 / 恢复」、只读详情「返回」）：尺寸（高 / 内边距 /
+   圆角 / 字号 / 过渡）全部由统一 `.wf-btn` 决定，与同栏主按钮同为默认 md 规格、同用
+   `Button` 组件，此处**只**换底色 —— 容器已是 --soft-solid 软底，`secondary` 的
+   --soft-solid 填充（或 ghost 的透明底）会与容器同色，故统一改用「软底上的控件」
+   令牌 --control-on-soft 灰底 + --control-on-soft-line 细描边（取值口径同 form.css 的
+   `.on-soft`）；文字色沿用 secondary 的 --text（ghost 由基类取 --text-dim）。
+   两处语义同为「软底容器里的次要动作」，故合并同一组规则，避免复制一套。
+   容器前缀把特异性提到 (0,2,0)，压过 `.wf-btn--secondary` / `.wf-btn--ghost` 的底色，
+   无需 !important。 */
+.foreshadow-save-bar__abandon .wf-btn,
+.foreshadow-detail-bar .wf-btn {
   background: var(--control-on-soft);
   box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
 }
 /* hover / 按压只加深填充（按压沿用 hover 底 + 基类 translateY）。 */
 .foreshadow-save-bar__abandon .wf-btn:hover:not(:disabled),
-.foreshadow-save-bar__abandon .wf-btn:active:not(:disabled) {
+.foreshadow-detail-bar .wf-btn:hover:not(:disabled),
+.foreshadow-save-bar__abandon .wf-btn:active:not(:disabled),
+.foreshadow-detail-bar .wf-btn:active:not(:disabled) {
   background: var(--control-on-soft-hover);
 }
-/* 禁用（已回收）：保留灰底、撤掉描边，仅由基类 `.wf-btn:disabled` 降不透明度。 */
-.foreshadow-save-bar__abandon .wf-btn:disabled {
+/* 禁用：保留灰底、撤掉描边（已回收的废弃按钮即此态），仅由基类 `.wf-btn:disabled` 降不透明度。 */
+.foreshadow-save-bar__abandon .wf-btn:disabled,
+.foreshadow-detail-bar .wf-btn:disabled {
   background: var(--control-on-soft);
   box-shadow: none;
 }
 
-/* ============================================================
-   章节模块右栏「伏笔」页签：全书伏笔只读总览
-   ------------------------------------------------------------------
-   列表卡（`.rp-card--list`）内按派生状态分组：组容器沿用回收站视图既有的
-   `.trash-group` 块级语义，但**不渲染组标题与条数**（状态由卡片自带胶囊表达）；
-   组间间距由本面板专属的 `.foreshadow-overview-group` 覆盖，不改动
-   `styles/writer-trash.css` 的 `.trash-group`（两处回收站仍在用其 18px 底距）。
-   卡片复用 `ForeshadowItem` 的 `readonly` / `compact` 变体，只做右栏
-   覆盖，不另造平行卡片（AGENTS §9）。只读卡不需要 hover 反馈：常态与 hover /
-   键盘焦点均无投影，仅保留 `--line` 描边作为边界（无 transform，AGENTS §8）。
-   ============================================================ */
+/* ---------- 右栏「伏笔」页签：只读详情 ---------- */
+/* 结构复用 .foreshadow-panel / __scroll / .foreshadow-fields；本段只补详情专属排版。
+   名称行 + 状态胶囊、描述段、相关实体平铺换行、底部返回栏。
 
-/* 组间距：原 `.trash-group` 的 18px 底距按「组标题（10.5px 字号 + 上下衬 4 / 8px）
-   + 列表」设计，删标题后直接用会显得松散。此处收到 14px——略大于网格自身的
-   12px `gap`，使组内卡片与组间形成 12 / 14 的可辨认层级；两个类连写把特异性
-   提到 (0,2,0)，压过后加载的 `.trash-group` 同特异性规则，无需 !important；
-   末组归零，避免滚动到底部多出一段空白。 */
-.trash-group.foreshadow-overview-group {
-  margin-bottom: 14px;
+   字段软底块（名称 / 描述 / 相关实体三块统一）：
+   容器 `.foreshadow-fields.on-soft` 已铺 `--soft-solid` 软底，块内若用同色会糊成一片，
+   故取「软底上的控件」令牌 `--control-on-soft` + `--control-on-soft-line` 细描边
+   （与 form.css `.on-soft` 的输入框、本文件保存条次按钮同一口径，四主题通用）；
+   内衬 10 / 12、圆角 `--r-lg` 与输入类控件（`.wf-textarea`）对齐。
+   块只裹「值」，标签（描述 / 相关实体）留在块外——与编辑态「标签在上、控件在下」
+   的层级一致；名称块的标题与状态本就是值，直接落在块内。 */
+.foreshadow-detail__head,
+.foreshadow-detail__desc,
+.foreshadow-detail__entities {
+  padding: 10px 12px;
+  background: var(--control-on-soft);
+  border-radius: var(--r-lg);
+  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
 }
 
-.trash-group.foreshadow-overview-group:last-child {
-  margin-bottom: 0;
+.foreshadow-detail__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
 }
 
-/* 右栏网格：轨道上限由 320px 放开为 `1fr`——最窄右栏（内容宽约 422px）下
-   `.wf-card-grid` 的单列会被封在 320px、右侧留白约 100px；改 `1fr` 后单列
-   吃满容器，两列及以上仍按 250px 下限自动分列。 */
-.wf-card-grid.foreshadow-overview-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+.foreshadow-detail__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  overflow-wrap: anywhere;
 }
 
-/* 总览卡底色改 `--pane`：列表卡已由通用 `pane-region` 提供 `--soft-solid` 软底
-   （与剧情 / AI 页签同款）。卡若仍用中栏的 `--soft-solid`，会与容器同色，故改
-   `--pane` 让卡成为软底之上的内容层。根节点仍带 `foreshadow-item` 类（由
-   `EntityStyleCard` 的 `className` 透传），覆盖选择器口径不变。
-   只读总览卡**不要投影**：显式撤掉通用 `.wf-card--halo` 的常态 `--sh-sm`，hover /
-   键盘焦点也一并置 `none`（只读卡无按钮语义，不需要光晕反馈，AGENTS §8 只约束
-   卡片不得位移 / 缩放，此处按用户要求连颜色类阴影反馈也去掉）。
-   覆盖优先级：本选择器 0,2,0（两个类）已高于基类 `.wf-card--halo` 的 0,1,0；hover /
-   focus 追加伪类后为 0,3,0，高于 `.wf-card--halo:hover` 的 0,2,0 与同文件
-   `.foreshadow-item:focus-visible` 的 0,2,0，无需 `!important`。
-   边框承担边缘区分：壳根元素本身 `border: none`，无阴影后卡身会糊进 `--soft-solid`
-   容器，故补一条 `--line` 细描边（四主题令牌，非硬编码色）。 */
-.foreshadow-overview-grid > .foreshadow-item {
-  background: var(--pane);
-  border: 1px solid var(--line);
-  box-shadow: none;
+/* 状态胶囊不参与标题行的收缩（名称可换行，状态始终完整可读）。 */
+.foreshadow-detail__status {
+  flex: none;
 }
 
-.foreshadow-overview-grid > .foreshadow-item:hover,
-.foreshadow-overview-grid > .foreshadow-item:focus-visible {
-  box-shadow: none;
-}
-
-/* 紧凑变体：右栏 2 列（每列约 255px）下收窄内衬 / 字号，描述只留两行——
-   右栏总览是浏览态，4 行会把右栏卡抬到比中栏卡更高，且挤压实体胶囊行。
-   壳的紧凑钩子是 `wf-entity-card--compact`；`.foreshadow-item` 前缀把特异性提到
-   (0,2,0)，压过壳的 `.wf-entity-card` (0,1,0)。 */
-.foreshadow-item.wf-entity-card--compact {
+.foreshadow-detail__section {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
-  padding: 11px 12px;
-  /* 右栏卡不需要中栏的 120px 最小高（`.wf-card--halo`），内容少时保持紧凑。 */
+  min-width: 0;
+}
+
+/* 段落小标题：与锚点块标题同口径（10px / 700 / 弱化色）。 */
+.foreshadow-detail__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+}
+
+/* 只读正文底座（.rp-read）本身可伸缩并内部滚动；详情里把「标签 + 正文」段作为
+   `.foreshadow-fields` 的唯一伸缩项，让它把剩余高度继续下发给描述块（相关实体段
+   与名称块仍按内容高度）。 */
+.foreshadow-detail__section--desc {
+  flex: 1 1 auto;
+}
+
+/* 描述块吃掉面板剩余高度（内容不足时撑满，不再贴内容高度）。
+   溢出走「整页滚动」：内容超高时本块按内容增高、由 `.foreshadow-panel__scroll`
+   统一滚动，故这里显式 `overflow: visible` 关掉 `.rp-read` 的内滚——
+   否则内滚会把下方三个锚点块挤到视口外且无法滚到。
+   内衬由上方字段软底块统一提供（原 `padding: 0` 撤掉，避免压掉块内衬）；
+   `min-height: 0` 撤掉 flex 项的内容下限，保证余量分配不被内容撑住。 */
+.foreshadow-detail__desc {
+  flex: 1 1 auto;
   min-height: 0;
+  overflow: visible;
 }
 
-.foreshadow-item.wf-entity-card--compact .wf-entity-card__title {
-  font-size: 13px;
+/* 相关实体：平铺 + 换行（与卡片的单行「+N」收口不同，详情空间足够时不裁内容）。 */
+.foreshadow-detail__entities {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
 }
 
-.foreshadow-item.wf-entity-card--compact .foreshadow-item__place-label {
+/* 详情容器不在壳内（自有 `.foreshadow-detail__entities`），显式复用壳的统一胶囊规格
+   （10.5px / 1px 8px / 1.6 / 500，无 min-height；值须与 entity-card.css 保持一致）。 */
+.foreshadow-detail__entities .chip-pill {
+  padding: 1px 8px;
   font-size: 10.5px;
-}
-
-.foreshadow-item.wf-entity-card--compact .foreshadow-item__place-value {
-  font-size: 11.5px;
-}
-
-.foreshadow-item.wf-entity-card--compact .foreshadow-item__desc {
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  font-size: 11.5px;
-  line-height: 1.55;
+  font-weight: 500;
+  line-height: 1.6;
 }

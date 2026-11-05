@@ -69,6 +69,12 @@ async function bootstrap(): Promise<void> {
   if (normalizedMaterial) initialMaterial = normalizedMaterial
   if (bootSettings[ACTIVITY_PINNED_SETTING_KEY] === 'true') initialActivityPinned = true
 
+  /* 活动栏固定态在 render 前同步到 body：Provider 的 `useEffect` 晚于首帧绘制，
+     若首帧缺这个类，`.writer-view` 会先按悬浮态的 20px 左内边距布局，再在 0.32s
+     内过渡到固定态的 64px（写作页整体横向滑动一下）。这里预写同值属空操作，
+     Provider 之后照常投影。 */
+  document.body.classList.toggle('act-pinned', initialActivityPinned)
+
   // HashRouter：生产环境 file:// 协议下 BrowserRouter 会白屏
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
