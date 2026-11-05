@@ -14,26 +14,27 @@
  */
 import type { RefObject } from 'react'
 import type { TagTone } from '../../../components/ui'
+import type { ForeshadowDisplayStatus } from '../../../../../shared/foreshadowStatus'
 import type {
   ForeshadowAnchorKind,
   ForeshadowRow,
-  ForeshadowStatus,
   ForeshadowUpdatePatch
 } from '../../../../../main/database/foreshadows'
+import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
 import type { ChapterRow, VolumeRow } from '../chapters/chapterTree'
 import { outlineItemLabel, type OutlineItemRow } from '../outline/outlineTree'
 
-export type { ForeshadowRow, ForeshadowStatus, ForeshadowUpdatePatch }
+export type { ForeshadowRow, ForeshadowUpdatePatch }
 
-/** 状态枚举展示顺序（与数据层白名单一致）。 */
-export const FORESHADOW_STATUSES: readonly ForeshadowStatus[] = [
-  'planted',
-  'recovered',
-  'abandoned'
-]
-
-/** 状态 → i18n key（显式映射，避免动态模板键绕过类型校验）。 */
+/**
+ * 状态 → i18n key（显式映射，避免动态模板键绕过类型校验）。
+ *
+ * 键按**派生展示状态**（`ForeshadowDisplayStatus`）而非落库 `status` 枚举取值：
+ * 状态不再可手动编辑，「建设中 / 埋设中 / 已回收 / 已废弃」全部来自
+ * `deriveForeshadowStatus`（`src/shared/foreshadowStatus.ts`）。
+ */
 export const FORESHADOW_STATUS_LABEL_KEYS = {
+  drafting: 'status.drafting',
   planted: 'status.planted',
   recovered: 'status.recovered',
   abandoned: 'status.abandoned'
@@ -50,10 +51,11 @@ export const FORESHADOW_ANCHOR_LABEL_KEYS = {
 } as const
 
 /**
- * 状态 → 胶囊色调（埋设中品牌色 / 已回收成功色 / 已废弃中性）。
+ * 派生状态 → 胶囊色调（埋设中品牌色 / 已回收成功色 / 建设中与已废弃中性）。
  * 列表卡与右栏共用同一份映射（AGENTS §9：不得在各处复制平行实现）。
  */
-export const FORESHADOW_STATUS_TONES: Record<ForeshadowStatus, TagTone> = {
+export const FORESHADOW_STATUS_TONES: Record<ForeshadowDisplayStatus, TagTone> = {
+  drafting: 'neutral',
   planted: 'brand',
   recovered: 'ok',
   abandoned: 'neutral'
@@ -268,19 +270,53 @@ export function foreshadowPlaceLabel(
   return formatForeshadowPlace(target.volume, target.chapter, labels)
 }
 
-/** 右栏表单草稿（与行值比对后仅提交变更字段）。 */
+/** 右栏表单草稿（与行值比对后仅提交变更字段）。状态不参与编辑（派生只读）。 */
 export interface ForeshadowDraft {
   title: string
-  description: string
-  status: ForeshadowStatus
+  /**
+   * 富文本描述**真源**（整条 Tiptap JSON 串；`null` = 空描述）。卡片摘要 / 悬停浮窗仍读
+   * 行值派生列 `description`，草稿不再持有纯文本。
+   */
+  descriptionJson: string | null
 }
 
-/** 按行值创建草稿。 */
+/**
+ * 读侧兜底：取行的富文本描述。
+ *
+ * - `description_json` 非空且**可解析** → 原样使用（富文本真源）；
+ * - 否则（`NULL` / 空串 / 坏 JSON，即富文本化之前的老数据）→ 用共享工具
+ *   `plainTextToDocJson(row.description)` 把派生纯文本按行包成合法文档；
+ * - 纯空白 / 空描述 → `null`（空正文口径，与主进程 `normalizeRichTextJson` 一致）。
+ *
+ * 坏 JSON 不抛错：右栏 / 弹窗不应因老库脏数据打不开；兜底后的文档与编辑器空态判定
+ * 同口径，保证「打开即净态」（草稿与解析基线相等）。
+ */
+export function resolveForeshadowDescriptionJson(row: ForeshadowRow): string | null {
+  const raw = row.descriptionJson?.trim() ?? ''
+  if (raw !== '') {
+    try {
+      JSON.parse(raw)
+      return raw
+    } catch {
+      // 坏 JSON：落回纯文本摘要兜底（见上方说明）。
+    }
+  }
+  const fallback = plainTextToDocJson(row.description)
+  return fallback === '' ? null : fallback
+}
+
+/** 按行值创建草稿（描述取富文本 JSON，老数据经读侧兜底）。 */
 export function createForeshadowDraft(row: ForeshadowRow): ForeshadowDraft {
-  return { title: row.title, description: row.description, status: row.status }
+  return { title: row.title, descriptionJson: resolveForeshadowDescriptionJson(row) }
 }
 
-/** 草稿 → 「仅变更字段」补丁（空对象 = 无改动）。 */
+/**
+ * 草稿 → 「仅变更字段」补丁（空对象 = 无改动）。
+ *
+ * 描述以**富文本 JSON** 为真源：与读侧解析基线（`resolveForeshadowDescriptionJson`）比对，
+ * 变更时只下发 `descriptionJson`——主进程据 JSON 派生纯文本摘要列，两列恒同步
+ * （与剧情场景 `buildScenePatch` 同口径）。老数据基线也走同一兜底，故「打开不编辑」不脏。
+ */
 export function buildForeshadowPatch(
   row: ForeshadowRow,
   draft: ForeshadowDraft
@@ -288,10 +324,14 @@ export function buildForeshadowPatch(
   const patch: ForeshadowUpdatePatch = {}
   const title = draft.title.trim()
   if (title !== row.title) patch.title = title
-  if (draft.description !== row.description) patch.description = draft.description
-  if (draft.status !== row.status) patch.status = draft.status
+  if (draft.descriptionJson !== resolveForeshadowDescriptionJson(row)) {
+    patch.descriptionJson = draft.descriptionJson
+  }
   return patch
 }
+
+/** 移除埋点结果：`recovered` = 已回收被服务端拒绝（须先移除回收位置），`failed` = 请求失败。 */
+export type ForeshadowClearAnchorOutcome = 'ok' | 'recovered' | 'failed'
 
 /**
  * 伏笔装配包：`Writer.tsx` 经 `useForeshadowBundle` 取用，按 props 透传中 / 右栏。
@@ -331,6 +371,17 @@ export interface ForeshadowBundle {
   onSelect: (id: number) => void
   /** 更新补丁；返回是否落库成功。 */
   onUpdate: (id: number, patch: ForeshadowUpdatePatch) => Promise<boolean>
+  /** 清空正文埋点（`body_*`）；已回收拒绝 → `recovered`。 */
+  onClearBodyAnchor: (id: number) => Promise<ForeshadowClearAnchorOutcome>
+  /** 清空大纲埋点（`outline_*`）；已回收拒绝 → `recovered`。 */
+  onClearOutlineAnchor: (id: number) => Promise<ForeshadowClearAnchorOutcome>
+  /** 清空回收点（`recover_*`）；返回是否落库成功（撤销回收不受限）。 */
+  onClearRecoverAnchor: (id: number) => Promise<boolean>
+  /**
+   * 废弃 toggle（`true` = 废弃，`false` = 恢复）。
+   * `'recovered'` = 已回收不可废弃（服务端拒绝），`'failed'` = 请求失败。
+   */
+  onSetAbandoned: (id: number, abandoned: boolean) => Promise<'ok' | 'recovered' | 'failed'>
   /** 软删除；返回是否落库成功。 */
   onDelete: (id: number) => Promise<boolean>
   /** 重新拉取列表（新建成功后 `selectFirst` = 选中刷新后首条）。 */

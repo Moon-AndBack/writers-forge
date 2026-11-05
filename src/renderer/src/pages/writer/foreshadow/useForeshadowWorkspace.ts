@@ -14,7 +14,11 @@ import type { RefObject } from 'react'
 import { createLogger } from '@renderer/lib/log'
 import { notifyForeshadowMarksRefresh } from '../../../components/editor/useForeshadowMarks'
 import { useUnsavedGuard } from '../../../shell/useUnsavedGuard'
-import type { ForeshadowRow, ForeshadowUpdatePatch } from './foreshadowTree'
+import type {
+  ForeshadowClearAnchorOutcome,
+  ForeshadowRow,
+  ForeshadowUpdatePatch
+} from './foreshadowTree'
 
 /** 伏笔域装配日志（转发至主进程落盘）。 */
 const log = createLogger('foreshadow')
@@ -39,6 +43,10 @@ export interface ForeshadowWorkspace {
   confirming: boolean
   select: (id: number) => void
   update: (id: number, patch: ForeshadowUpdatePatch) => Promise<boolean>
+  clearBodyAnchor: (id: number) => Promise<ForeshadowClearAnchorOutcome>
+  clearOutlineAnchor: (id: number) => Promise<ForeshadowClearAnchorOutcome>
+  clearRecoverAnchor: (id: number) => Promise<boolean>
+  setAbandoned: (id: number, abandoned: boolean) => Promise<'ok' | 'recovered' | 'failed'>
   remove: (id: number) => Promise<boolean>
   reload: (selectFirst?: boolean) => Promise<void>
 }
@@ -156,16 +164,24 @@ export function useForeshadowWorkspace(enabled: boolean, bookId: string): Foresh
     [activeId, guard]
   )
 
+  /** 用服务端返回的整行替换列表项（写操作统一入口，避免四处复制 map）。 */
+  const applyUpdatedRow = useCallback(
+    (updated: ForeshadowRow): void => {
+      setRowsState((prev) =>
+        prev.bookId === bookId
+          ? { bookId, rows: prev.rows.map((row) => (row.id === updated.id ? updated : row)) }
+          : prev
+      )
+    },
+    [bookId]
+  )
+
   const update = useCallback(
     async (id: number, patch: ForeshadowUpdatePatch): Promise<boolean> => {
       try {
         const updated = await window.api.foreshadow.update(id, patch)
         if (!updated) return false
-        setRowsState((prev) =>
-          prev.bookId === bookId
-            ? { bookId, rows: prev.rows.map((row) => (row.id === id ? updated : row)) }
-            : prev
-        )
+        applyUpdatedRow(updated)
         // 标题变更 / 锚点快照刷新：让常驻的章节 / 大纲编辑器重拉正文标记。
         notifyForeshadowMarksRefresh()
         return true
@@ -174,7 +190,75 @@ export function useForeshadowWorkspace(enabled: boolean, bookId: string): Foresh
         return false
       }
     },
-    [bookId]
+    [applyUpdatedRow]
+  )
+
+  /** 移除正文埋点：清空 `body_*`；已回收被服务端拒绝时回传 `recovered`。 */
+  const clearBodyAnchor = useCallback(
+    async (id: number): Promise<ForeshadowClearAnchorOutcome> => {
+      try {
+        const result = await window.api.foreshadow.clearBodyAnchor(id)
+        if (!result.ok) return result.reason === 'recovered' ? 'recovered' : 'failed'
+        applyUpdatedRow(result.row)
+        notifyForeshadowMarksRefresh()
+        return 'ok'
+      } catch (error) {
+        log.warn('移除正文埋点失败', error)
+        return 'failed'
+      }
+    },
+    [applyUpdatedRow]
+  )
+
+  /** 移除大纲埋点：清空 `outline_*`；已回收被服务端拒绝时回传 `recovered`。 */
+  const clearOutlineAnchor = useCallback(
+    async (id: number): Promise<ForeshadowClearAnchorOutcome> => {
+      try {
+        const result = await window.api.foreshadow.clearOutlineAnchor(id)
+        if (!result.ok) return result.reason === 'recovered' ? 'recovered' : 'failed'
+        applyUpdatedRow(result.row)
+        notifyForeshadowMarksRefresh()
+        return 'ok'
+      } catch (error) {
+        log.warn('移除大纲埋点失败', error)
+        return 'failed'
+      }
+    },
+    [applyUpdatedRow]
+  )
+
+  /** 移除回收位置：清空 `recover_*`，状态按剩余锚点 / 废弃标记重新派生。 */
+  const clearRecoverAnchor = useCallback(
+    async (id: number): Promise<boolean> => {
+      try {
+        const updated = await window.api.foreshadow.clearRecoverAnchor(id)
+        if (!updated) return false
+        applyUpdatedRow(updated)
+        notifyForeshadowMarksRefresh()
+        return true
+      } catch (error) {
+        log.warn('移除回收位置失败', error)
+        return false
+      }
+    },
+    [applyUpdatedRow]
+  )
+
+  /** 废弃 toggle：`true` 废弃、`false` 恢复；已回收（服务端拒绝）单独回传原因。 */
+  const setAbandoned = useCallback(
+    async (id: number, abandoned: boolean): Promise<'ok' | 'recovered' | 'failed'> => {
+      try {
+        const result = await window.api.foreshadow.setAbandoned(id, abandoned)
+        if (!result.ok) return result.reason === 'recovered' ? 'recovered' : 'failed'
+        applyUpdatedRow(result.row)
+        notifyForeshadowMarksRefresh()
+        return 'ok'
+      } catch (error) {
+        log.warn('切换伏笔废弃状态失败', error)
+        return 'failed'
+      }
+    },
+    [applyUpdatedRow]
   )
 
   const remove = useCallback(
@@ -214,6 +298,10 @@ export function useForeshadowWorkspace(enabled: boolean, bookId: string): Foresh
     confirming,
     select,
     update,
+    clearBodyAnchor,
+    clearOutlineAnchor,
+    clearRecoverAnchor,
+    setAbandoned,
     remove,
     reload
   }

@@ -42,6 +42,7 @@ const TARGET_COLUMNS: readonly string[] = [
   'book_id',
   'title',
   'description',
+  'description_json',
   'recovery_note',
   'status',
   'body_kind',
@@ -126,6 +127,10 @@ function buildCopyExpressions(columns: Set<string>): string[] {
     'book_id',
     'title',
     'description',
+    // 富文本真源：极老库（触发本次重建 = 仍有 `anchor_kind`）必然没有该列，回落 NULL，
+    // 由后续 `foreshadowsRichDescriptionMigration` 从 `description` 回填；若库已同时含
+    // 该列则原样保留，避免重建丢数据。
+    col('description_json', 'NULL'),
     col('recovery_note', `''`),
     'status',
     // 正文埋点：只收章节锚点。

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Editor } from '@tiptap/core'
+import { deriveForeshadowStatus } from '../../../../shared/foreshadowStatus'
+import { sliceSelectedText } from '../../../../shared/foreshadowAnchorText'
 import type { ForeshadowAnchor } from '../../../../main/database/foreshadows'
 import type { CleanWordCategory } from '../../../../preload/types/cleanWords'
 import { EditorContextMenu } from './EditorContextMenu'
@@ -38,7 +40,7 @@ import { useToast } from '../ui'
  *      弹窗内选目标，无可挂候选时由弹窗给空态提示）；
  *   3. 「回收伏笔」（`foreshadow` ns `contextMenu.recover`，**仅章节编辑器**出现——回收是
  *      「伏笔在正文里兑现」的事件、需要正文位置，大纲是规划层，故大纲不显示该项；当前书
- *      **没有**埋设中（`planted`）伏笔时置灰不可点，可回收性在 `bookId` 变化 / 伏笔写操作后重算）；
+ *      **没有**埋设中（派生 `planted`）伏笔时置灰不可点，可回收性在 `bookId` 变化 / 伏笔写操作后重算）；
  *   4. 「搜索选中文字」（传 `onSearchText` 时出现）；
  *   5. 「加入违禁词库」（传 `onAddCleanWord` 时出现）——点击后**在同一浮层内**展开
  *      六个类别按钮（二级选择），选完即入库并收起。
@@ -88,7 +90,8 @@ export interface SelectionContextMenuProps {
 /** 右键点开菜单时的锚点快照（弹窗据此构造落库 payload）。 */
 interface PendingAnchor {
   anchor: ForeshadowAnchor
-  quote: string
+  /** 选中文字 = 锚点 `quote.slice(charStart, charEnd)`（**不是**整段快照）。 */
+  selectedText: string
 }
 
 /** 单条添加结果 → toast 文案 key（`common` ns）。 */
@@ -108,7 +111,7 @@ function readSelectedText(editor: Editor | null): string {
   if (!editor) return ''
   const info = resolveParagraphAnchor(editor)
   if (!info) return ''
-  return info.quote.slice(info.charStart, info.charEnd).trim()
+  return sliceSelectedText(info.quote, info.charStart, info.charEnd).trim()
 }
 
 /**
@@ -126,13 +129,14 @@ function toSearchQuery(text: string): string {
 }
 
 /**
- * 读取全书伏笔并判断是否存在「可回收」项（**仅** `status === 'planted'`）。
+ * 读取全书伏笔并判断是否存在「可回收」项（**派生状态为 `planted`**）。
+ * 建设中 / 已废弃 / 已回收均不可回收（回收点优先，废弃记录不再参与判断）。
  * 失败按不可回收处理（永不抛错）：菜单项置灰比误开空弹窗更稳妥。
  */
 async function fetchRecoverable(bookId: string): Promise<boolean> {
   try {
     const rows = await window.api.foreshadow.list(bookId)
-    return rows.some((row) => row.status === 'planted')
+    return rows.some((row) => deriveForeshadowStatus(row) === 'planted')
   } catch {
     return false
   }
@@ -148,7 +152,7 @@ interface SelectionMenuContentProps {
   onAttachForeshadow: () => void
   /** 当前上下文是否显示「回收伏笔」（仅章节编辑器；大纲是规划层，回收只在正文发生）。 */
   showRecover: boolean
-  /** 当前书是否有埋设中（`planted`）伏笔（false → 「回收伏笔」置灰，菜单项仍显示）。 */
+  /** 当前书是否有埋设中（派生 `planted`）伏笔（false → 「回收伏笔」置灰，菜单项仍显示）。 */
   canRecover: boolean
   /** 打开回收伏笔弹窗（菜单先收起）。 */
   onRecoverForeshadow: () => void
@@ -332,7 +336,7 @@ export function SelectionContextMenu({
   /** 「回收伏笔」仅在章节上下文出现（大纲是规划层，回收只在正文发生；槽位语义固定）。 */
   const showRecover = chapterId !== null
   /**
-   * 当前书是否存在「埋设中」伏笔（`status === 'planted'`；软删除已由数据层过滤）。
+   * 当前书是否存在「埋设中」伏笔（派生状态为 `planted`；软删除已由数据层过滤）。
    * 决定「回收伏笔」菜单项是否置灰；未就绪时按不可回收处理（保守，避免点开空列表）。
    */
   const [hasRecoverable, setHasRecoverable] = useState(false)
@@ -372,7 +376,12 @@ export function SelectionContextMenu({
   const openDialog = (): void => {
     const info = editor ? resolveParagraphAnchor(editor) : null
     if (!info) return
-    setPending({ anchor: buildAnchor(info, chapterId, outlineItemId), quote: info.quote })
+    setPending({
+      anchor: buildAnchor(info, chapterId, outlineItemId),
+      // 弹窗只展示「选中文字」：快照整段仍随 anchor.quote 落库（失效判定用），
+      // 展示侧必须切出窄串，避免再次把整段当选中文字渲染。
+      selectedText: sliceSelectedText(info.quote, info.charStart, info.charEnd)
+    })
   }
 
   return (
@@ -432,7 +441,7 @@ export function SelectionContextMenu({
           bookId={bookId}
           anchor={pending.anchor}
           contextLabel={contextLabel}
-          selectedText={pending.quote}
+          selectedText={pending.selectedText}
           defaultTitle=""
           onClose={() => setPending(null)}
           onCreated={() => {

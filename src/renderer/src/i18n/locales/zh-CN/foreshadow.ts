@@ -6,7 +6,8 @@
  * （如 `t('status.planted')`）；含插值文案经第二参数传入
  * （如 `t('dialog.delete.message', { title })`）。
  *
- * 状态枚举键与数据层 `ForeshadowStatus`（planted / recovered / abandoned）逐字一致；
+ * 状态键按**派生展示状态**（drafting / planted / recovered / abandoned，见
+ * `src/shared/foreshadowStatus.ts`）登记；落库 `status` 仅是废弃标记，不再直接驱动文案。
  * 后续批次可在本文件按需补 key，不预造未用文案以外的结构。
  */
 const foreshadow = {
@@ -16,7 +17,10 @@ const foreshadow = {
   listItem: {
     anchored: '已锚定',
     unanchored: '未锚定',
-    anchorInvalid: '锚点已失效'
+    anchorInvalid: '锚点已失效',
+    /** 相关实体行（无障碍名）与「+N」计数胶囊提示。 */
+    relatedEntities: '相关实体',
+    moreEntities: '还有 {{n}} 个相关实体'
   },
   anchor: {
     invalid: '原文已改动，锚点已失效',
@@ -26,6 +30,7 @@ const foreshadow = {
     unnamedTarget: '未命名条目'
   },
   status: {
+    drafting: '建设中',
     planted: '埋设中',
     recovered: '已回收',
     abandoned: '已废弃'
@@ -50,19 +55,22 @@ const foreshadow = {
     selectedText: '选中文字',
     selectedTextEmpty: '未选中文字',
     description: '描述',
-    descriptionPlaceholder: '补充埋设意图、回收方式等',
-    status: '状态'
+    descriptionPlaceholder: '补充埋设意图、回收方式等'
   },
   detail: {
     emptyTitle: '未选择伏笔',
     emptyDesc: '在列表中选择一条伏笔，查看并编辑详情',
     plant: '正文埋点',
     plant2: '大纲埋点',
-    plant2Remove: '移除',
+    remove: '移除',
     plantEmpty: '未锚定',
     recover: '回收位置',
     recoverEmpty: '未回收',
-    recoverNote: '回收备注'
+    recoverNote: '回收备注',
+    abandon: '废弃',
+    restore: '恢复',
+    abandonRecoveredHint: '已回收的伏笔不可废弃',
+    removeRecoveredHint: '已回收的伏笔不可移除埋点，请先移除回收位置'
   },
   dialog: {
     createTitle: '新建伏笔',
@@ -80,6 +88,17 @@ const foreshadow = {
     removeAnchor2: {
       title: '移除大纲埋点',
       message: '确定移除这条伏笔的大纲埋点？该处的原文摘抄与位置快照会一并清除。',
+      confirm: '移除'
+    },
+    removeBody: {
+      title: '移除正文埋点',
+      message: '确定移除这条伏笔的正文埋点？该处的原文摘抄与位置快照会一并清除。',
+      confirm: '移除'
+    },
+    removeRecover: {
+      title: '移除回收位置',
+      message:
+        '确定移除这条伏笔的回收位置？该处的原文摘抄与位置快照会一并清除，状态将按剩余锚点重新判定。',
       confirm: '移除'
     }
   },
@@ -105,8 +124,11 @@ const foreshadow = {
     createFailed: '创建伏笔失败，请重试',
     updateSuccess: '伏笔已保存',
     updateFailed: '保存伏笔失败，请重试',
+    clearAnchorFailed: '移除失败，请重试',
     recoverSuccess: '伏笔已回收',
     recoverFailed: '回收伏笔失败，请重试',
+    abandonSuccess: '伏笔已废弃',
+    restoreSuccess: '伏笔已恢复',
     deleteSuccess: '伏笔已删除',
     deleteFailed: '删除伏笔失败，请重试'
   },

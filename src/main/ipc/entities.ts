@@ -15,7 +15,7 @@ import type {
   EntityType,
   UpdateEntityPatch
 } from '../database/entities'
-import { matchEntities } from '../match/entityMatcher'
+import { matchEntities, matchEntitiesMany } from '../match/entityMatcher'
 
 /** 实体域日志 scope。 */
 const log = logger.scope('entities')
@@ -125,6 +125,7 @@ function parseUpdatePatch(input: unknown): UpdateEntityPatch | null {
  * - entities:update  (id: number, patch)             → EntityDetail | null
  * - entities:delete  (id: number)                    → boolean
  * - entities:match   (bookId: string, text: string)  → EntityMatch[]（词表取统一设定库主表）
+ * - entities:matchMany(bookId: string, texts: string[]) → EntityMatch[][]（等长同序，复用一次词表）
  * - entities:revision(bookId: string)                → string（词表版本签名，供渲染层缓存失效）
  *
  * 说明：`entities:match` / `entities:revision` 的数据源已切换到统一设定库
@@ -169,6 +170,14 @@ export function registerEntitiesIpc(): void {
   ipcMain.handle('entities:match', (_event, bookId: unknown, text: unknown) => {
     if (typeof bookId !== 'string' || typeof text !== 'string') return []
     return matchEntities(bookId, text)
+  })
+
+  // 批量匹配：一次取匹配器 / 只算一次词表版本，供列表层批量算实体胶囊（避免每段一次 IPC）。
+  // 入参逐项校验；非法返回空数组，调用方按长度对齐并静默为空。
+  ipcMain.handle('entities:matchMany', (_event, bookId: unknown, texts: unknown) => {
+    if (typeof bookId !== 'string' || !Array.isArray(texts)) return []
+    if (!texts.every((text): text is string => typeof text === 'string')) return []
+    return matchEntitiesMany(bookId, texts)
   })
 
   // 词表版本签名（统一设定库实体 / 别名任一变更即变）：供渲染层段落匹配缓存判定失效。

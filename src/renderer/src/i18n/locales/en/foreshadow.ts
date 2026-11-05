@@ -12,7 +12,9 @@ const foreshadow = {
   listItem: {
     anchored: 'Anchored',
     unanchored: 'Not anchored',
-    anchorInvalid: 'Anchor invalid'
+    anchorInvalid: 'Anchor invalid',
+    relatedEntities: 'Related entities',
+    moreEntities: '{{n}} more related entities'
   },
   anchor: {
     invalid: 'The source text has changed; the anchor is invalid',
@@ -22,6 +24,7 @@ const foreshadow = {
     unnamedTarget: 'Untitled item'
   },
   status: {
+    drafting: 'In progress',
     planted: 'Planted',
     recovered: 'Recovered',
     abandoned: 'Abandoned'
@@ -46,19 +49,23 @@ const foreshadow = {
     selectedText: 'Selected text',
     selectedTextEmpty: 'No text selected',
     description: 'Description',
-    descriptionPlaceholder: 'Describe the intent, how it pays off, and so on',
-    status: 'Status'
+    descriptionPlaceholder: 'Describe the intent, how it pays off, and so on'
   },
   detail: {
     emptyTitle: 'No foreshadowing selected',
     emptyDesc: 'Select a foreshadowing entry in the list to view and edit its details',
     plant: 'Body planting point',
     plant2: 'Outline planting point',
-    plant2Remove: 'Remove',
+    remove: 'Remove',
     plantEmpty: 'Not anchored',
     recover: 'Recovery location',
     recoverEmpty: 'Not recovered',
-    recoverNote: 'Recovery note'
+    recoverNote: 'Recovery note',
+    abandon: 'Abandon',
+    restore: 'Restore',
+    abandonRecoveredHint: 'Recovered foreshadowing cannot be abandoned',
+    removeRecoveredHint:
+      'Recovered foreshadowing cannot have its planting point removed; remove the recovery location first'
   },
   dialog: {
     createTitle: 'New foreshadowing',
@@ -79,6 +86,18 @@ const foreshadow = {
       message:
         'Remove the outline planting point of this foreshadowing? Its quoted text and position snapshot will be cleared.',
       confirm: 'Remove'
+    },
+    removeBody: {
+      title: 'Remove body planting point',
+      message:
+        'Remove the body planting point of this foreshadowing? Its quoted text and position snapshot will be cleared.',
+      confirm: 'Remove'
+    },
+    removeRecover: {
+      title: 'Remove recovery location',
+      message:
+        'Remove the recovery location of this foreshadowing? Its quoted text and position snapshot will be cleared, and the status will be recalculated from the remaining anchors.',
+      confirm: 'Remove'
     }
   },
   deleteImpact: {
@@ -98,8 +117,11 @@ const foreshadow = {
     createFailed: 'Failed to create foreshadowing. Please try again',
     updateSuccess: 'Foreshadowing saved',
     updateFailed: 'Failed to save foreshadowing. Please try again',
+    clearAnchorFailed: 'Failed to remove. Please try again',
     recoverSuccess: 'Foreshadowing recovered',
     recoverFailed: 'Failed to recover foreshadowing. Please try again',
+    abandonSuccess: 'Foreshadowing abandoned',
+    restoreSuccess: 'Foreshadowing restored',
     deleteSuccess: 'Foreshadowing deleted',
     deleteFailed: 'Failed to delete foreshadowing. Please try again'
   },

@@ -33,6 +33,10 @@ export function useForeshadowBundle(
     confirming,
     select,
     update,
+    clearBodyAnchor,
+    clearOutlineAnchor,
+    clearRecoverAnchor,
+    setAbandoned,
     remove,
     reload
   } = useForeshadowWorkspace(enabled, bookId)
@@ -65,6 +69,10 @@ export function useForeshadowBundle(
       confirming,
       onSelect: handleSelect,
       onUpdate: update,
+      onClearBodyAnchor: clearBodyAnchor,
+      onClearOutlineAnchor: clearOutlineAnchor,
+      onClearRecoverAnchor: clearRecoverAnchor,
+      onSetAbandoned: setAbandoned,
       onDelete: remove,
       reload
     }
@@ -87,6 +95,10 @@ export function useForeshadowBundle(
     confirming,
     handleSelect,
     update,
+    clearBodyAnchor,
+    clearOutlineAnchor,
+    clearRecoverAnchor,
+    setAbandoned,
     remove,
     reload
   ])

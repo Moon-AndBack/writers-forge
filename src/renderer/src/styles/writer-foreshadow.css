@@ -3,7 +3,8 @@
    ------------------------------------------------------------------
    中栏：`.foreshadow-grid` 弹性轨道多列网格（布局走通用 `.wf-card-grid`，与
    设定档案五域共用），
-   卡 `.foreshadow-item` 四行（名称 / 埋点位置 / 回收位置 / 描述），复用通用
+   卡 `.foreshadow-item` 五行（名称 / 埋点位置 / 回收位置 / 描述 / 相关实体；用了
+   大纲埋点再多一行「大纲埋点」），复用通用
    `.wf-card--halo`（常态中性，hover / 选中仅描边环 + 外发光），全程无位移 / 缩放，
    transition 只过渡阴影 / 颜色（AGENTS §8）。
    右栏：无面板头（模块标题由中栏承载），四块独立底色卡 —— 可编辑块 + 埋点只读块 +
@@ -17,7 +18,7 @@
    钩子保留，不设宽度上限：网格吃满 `.editor-inner.is-full` 的可用宽，列数由 `auto-fit`
    随中栏宽度增减（与五域 `.dossier-grid` 同口径）。 */
 
-/* ---------- 列表卡（四行） ---------- */
+/* ---------- 列表卡（五行） ---------- */
 .foreshadow-item {
   display: flex;
   flex-direction: column;
@@ -127,6 +128,69 @@
   overflow-wrap: anywhere;
 }
 
+/* 相关实体行：描述之后一行（无实体不渲染，不占空位）。单行、按卡内容实测宽收口，
+   溢出由「+N」计数胶囊占 1 槽；悬停「+N」浮窗列出被收口的实体。
+   卡片无 max-height、同行网格默认 stretch 拉齐，故新增这一行只抬高整卡的最小内容高，
+   描述仍保持三行 clamp（无需下调行数上限）；无实体的卡高度完全不变。 */
+.foreshadow-item__entities {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* 实体胶囊：尺寸比剧情卡胶囊紧一档；形态 / 配色统一交给全局胶囊层
+   （`.chip-pill` + `.chip-m-*` / `.chip-p-*`，类名由 `relationChip.entityChipClass` 算出）。 */
+.foreshadow-item__entity {
+  flex: none;
+  min-height: 22px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* `chip-pill.css` 晚于 writer 样式导入，其 `max-width: 100%` 会盖掉内容上限；
+   提高一级特异性把「按内容截断」语义要回来（与剧情胶囊同一处理）。 */
+.foreshadow-item__entity.chip-pill {
+  max-width: 160px;
+}
+
+/* 名称按胶囊宽截断（flex 子项需 min-width: 0 才能收缩）。 */
+.foreshadow-item__entity-name {
+  min-width: 0;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 「+N」计数胶囊：中性虚边 + 弱化文字，仅示意被隐藏数量（悬停可展开）。 */
+.foreshadow-item__entity-more {
+  flex: none;
+  min-height: 22px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-mute);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* 胶囊层导入更靠后：提高一级特异性把虚边 / 弱化文字钉住（底色 / 圆角仍由胶囊层提供）。 */
+.foreshadow-item__entity-more.chip-pill {
+  border: 1px dashed var(--line);
+  color: var(--text-mute);
+}
+
+/* 悬停「+N」只提亮描边 / 文字（虚边与尺寸不变，无位移 / 缩放，AGENTS §8）。 */
+.foreshadow-item__entity-more.chip-pill:hover {
+  border-color: color-mix(in srgb, var(--text-mute) 60%, transparent);
+  color: var(--text-dim);
+}
+
 .foreshadow-loading {
   padding: 24px 0;
   font-size: 12px;
@@ -188,7 +252,7 @@
   flex: 1 0 auto;
 }
 
-/* 名称 / 状态：按内容高度，不参与剩余空间分配。 */
+/* 名称：按内容高度，不参与剩余空间分配。 */
 .foreshadow-fields > .wf-field {
   flex: none;
 }
@@ -199,7 +263,7 @@
   min-height: 0;
 }
 
-/* 控件容器同步转纵向 flex（默认 block 无法把高度分给 Textarea）。 */
+/* 控件容器同步转纵向 flex（默认 block 无法把高度分给富文本字段）。 */
 .foreshadow-fields > .wf-field.foreshadow-fields__desc > .wf-field__control {
   display: flex;
   flex-direction: column;
@@ -207,12 +271,19 @@
   min-height: 0;
 }
 
-/* 描述输入框拉满控件容器：`rows` 只提供固有高度（无余量时的下限），实际高度由 flex 决定；
-   去掉手动 resize，避免与自动撑满互相打架。 */
-.foreshadow-fields > .wf-field.foreshadow-fields__desc .wf-textarea {
+/* 描述富文本字段容器：撑满控件容器剩余高度（内部 `.short-rich-field--fill` 继续撑满，
+   内容超高时由字段自身滚动）；新建弹窗中无固定高度约束，退化为按内容高度。 */
+.foreshadow-desc-field {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* 右栏无可分配余量时仍保留可用高度下限（与改造前 Textarea 的 min-height 同口径）；
+   剩余高度不足时由 `.foreshadow-panel__scroll` 接管滚动。 */
+.foreshadow-fields > .wf-field.foreshadow-fields__desc .short-rich-field--fill {
   min-height: 82px;
-  resize: none;
 }
 
 .foreshadow-anchor-card__head {
@@ -306,4 +377,30 @@
   background: var(--soft-solid);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
+}
+
+/* 废弃 / 恢复按钮的 tooltip 锚点容器（禁用按钮不触发鼠标事件，故包一层 span）。 */
+.foreshadow-save-bar__abandon {
+  display: inline-flex;
+}
+
+/* 保存条内的「废弃 / 恢复」次按钮：尺寸（高 / 内边距 / 圆角 / 字号 / 过渡）全部由
+   统一 `.wf-btn` 决定，与右侧保存按钮同为默认 md 规格、同用 `Button` 组件，此处**只**
+   换底色 —— 容器已是 --soft-solid 软底，`secondary` 的 --soft-solid 填充会与容器同色，
+   故改用「软底上的控件」令牌 --control-on-soft 灰底 + --control-on-soft-line 细描边
+   （取值口径同 form.css 的 `.on-soft`）；文字色沿用 secondary 的 --text。
+   容器前缀把特异性提到 (0,2,0)，压过 `.wf-btn--secondary` 的底色，无需 !important。 */
+.foreshadow-save-bar__abandon .wf-btn {
+  background: var(--control-on-soft);
+  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
+}
+/* hover / 按压只加深填充（按压沿用 hover 底 + 基类 translateY）。 */
+.foreshadow-save-bar__abandon .wf-btn:hover:not(:disabled),
+.foreshadow-save-bar__abandon .wf-btn:active:not(:disabled) {
+  background: var(--control-on-soft-hover);
+}
+/* 禁用（已回收）：保留灰底、撤掉描边，仅由基类 `.wf-btn:disabled` 降不透明度。 */
+.foreshadow-save-bar__abandon .wf-btn:disabled {
+  background: var(--control-on-soft);
+  box-shadow: none;
 }

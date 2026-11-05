@@ -1,4 +1,6 @@
+import { deriveForeshadowStatus } from '../../shared/foreshadowStatus'
 import { getDb } from './index'
+import { derivePlainText, normalizeRichTextJson } from './richText'
 import {
   BODY_COLUMNS,
   OUTLINE_COLUMNS,
@@ -20,14 +22,22 @@ import {
  * - **回收点**：`recover_*` 仍为「章节 / 大纲条目 / 未记录」三态，与埋点共用同一套
  *   归一化 / 书域校验；
  * - **软删除**：`deleteForeshadow` 只置 `deleted_at`，查询一律过滤；
+ * - **状态自动派生**：`status` 列只作废弃标记（`'abandoned'` / `'planted'`），展示状态
+ *   由 `deriveForeshadowStatus`（`src/shared/foreshadowStatus.ts`）按回收点 / 埋点派生；
  * - 锚点目标（章 / 大纲条目）必须属于同一本书，写入前显式校验；
- * - **读路径已拆出**：列表 / 单条 / 锚点反查在 `foreshadowsQuery.ts`（§3 单文件 ≤500 行）。
+ * - **读路径已拆出**：列表 / 单条 / 锚点反查在 `foreshadowsQuery.ts`；
+ *   锚点清空写路径（含已回收守卫）在 `foreshadowsClear.ts`（§3 单文件 ≤500 行）。
  */
 
 /** 毫秒精度时间戳表达式，对齐 `plotShared.ts` / 大纲写入口径。 */
 const NOW = `strftime('%Y-%m-%d %H:%M:%f', 'now')`
 
-/** 伏笔状态：已埋下 / 已回收 / 已放弃。 */
+/**
+ * `status` 列的**落库值**：新模型下仅作**废弃标记** —— `'planted'` = 未废弃、
+ * `'abandoned'` = 已废弃（可撤销）。`'recovered'` 仅为历史遗留值：CHECK 约束保留它
+ * （不做表迁移），但新代码**不得**写入，读取时由 `deriveForeshadowStatus`
+ * （`src/shared/foreshadowStatus.ts`）按回收点 / 埋点派生，展示状态见 `ForeshadowDisplayStatus`。
+ */
 export type ForeshadowStatus = 'planted' | 'recovered' | 'abandoned'
 
 /** 正文埋点类型：`body_*` 槽位只可能是章节段落 / 未埋设。 */
@@ -84,8 +94,18 @@ export interface ForeshadowRow {
   bookId: string
   title: string
   description: string
+  /**
+   * 富文本描述（**真源**）：整条块级 Tiptap JSON，只含实体高亮；`NULL` = 尚未富文本化 /
+   * 空描述。`description` 是其**派生纯文本摘要**（卡片截断 / 悬停浮窗第三行 / 字数统计）。
+   */
+  descriptionJson: string | null
   /** 回收备注：回收时填写的说明，空串 = 无备注。 */
   recoveryNote: string
+  /**
+   * 废弃标记（**不是展示状态**）：`'abandoned'` = 已废弃，其余 = 未废弃。
+   * 展示状态请用 `deriveForeshadowStatus(row)`（回收点优先 → 废弃 → 埋点 → 建设中）。
+   * 历史遗留的 `'recovered'` 在派生时被忽略。
+   */
   status: ForeshadowStatus
   /** 正文埋点类型：`'chapter'` = 已埋在某章段落。 */
   bodyKind: ForeshadowBodyKind
@@ -125,6 +145,13 @@ export interface ForeshadowRow {
 export interface ForeshadowCreatePayload {
   title: string
   description?: string
+  /**
+   * 富文本描述（JSON 串，`null` = 空描述）。提供时以其为真源，并**派生** `description`
+   * 纯文本摘要（忽略同传入的 `description`）；缺省则保持旧行为：只写纯文本
+   * `description`、`description_json` 留 `NULL`（读侧兜底）。
+   */
+  descriptionJson?: string | null
+  /** 落库废弃标记；缺省 `'planted'`（新建伏笔不可能是废弃态）。 */
   status?: ForeshadowStatus
   /** 正文埋点：只接受章节锚点（`kind: 'chapter'`）。 */
   anchor?: ForeshadowBodyAnchor | ForeshadowNoAnchor
@@ -132,13 +159,19 @@ export interface ForeshadowCreatePayload {
   anchor2?: ForeshadowOutlineAnchor | ForeshadowNoAnchor
 }
 
-/** 更新伏笔补丁：字段缺省保持不变；`anchor: null` = 清除锚点。 */
+/**
+ * 更新伏笔补丁：字段缺省保持不变；`anchor: null` = 清除锚点。
+ *
+ * **不含 `status`**：状态不再经 update 补丁写入——废弃 / 恢复统一走
+ * `setForeshadowAbandoned`（`foreshadow.setAbandoned`），回收由回收点锚点派生。
+ */
 export interface ForeshadowUpdatePatch {
   title?: string
   description?: string
+  /** 富文本描述（JSON 串，`null` = 清空）；提供时两列同写，`description` 由 JSON 派生。 */
+  descriptionJson?: string | null
   /** 回收备注（回收伏笔时写入；空串 = 清空）。 */
   recoveryNote?: string
-  status?: ForeshadowStatus
   anchor?: ForeshadowBodyAnchor | ForeshadowNoAnchor | null
   /** 大纲埋点；`null` = 清除大纲埋点（`outline_*` 全清）。 */
   anchor2?: ForeshadowOutlineAnchor | ForeshadowNoAnchor | null
@@ -148,7 +181,8 @@ export interface ForeshadowUpdatePatch {
 
 /** 伏笔列 SQL 片段（AS 别名对齐 `ForeshadowRow`）；读路径模块 `foreshadowsQuery.ts` 复用。 */
 export const FORESHADOW_COLUMNS =
-  'id, book_id AS bookId, title, description, recovery_note AS recoveryNote, status, ' +
+  'id, book_id AS bookId, title, description, description_json AS descriptionJson, ' +
+  'recovery_note AS recoveryNote, status, ' +
   'body_kind AS bodyKind, body_chapter_id AS bodyChapterId, ' +
   'body_paragraph_idx AS bodyParagraphIdx, body_quote AS bodyQuote, ' +
   'body_char_start AS bodyCharStart, body_char_end AS bodyCharEnd, ' +
@@ -178,20 +212,30 @@ export function createForeshadow(bookId: string, payload: ForeshadowCreatePayloa
   // 属性名即槽位：`anchor` → 正文埋点，`anchor2` → 大纲埋点（类型已限定 kind）。
   const body = normalizeAnchor(db, bookId, payload.anchor, '正文埋点')
   const outline = normalizeAnchor(db, bookId, payload.anchor2, '大纲埋点')
+  // 正文双列：`description_json` 为富文本真源、`description` 为派生纯文本摘要。
+  // 仅在调用方显式提供 JSON 时同步派生（JSON 优先，同传的纯文本被忽略）；只给纯文本
+  // （旧接口 / 教学种子）时保持旧行为：`description_json` 留 NULL，读侧以纯文本兜底。
+  let descriptionJson: string | null = null
+  let description = typeof payload.description === 'string' ? payload.description : ''
+  if (payload.descriptionJson !== undefined) {
+    descriptionJson = normalizeRichTextJson(payload.descriptionJson)
+    description = descriptionJson === null ? '' : derivePlainText(descriptionJson)
+  }
   const result = db
     .prepare(
       `INSERT INTO foreshadows
-        (book_id, title, description, status,
+        (book_id, title, description, description_json, status,
          body_kind, body_chapter_id, body_paragraph_idx, body_quote,
          body_char_start, body_char_end,
          outline_kind, outline_item_id, outline_paragraph_idx, outline_quote,
          outline_char_start, outline_char_end)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       bookId,
       title,
-      typeof payload.description === 'string' ? payload.description : '',
+      description,
+      descriptionJson,
       normalizeStatus(payload.status),
       body.kind,
       body.chapterId,
@@ -217,13 +261,26 @@ export function updateForeshadow(id: number, patch: ForeshadowUpdatePatch): Fore
   return db.transaction((): ForeshadowRow | null => {
     const existing = db
       .prepare(
-        `SELECT book_id AS bookId, body_kind AS bodyKind, outline_kind AS outlineKind
+        `SELECT book_id AS bookId, body_kind AS bodyKind, outline_kind AS outlineKind,
+                recover_anchor_kind AS recoverAnchorKind
          FROM foreshadows WHERE id = ? AND deleted_at IS NULL`
       )
       .get(id) as
-      | { bookId: string; bodyKind: ForeshadowBodyKind; outlineKind: ForeshadowOutlineKind }
+      | {
+          bookId: string
+          bodyKind: ForeshadowBodyKind
+          outlineKind: ForeshadowOutlineKind
+          recoverAnchorKind: ForeshadowAnchorKind
+        }
       | undefined
     if (!existing) return null
+    // 兜底守卫：已回收的伏笔不可移除埋点（专用通道之外，更新补丁的 null 路径同样拦截）。
+    if (
+      (patch.anchor === null || patch.anchor2 === null) &&
+      existing.recoverAnchorKind !== 'none'
+    ) {
+      throw new Error('updateForeshadow: 已回收的伏笔不可移除埋点')
+    }
 
     const sets: string[] = []
     const values: unknown[] = []
@@ -233,17 +290,19 @@ export function updateForeshadow(id: number, patch: ForeshadowUpdatePatch): Fore
       sets.push('title = ?')
       values.push(title)
     }
-    if (patch.description !== undefined) {
+    if (patch.descriptionJson !== undefined) {
+      // 富文本路径：两列恒同步（JSON 为真源，摘要由 JSON 派生，块级以 `\n` 分隔）。
+      const descriptionJson = normalizeRichTextJson(patch.descriptionJson)
+      sets.push('description_json = ?', 'description = ?')
+      values.push(descriptionJson, descriptionJson === null ? '' : derivePlainText(descriptionJson))
+    } else if (patch.description !== undefined) {
+      // 纯文本路径（旧接口）：只写摘要列，`description_json` 保持原值不动。
       sets.push('description = ?')
       values.push(patch.description)
     }
     if (patch.recoveryNote !== undefined) {
       sets.push('recovery_note = ?')
       values.push(patch.recoveryNote)
-    }
-    if (patch.status !== undefined) {
-      sets.push('status = ?')
-      values.push(normalizeStatus(patch.status))
     }
     if (patch.anchor !== undefined) {
       pushAnchorSets(
@@ -331,6 +390,55 @@ export function attachForeshadowAnchor(
     pushAnchorSets(sets, values, target, normalizeAnchor(db, existing.bookId, anchor, label))
     sets.push(`updated_at = ${NOW}`)
     db.prepare(`UPDATE foreshadows SET ${sets.join(', ')} WHERE id = ?`).run(...values, id)
+    const row = db
+      .prepare(`SELECT ${FORESHADOW_COLUMNS} FROM foreshadows WHERE id = ?`)
+      .get(id) as ForeshadowRow
+    return { ok: true, row }
+  })()
+}
+
+/** `setForeshadowAbandoned` 结果：已回收 / 不存在属可预期业务拒绝，不抛错。 */
+export type SetForeshadowAbandonedResult =
+  { ok: true; row: ForeshadowRow } | { ok: false; reason: 'recovered' | 'notFound' }
+
+/**
+ * 切换废弃标记（**可撤销**）：`abandoned = true` → `status = 'abandoned'`，
+ * `false` → `status = 'planted'`；同时刷新 `updated_at`，返回更新后的行。
+ *
+ * **回收优先**：派生状态为 `recovered`（有回收点）的伏笔不可废弃，
+ * 以 `{ ok: false, reason: 'recovered' }` 拒绝；恢复（`false`）不做此限制。
+ * 判定复用共享派生函数 `deriveForeshadowStatus`（与渲染层单一真源）。
+ * 不存在的行返回 `notFound`。
+ */
+export function setForeshadowAbandoned(
+  id: number,
+  abandoned: boolean
+): SetForeshadowAbandonedResult {
+  const db = getDb()
+  return db.transaction((): SetForeshadowAbandonedResult => {
+    const existing = db
+      .prepare(
+        `SELECT status, recover_anchor_kind AS recoverAnchorKind,
+                body_kind AS bodyKind, outline_kind AS outlineKind
+         FROM foreshadows WHERE id = ? AND deleted_at IS NULL`
+      )
+      .get(id) as
+      | {
+          status: ForeshadowStatus
+          recoverAnchorKind: ForeshadowAnchorKind
+          bodyKind: ForeshadowBodyKind
+          outlineKind: ForeshadowOutlineKind
+        }
+      | undefined
+    if (!existing) return { ok: false, reason: 'notFound' }
+    // 回收优先的判定与渲染层共用同一派生函数（单一真源，避免规则漂移）。
+    if (abandoned && deriveForeshadowStatus(existing) === 'recovered') {
+      return { ok: false, reason: 'recovered' }
+    }
+    db.prepare(`UPDATE foreshadows SET status = ?, updated_at = ${NOW} WHERE id = ?`).run(
+      abandoned ? 'abandoned' : 'planted',
+      id
+    )
     const row = db
       .prepare(`SELECT ${FORESHADOW_COLUMNS} FROM foreshadows WHERE id = ?`)
       .get(id) as ForeshadowRow

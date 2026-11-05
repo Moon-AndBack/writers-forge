@@ -1,0 +1,108 @@
+/* ---------- ShortRichTextField（通用短文本富文本字段） ----------
+   外观对齐全局 `.wf-textarea`（同字号 / 行高 / 圆角 / 底色 / 聚焦环），
+   但不引入 `.doc-body` 的长文版心与首行缩进；高度按「短文本字段」约束：
+   默认最小 82px、最大 200px（内部滚动），`--fill` 变体撑满父容器剩余高度。
+   颜色 / 过渡全部走令牌，四主题自适应。 */
+
+.short-rich-field {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 82px;
+  max-height: 200px;
+  padding: 10px 12px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text);
+  background: var(--soft-solid);
+  border: 1px solid transparent;
+  border-radius: var(--r-lg);
+  outline: none;
+  transition:
+    background 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease),
+    color 0.18s var(--ease);
+}
+
+/* 撑满父容器剩余高度（右栏可伸缩字段）：高度由 flex 决定，内部滚动。 */
+.short-rich-field--fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+.short-rich-field:hover:not(.is-disabled) {
+  background: var(--soft-hover-solid);
+}
+
+.short-rich-field:focus-within {
+  background: var(--pane);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+}
+
+/* 只读 / 禁用：与 `.wf-textarea` 的 disabled / readonly 同口径。 */
+.short-rich-field.is-disabled {
+  color: var(--text-mute);
+  background: var(--soft-solid);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* 「有底色容器上的控件」（.on-soft）：与 form.css 的输入控件规则同口径。 */
+.on-soft .short-rich-field {
+  background: var(--control-on-soft);
+  border-color: var(--control-on-soft-line);
+}
+
+.on-soft .short-rich-field:hover:not(.is-disabled) {
+  background: var(--control-on-soft-hover);
+}
+
+.on-soft .short-rich-field:focus-within {
+  background: var(--pane);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+}
+
+.on-soft .short-rich-field.is-disabled {
+  background: var(--control-on-soft);
+  border-color: var(--control-on-soft-line);
+}
+
+/* 编辑器内容：撑满字段高度；段落零外边距（短字段不做长文段距）。 */
+.short-rich-field__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.short-rich-field .ProseMirror {
+  flex: 1 1 auto;
+  min-height: 1.65em;
+  outline: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.short-rich-field .ProseMirror > p {
+  position: relative;
+  margin: 0;
+}
+
+.short-rich-field .ProseMirror > p + p {
+  margin-top: 0.35em;
+}
+
+/* 空态占位：绝对定位脱离行内流，不推动空段落光标；文案经 React 的 CSS 变量传入。 */
+.short-rich-field.is-empty .ProseMirror > p:first-child::before {
+  content: var(--editor-placeholder);
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--text-mute);
+  pointer-events: none;
+  user-select: none;
+}

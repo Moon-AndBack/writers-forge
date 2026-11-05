@@ -37,6 +37,7 @@ import { migrateDropLegacyDossierTables } from './legacyDossierDrop'
 import { migrateDropWorldRefAttrs } from './worldRefAttrsDrop'
 import { migrateBooksDropColumns } from './booksDropColumns'
 import { migrateForeshadowsBodyOutlineSlots } from './foreshadowsSlotMigration'
+import { migrateForeshadowDescriptionRich } from './foreshadowsRichDescriptionMigration'
 import {
   migratePlotLinesTimeline,
   migratePlotSceneDescriptionRich,
@@ -135,6 +136,10 @@ export function getDb(): Database.Database {
     migrateForeshadowsBodyOutlineSlots(instance)
     // 伏笔域：foreshadows，锚点快照引用 chapters / outline_items，须在其后，幂等建表。
     createForeshadowsSchema(instance)
+    // 伏笔描述富文本化：既有纯文本 `description` 包成富文本写入 `description_json`
+    //（幂等、事务、失败回滚；须在 createForeshadowsSchema 建表 / 补列之后；
+    //  早于后续任何读取，保证列表读到的 `description_json` 已就绪）。
+    migrateForeshadowDescriptionRich(instance)
     // 实体三表：幂等建表。
     createEntitySchema(instance)
     // 统一设定库：子类分类表（书 → 实体类型 → 子类），主表的 `subtype_id` 外键指向本表，

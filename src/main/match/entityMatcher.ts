@@ -218,16 +218,14 @@ function getMatcher(bookId: string): CompiledMatcher {
 }
 
 /**
- * 匹配指定书籍文本中的实体。
+ * 用已编译的匹配器匹配单段文本（不判定词表 / 版本，供单段与批量入口共用）。
  *
  * 返回的 `start` / `end` 为**原文** UTF-16 code unit 下标（左闭右开），可直接用于
  * `text.slice(start, end)`。流程：正文先经 `foldForMatch` 规范化（与词表同一规则），
  * 在折叠空间按 code point 扫描（避免切裂代理对），命中区间再经边界映射表换算回原文下标。
  */
-export function matchEntities(bookId: string, text: string): EntityMatch[] {
+function matchWithMatcher(matcher: CompiledMatcher, text: string): EntityMatch[] {
   if (text.length === 0) return []
-  const matcher = getMatcher(bookId)
-  if (matcher.patterns.length === 0) return []
 
   const folded = foldForMatch(text)
   const raw = scan(matcher, folded.text)
@@ -253,6 +251,28 @@ export function matchEntities(bookId: string, text: string): EntityMatch[] {
     })
   }
   return result
+}
+
+/** 匹配指定书籍文本中的实体（单段入口，见 {@link matchWithMatcher} 的区间口径）。 */
+export function matchEntities(bookId: string, text: string): EntityMatch[] {
+  if (text.length === 0) return []
+  const matcher = getMatcher(bookId)
+  if (matcher.patterns.length === 0) return []
+  return matchWithMatcher(matcher, text)
+}
+
+/**
+ * 批量匹配多段文本：返回与入参**等长且同序**的结果数组（空串段对应空数组）。
+ *
+ * 与逐段调用 {@link matchEntities} 的区别只在「取词表」这一步：本入口只取一次匹配器，
+ * 因此 `entities:revision` 只计算一次、AC 自动机只编译一次，N 段共用；匹配与重叠消解
+ * 仍按段独立进行（区间下标互不影响）。供渲染层列表批量算实体胶囊，避免每段一次 IPC。
+ */
+export function matchEntitiesMany(bookId: string, texts: readonly string[]): EntityMatch[][] {
+  if (texts.length === 0) return []
+  const matcher = getMatcher(bookId)
+  if (matcher.patterns.length === 0) return texts.map(() => [])
+  return texts.map((text) => matchWithMatcher(matcher, text))
 }
 
 /** 手动清除匹配器缓存（传 bookId 清单本，省略清全部）。 */

@@ -1,9 +1,11 @@
 import { ipcMain } from 'electron'
 import { logger } from '../logger'
+import { isValidRichTextJson } from '../database/richText'
 import {
   attachForeshadowAnchor,
   createForeshadow,
   deleteForeshadow,
+  setForeshadowAbandoned,
   updateForeshadow,
   type ForeshadowAnchor,
   type ForeshadowAnchorKind,
@@ -14,6 +16,11 @@ import {
   type ForeshadowStatus,
   type ForeshadowUpdatePatch
 } from '../database/foreshadows'
+import {
+  clearForeshadowBodyAnchor,
+  clearForeshadowOutlineAnchor,
+  clearForeshadowRecoverAnchor
+} from '../database/foreshadowsClear'
 import {
   getForeshadow,
   listForeshadows,
@@ -61,6 +68,26 @@ function isOptionalIndex(value: unknown): value is number | null | undefined {
 /** 校验可选正整数 id：undefined / null / 正整数。 */
 function isOptionalPositiveInt(value: unknown): value is number | null | undefined {
   return value === undefined || value === null || isPositiveInt(value)
+}
+
+/**
+ * 伏笔富文本描述 JSON 串长度上限（字符数）。
+ *
+ * 依据：对齐 `ipc/docLimit.ts` 的单篇正文上限 `MAX_DOC_CHARS = 200_000`（有效字数）；
+ * 块级 Tiptap JSON 因节点 / 属性冗余，体量约为纯文本的 2–3 倍，20 万字符（≈200KB）
+ * 足以覆盖上限内正文。超长视为异常入参，丢弃该字段而非整包拒绝。
+ */
+const DESCRIPTION_JSON_MAX_CHARS = 200_000
+
+/**
+ * 消毒富文本描述入参：`undefined`（未提供）/ `null`（清空）原样返回；字符串须为**合法
+ * JSON** 且不超长，否则返回 `undefined` —— 由调用方**丢弃该字段**（不报错、不整包拒绝，
+ * 保留纯文本 `description` 兼容路径）。空串按 `isValidRichTextJson` 规则视为合法（= 清空）。
+ */
+function sanitizeDescriptionJson(value: unknown): string | null | undefined {
+  if (value === undefined || value === null) return value
+  if (typeof value !== 'string' || value.length > DESCRIPTION_JSON_MAX_CHARS) return undefined
+  return isValidRichTextJson(value) ? value : undefined
 }
 
 const FORESHADOW_STATUSES: readonly string[] = ['planted', 'recovered', 'abandoned']
@@ -166,8 +193,11 @@ function sanitizeCreatePayload(value: unknown): ForeshadowCreatePayload | undefi
   if (record.anchor !== undefined && anchor === undefined) return undefined
   const anchor2 = sanitizeOutlineAnchor(record.anchor2)
   if (record.anchor2 !== undefined && anchor2 === undefined) return undefined
+  // 富文本描述：畸形 / 超长只丢该字段，不影响其余入参（纯文本 description 仍可用）。
+  const descriptionJson = sanitizeDescriptionJson(record.descriptionJson)
   const payload: ForeshadowCreatePayload = { title: record.title }
   if (typeof record.description === 'string') payload.description = record.description
+  if (descriptionJson !== undefined) payload.descriptionJson = descriptionJson
   if (isForeshadowStatus(record.status)) payload.status = record.status
   if (anchor !== undefined && anchor !== null) payload.anchor = anchor
   if (anchor2 !== undefined && anchor2 !== null) payload.anchor2 = anchor2
@@ -181,18 +211,19 @@ function sanitizeUpdatePatch(value: unknown): ForeshadowUpdatePatch | undefined 
   if (record.title !== undefined && !isNonEmptyString(record.title)) return undefined
   if (record.description !== undefined && typeof record.description !== 'string') return undefined
   if (record.recoveryNote !== undefined && typeof record.recoveryNote !== 'string') return undefined
-  if (record.status !== undefined && !isForeshadowStatus(record.status)) return undefined
   const anchor = sanitizeBodyAnchor(record.anchor)
   if (record.anchor !== undefined && anchor === undefined) return undefined
   const anchor2 = sanitizeOutlineAnchor(record.anchor2)
   if (record.anchor2 !== undefined && anchor2 === undefined) return undefined
   const recoverAnchor = sanitizeAnchor(record.recoverAnchor, FORESHADOW_ANCHOR_KINDS)
   if (record.recoverAnchor !== undefined && recoverAnchor === undefined) return undefined
+  // 富文本描述：畸形 / 超长只丢该字段（不整包拒绝）。
+  const descriptionJson = sanitizeDescriptionJson(record.descriptionJson)
   const patch: ForeshadowUpdatePatch = {}
   if (typeof record.title === 'string') patch.title = record.title
   if (typeof record.description === 'string') patch.description = record.description
+  if (descriptionJson !== undefined) patch.descriptionJson = descriptionJson
   if (typeof record.recoveryNote === 'string') patch.recoveryNote = record.recoveryNote
-  if (isForeshadowStatus(record.status)) patch.status = record.status
   if (record.anchor !== undefined) patch.anchor = anchor ?? null
   if (record.anchor2 !== undefined) patch.anchor2 = anchor2 ?? null
   if (record.recoverAnchor !== undefined) patch.recoverAnchor = recoverAnchor ?? null
@@ -217,18 +248,28 @@ function resolveAnchorHits(chapterId: unknown, outlineItemId: unknown): Foreshad
  * - foreshadow:list         (bookId: string)                       → ForeshadowRow[]（未删除，
  *                                                                     `updated_at DESC`）
  * - foreshadow:get          (id: number)                           → ForeshadowRow | null
- * - foreshadow:create       (bookId: string, payload: { title, description?, status?,
- *                            anchor?: { kind: 'chapter', chapterId, paragraphIdx?,
+ * - foreshadow:create       (bookId: string, payload: { title, description?, descriptionJson?,
+ *                            status?, anchor?: { kind: 'chapter', chapterId, paragraphIdx?,
  *                            quote?, charStart?, charEnd? },
  *                            anchor2?: { kind: 'outline', outlineItemId, … } })
  *                                                                   → ForeshadowRow | null
- * - foreshadow:update       (id: number, patch?: { title?, description?, recoveryNote?,
- *                            status?, anchor?: … | null, anchor2?: … | null,
+ * - foreshadow:update       (id: number, patch?: { title?, description?, descriptionJson?,
+ *                            recoveryNote?, anchor?: … | null, anchor2?: … | null,
  *                            recoverAnchor?: … | null })         → ForeshadowRow | null
+ *   （状态不在此通道写入：废弃 / 恢复走 `foreshadow:setAbandoned`，回收由回收点派生）
  * - foreshadow:delete       (id: number)                           → boolean（软删除）
  * - foreshadow:attachAnchor (id: number, anchor: { kind, … })      → AttachForeshadowAnchorResult
  *   （按锚点 `kind` 补对应槽位：目标槽位已占用 → `full`，`none` / 畸形 → `invalid`，
  *    不存在 → `notFound`；以 `{ ok: false, reason }` 返回，不抛错）
+ * - foreshadow:clearBodyAnchor    (id: number)                     → ClearForeshadowAnchorResult
+ * - foreshadow:clearOutlineAnchor (id: number)                     → ClearForeshadowAnchorResult
+ * - foreshadow:clearRecoverAnchor (id: number)                     → ForeshadowRow | null
+ *   （清空正文埋点 / 大纲埋点 / 回收点：对应 `kind` 置 `none`、其余列置空，刷新 `updated_at`；
+ *    已回收的伏笔不可移除埋点 → `{ ok: false, reason: 'recovered' }`，不存在 → `notFound`；
+ *    回收点自身不受限——撤销回收后即可移除埋点）
+ * - foreshadow:setAbandoned (id: number, abandoned: boolean)       → SetForeshadowAbandonedResult
+ *   （废弃 toggle：`true` 置 `'abandoned'`、`false` 恢复 `'planted'`；有回收点的行
+ *    拒绝废弃 → `{ ok: false, reason: 'recovered' }`；畸形入参 → `invalid`）
  * - foreshadow:listByAnchor (chapterId?: number, outlineItemId?: number) → ForeshadowRow[]
  *   （兼容通道：章节反查命中正文埋点、大纲反查命中大纲埋点；
  *    两者都给时优先 chapterId；都非法 → 空数组）
@@ -283,6 +324,31 @@ export function registerForeshadowsIpc(): void {
       return { ok: false, reason: 'invalid' }
     }
     return runWrite('foreshadow:attachAnchor', { id }, () => attachForeshadowAnchor(id, parsed))
+  })
+
+  ipcMain.handle('foreshadow:clearBodyAnchor', (_event, id: unknown) => {
+    if (!isPositiveInt(id)) return { ok: false, reason: 'notFound' }
+    return runWrite('foreshadow:clearBodyAnchor', { id }, () => clearForeshadowBodyAnchor(id))
+  })
+
+  ipcMain.handle('foreshadow:clearOutlineAnchor', (_event, id: unknown) => {
+    if (!isPositiveInt(id)) return { ok: false, reason: 'notFound' }
+    return runWrite('foreshadow:clearOutlineAnchor', { id }, () => clearForeshadowOutlineAnchor(id))
+  })
+
+  ipcMain.handle('foreshadow:clearRecoverAnchor', (_event, id: unknown) => {
+    if (!isPositiveInt(id)) return null
+    return runWrite('foreshadow:clearRecoverAnchor', { id }, () => clearForeshadowRecoverAnchor(id))
+  })
+
+  ipcMain.handle('foreshadow:setAbandoned', (_event, id: unknown, abandoned: unknown) => {
+    if (!isPositiveInt(id) || typeof abandoned !== 'boolean') {
+      log.warn('foreshadow:setAbandoned 入参消毒失败回 invalid', { id })
+      return { ok: false, reason: 'invalid' }
+    }
+    return runWrite('foreshadow:setAbandoned', { id, abandoned }, () =>
+      setForeshadowAbandoned(id, abandoned)
+    )
   })
 
   ipcMain.handle(

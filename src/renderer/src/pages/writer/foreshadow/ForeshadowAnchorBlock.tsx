@@ -1,7 +1,8 @@
 /**
  * 伏笔右栏「只读锚点块」（埋点 / 回收两处复用，AGENTS §9）：
- * 块标题 + 位置串（已锚定：完整「卷 · 章」/ 条目名，不再挂「已锚定」胶囊）+ 原文摘抄
- * （+ 可选附加段落，如回收备注）；未锚定 / 失效才渲染胶囊或占位文案。
+ * 块标题 + 位置串（已锚定：完整「卷 · 章」/ 条目名，不再挂「已锚定」胶囊）+ 选中文字
+ * （由调用方按锚点 `quote.slice(charStart, charEnd)` 切好传入；+ 可选附加段落，如回收备注）；
+ * 未锚定 / 失效才渲染胶囊或占位文案。
  *
  * 底色 / 边框由 `.foreshadow-anchor-card` 提供（与可编辑块 `.foreshadow-fields`
  * 共享同一条底色卡规则），本组件不重复定义外观。
@@ -22,8 +23,8 @@ export interface ForeshadowAnchorBlockProps {
   label: string
   /** 锚点解析结果（由调用方按埋点 / 回收口径分别解析）。 */
   resolution: ForeshadowAnchorResolution
-  /** 原文摘抄（空串 = 不渲染摘抄段）。 */
-  quote: string
+  /** 选中文字（`quote.slice(charStart, charEnd)`；空串 = 不渲染摘抄段）。 */
+  selectedText: string
   /** 未锚定时的占位文案（埋点「未锚定」/ 回收「未回收」）。 */
   emptyText: string
   /** 可选附加只读段落（回收备注）：正文为空则不渲染。 */
@@ -38,7 +39,7 @@ export interface ForeshadowAnchorBlockProps {
 export function ForeshadowAnchorBlock({
   label,
   resolution,
-  quote,
+  selectedText,
   emptyText,
   note,
   action
@@ -78,8 +79,8 @@ export function ForeshadowAnchorBlock({
           <span className="foreshadow-anchor-card__target">{targetLabel}</span>
         )}
       </div>
-      {quote.trim() === '' ? null : (
-        <blockquote className="foreshadow-anchor-card__quote">{quote}</blockquote>
+      {selectedText.trim() === '' ? null : (
+        <blockquote className="foreshadow-anchor-card__quote">{selectedText}</blockquote>
       )}
       {hint === null ? null : <p className="foreshadow-anchor-card__hint">{hint}</p>}
       {note !== undefined && note.value.trim() !== '' ? (

@@ -45,8 +45,10 @@ import type {
   ForeshadowAnchor,
   ForeshadowCreatePayload,
   ForeshadowRow,
-  ForeshadowUpdatePatch
+  ForeshadowUpdatePatch,
+  SetForeshadowAbandonedResult
 } from '../main/database/foreshadows'
+import type { ClearForeshadowAnchorResult } from '../main/database/foreshadowsClear'
 import type { ForeshadowAnchorHit } from '../main/database/foreshadowsQuery'
 import type { DiagnosticsReport } from '../main/database/diagnostics'
 import type {
@@ -210,6 +212,9 @@ const api = {
     /** 正文实体匹配：词表来自统一设定库主表（world_entities + world_aliases） */
     match: (bookId: string, text: string): Promise<EntityMatch[]> =>
       ipcRenderer.invoke('entities:match', bookId, text),
+    /** 批量正文实体匹配：一次 IPC 匹配多段文本（结果与入参等长同序） */
+    matchMany: (bookId: string, texts: string[]): Promise<EntityMatch[][]> =>
+      ipcRenderer.invoke('entities:matchMany', bookId, texts),
     /** 词表版本签名（统一设定库实体 / 别名变更即变） */
     revision: (bookId: string): Promise<string> => ipcRenderer.invoke('entities:revision', bookId)
   },
@@ -350,6 +355,18 @@ const api = {
     /** 给伏笔补缺失的埋点槽位（槽位由锚点 kind 决定；槽位已占用以 `{ ok: false }` 返回） */
     attachAnchor: (id: number, anchor: ForeshadowAnchor): Promise<AttachForeshadowAnchorResult> =>
       ipcRenderer.invoke('foreshadow:attachAnchor', id, anchor),
+    /** 清空正文埋点（`body_*` → none）；已回收 → `recovered`，不存在 → `notFound` */
+    clearBodyAnchor: (id: number): Promise<ClearForeshadowAnchorResult> =>
+      ipcRenderer.invoke('foreshadow:clearBodyAnchor', id),
+    /** 清空大纲埋点（`outline_*` → none）；已回收 → `recovered`，不存在 → `notFound` */
+    clearOutlineAnchor: (id: number): Promise<ClearForeshadowAnchorResult> =>
+      ipcRenderer.invoke('foreshadow:clearOutlineAnchor', id),
+    /** 清空回收点（`recover_*` → none）；不存在 / 已软删 → null（撤销回收不受限） */
+    clearRecoverAnchor: (id: number): Promise<ForeshadowRow | null> =>
+      ipcRenderer.invoke('foreshadow:clearRecoverAnchor', id),
+    /** 切换废弃标记（可撤销）；有回收点的伏笔拒绝废弃（`reason: 'recovered'`） */
+    setAbandoned: (id: number, abandoned: boolean): Promise<SetForeshadowAbandonedResult> =>
+      ipcRenderer.invoke('foreshadow:setAbandoned', id, abandoned),
     /** 回收点锚点反查（章节 / 大纲条目，两者都给时优先 chapterId） */
     listByRecoverAnchor: (chapterId?: number, outlineItemId?: number): Promise<ForeshadowRow[]> =>
       ipcRenderer.invoke('foreshadow:listByRecoverAnchor', chapterId, outlineItemId)

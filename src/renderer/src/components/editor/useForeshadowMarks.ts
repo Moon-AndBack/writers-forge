@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Editor } from '@tiptap/core'
 import type { TFunction } from 'i18next'
+import { deriveForeshadowStatus } from '../../../../shared/foreshadowStatus'
 import type { ForeshadowAnchorKind, ForeshadowRow } from '../../../../main/database/foreshadows'
 import type { ForeshadowAnchorHit } from '../../../../main/database/foreshadowsQuery'
 import {
@@ -102,14 +103,15 @@ function resolvePlace(
  * 两路数据 → 标记条目（埋设点在前，回收点在后；同区间去重由装饰构建层负责）。
  *
  * 埋点按命中槽位取快照字段：`body` → `body_*`（`kind: 'plant'`），
- * `outline` → `outline_*`（`kind: 'plant2'`）；两者共用 `status` 判定的视觉变体。
+ * `outline` → `outline_*`（`kind: 'plant2'`）；两者共用**派生展示状态**判定视觉变体
+ * （`deriveForeshadowStatus`：回收点优先 → 废弃标记 → 埋点，不再读落库 `status` 判「已回收」）。
  *
  * 变体判定与悬停三行：
  * - 第 1 行恒为 `伏笔：名字`（空名以「未命名伏笔」兜底）；
  * - 第 2 行按变体分支：
- *   - 埋设点 `status === 'recovered'` → `recovered`，显示**回收位置**（解析不到 → 「已回收」）；
- *   - 埋设点 `status === 'abandoned'` → `abandoned`，显示**已废弃**；
- *   - 埋设点 `status === 'planted'` → `planted`，显示**待回收**；
+ *   - 埋设点派生为 `recovered` → `recovered`，显示**回收位置**（解析不到 → 「已回收」）；
+ *   - 埋设点派生为 `abandoned` → `abandoned`，显示**已废弃**；
+ *   - 其余（有埋点 → `planted`）→ `planted`，显示**待回收**；
  *   - 大纲埋点：上述文案前加 `mark.secondary` 前缀（`大纲埋点 · …`）；
  *   - 回收点（`recoverAnchorKind !== 'none'`）→ `recover-site`，显示**原埋设位置**；
  * - 第 3 行为 `description`（已 trim；空串 = 浮窗不渲染该行）。
@@ -123,12 +125,14 @@ function buildMarkEntries(
 
   for (const { row, slot } of data.planted) {
     const outlineSlot = slot === 'outline'
-    const recovered = row.status === 'recovered'
+    // 派生状态：命中埋点故不会是 drafting；唯一可能的「已回收」来源是回收点。
+    const displayStatus = deriveForeshadowStatus(row)
+    const recovered = displayStatus === 'recovered'
     const name = row.title.trim()
     // 埋设点三种状态三分支：已回收 / 已废弃 / 埋设中（含兜底，避免未知状态漏标）。
     const variant: ForeshadowMarkVariant = recovered
       ? 'recovered'
-      : row.status === 'abandoned'
+      : displayStatus === 'abandoned'
         ? 'abandoned'
         : 'planted'
     let status: string

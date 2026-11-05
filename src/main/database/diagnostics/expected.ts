@@ -161,6 +161,7 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
       'book_id',
       'title',
       'description',
+      'description_json',
       'recovery_note',
       'status',
       'body_kind',

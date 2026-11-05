@@ -1,19 +1,33 @@
 /**
- * 伏笔中栏视图：伏笔列表（单卡见 `ForeshadowItem`）。
+ * 伏笔中栏视图：标题栏「新建」动作 + 伏笔列表（单卡见 `ForeshadowItem`）。
  *
  * - 空态文案取 `foreshadow` ns 的 `emptyTitle` / `emptyDesc`（提示正文右键创建）；
- * - 创建入口只在正文右键「添加伏笔」（必带锚点快照），本视图不提供手动新建；
+ * - 手动新建走标题栏加号（未锚定伏笔，复用 `ForeshadowCreateDialog`）；
  * - 选中 / 详情编辑在右栏（`ForeshadowPanel`），中栏只做列表；
  * - 删除入口只在卡片上（二次确认在本视图持有 `deleteId`），右栏详情不再重复提供。
  */
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { readGridCardWidth } from '../../../components/cardGridMetrics'
+import { useStableMeasure } from '../../../components/useStableMeasure'
+import ForeshadowCreateDialog from '../../../components/dialogs/ForeshadowCreateDialog'
 import { useToast } from '../../../components/ui'
 import ConfirmDialog from '../ConfirmDialog'
+import { HoverCard } from '../entities/HoverCard'
+import { useEntityHover } from '../entities/useEntityHover'
+import ForeshadowActivityActions from './ForeshadowActivityActions'
 import ForeshadowItem from './ForeshadowItem'
+import { useForeshadowEntityMatches } from './useForeshadowEntityMatches'
+import type { ForeshadowEntityChip } from './useForeshadowEntityMatches'
 import type { ForeshadowBundle } from './foreshadowTree'
 import type { ChapterRow, VolumeRow } from '../chapters/chapterTree'
 import type { OutlineItemRow } from '../outline/outlineTree'
+
+/** 手动新建的锚点：未锚定（主流程的正文右键会带真实锚点快照）。 */
+const UNANCHORED = { kind: 'none' } as const
+
+/** 无相关实体时的恒等空数组（引用稳定，避免卡片按长度签名做无谓重测）。 */
+const EMPTY_ENTITIES: readonly ForeshadowEntityChip[] = []
 
 export interface ForeshadowViewProps {
   bundle: ForeshadowBundle
@@ -34,8 +48,16 @@ export default function ForeshadowView({
   const { t } = useTranslation('foreshadow')
   const { t: tCommon } = useTranslation('common')
   const { show: showToast, node: toastNode } = useToast()
+  const [createOpen, setCreateOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleting, setDeleting] = useState(false)
+  // 相关实体：列表层批量匹配（四段文本 → 去重胶囊），卡片只接收本行结果。
+  const entityMatches = useForeshadowEntityMatches(bundle.bookId, bundle.rows)
+  // 卡片网格：布局签名（单卡内容可用宽）供实体胶囊行容量重测。
+  const gridRef = useRef<HTMLDivElement | null>(null)
+  const layoutKey = useStableMeasure(gridRef, bundle.rows.length > 0, readGridCardWidth)
+  // 实体悬停卡：整张网格只挂一个 `HoverCard`，胶囊经事件委托（`closest`）定位。
+  const entityHover = useEntityHover()
 
   // 待删除行按 id 从当前列表派生：行已被删除 / 列表刷新后自动失效，不会悬空。
   const deleteRow =
@@ -50,8 +72,26 @@ export default function ForeshadowView({
     showToast(ok ? t('toast.deleteSuccess') : t('toast.deleteFailed'))
   }, [bundle, deleteRow, showToast, t])
 
+  // 有未保存草稿时先挂起（新建会切走当前详情，交右栏两态确认后再开弹窗）。
+  const handleCreate = useCallback((): void => {
+    bundle.guardSwitch(() => setCreateOpen(true))
+  }, [bundle])
+
+  const handleCreated = useCallback((): void => {
+    setCreateOpen(false)
+    showToast(t('toast.createSuccess'))
+    // 列表按 `updated_at DESC` 排序，新建行即首条；刷新后选中它。
+    void bundle.reload(true)
+  }, [bundle, showToast, t])
+
+  const handleFailed = useCallback((): void => {
+    showToast(t('toast.createFailed'))
+  }, [showToast, t])
+
   return (
     <>
+      <ForeshadowActivityActions onCreate={handleCreate} />
+
       <div className="editor-scroll">
         <div className="editor-inner is-full">
           {bundle.loading && bundle.rows.length === 0 ? (
@@ -62,7 +102,12 @@ export default function ForeshadowView({
               <div className="placeholder-desc">{t('emptyDesc')}</div>
             </div>
           ) : (
-            <div className="wf-card-grid foreshadow-grid">
+            <div
+              className="wf-card-grid foreshadow-grid"
+              ref={gridRef}
+              onMouseOver={entityHover.onMouseOver}
+              onMouseLeave={entityHover.onMouseLeave}
+            >
               {bundle.rows.map((row) => (
                 <ForeshadowItem
                   key={row.id}
@@ -71,6 +116,9 @@ export default function ForeshadowView({
                   chapters={chapters}
                   volumes={volumes}
                   outlineItems={outlineItems}
+                  entities={entityMatches.get(row.id) ?? EMPTY_ENTITIES}
+                  layoutKey={layoutKey}
+                  entityHover={entityHover}
                   onSelect={bundle.onSelect}
                   onDelete={setDeleteId}
                 />
@@ -79,6 +127,19 @@ export default function ForeshadowView({
           )}
         </div>
       </div>
+
+      {createOpen ? (
+        <ForeshadowCreateDialog
+          bookId={bundle.bookId}
+          anchor={UNANCHORED}
+          defaultTitle=""
+          contextLabel=""
+          selectedText=""
+          onClose={() => setCreateOpen(false)}
+          onCreated={handleCreated}
+          onFailed={handleFailed}
+        />
+      ) : null}
 
       {deleteRow === null ? null : (
         <ConfirmDialog
@@ -100,6 +161,14 @@ export default function ForeshadowView({
       )}
 
       {toastNode}
+
+      {/* 实体悬停卡：全列表共用（数据走 `entities.get`，经 LRU 缓存）。 */}
+      <HoverCard
+        anchor={entityHover.anchor}
+        onClose={entityHover.close}
+        onPointerEnter={entityHover.cancelHide}
+        onPointerLeave={entityHover.onMouseLeave}
+      />
     </>
   )
 }

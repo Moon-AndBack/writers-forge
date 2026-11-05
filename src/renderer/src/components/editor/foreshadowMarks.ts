@@ -15,9 +15,9 @@ import { coalesceAnchorRuns, matchAnchorRuns } from './foreshadowAnchorMatch'
  * - **回收点**（`kind: 'recover'`）：`recover_*` 快照所在区间。
  *
  * 四种视觉变体（线型 / 颜色见 `styles/foreshadow-mark.css`，四主题经令牌自适应）：
- * - `planted`：埋设中（`status === 'planted'`）→ 品牌色虚线；
- * - `abandoned`：埋设点、但伏笔已废弃 → 浅灰虚线（比「已回收」的灰实线更浅）；
- * - `recovered`：埋设点、但伏笔已回收 → 中性灰实线；
+ * - `planted`：埋设中（派生状态 `planted`）→ 品牌色虚线；
+ * - `abandoned`：埋设点、但伏笔已废弃（派生状态 `abandoned`）→ 浅灰虚线（比「已回收」的灰实线更浅）；
+ * - `recovered`：埋设点、但伏笔已回收（有回收点，派生优先级最高）→ 中性灰实线；
  * - `recover-site`：回收点本身 → 成就色点线。
  * 悬停内容由调用层组好后随条目传入（存插件 state，**不**写进 span 属性）：本层只负责铺装饰，
  * 浮层由 `useMarkHover` + `MarkHoverTip` 按 `data-foreshadow-id` 查表自绘，不用原生 `title`。

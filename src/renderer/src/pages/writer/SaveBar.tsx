@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import type { ReactNode } from 'react'
 import { Button } from '../../components/ui'
 
 export interface SaveBarProps {
@@ -13,6 +14,11 @@ export interface SaveBarProps {
    * （均为右栏底部独立底色卡片，取值口径一致）。
    */
   className: string
+  /**
+   * 保存按钮**左侧**的附加操作（可选插槽，如伏笔「废弃 / 恢复」）。
+   * 保存按钮自带 `margin-left: auto` 靠右，插槽自然落在左侧（§9：差异经插槽表达）。
+   */
+  leading?: ReactNode
 }
 
 /**
@@ -21,10 +27,11 @@ export interface SaveBarProps {
  * 口径统一：无未保存改动时按钮禁用；保存中呈 loading；文案取 `common` ns
  * （`save` / `saving` / `saveDirty`），差异只用 `className` 表达，不复制第二份按钮 JSX。
  */
-export default function SaveBar({ dirty, saving, onSave, className }: SaveBarProps) {
+export default function SaveBar({ dirty, saving, onSave, className, leading }: SaveBarProps) {
   const { t } = useTranslation('common')
   return (
     <div className={className}>
+      {leading}
       <Button
         variant="primary"
         style={{ marginLeft: 'auto' }}

@@ -1,29 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import type {
-  ForeshadowAnchor,
-  ForeshadowRow,
-  ForeshadowStatus
-} from '../../../../main/database/foreshadows'
+import { deriveForeshadowStatus } from '../../../../shared/foreshadowStatus'
+import type { ForeshadowDisplayStatus } from '../../../../shared/foreshadowStatus'
+import type { ForeshadowAnchor, ForeshadowRow } from '../../../../main/database/foreshadows'
 import { Button, FormField, Modal, SearchInput, Tag, Textarea } from '../ui'
 import type { TagTone } from '../ui'
 import '../../styles/components/foreshadow-recover-dialog.css'
 
 /**
- * 状态 → i18n key / 胶囊色调。
+ * 派生状态 → i18n key / 胶囊色调。
  *
  * §9 说明：`pages/writer/foreshadow/foreshadowTree.ts` 有同名映射，但那是**页面层**模块，
- * 共享组件不得反向依赖页面；两条映射均为一对一常量（键与数据层枚举逐字一致），
+ * 共享组件不得反向依赖页面；两条映射均为一对一常量（键与共享派生枚举逐字一致），
  * 复制成本极低且无逻辑，故此处独立登记（差异无法通过参数表达）。
  */
 const STATUS_LABEL_KEYS = {
+  drafting: 'status.drafting',
   planted: 'status.planted',
   recovered: 'status.recovered',
   abandoned: 'status.abandoned'
-} as const satisfies Record<ForeshadowStatus, string>
+} as const satisfies Record<ForeshadowDisplayStatus, string>
 
-const STATUS_TONES: Record<ForeshadowStatus, TagTone> = {
+const STATUS_TONES: Record<ForeshadowDisplayStatus, TagTone> = {
+  drafting: 'neutral',
   planted: 'brand',
   recovered: 'ok',
   abandoned: 'neutral'
@@ -34,7 +34,8 @@ export interface ForeshadowRecoverDialogProps {
   bookId: string
   /**
    * 回收点锚点：父亲在点「回收伏笔」时取自正文选区快照（章节 / 大纲条目 / 未锚定）。
-   * 回收提交时随 `status` / `recoveryNote` 一并落库，回收处据此铺设「回收点」标记。
+   * 回收提交时随 `recoveryNote` 一并落库（不写 `status`），回收处据此铺设「回收点」标记，
+   * 派生状态随回收点写入即为「已回收」。
    */
   recoverAnchor: ForeshadowAnchor
   /** 关闭（取消 / 遮罩 / Esc / 关闭按钮）。 */
@@ -48,9 +49,10 @@ export interface ForeshadowRecoverDialogProps {
 /**
  * 「回收伏笔」弹窗（正文右键「回收伏笔」入口）。
  *
- * - 结构自上而下：搜索框 → 全书**埋设中**（`planted`）伏笔列表 → 回收备注 → 底部「取消 / 回收」；
+ * - 结构自上而下：搜索框 → 全书**埋设中**（派生 `planted`）伏笔列表 → 回收备注 → 底部「取消 / 回收」；
  * - **先选后收**：列表点击只选中（`aria-selected` + 通用光晕 `.is-active`），
- *   点「回收」按钮才真正调用 `foreshadow.update(id, { status: 'recovered', recoveryNote, recoverAnchor })`；
+ *   点「回收」按钮才真正调用 `foreshadow.update(id, { recoveryNote, recoverAnchor })`
+ *   （回收点写入后派生状态即为 `recovered`，无需再写 `status`）；
  * - 未选中任何条目时「回收」按钮禁用；
  * - 备注可选（空串 = 无备注），提交时 `trim()` 后落库；
  * - 文案全部走 `foreshadow` ns；加载文案复用 `common.loading`。
@@ -79,8 +81,8 @@ export default function ForeshadowRecoverDialog({
     return () => window.clearTimeout(id)
   }, [])
 
-  // 打开时拉全书伏笔，只保留可回收项（**仅**埋设中 `status === 'planted'`；
-  // 已回收 / 已放弃均不可再回收）。
+  // 打开时拉全书伏笔，只保留可回收项（**派生状态为 `planted`**；
+  // 建设中 / 已废弃 / 已回收均不可再回收）。
   // 软删除已由 `foreshadow.list` 在数据层过滤，此处无需再判 `deletedAt`。
   // 状态初始化放在 useState 初值（弹窗按 `bookId` 挂 key 重挂，切换书即重置）；
   // 不在 effect 体内同步 setState，避免级联渲染（react-hooks/set-state-in-effect）。
@@ -90,7 +92,7 @@ export default function ForeshadowRecoverDialog({
       .list(bookId)
       .then((all) => {
         if (cancelled) return
-        setRows(all.filter((row) => row.status === 'planted'))
+        setRows(all.filter((row) => deriveForeshadowStatus(row) === 'planted'))
         setLoading(false)
       })
       .catch(() => {
@@ -118,7 +120,6 @@ export default function ForeshadowRecoverDialog({
     setSubmitting(true)
     try {
       const updated = await window.api.foreshadow.update(selectedId, {
-        status: 'recovered',
         recoveryNote: note.trim(),
         recoverAnchor
       })
@@ -149,6 +150,7 @@ export default function ForeshadowRecoverDialog({
     }
     return visibleRows.map((row) => {
       const selected = row.id === selectedId
+      const displayStatus = deriveForeshadowStatus(row)
       return (
         <button
           key={row.id}
@@ -161,7 +163,7 @@ export default function ForeshadowRecoverDialog({
           <span className="foreshadow-recover-item__title">
             {row.title.trim() === '' ? t('field.untitled') : row.title}
           </span>
-          <Tag tone={STATUS_TONES[row.status]}>{t(STATUS_LABEL_KEYS[row.status])}</Tag>
+          <Tag tone={STATUS_TONES[displayStatus]}>{t(STATUS_LABEL_KEYS[displayStatus])}</Tag>
         </button>
       )
     })
