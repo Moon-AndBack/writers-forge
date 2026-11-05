@@ -45,6 +45,10 @@ const chapters = {
   emptyDesc: '在顶部标题栏点击「新建卷」创建',
   editor: {
     lastEdited: '最后编辑 {{time}}',
+    copyAll: '复制全文（纯文本，不含标题）',
+    copyDone: '已复制全文',
+    copyFailed: '复制失败，请重试',
+    copyEmpty: '正文为空，没有可复制的内容',
     footCount: '本章共 <b>{{count}}</b> / <b>{{limit}}</b> 字',
     wordLimitNear: '接近单篇字数上限',
     wordLimitReached: '已达单篇字数上限'

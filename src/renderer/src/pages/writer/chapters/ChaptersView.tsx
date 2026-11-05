@@ -28,13 +28,12 @@ import { useChapterSelectionMenu } from './useChapterSelectionMenu'
 import { useChapterDoc } from './useChapterDoc'
 import { useSyncFlushHandler } from '../../../shell/beforeCloseFlush'
 import { useEntityHover } from '../entities/useEntityHover'
-import DocTitleRow from './DocTitleRow'
-import DocMeta from '../../../components/editor/DocMeta'
+import ChapterEditorHead from './ChapterEditorHead'
 import { useRichTextEditor } from '../../../components/editor/richTextEditorContext'
 import { useChapterName } from './useChapterName'
+import { useChapterCopy } from './useChapterCopy'
 import {
   formatRelativeTime,
-  STATUS_LABELS,
   type ChapterRow,
   type ChapterStatus,
   type CreateVolumeInput,
@@ -234,6 +233,13 @@ export default function ChaptersView({
     editor
   })
   useSyncFlushHandler(flushRef, flush)
+
+  // 「复制全文」：读当前 doc（含防抖窗口内未落盘改动）；空正文提示、失败回退 execCommand。
+  const { copyAll, canCopy, toastNode } = useChapterCopy({
+    editor,
+    chapterId,
+    loading: docStatus === 'loading'
+  })
 
   /* ---------- 搜索 / 替换浮窗（右上侧） ---------- */
   const [searchOpen, setSearchOpen] = useState(false)
@@ -435,29 +441,20 @@ export default function ChaptersView({
         onClose={closeSearch}
         chapters={chapters}
       />
-      {/* 标题 / 信息头部：置于滚动区之外，始终固定显示，仅正文滚动。 */}
-      <div className="editor-head">
-        <div className="editor-inner">
-          {/* 章节名（v2：前段只读 + 名段单输入，见 DocTitleRow）：
-              · 普通章：固定编号前缀「第X章」（span）+ 空隙（容器 gap）+ 可编辑名（input）；
-              · 特殊章：前段（创建时已设置，只读 span）+ 空隙 + 名段输入。
-              失焦 / Enter 提交落库，Escape 还原；不做按键逐次写库。 */}
-          <DocTitleRow chapterId={chapterId} name={name} />
-          <DocMeta
-            lastEdited={editedLabel !== '' ? t('editor.lastEdited', { time: editedLabel }) : ''}
-            status={{
-              value: chapterStatus,
-              label: t(STATUS_LABELS[chapterStatus]),
-              ariaLabel: t('statusToggleAria', { label: t(STATUS_LABELS[chapterStatus]) }),
-              disabled: chapterId === null,
-              onClick: () => {
-                if (chapterId === null) return
-                onStatusChange(chapterId, isDone ? 'draft' : 'done')
-              }
-            }}
-          />
-        </div>
-      </div>
+      {/* 标题 / 信息头部：置于滚动区之外，始终固定显示，仅正文滚动。
+          标题行右侧承载「复制全文」按钮（见 ChapterEditorHead）。 */}
+      <ChapterEditorHead
+        chapterId={chapterId}
+        name={name}
+        lastEdited={editedLabel !== '' ? t('editor.lastEdited', { time: editedLabel }) : ''}
+        chapterStatus={chapterStatus}
+        onToggleStatus={() => {
+          if (chapterId === null) return
+          onStatusChange(chapterId, isDone ? 'draft' : 'done')
+        }}
+        onCopyAll={copyAll}
+        copyDisabled={!canCopy}
+      />
       {/* 正文滚动区：无外边框（聚焦框已移除），仅正文滚动；标题/元信息在滚动区之外固定。
           data-swap-phase 交替两档别名关键帧 → 切章后正文淡入重播（useContentSwap；null = 首次载入不挂属性、不淡入）。 */}
       <div className="editor-scroll" data-swap-phase={swapPhase ?? undefined}>
@@ -488,6 +485,8 @@ export default function ChaptersView({
         onPointerEnter={hover.cancelHide}
         onPointerLeave={hover.onMouseLeave}
       />
+      {/* 「复制全文」结果提示（成功 / 空正文 / 失败）。 */}
+      {toastNode}
     </>
   )
 }

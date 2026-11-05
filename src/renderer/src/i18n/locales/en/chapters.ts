@@ -35,6 +35,10 @@ const chapters = {
   emptyDesc: 'Click “New Volume” in the top bar to create one',
   editor: {
     lastEdited: 'Last edited {{time}}',
+    copyAll: 'Copy full text (plain text, title excluded)',
+    copyDone: 'Full text copied',
+    copyFailed: 'Copy failed, please try again',
+    copyEmpty: 'The chapter body is empty, nothing to copy',
     footCount: 'This chapter: <b>{{count}}</b> / <b>{{limit}}</b> chars',
     wordLimitNear: 'Approaching the per-piece word limit',
     wordLimitReached: 'Per-piece word limit reached'

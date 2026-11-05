@@ -153,6 +153,26 @@
   cursor: default;
 }
 
+/* 标题行 + 「复制全文」按钮：同一行 flex 排布，按钮固定在编辑头右侧、与标题垂直居中；
+   标题行吸收剩余宽度（其内部名段输入仍 `flex: 1` 撑满）。hover / focus 反馈由
+   IconButton 统一提供，本行只做布局，不含任何 transform 位移 / 缩放。 */
+.editor-head .editor-head-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-head .editor-head-title .doc-title-row {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+/* 复制的失败 / 成功提示走通用 Toast；此处仅收敛按钮与标题字号的比例（图标 24 视框）。 */
+.editor-head .editor-head-copy {
+  flex: none;
+}
+
 /* 头部元信息行（.editor-head > .editor-inner > .doc-meta）：仅收紧下外边距，
    使标题块与正文滚动区衔接更紧凑；不改其 padding / 其它方向尺寸 / 颜色。
    作用域限定 .editor-head，避免影响大纲 / 世界观等复用 .doc-meta 的视图。 */
