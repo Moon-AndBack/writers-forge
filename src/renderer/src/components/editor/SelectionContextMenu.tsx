@@ -18,6 +18,7 @@ import {
 } from './useForeshadowMarks'
 import ForeshadowCreateDialog from '../dialogs/ForeshadowCreateDialog'
 import ForeshadowRecoverDialog from '../dialogs/ForeshadowRecoverDialog'
+import { useForeshadowFilters } from '../../pages/writer/foreshadow/foreshadowFilterContext'
 import { CATEGORIES, CATEGORY_LABEL_KEYS, MAX_WORD_CHARS } from '../dialogs/cleanWordsMeta'
 import type { CleanWordAddOutcome } from '../dialogs/cleanWordActions'
 import { useToast } from '../ui'
@@ -329,6 +330,12 @@ export function SelectionContextMenu({
     resolveForeshadowTargetLabel,
     showToast
   })
+  /**
+   * 伏笔筛选条件（外部 store 单例，活动栏浮层写入）：右键新建成功后须清空，
+   * 否则新建的「建设中」伏笔在当前状态筛选（如只看「已回收」）下不可见。
+   * 与标题栏「新建」同口径（见 `ForeshadowView` 的 `handleCreated`）。
+   */
+  const { clearAll: clearForeshadowFilters } = useForeshadowFilters(bookId)
   /** 非 null = 创建弹窗打开（同时持有右键时的选区快照）。 */
   const [pending, setPending] = useState<PendingAnchor | null>(null)
   /** 非 null = 回收弹窗打开（值 = 点菜单项时的选区快照，落库为回收锚点）。 */
@@ -447,6 +454,9 @@ export function SelectionContextMenu({
           onCreated={() => {
             showToast(tForeshadow('toast.createSuccess'))
             setPending(null)
+            // 新建的多为「建设中」且可能不匹配当前筛选：先清条件，确保新行可见
+            // （仅在创建成功后清；失败由 `onFailed` 处理，不动用户既有条件）。
+            clearForeshadowFilters()
             // 创建成功后按锚点重拉并写回正文标记（复用同一刷新实现，无需跨组件通信）。
             void refreshForeshadowMarks(editor, chapterId, outlineItemId, {
               resolveLabel: resolveForeshadowTargetLabel,
