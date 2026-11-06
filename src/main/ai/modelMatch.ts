@@ -15,8 +15,14 @@ import { readCatalog, readOverrides } from './catalogCache'
  * 「去掉版本号后比较」的做法都会把两者误判为同一模型。
  */
 
-/** 未知模型的默认上下文窗口（32K）。 */
-export const DEFAULT_CONTEXT_WINDOW = 32_768
+/**
+ * 未知模型的默认上下文窗口（1M）。
+ *
+ * 这是「未知模型」的**乐观默认值**：目录与内置基线都匹配不到时按 1M 估算。
+ * 代价是中转站的小窗口模型不会被提前压缩（超限请求会在上游被拒），
+ * 用户可在设置页「自定义上下文窗口」覆盖。
+ */
+export const DEFAULT_CONTEXT_WINDOW = 1_048_576
 
 /** 匹配置信度 / 来源细分。 */
 export type MatchConfidence =
@@ -146,7 +152,7 @@ export function resolveContextLimit(model: string): ResolvedLimit {
     }
   }
 
-  // 4. 默认值（未知模型 32K）。
+  // 4. 默认值（未知模型 1M 乐观默认）。
   return {
     tokens: DEFAULT_CONTEXT_WINDOW,
     source: 'default',

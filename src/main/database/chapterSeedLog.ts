@@ -11,10 +11,19 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v118'
+export const CHAPTER_SEED_VERSION = 'v119'
 
 /**
- * 最近版本变更日志（v118；更早版本见上述历史文件）。
+ * 最近版本变更日志（v119；更早版本见上述历史文件）。
+ *
+ * `v119`（未知模型默认窗口 1M 批）：未知模型的默认上下文窗口由 32K 改为 **1M**——
+ * 两处 `DEFAULT_CONTEXT_WINDOW`（渲染层 `ai/contextBudget.ts` 与主进程 `ai/modelMatch.ts`）
+ * 均改为 `1_048_576`。这是「未知模型」的**乐观默认值**（目录与内置基线都匹配不到时才生效）：
+ * 代价是中转站的小窗口模型不会被提前压缩，超限请求会在上游被拒；用户仍可在设置页
+ * 「AI 助手 → 自定义上下文窗口」为具体模型手填窗口（优先级高于目录 / 基线）。i18n 的
+ * `panel.context.unknownModel` 本就是 `{{tokens}}` 插值，经 `formatTokenCount` 自动显示
+ * 「1M」，无需改 key；教学文案同步（设置「上下文占用与自动压缩」、大纲「AI 写作助手」、
+ * 大纲「上下文压缩与模型窗口」三处：32K → 1M，并补默认值的代价与覆盖方式）。
  *
  * `v118`（AI 快捷功能「重写本段」批）：右栏 AI 快捷功能「改写」重命名为「重写本段」
  * （内部 key 仍为 `rewrite`，只改 i18n 显示文案）。`functions.ts` 的 rewrite system prompt
