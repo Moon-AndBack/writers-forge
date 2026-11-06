@@ -145,6 +145,11 @@ export interface AiProviderConnection {
   apiKey: string | null
 }
 
+/** 读取指定服务商当前生效的 Base URL（已去尾部斜杠 / 空值回退默认）。 */
+export function getProviderBaseUrl(provider: AiProviderId): string {
+  return readBaseUrl(provider)
+}
+
 /** 按服务商解析出可用连接参数（各服务商均读取解密后的密钥）。 */
 export function getProviderConnection(provider: AiProviderId): AiProviderConnection {
   return {

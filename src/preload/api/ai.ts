@@ -109,7 +109,7 @@ export const aiApi = {
     set: (patch) => ipcRenderer.invoke('ai:config:set', patch)
   },
   models: {
-    list: (provider) => ipcRenderer.invoke('ai:models:list', { provider })
+    list: (provider, mode = 'cache') => ipcRenderer.invoke('ai:models:list', { provider, mode })
   },
   test: (provider) => ipcRenderer.invoke('ai:test', { provider }),
   chat: {

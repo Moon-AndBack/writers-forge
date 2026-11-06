@@ -119,6 +119,25 @@ export interface AiConfigUpdateResult {
   apiKeyError?: AiKeyWriteError
 }
 
+/**
+ * 模型列表查询模式（IPC `ai:models:list` 入参）。
+ *
+ * - `cache`：只读本地缓存（缺省；向后兼容不传 mode 的旧调用）；
+ * - `refresh`：强制联网拉取并在成功且非空时回写缓存。
+ */
+export type AiModelsListMode = 'cache' | 'refresh'
+
+/**
+ * 模型列表缓存条目（settings 表 `ai:models:v1:<provider>` 的值结构）。
+ */
+export interface AiModelCacheEntry {
+  /** 拉取时使用的 Base URL；与当前配置不一致时缓存视为失效。 */
+  baseUrl: string
+  models: string[]
+  /** 拉取请求发起时刻（毫秒时间戳）：既用于过期判断，也用于并发写入排序。 */
+  fetchedAt: number
+}
+
 /** 模型列表查询参数。 */
 export interface AiListModelsOptions {
   /** 覆盖默认超时（毫秒）。 */

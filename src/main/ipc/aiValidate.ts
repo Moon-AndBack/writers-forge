@@ -1,5 +1,5 @@
 import { isAiProviderId } from '../ai'
-import type { AiChatMessage, AiConfigPatch, AiProviderId } from '../ai/types'
+import type { AiChatMessage, AiConfigPatch, AiModelsListMode, AiProviderId } from '../ai/types'
 
 /**
  * AI 域 IPC 入参校验（自 `ai.ts` 迁出的纯函数集合，零 electron 依赖）。
@@ -47,10 +47,29 @@ export function readOpaqueId(value: unknown): string | null {
   return REQUEST_ID_PATTERN.test(value) ? value : null
 }
 
-/** 解析 `{ provider }` 入参（`ai:models:list` / `ai:test` 共用）。 */
+/** 解析 `{ provider }` 入参（`ai:test` 用）。 */
 export function readProviderInput(input: unknown): AiProviderId | null {
   if (!isRecord(input)) return null
   return isAiProviderId(input.provider) ? input.provider : null
+}
+
+/** `ai:models:list` 解析后的入参。 */
+export interface ModelsListInput {
+  provider: AiProviderId
+  mode: AiModelsListMode
+}
+
+/**
+ * 解析 `{ provider, mode? }` 入参（`ai:models:list` 用）。
+ *
+ * `mode` 缺省为 `cache`：保持与旧版「不传 mode」调用的兼容。
+ */
+export function readModelsListInput(input: unknown): ModelsListInput | null {
+  if (!isRecord(input) || !isAiProviderId(input.provider)) return null
+  const mode = input.mode
+  if (mode === undefined) return { provider: input.provider, mode: 'cache' }
+  if (mode !== 'cache' && mode !== 'refresh') return null
+  return { provider: input.provider, mode }
 }
 
 /** 解析消息数组（逐条校验角色与正文长度）。 */

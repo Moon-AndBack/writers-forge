@@ -52,7 +52,6 @@ export default function AiSection() {
     model: draft.model,
     persistedModel: config?.model ?? null,
     persistConfig,
-    flushConnection,
     onModelChange: (model) => setDraft((current) => ({ ...current, model }))
   })
 

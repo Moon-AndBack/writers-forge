@@ -18,6 +18,7 @@ import type {
  *
  * 分层：
  * - `config.ts`            配置与密钥（safeStorage）
+ * - `modelCache.ts`        模型列表本地缓存（settings KV，12 小时 TTL）
  * - `http.ts`              OpenAI SDK 客户端 / 超时 / 错误归一化
  * - `providers/deepseek`   DeepSeek 官方 API（OpenAI 兼容）
  * - `providers/opencode`   opencode Go（OpenAI 兼容，需 `x-opencode-session` 头）
@@ -33,7 +34,8 @@ const PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
 }
 
 export * from './types'
-export { getAiConfig, setAiConfig } from './config'
+export { getAiConfig, getProviderBaseUrl, setAiConfig } from './config'
+export { MODEL_CACHE_TTL_MS, readModelCache, writeModelCache } from './modelCache'
 
 /** 取得适配器（运行时兜底，防止未来 IPC 传入非法值）。 */
 function getAdapter(provider: AiProviderId): AiProviderAdapter {

@@ -77,6 +77,8 @@ export const VOLUME_SETTINGS: SeedVolume = {
           '服务商：在 DeepSeek / OpenCode Go 之间二选一；OpenCode Go 走 OpenAI 兼容接口',
           'Base URL：可留空走默认（DeepSeek 为 https://api.deepseek.com/v1，OpenCode Go 为 https://opencode.ai/inference/go），也可填中转站地址；清空即恢复默认',
           '模型：点「刷新」从服务商动态拉取模型列表，在下拉里选；列表拉不到或想用别的模型时，选「自定义模型…」直接填模型 ID',
+          '模型列表会缓存在本地：打开设置或切到「AI」页签时先显示上次拿到的列表，再在后台自动更新（超过 12 小时才重新联网，别的服务商或换了 Base URL 则各算各的）；后台更新失败时保留原列表不动，不会把下拉清空',
+          '点「刷新」会强制联网拉一次，只更新列表、不会顺带保存正在编辑的 Base URL；当前选中的模型即使不在新列表里也会保留，不会自动切换到别的模型',
           'API Key：密码框输入后点「保存」，保存后只显示掩码（如 sk-****abcd），点「清除」可移除；OpenCode Go 需到 OpenCode Console 生成 oc_sk_ 开头的 Personal API Key',
           '测试连接：点「测试」会用当前配置拉取一次模型列表并计时，成功显示延迟毫秒数，失败显示具体原因（不会发送任何正文）'
         ]),

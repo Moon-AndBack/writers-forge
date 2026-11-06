@@ -1,5 +1,15 @@
 import { ipcMain } from 'electron'
-import { getAiConfig, isAiProviderId, listModels, setAiConfig, streamChat } from '../ai'
+import {
+  MODEL_CACHE_TTL_MS,
+  getAiConfig,
+  getProviderBaseUrl,
+  isAiProviderId,
+  listModels,
+  readModelCache,
+  setAiConfig,
+  streamChat,
+  writeModelCache
+} from '../ai'
 import { toAiError } from '../ai/http'
 import type { AiError, AiStreamEvent } from '../ai/types'
 import {
@@ -27,6 +37,7 @@ import {
   isTextWithin,
   readChatStartInput,
   readConfigPatch,
+  readModelsListInput,
   readOpaqueId,
   readProviderInput
 } from './aiValidate'
@@ -58,8 +69,24 @@ function runWrite<T>(channel: string, ctx: Record<string, unknown>, fn: () => T,
   }
 }
 
-/** 模型列表结果：失败不抛错，改为 `ok=false` + 脱敏 `AiError`。 */
-type ModelsResult = { ok: boolean; models?: string[]; error?: AiError }
+/**
+ * 模型列表结果：失败不抛错，改为 `ok=false` + 脱敏 `AiError`。
+ *
+ * `mode: 'cache'` 未命中时返回 `{ ok: false, source: 'cache' }`（**不带 error**），
+ * 由渲染层据此改走 `refresh`；`refresh` 失败但本地有旧缓存时，回传旧列表 + `ok: false`，
+ * 让 UI 保留内容。
+ */
+type ModelsResult = {
+  ok: boolean
+  models?: string[]
+  error?: AiError
+  /** 结果来源：本地缓存 / 本次联网。 */
+  source?: 'cache' | 'network'
+  /** 该列表的拉取时刻（毫秒时间戳）。 */
+  fetchedAt?: number
+  /** 缓存已超过有效期：内容可用，建议后台刷新。 */
+  stale?: boolean
+}
 
 /** 连通性测试结果。 */
 type TestResult = { ok: boolean; latencyMs: number; error?: AiError }
@@ -70,7 +97,7 @@ type TestResult = { ok: boolean; latencyMs: number; error?: AiError }
  * 通道：
  * - ai:config:get        ()                                      → AiConfigView
  * - ai:config:set        (patch)                                 → AiConfigUpdateResult
- * - ai:models:list       ({ provider })                          → { ok, models?, error? }
+ * - ai:models:list       ({ provider, mode? })                   → { ok, models?, error?, source?, fetchedAt?, stale? }
  * - ai:test              ({ provider })                          → { ok, latencyMs, error? }
  * - ai:chat:start        (input)                                 → void（后续走事件）
  * - ai:chat:abort        ({ requestId })                         → boolean
@@ -113,19 +140,65 @@ export function registerAiIpc(): void {
   })
 
   ipcMain.handle('ai:models:list', async (_event, input: unknown): Promise<ModelsResult> => {
-    const provider = readProviderInput(input)
-    if (!provider) {
+    const parsed = readModelsListInput(input)
+    if (!parsed) {
       log.warn('ai:models:list 入参非法')
       return { ok: false, error: { code: 'invalid_request', message: 'Invalid AI provider input' } }
     }
+
+    const { provider, mode } = parsed
+    // 缓存按「服务商 + 当前生效的 Base URL」归属；换地址后旧缓存自然失效。
+    const baseUrl = getProviderBaseUrl(provider)
+
+    if (mode === 'cache') {
+      const cached = readModelCache(provider, baseUrl)
+      if (!cached) {
+        // 未命中不视为错误：不带 error，渲染层据此改发 refresh。
+        log.debug('ai:models:list 缓存未命中', { provider })
+        return { ok: false, source: 'cache' }
+      }
+      const stale = Date.now() - cached.fetchedAt >= MODEL_CACHE_TTL_MS
+      log.debug('ai:models:list 命中缓存', { provider, count: cached.models.length, stale })
+      return {
+        ok: true,
+        models: cached.models,
+        source: 'cache',
+        fetchedAt: cached.fetchedAt,
+        stale
+      }
+    }
+
+    // 以请求发起时刻作为 fetchedAt：慢的旧响应不会覆盖新的缓存。
+    const startedAt = Date.now()
     try {
       const models = await listModels(provider, { timeoutMs: PROBE_TIMEOUT_MS })
-      log.debug('ai:models:list 完成', { provider, count: models.length })
-      return { ok: true, models }
+      if (models.length === 0) {
+        // 空列表不写缓存，避免瞬时异常把已有缓存打没。
+        log.warn('ai:models:list 返回空列表，不写缓存', { provider })
+        return { ok: true, models, source: 'network' }
+      }
+      const fetchedAt = writeModelCache(provider, baseUrl, models, startedAt) ?? startedAt
+      log.debug('ai:models:list 完成（联网）', { provider, count: models.length })
+      return { ok: true, models, source: 'network', fetchedAt }
     } catch (error) {
       const aiError = toAiError(error)
-      log.warn('ai:models:list 失败', { provider, code: aiError.code, status: aiError.status })
-      return { ok: false, error: aiError }
+      const cached = readModelCache(provider, baseUrl)
+      log.warn('ai:models:list 刷新失败', {
+        provider,
+        code: aiError.code,
+        status: aiError.status,
+        hasCache: cached !== null
+      })
+      return cached
+        ? {
+            ok: false,
+            models: cached.models,
+            source: 'cache',
+            fetchedAt: cached.fetchedAt,
+            stale: true,
+            error: aiError
+          }
+        : { ok: false, source: 'network', error: aiError }
     }
   })
 
@@ -141,6 +214,7 @@ export function registerAiIpc(): void {
     }
     const startedAt = Date.now()
     try {
+      // 强制走网络：不复用模型缓存，否则「测试连接」测到的是旧结果。
       await listModels(provider, { timeoutMs: PROBE_TIMEOUT_MS })
       const latencyMs = Date.now() - startedAt
       log.info('ai:test 成功', { provider, latencyMs })

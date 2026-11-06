@@ -11,10 +11,20 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v112'
+export const CHAPTER_SEED_VERSION = 'v113'
 
 /**
- * 最近版本变更日志（v112；更早版本见上述历史文件）。
+ * 最近版本变更日志（v113；更早版本见上述历史文件）。
+ *
+ * `v113`（模型列表缓存批）：AI 模型列表改为「本地缓存优先 + 后台刷新」。`settings` 表
+ * 新增键 `ai:models:v1:<provider>`，值为 `{ baseUrl, models, fetchedAt }`：打开设置 /
+ * 切到「AI」页签先读缓存立即渲染（不再先清空列表），缓存缺失或超过 12 小时才后台静默
+ * 联网刷新，失败保留旧列表；空列表不写缓存；写入以请求发起时刻做并发保护（旧响应不覆盖
+ * 新响应）；Base URL 变更后旧缓存视为未命中。`ai:models:list` 新增可选
+ * `mode: 'cache' | 'refresh'`（缺省 cache，向后兼容）并回传 `source / fetchedAt / stale`；
+ * `ai:test` 保持强制走网络。设置页「刷新」不再 `flushConnection()`（去掉顺带落库草稿的
+ * 副作用）。生成请求发送时已快照 model，刷新列表不影响在途对话。教学文案同步（设置
+ * 「AI 助手」分区补充缓存与刷新说明）。
  *
  * `v112`（右栏页签结构批）：章节模块右栏「灵感」页签移到「AI」左边，顺序由
  * 大纲 / 剧情 / 伏笔 / AI / 灵感 改为 **大纲 / 剧情 / 伏笔 / 灵感 / AI**；大纲模块右栏

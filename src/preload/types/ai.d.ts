@@ -15,6 +15,7 @@ import type {
   AiConfigUpdateResult,
   AiConfigView,
   AiError,
+  AiModelsListMode,
   AiProviderId,
   AiStreamEvent,
   AiUsage
@@ -33,6 +34,7 @@ export type {
   AiConfigUpdateResult,
   AiConfigView,
   AiError,
+  AiModelsListMode,
   AiProviderId,
   AiStreamEvent,
   AiUsage,
@@ -50,9 +52,19 @@ export type AiChatMessage = MainAiChatMessage
 /** 模型列表结果：失败以 `ok=false` + 脱敏错误表达，不抛异常。 */
 export interface AiModelsResult {
   ok: boolean
-  /** 成功时的模型 ID 列表（失败时省略）。 */
+  /**
+   * 模型 ID 列表。
+   *
+   * `mode: 'cache'` 未命中时省略；`refresh` 失败但本地有旧缓存时仍回传旧列表。
+   */
   models?: string[]
   error?: AiError
+  /** 结果来源：本地缓存 / 本次联网。 */
+  source?: 'cache' | 'network'
+  /** 该列表的拉取时刻（毫秒时间戳）。 */
+  fetchedAt?: number
+  /** 缓存已超过有效期（12 小时）：内容可用，调用方应后台刷新。 */
+  stale?: boolean
 }
 
 /** 连通性测试结果（仅调模型列表计时，不发送任何用户正文）。 */
@@ -96,9 +108,9 @@ export interface AiApi {
     /** 入参非法 / 写入失败时 reject（不返回半成品配置）；密钥被拒原因见 `apiKeyError`。 */
     set: (patch: AiConfigPatch) => Promise<AiConfigUpdateResult>
   }
-  /** 模型列表：失败返回 `ok=false` + 脱敏错误。 */
+  /** 模型列表：先读缓存（缺省），或强制联网刷新。失败返回 `ok=false` + 脱敏错误。 */
   models: {
-    list: (provider: AiProviderId) => Promise<AiModelsResult>
+    list: (provider: AiProviderId, mode?: AiModelsListMode) => Promise<AiModelsResult>
   }
   /** 连通性测试（仅模型列表往返计时）。 */
   test: (provider: AiProviderId) => Promise<AiTestResult>
