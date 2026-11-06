@@ -31,6 +31,8 @@ export interface ForeshadowWorkspace {
   activeId: number | null
   activeRow: ForeshadowRow | null
   loading: boolean
+  /** 当前书列表读取失败（列表为空时渲染错误态 + 重试，而非空态）。 */
+  loadError: boolean
   dirty: boolean
   reportDirty: (dirty: boolean) => void
   saveRef: RefObject<(() => void | Promise<boolean>) | null>
@@ -57,6 +59,11 @@ export function useForeshadowWorkspace(enabled: boolean, bookId: string): Foresh
     bookId: null,
     rows: EMPTY_ROWS
   })
+  // 读取失败标记（同样按书打标：换书即失效，不会把上一本的失败带到当前书）。
+  const [loadErrorState, setLoadErrorState] = useState<{ bookId: string | null; failed: boolean }>({
+    bookId: null,
+    failed: false
+  })
   // 显式选中项 id（null = 尚未选择 → 派生回退首行）。
   const [selectedId, setSelectedId] = useState<number | null>(null)
 
@@ -70,6 +77,7 @@ export function useForeshadowWorkspace(enabled: boolean, bookId: string): Foresh
 
   const rows = enabled && rowsState.bookId === bookId ? rowsState.rows : EMPTY_ROWS
   const loading = enabled && bookId !== '' && rowsState.bookId !== bookId
+  const loadError = enabled && loadErrorState.bookId === bookId && loadErrorState.failed
 
   // 选中口径（派生）：显式选中项仍在列表中则用之，否则回退首行。
   const activeId =
@@ -85,10 +93,16 @@ export function useForeshadowWorkspace(enabled: boolean, bookId: string): Foresh
     void (async () => {
       try {
         const next = await window.api.foreshadow.list(bookId)
-        if (!cancelled) setRowsState({ bookId, rows: next })
+        if (!cancelled) {
+          setRowsState({ bookId, rows: next })
+          setLoadErrorState({ bookId, failed: false })
+        }
       } catch (error) {
         log.warn('伏笔列表加载失败', error)
-        if (!cancelled) setRowsState({ bookId, rows: EMPTY_ROWS })
+        if (!cancelled) {
+          setRowsState({ bookId, rows: EMPTY_ROWS })
+          setLoadErrorState({ bookId, failed: true })
+        }
       }
     })()
     return () => {
@@ -103,9 +117,12 @@ export function useForeshadowWorkspace(enabled: boolean, bookId: string): Foresh
       try {
         const next = await window.api.foreshadow.list(bookId)
         setRowsState({ bookId, rows: next })
+        setLoadErrorState({ bookId, failed: false })
         if (selectFirst) setSelectedId(next[0]?.id ?? null)
       } catch (error) {
         log.warn('伏笔列表刷新失败', error)
+        // 重试仍失败：保持错误态（列表为空时显示「加载失败 + 重试」）。
+        setLoadErrorState({ bookId, failed: true })
       }
     },
     [enabled, bookId]
@@ -286,6 +303,7 @@ export function useForeshadowWorkspace(enabled: boolean, bookId: string): Foresh
     activeId,
     activeRow,
     loading,
+    loadError,
     dirty,
     reportDirty,
     saveRef,

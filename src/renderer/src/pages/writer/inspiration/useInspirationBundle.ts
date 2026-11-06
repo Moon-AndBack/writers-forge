@@ -45,6 +45,11 @@ export function useInspirationBundle(
     bookId: '',
     rows: EMPTY_ROWS
   })
+  // 读取失败标记（按书打标：换书即失效，不把上一本的失败带到当前书）。
+  const [loadErrorState, setLoadErrorState] = useState<{ bookId: string; failed: boolean }>({
+    bookId: '',
+    failed: false
+  })
   /** 显式选中项 id（null = 尚未选择 → 派生回退首行）。 */
   const [selectedId, setSelectedId] = useState<number | null>(null)
 
@@ -64,6 +69,7 @@ export function useInspirationBundle(
     [allRows, filters]
   )
   const loading = enabled && bookId !== '' && !rowsMatch
+  const loadError = enabled && loadErrorState.bookId === bookId && loadErrorState.failed
 
   /** 拉取全书列表（本地筛选前的全量）；加载 effect 与新建 / 删除后的 reload 共用。 */
   const fetchRows = useCallback(
@@ -86,10 +92,13 @@ export function useInspirationBundle(
       try {
         const nextRows = await fetchRows()
         setRowsState({ bookId, rows: nextRows })
+        setLoadErrorState({ bookId, failed: false })
         if (selectFirst) setSelectedId(nextRows[0]?.id ?? null)
       } catch (error) {
         log.warn('灵感列表加载失败', error)
         setRowsState({ bookId, rows: EMPTY_ROWS })
+        // 重试仍失败：保持错误态（列表为空时显示「加载失败 + 重试」）。
+        setLoadErrorState({ bookId, failed: true })
       }
     },
     [enabled, bookId, fetchRows]
@@ -101,11 +110,15 @@ export function useInspirationBundle(
     let cancelled = false
     void fetchRows()
       .then((nextRows) => {
-        if (!cancelled) setRowsState({ bookId, rows: nextRows })
+        if (cancelled) return
+        setRowsState({ bookId, rows: nextRows })
+        setLoadErrorState({ bookId, failed: false })
       })
       .catch((error) => {
         log.warn('灵感列表加载失败', error)
-        if (!cancelled) setRowsState({ bookId, rows: EMPTY_ROWS })
+        if (cancelled) return
+        setRowsState({ bookId, rows: EMPTY_ROWS })
+        setLoadErrorState({ bookId, failed: true })
       })
     return () => {
       cancelled = true
@@ -239,6 +252,7 @@ export function useInspirationBundle(
       activeId,
       activeRow,
       loading,
+      loadError,
       dirty,
       onDirtyChange: reportDirty,
       saveRef,
@@ -262,6 +276,7 @@ export function useInspirationBundle(
     activeId,
     activeRow,
     loading,
+    loadError,
     dirty,
     reportDirty,
     saveRef,

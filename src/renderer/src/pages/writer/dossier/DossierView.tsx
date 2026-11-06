@@ -8,6 +8,7 @@ import { POPOVER_HIDE_DELAY, POPOVER_SHOW_DELAY } from '../../../components/popo
 import { useModuleLabel } from '../../../shell/activityBarModules'
 import type { DossierModule } from '../../../shell/activityBarModules'
 import { EmptyState } from '../../../components/EmptyState'
+import { LoadErrorState } from '../../../components/LoadErrorState'
 import { HoverCard } from '../entities/HoverCard'
 import type { HoverAnchor } from '../entities/HoverCard'
 import ConfirmDialog from '../ConfirmDialog'
@@ -225,6 +226,8 @@ export default function DossierView({ bundle }: DossierViewProps) {
     rows,
     activeId,
     loading,
+    loadError,
+    reload,
     semanticCodes,
     onSelect,
     onCreate,
@@ -294,7 +297,10 @@ export default function DossierView({ bundle }: DossierViewProps) {
 
       <div className="editor-scroll">
         <div className="editor-inner is-full">
-          {loading && rows.length === 0 ? (
+          {loadError && rows.length === 0 ? (
+            /* 读取失败且无可用数据：与「当前域还没有条目」的空态区分，给出重试入口。 */
+            <LoadErrorState onRetry={() => void reload()} />
+          ) : loading && rows.length === 0 ? (
             <div className="dossier-detail__empty">{tCommon('loading')}</div>
           ) : rows.length === 0 ? (
             <EmptyState

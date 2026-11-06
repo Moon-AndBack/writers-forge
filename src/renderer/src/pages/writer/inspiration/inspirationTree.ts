@@ -87,6 +87,8 @@ export interface InspirationBundle {
   activeRow: InspirationRow | null
   /** 首次加载 / 换书加载中（列表为空时渲染加载态，不闪空态）。 */
   loading: boolean
+  /** 当前书列表读取失败（列表为空时渲染错误态 + 重试，而非空态）。 */
+  loadError: boolean
   /** 右栏是否有未保存改动。 */
   dirty: boolean
   /** 右栏表单上报脏态。 */

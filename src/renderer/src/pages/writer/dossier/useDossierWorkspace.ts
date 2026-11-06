@@ -44,6 +44,11 @@ export function useDossierWorkspace(module: WriterModule, bookId: string): Dossi
     module: null,
     rows: EMPTY_ROWS
   })
+  // 读取失败标记（按域打标：切域即失效，不把上一域的失败带到当前域）。
+  const [loadErrorState, setLoadErrorState] = useState<{
+    module: DossierModule | null
+    failed: boolean
+  }>({ module: null, failed: false })
 
   // 脏态 / 保存入口 / 切换守卫（含切模块 / 换书的自动保存兜底）。
   const {
@@ -61,6 +66,7 @@ export function useDossierWorkspace(module: WriterModule, bookId: string): Dossi
   const currentRows = rowsState.module === active ? rowsState.rows : EMPTY_ROWS
   // 当前域尚未拉过一次（标记不一致）即视为加载中。
   const loading = active !== null && rowsState.module !== active
+  const loadError = active !== null && loadErrorState.module === active && loadErrorState.failed
 
   /** 拉取当前域列表。 */
   const fetchRows = useCallback(async (): Promise<DossierRow[]> => {
@@ -76,10 +82,13 @@ export function useDossierWorkspace(module: WriterModule, bookId: string): Dossi
     try {
       const rows = await fetchRows()
       setRowsState({ module: active, rows })
+      setLoadErrorState({ module: active, failed: false })
       // 实体写（增删 / 关系增删改）都会让悬停卡过期：关系跨模块双向、无法枚举对端，整体失效。
       clearEntityDetailCache()
     } catch (error) {
       log.warn('设定档案加载失败', error)
+      // 重试仍失败：保持错误态（列表为空时显示「加载失败 + 重试」）。
+      setLoadErrorState({ module: active, failed: true })
     }
   }, [fetchRows, active])
 
@@ -92,10 +101,12 @@ export function useDossierWorkspace(module: WriterModule, bookId: string): Dossi
         const rows = await fetchRows()
         if (cancelled) return
         setRowsState({ module: active, rows })
+        setLoadErrorState({ module: active, failed: false })
       } catch (error) {
         log.warn('设定档案加载失败', error)
         if (cancelled) return
         setRowsState({ module: active, rows: EMPTY_ROWS })
+        setLoadErrorState({ module: active, failed: true })
       }
     })()
     return () => {
@@ -148,6 +159,7 @@ export function useDossierWorkspace(module: WriterModule, bookId: string): Dossi
     detail,
     detailPending,
     loading,
+    loadError,
     semanticCodes,
     incomingRelations,
     dirty,
@@ -165,6 +177,7 @@ export function useDossierWorkspace(module: WriterModule, bookId: string): Dossi
     remove,
     addRelation,
     updateRelation,
-    removeRelation
+    removeRelation,
+    reload
   }
 }

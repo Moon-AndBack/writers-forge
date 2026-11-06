@@ -27,6 +27,7 @@ export function useDossierBundle(
     detail,
     detailPending,
     loading,
+    loadError,
     semanticCodes,
     incomingRelations,
     dirty,
@@ -43,7 +44,8 @@ export function useDossierBundle(
     remove,
     addRelation,
     updateRelation,
-    removeRelation
+    removeRelation,
+    reload
   } = useDossierWorkspace(module, bookId)
 
   const handleSelect = useCallback(
@@ -65,6 +67,7 @@ export function useDossierBundle(
       detail,
       detailPending,
       loading,
+      loadError,
       semanticCodes,
       incomingRelations,
       dirty,
@@ -85,7 +88,8 @@ export function useDossierBundle(
       // 不一定等于右栏选中行）；返回写链 promise，供弹窗写后重拉该行关系。
       onAddRelation: (id, input) => addRelation(id, input),
       onUpdateRelation: (id, refId, patch) => updateRelation(id, refId, patch),
-      onRemoveRelation: (id, refId) => removeRelation(id, refId)
+      onRemoveRelation: (id, refId) => removeRelation(id, refId),
+      reload
     }
   }, [
     active,
@@ -95,6 +99,7 @@ export function useDossierBundle(
     detail,
     detailPending,
     loading,
+    loadError,
     semanticCodes,
     incomingRelations,
     dirty,
@@ -111,6 +116,7 @@ export function useDossierBundle(
     remove,
     addRelation,
     updateRelation,
-    removeRelation
+    removeRelation,
+    reload
   ])
 }

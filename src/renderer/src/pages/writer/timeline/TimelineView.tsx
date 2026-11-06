@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { LoadErrorState } from '../../../components/LoadErrorState'
 import { EntityStyleCard } from '../../../components/ui'
 import TimelineActivityActions from './TimelineActivityActions'
 import NewTimelineDialog from './NewTimelineDialog'
@@ -65,11 +66,19 @@ export default function TimelineView({
 }: TimelineViewProps) {
   const { t } = useTranslation('timeline')
   const { t: tPlot } = useTranslation('plot')
+  const { t: tCommon } = useTranslation('common')
   const [stored, setStored] = useState<string | null>(
     origin !== undefined ? (isStoredOrigin(origin) ? origin : null) : null
   )
   const [lines, setLines] = useState<PlotLineRow[]>([])
   const [scenes, setScenes] = useState<PlotSceneRow[]>([])
+  // 列表读取状态（按书打标）：`loading` = 首帧 / 换书 / 重试中，`error` = 读取失败。
+  const [listState, setListState] = useState<{
+    bookId: string | null
+    phase: 'loading' | 'ready' | 'error'
+  }>({ bookId: null, phase: 'loading' })
+  // 重试令牌：递增即重跑列表 effect（只影响失败后的显式重试）。
+  const [reloadKey, setReloadKey] = useState(0)
   const [createOpen, setCreateOpen] = useState(false)
 
   useEffect(() => {
@@ -101,21 +110,34 @@ export default function TimelineView({
         cancelled = true
       }
     }
+    const targetBookId = bookId
     void Promise.all([api.listLines(bookId), api.listScenes(bookId)])
       .then(([nextLines, nextScenes]) => {
         if (cancelled) return
         setLines(nextLines)
         setScenes(nextScenes)
+        setListState({ bookId: targetBookId, phase: 'ready' })
       })
       .catch(() => {
         if (cancelled) return
         setLines([])
         setScenes([])
+        setListState({ bookId: targetBookId, phase: 'error' })
       })
     return () => {
       cancelled = true
     }
-  }, [bookId])
+  }, [bookId, reloadKey])
+
+  // 列表读取态派生：无 API / 无书时不发起读取（保持既有兜底展示，不显示加载 / 错误）。
+  const listActive = Boolean(bookId) && window.api?.plot !== undefined
+  const listLoading = listActive && (listState.bookId !== bookId || listState.phase === 'loading')
+  const listError = listActive && listState.bookId === bookId && listState.phase === 'error'
+  /** 重试：先切回加载态，再靠令牌重跑上面的 effect。 */
+  const retryList = (): void => {
+    setListState({ bookId: bookId ?? null, phase: 'loading' })
+    setReloadKey((key) => key + 1)
+  }
 
   const resolvedStored = origin !== undefined ? (isStoredOrigin(origin) ? origin : null) : stored
   const originDisplay = isStoredOrigin(resolvedStored) ? resolvedStored.trim() : t('originDefault')
@@ -170,8 +192,15 @@ export default function TimelineView({
       ) : null}
       <div className="editor-scroll">
         <div className="editor-inner is-full">
-          <div className="plot-timeline timeline-main">
-            {groups.length === 0 ? (
+          <div
+            className={`plot-timeline timeline-main${listError || listLoading ? ' is-status' : ''}`}
+          >
+            {listError ? (
+              /* 读取失败：与「正常空时间线」区分，给出重试入口。 */
+              <LoadErrorState onRetry={retryList} />
+            ) : listLoading ? (
+              <div className="timeline-loading">{tCommon('loading')}</div>
+            ) : groups.length === 0 ? (
               <div className="plot-timeline-empty">{t('plotEmpty')}</div>
             ) : (
               groups.map((group) => (

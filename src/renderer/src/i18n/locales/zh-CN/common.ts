@@ -143,6 +143,10 @@ const common = {
     wordFailed: '加入违禁词库失败，请重试'
   },
   loading: '加载中…',
+  /** 列表 / 面板读取失败：区分「真的是空数据」与「读取失败」（失败时可重试）。 */
+  loadFailedTitle: '加载失败',
+  loadFailedDesc: '内容没有读取出来，可能是暂时性错误。请点「重试」再试一次。',
+  retry: '重试',
   loadMore: '加载更多',
   restoreDefaultWidth: '双击恢复默认宽度',
   restoreDefaultSplit: '拖动调整上下两栏高度，双击恢复默认比例',

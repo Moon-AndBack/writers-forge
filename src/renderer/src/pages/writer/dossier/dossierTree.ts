@@ -246,6 +246,8 @@ export interface DossierWorkspace {
   detailPending: boolean
   /** 是否仍在首次加载（当前域尚未拉过一次）。 */
   loading: boolean
+  /** 当前域列表读取失败（列表为空时渲染错误态 + 重试，而非空态）。 */
+  loadError: boolean
   /** 语义码字典（全局，关系类型下拉数据源）。 */
   semanticCodes: WorldSemanticCodeRow[]
   /** 当前选中行的入边关系（可改类型 / 备注、可删；关联对象只读）。 */
@@ -280,6 +282,8 @@ export interface DossierWorkspace {
   updateRelation: (id: number, refId: number, patch: DossierRelationPatch) => Promise<void>
   /** 删除关系（出边 / 入边共用）。 */
   removeRelation: (id: number, refId: number) => Promise<void>
+  /** 重新拉取当前域列表（读取失败后由错误态「重试」调用）。 */
+  reload: () => Promise<void>
 }
 
 /**
@@ -303,6 +307,8 @@ export interface DossierBundle {
   detailPending: boolean
   /** 是否仍在首次加载（当前域尚未拉过一次）。 */
   loading: boolean
+  /** 当前域列表读取失败（列表为空时渲染错误态 + 重试，而非空态）。 */
+  loadError: boolean
   /** 语义码字典（全局，关系类型下拉数据源）。 */
   semanticCodes: WorldSemanticCodeRow[]
   /** 当前选中行的**入边**关系（引用当前实体的关系；类型 / 备注可改、可删）。 */
@@ -340,4 +346,6 @@ export interface DossierBundle {
   onUpdateRelation: (id: number, refId: number, patch: DossierRelationPatch) => void | Promise<void>
   /** 删除关系（出边 / 入边共用），写后刷新该实体的出边与入边。 */
   onRemoveRelation: (id: number, refId: number) => void | Promise<void>
+  /** 重新拉取当前域列表（读取失败后由错误态「重试」调用）。 */
+  reload: () => Promise<void>
 }

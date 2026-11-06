@@ -33,6 +33,19 @@
   color: var(--text-mute);
 }
 
+/* 错误态（`LoadErrorState` 经 className 追加 `is-error`）：只把主文案改为警示色，
+   说明区改纵向排布以容纳「重试」按钮；容器结构仍与空态共用，不新增外框。 */
+.placeholder-view.is-error .placeholder-title {
+  color: var(--danger);
+}
+
+.placeholder-view.is-error .placeholder-desc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
 .placeholder-view.is-compact {
   gap: 7px;
   min-height: 180px;

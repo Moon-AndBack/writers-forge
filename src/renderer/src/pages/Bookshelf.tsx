@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trans, useTranslation } from 'react-i18next'
+import { LoadErrorState } from '../components/LoadErrorState'
 import { IconButton, useToast } from '../components/ui'
 import { useSetStatusBar } from '../shell/statusBarContext'
 import { useSetTitleBarActions } from '../shell/titleBarActions'
@@ -75,6 +76,8 @@ export default function Bookshelf() {
   const [bookList, setBookList] = useState<Book[]>(() =>
     window.api?.books ? [] : [...FALLBACK_BOOKS]
   )
+  // 书架读取失败标记：区分「书架真的是空的」与「读取失败」（后者给出重试）。
+  const [loadError, setLoadError] = useState(false)
   const [statsByBook, setStatsByBook] = useState<Record<string, BookStats>>({})
   const [shelfStats, setShelfStats] = useState<ShelfStats>({ words: 0, today: 0, streak: 0 })
   const [penName, setPenName] = useState('')
@@ -130,8 +133,10 @@ export default function Bookshelf() {
     if (!booksApi) return
     try {
       setBookList(await booksApi.list())
+      setLoadError(false)
     } catch {
-      /* IPC 失败静默忽略：保留现有列表 */
+      /* IPC 失败：标记错误态（列表为空时显示「加载失败 + 重试」），保留现有列表 */
+      setLoadError(true)
     }
     await loadStats()
   }, [booksApi, loadStats])
@@ -143,10 +148,13 @@ export default function Bookshelf() {
     booksApi
       .list()
       .then((rows) => {
-        if (active) setBookList(rows)
+        if (!active) return
+        setBookList(rows)
+        setLoadError(false)
       })
       .catch(() => {
-        /* 读取失败静默忽略 */
+        /* 读取失败：标记错误态，避免把「读取失败」显示成「书架为空」 */
+        if (active) setLoadError(true)
       })
     // 微任务中拉取统计，避免在 effect 内同步触发 setState（react-hooks/set-state-in-effect）。
     void Promise.resolve().then(loadStats)
@@ -409,22 +417,27 @@ export default function Bookshelf() {
         onSortChange={setSort}
       />
 
-      <div className="book-grid" ref={gridRef}>
-        {books.map((book) => (
-          <BookCard
-            key={book.id}
-            book={book}
-            penName={penName}
-            selected={book.id === selectedId}
-            coverVersion={coverVersion}
-            categoryNames={categoryNames}
-            onSelect={setSelectedId}
-            onOpen={handleOpen}
-            onEdit={setEditingId}
-            onDelete={handleDelete}
-          />
-        ))}
-      </div>
+      {loadError && bookList.length === 0 ? (
+        /* 读取失败且无可用数据：与「书架为空」区分，给出重试入口。 */
+        <LoadErrorState onRetry={() => void refresh()} />
+      ) : (
+        <div className="book-grid" ref={gridRef}>
+          {books.map((book) => (
+            <BookCard
+              key={book.id}
+              book={book}
+              penName={penName}
+              selected={book.id === selectedId}
+              coverVersion={coverVersion}
+              categoryNames={categoryNames}
+              onSelect={setSelectedId}
+              onOpen={handleOpen}
+              onEdit={setEditingId}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
 
       <BookFormDialog
         open={dialogOpen}

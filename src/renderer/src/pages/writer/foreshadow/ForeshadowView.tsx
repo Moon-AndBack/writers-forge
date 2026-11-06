@@ -12,6 +12,7 @@ import { readGridCardWidth } from '../../../components/cardGridMetrics'
 import { useStableMeasure } from '../../../components/useStableMeasure'
 import ForeshadowCreateDialog from '../../../components/dialogs/ForeshadowCreateDialog'
 import { EmptyState } from '../../../components/EmptyState'
+import { LoadErrorState } from '../../../components/LoadErrorState'
 import { useToast } from '../../../components/ui'
 import ConfirmDialog from '../ConfirmDialog'
 import { HoverCard } from '../entities/HoverCard'
@@ -95,7 +96,10 @@ export default function ForeshadowView({
 
       <div className="editor-scroll">
         <div className="editor-inner is-full">
-          {bundle.loading && bundle.rows.length === 0 ? (
+          {bundle.loadError && bundle.rows.length === 0 ? (
+            /* 读取失败且无可用数据：与「真的是空列表」区分，给出重试入口。 */
+            <LoadErrorState onRetry={() => void bundle.reload()} />
+          ) : bundle.loading && bundle.rows.length === 0 ? (
             <div className="foreshadow-loading">{tCommon('loading')}</div>
           ) : bundle.rows.length === 0 ? (
             <EmptyState title={t('emptyTitle')} description={t('emptyDesc')} />

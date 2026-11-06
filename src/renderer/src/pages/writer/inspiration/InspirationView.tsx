@@ -10,6 +10,7 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
+import { LoadErrorState } from '../../../components/LoadErrorState'
 import { useToast } from '../../../components/ui'
 import ConfirmDialog from '../ConfirmDialog'
 import InspirationActivityActions from './InspirationActivityActions'
@@ -59,7 +60,10 @@ export default function InspirationView({ bundle }: InspirationViewProps) {
 
       <div className="editor-scroll">
         <div className="editor-inner is-full">
-          {bundle.loading ? (
+          {bundle.loadError && bundle.rows.length === 0 ? (
+            /* 读取失败且无可用数据：与「真的是空列表 / 筛空」区分，给出重试入口。 */
+            <LoadErrorState onRetry={() => void bundle.reload()} />
+          ) : bundle.loading ? (
             <div className="inspiration-loading">{tCommon('loading')}</div>
           ) : bundle.rows.length === 0 ? (
             <EmptyState

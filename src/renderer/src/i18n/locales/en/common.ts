@@ -134,6 +134,11 @@ const common = {
     wordFailed: 'Failed to add the word; please retry'
   },
   loading: 'Loading…',
+  /** Failed to read a list / panel: distinguishes "genuinely empty" from "read failed" (retryable). */
+  loadFailedTitle: 'Failed to load',
+  loadFailedDesc:
+    'The content could not be loaded, possibly a temporary error. Select “Retry” to try again.',
+  retry: 'Retry',
   loadMore: 'Load more',
   restoreDefaultWidth: 'Double-click to restore default width',
   restoreDefaultSplit: 'Drag to resize the panes; double-click to restore the default split',
