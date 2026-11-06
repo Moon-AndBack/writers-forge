@@ -12,6 +12,7 @@ import {
 import { volumeNameLabel, type VolumeRow } from '../chapters/chapterTree'
 import { useChapterLabels } from '../chapters/useChapterLabels'
 import { useTreeExpansion } from '../useTreeExpansion'
+import { resolveDropLineId } from '../useSortableDrag'
 import {
   buildOutlineTree,
   outlineItemLabel,
@@ -235,7 +236,7 @@ export default function OutlinePanel({
                 // 拖拽落点占位线：仅被拖条目所在卷的分组需要渲染。
                 const draggingHere = group.chapters.some((item) => item.id === drag.draggingId)
                 const dropBeforeId = draggingHere
-                  ? resolveDropBeforeId(group.chapters, drag.draggingId, drag.dropIndex)
+                  ? resolveDropLineId(group.chapters, drag.draggingId, drag.dropIndex)
                   : null
                 const dropAtEnd =
                   draggingHere &&
@@ -422,19 +423,4 @@ export default function OutlinePanel({
       {confirm.node}
     </div>
   )
-}
-
-/**
- * 组内 splice 索引 → 展示列表中「占位线渲染在哪一行之前」：
- * 取目标缝处的兄弟行 id；缝在组尾时返回 null（由列表末尾兜底线渲染）。
- */
-function resolveDropBeforeId(
-  chapters: OutlineItemRow[],
-  draggingId: number | null,
-  dropIndex: number | null
-): number | null {
-  if (draggingId === null || dropIndex === null) return null
-  const others = chapters.filter((row) => row.id !== draggingId)
-  if (dropIndex >= others.length) return null
-  return others[dropIndex]?.id ?? null
 }

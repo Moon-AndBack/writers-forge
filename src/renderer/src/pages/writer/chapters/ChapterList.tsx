@@ -1,4 +1,6 @@
 import { useCallback, useState } from 'react'
+import { resolveDropLineId } from '../useSortableDrag'
+import { segmentOf } from './chapterTree'
 import type { ChapterPin, ChapterRow } from './chapterTree'
 import ChapterRowItem from './ChapterRowItem'
 import type { UseChapterDragResult } from './useChapterDrag'
@@ -51,12 +53,12 @@ export default function ChapterList({
 
   // 段内 splice 索引 → 展示列表中的行位置（占位线渲染在该行之前）；
   // 落点在段尾（index === others.length）时占位线渲染在列表末尾（兜底线）。
-  const dropLineBeforeId = resolveDropLineId(chapters, segment, drag.draggingId, drag.dropIndex)
+  const dropLineBeforeId = resolveDropLineId(segment, drag.draggingId, drag.dropIndex)
 
   // 把手启动：把「本卷章列表 + 行引用」组装为拖拽上下文（段换算在 hook 内做）。
   const handlePointerDown = useCallback(
     (event: React.PointerEvent<HTMLElement>, chapter: ChapterRow): void => {
-      drag.onPointerDown(event, chapter, { segment: chapters, rowRefs })
+      drag.onPointerDown(event, chapter, { items: chapters, rowRefs })
     },
     [drag, chapters, rowRefs]
   )
@@ -87,30 +89,4 @@ export default function ChapterList({
       )}
     </div>
   )
-}
-
-/** 段判别（对齐后端 `chapterReorder.ts` 的 `segmentOf`）。 */
-function segmentOf(chapter: ChapterRow): 'top' | 'normal' | 'unpinned' | 'bottom' {
-  if (chapter.kind !== 'special') return 'normal'
-  if (chapter.pin === 'top') return 'top'
-  if (chapter.pin === 'bottom') return 'bottom'
-  return 'unpinned'
-}
-
-/**
- * 段内 splice 索引 → 展示列表中「占位线渲染在哪一行之前」：
- * 取目标缝处的段内兄弟行 id；缝在段尾时返回 null（由列表末尾兜底线渲染）。
- */
-function resolveDropLineId(
-  chapters: ChapterRow[],
-  segment: ChapterRow[],
-  draggingId: number | null,
-  dropIndex: number | null
-): number | null {
-  if (draggingId === null || dropIndex === null) return null
-  const others = segment.filter((row) => row.id !== draggingId)
-  if (dropIndex >= others.length) return null
-  const targetId = others[dropIndex]?.id
-  if (targetId === undefined) return null
-  return chapters.some((row) => row.id === targetId) ? targetId : null
 }

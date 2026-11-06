@@ -87,6 +87,18 @@ export function numberFormatFor(locale: Locale): ChapterNumberFormat {
 export const MAX_CHAPTERS_PER_VOLUME = 99999
 
 /**
+ * 段判别（对齐后端 `chapterReorder.ts` 的 `segmentOf`）：pin 段决定拖拽重排的作用域，
+ * 跨段不允许（改段用「置顶 / 置底」按钮）。渲染层唯一实现（§9，原 `useChapterDrag` /
+ * `ChapterList` 各有一份，已上提）。
+ */
+export function segmentOf(chapter: ChapterRow): 'top' | 'normal' | 'unpinned' | 'bottom' {
+  if (chapter.kind !== 'special') return 'normal'
+  if (chapter.pin === 'top') return 'top'
+  if (chapter.pin === 'bottom') return 'bottom'
+  return 'unpinned'
+}
+
+/**
  * 普通章编号前缀：「第X章」（数字词按 `format` 取语言，按 `numberIndex` 动态生成）。
  * 显示口径：前缀**恒显**（名段不取代编号，与卷行「卷X · 名」同构）；
  * 特殊章不带编号；编号非法（≤0，如回收站章）返回空串。
