@@ -9,6 +9,15 @@ const foreshadow = {
   title: 'Foreshadowing',
   emptyTitle: 'No foreshadowing yet',
   emptyDesc: 'Select a passage in the text and choose “Add foreshadowing” from the context menu',
+  emptyFilteredTitle: 'No matching foreshadowing',
+  emptyFilteredDesc: 'Try a different keyword or status filter',
+  filter: {
+    all: 'All',
+    searchPlaceholder: 'Search foreshadowing',
+    searchAria: 'Search foreshadowing',
+    search: 'Search',
+    statusAria: 'Filter foreshadowing by status'
+  },
   listItem: {
     anchored: 'Anchored',
     unanchored: 'Not anchored',

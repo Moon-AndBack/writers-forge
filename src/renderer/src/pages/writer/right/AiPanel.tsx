@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Editor } from '@tiptap/core'
 import { Button, Textarea, useToast } from '../../../components/ui'
 import { useRichTextEditor } from '../../../components/editor/richTextEditorContext'
 import {
@@ -15,7 +14,16 @@ import {
 import { insertAfter, replaceSelection } from './ai/applyToEditor'
 import { AI_QUICK_ACTIONS } from './ai/functions'
 import type { AiComposeAction } from './ai/functions'
-import { useAiConversation, type AiConversationMessage } from './ai/useAiConversation'
+import { useAiConversation } from './ai/useAiConversation'
+import { useAiSessions } from './ai/useAiSessions'
+import { AiSessionMenu } from './ai/AiSessionMenu'
+import {
+  canApplyMessage,
+  readFullText,
+  readSelectionChars,
+  readTotalChars,
+  toOption
+} from './ai/panelUtils'
 import { useAiModels } from './ai/useAiModels'
 import { useBookProfile } from './ai/useBookProfile'
 import { AiControls } from './ai/AiControls'
@@ -58,6 +66,9 @@ export interface AiPanelProps {
  * 模型切换只写本面板的 `modelOverride`（作为 `useAiConversation` 的 `model` 入参），
  * **不写回**全局 AI 配置，避免临时选择污染设置页。
  *
+ * 会话：同一章可保存多条，头部「当前会话 + 新建 + 会话(N)」管理；默认打开该章最近
+ * 一条（见 `useAiSessions`），「新建」进入未落库草稿，首次发送时才创建会话。
+ *
  * 选区快照：点「发送」的瞬间读一次 `readEditorSelection(editor)` 存入 `selectionRef`
  * ——回插时用这份 range，不重新读，保证「发起请求时选中的那段」就是被替换 / 插入参照的那段。
  */
@@ -99,12 +110,33 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
 
   /* ---------- 会话 ---------- */
 
-  const { messages, generating, send, abort } = useAiConversation({
+  const {
+    sessions: sessionList,
+    activeSessionId,
+    loading: sessionsLoading,
+    select: selectSession,
+    notifyCreated: notifySessionCreated,
+    refresh: refreshSessions,
+    rename: renameSession,
+    remove: removeSession
+  } = useAiSessions({ bookId, chapterId, active })
+
+  const { messages, generating, hydrating, send, abort } = useAiConversation({
     bookId,
     chapterId,
     active,
-    model
+    model,
+    sessionId: activeSessionId,
+    onSessionCreated: notifySessionCreated
   })
+
+  const handleNewSession = useCallback((): void => {
+    selectSession(null)
+  }, [selectSession])
+
+  const handleOpenSessions = useCallback((): void => {
+    void refreshSessions()
+  }, [refreshSessions])
 
   /** 发起请求瞬间的选区快照（回插依据；切章不清空，仅由下一次发送覆盖）。 */
   const selectionRef = useRef<EditorSelectionSnapshot | null>(null)
@@ -256,8 +288,8 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
   /* ---------- 发送 ---------- */
 
   const handleSend = (): void => {
-    // 生成中由发送按钮切换成「停止」，此处再兜一层（Enter 快捷键也能触发）。
-    if (generating || chapterId === null) return
+    // 生成中 / 会话或历史载入中由发送按钮切换成「停止」或禁用，此处再兜一层（Enter 也能触发）。
+    if (generating || hydrating || sessionsLoading || chapterId === null) return
 
     const text = input.trim()
     const hasContext = carryFull ? totalChars > 0 : carrySelection ? selectionChars > 0 : false
@@ -323,8 +355,10 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
       : null
 
   const canSend =
-    input.trim() !== '' ||
-    (carryFull ? totalChars > 0 : carrySelection ? selectionChars > 0 : false)
+    !hydrating &&
+    !sessionsLoading &&
+    (input.trim() !== '' ||
+      (carryFull ? totalChars > 0 : carrySelection ? selectionChars > 0 : false))
 
   const carryHint = carryFull
     ? t('panel.carry.fullCount', { chars: totalChars })
@@ -339,12 +373,29 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
     { value: 'chat', label: t(ACTION_LABEL_KEYS.chat) }
   ]
 
+  const emptyText =
+    hydrating || (sessionsLoading && sessionList.length === 0)
+      ? t('panel.sessions.loading')
+      : t('panel.empty.chat')
+
   return (
     <div className="rp-panel">
+      {/* 会话入口：当前标题 + 新建 + 会话列表（窄栏里用弹窗管理，不挤压对话区） */}
+      <AiSessionMenu
+        sessions={sessionList}
+        activeSessionId={activeSessionId}
+        busy={generating}
+        onSelect={selectSession}
+        onCreate={handleNewSession}
+        onOpen={handleOpenSessions}
+        onRename={renameSession}
+        onDelete={removeSession}
+      />
+
       {/* 主体：对话记录（占满剩余高度，自身滚动） */}
       <div ref={listRef} className="rp-card rp-card--list ai-chat">
         {messages.length === 0 ? (
-          <div className="rp-list-empty">{t('panel.empty.chat')}</div>
+          <div className="rp-list-empty">{emptyText}</div>
         ) : (
           messages.map((message) => (
             <ChatMessage
@@ -416,45 +467,6 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
       {toastNode}
     </div>
   )
-}
-
-/** assistant 回复可回插的判定：非流式、无错误、正文非空（user 消息恒不可回插）。 */
-function canApplyMessage(message: AiConversationMessage): boolean {
-  return (
-    message.role === 'assistant' &&
-    message.streaming !== true &&
-    message.error === undefined &&
-    message.content.trim() !== ''
-  )
-}
-
-/** 当前选区字数（空选区 / 无编辑器 → 0）。 */
-function readSelectionChars(editor: Editor | null): number {
-  const snapshot = readEditorSelection(editor)
-  return snapshot === null || snapshot.empty ? 0 : snapshot.text.length
-}
-
-/**
- * 整章正文（段落之间以空行分隔）。
- *
- * 直接取纯文本会把各文本节点首尾相接、段间没有换行，送进模型后是一坨连续文字；
- * `textBetween` 用 `\n\n` 把段落读回来，模型才能感知分段。发送与字数统计共用本函数，
- * 保证两者口径一致（分隔符也计入字数）。
- */
-function readFullText(editor: Editor | null): string {
-  if (!editor || editor.isDestroyed) return ''
-  const { doc } = editor.state
-  return doc.textBetween(0, doc.content.size, '\n\n')
-}
-
-/** 整章正文字数（与「携带全文」发送的内容同源，含段间分隔符）。 */
-function readTotalChars(editor: Editor | null): number {
-  return readFullText(editor).length
-}
-
-/** 模型 ID → 下拉选项（展示名与 ID 一致）。 */
-function toOption(value: string): { value: string; label: string } {
-  return { value, label: value }
 }
 
 export default AiPanel

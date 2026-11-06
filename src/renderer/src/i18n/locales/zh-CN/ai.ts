@@ -112,6 +112,28 @@ const ai = {
       placeholder: '输入你的要求，Enter 发送，Shift+Enter 换行'
     },
     stop: '停止',
+    sessions: {
+      title: '会话',
+      current: '当前会话',
+      draft: '新对话',
+      untitled: '会话 {{id}}',
+      openCount: '会话（{{count}}）',
+      new: '新建',
+      rename: '重命名',
+      renameTitle: '重命名会话',
+      renameLabel: '会话名称',
+      renameFailed: '重命名失败，请重试',
+      save: '保存',
+      cancel: '取消',
+      close: '关闭',
+      delete: '删除',
+      deleteTitle: '删除会话',
+      deleteConfirm: '确定删除「{{title}}」吗？该会话的全部消息将一并删除，且无法恢复。',
+      deleteFailed: '删除会话失败，请重试',
+      busyHint: '生成中无法切换或管理会话，请先停止生成。',
+      loading: '正在载入会话…',
+      empty: '该章还没有会话，点「新建」开始一段新对话。'
+    },
     empty: {
       noChapter: '请先选择一个章节',
       chat: '还没有对话，输入内容或勾选上下文后发送'

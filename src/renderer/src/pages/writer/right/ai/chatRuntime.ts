@@ -1,5 +1,5 @@
 import { createLogger } from '@renderer/lib/log'
-import type { AiApi, AiError, AiProviderId, AiUsage } from '../../../../../../preload/types/ai'
+import type { AiApi, AiError, AiUsage } from '../../../../../../preload/types/ai'
 import type { AiComposeInput } from './functions'
 
 /**
@@ -33,6 +33,8 @@ export interface AiConversationState {
   messages: AiConversationMessage[]
   /** 是否正在生成（有在途请求）。 */
   generating: boolean
+  /** 是否正在读取会话历史（切换会话时短暂为 true，期间禁用发送）。 */
+  hydrating: boolean
   /** 发送一次请求（所有请求都进对话历史并落库）。 */
   send: (compose: AiComposeInput) => void
   /** 中止当前请求。 */
@@ -72,7 +74,8 @@ export function createLocalId(prefix: string): string {
 /**
  * 追加消息落库（静默失败）。
  *
- * 用户消息在发送时写、助手完整回复在 `done` 后写；写入失败只记日志，不打断流式展示。
+ * 用户消息在发送时写、助手完整回复在 `done` 后写；用户中止 / 切会话 / 切章时，
+ * 已生成的半截回复也在此落库（见 `persistAssistantPartial`），写入失败只记日志。
  */
 export async function appendMessage(
   sessionId: number,
@@ -94,50 +97,37 @@ export async function appendMessage(
   }
 }
 
-/** 章节会话快照：会话 id + 历史消息（`system` 行已剔除）。 */
-export interface ChapterSessionSnapshot {
-  sessionId: number
-  messages: AiConversationMessage[]
+/**
+ * 落库「中止时的半截回复」。
+ *
+ * 用户点「停止」、切换会话 / 章节、关闭或卸载面板时，流式内容已生成的部分不再
+ * 静默丢弃：有会话归属且正文非空就写一条 assistant 消息（与 `done` 落库同口径）。
+ */
+export function persistAssistantPartial(request: ActiveRequest): void {
+  if (request.sessionId === null || request.content.trim() === '') return
+  void appendMessage(request.sessionId, 'assistant', request.content)
 }
 
 /**
- * 载入（或新建）某章的会话与历史消息。
+ * 载入指定会话的历史消息（`system` 行已剔除）。
  *
- * 单会话口径：`sessions.list` 已按最近活跃倒序（`updated_at DESC, id DESC`），取第一条；
- * 没有则按当前 provider / model 新建。返回 null 表示已被取消（切章 / 卸载）或会话创建失败。
+ * 会话选择由 `useAiSessions` 负责（默认仍取该章最近一条）；本函数只按 id 读取，
+ * 返回 null 表示已被取消（切会话 / 切章 / 卸载）。
  */
-export async function loadChapterSession(input: {
+export async function loadSessionMessages(input: {
   api: AiApi
-  bookId: string
-  chapterId: number
-  provider: AiProviderId
-  model: string
+  sessionId: number
   isCancelled: () => boolean
-}): Promise<ChapterSessionSnapshot | null> {
-  const { api, bookId, chapterId, provider, model, isCancelled } = input
-
-  const sessions = await api.sessions.list(bookId, chapterId)
-  if (isCancelled()) return null
-
-  let sessionId: number | null = sessions[0]?.id ?? null
-  if (sessionId === null) {
-    const created = await api.sessions.create({ bookId, chapterId, provider, model })
-    if (isCancelled()) return null
-    sessionId = created?.id ?? null
-  }
-  if (sessionId === null) return null
-
+}): Promise<AiConversationMessage[] | null> {
+  const { api, sessionId, isCancelled } = input
   const rows = await api.messages.list(sessionId)
   if (isCancelled()) return null
 
-  return {
-    sessionId,
-    messages: rows
-      .filter((row) => row.role !== 'system')
-      .map((row) => ({
-        id: String(row.id),
-        role: row.role === 'assistant' ? 'assistant' : 'user',
-        content: row.content
-      }))
-  }
+  return rows
+    .filter((row) => row.role !== 'system')
+    .map((row) => ({
+      id: String(row.id),
+      role: row.role === 'assistant' ? 'assistant' : 'user',
+      content: row.content
+    }))
 }

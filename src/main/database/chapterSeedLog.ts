@@ -11,10 +11,42 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v105'
+export const CHAPTER_SEED_VERSION = 'v106'
 
 /**
- * 最近版本变更日志（v105；更早版本见上述历史文件）。
+ * 最近版本变更日志（v106；更早版本见上述历史文件）。
+ *
+ * `v106`（伏笔搜索与筛选批）：伏笔模块此前只能滚动找，本批把活动栏筛选浮层
+ * （`shell/ActivityBarFilterPopover`，`FilterableModule` 增加 `foreshadow`）扩到伏笔域——
+ * 第一行「伏笔」+ 搜索框 + 提交按钮，第二行「全部」+ 四个**派生状态**
+ * （建设中 / 埋设中 / 已回收 / 已废弃）作为**唯一分类维度**（状态由锚点派生、四态互斥、
+ * 回收优先，故不做「已回收 + 埋设中」这类多选，也刻意不加第二维：一条伏笔可同时有正文埋点
+ * 与大纲埋点，两者不是互斥分类）；搜索覆盖名称、描述、回收备注与正文埋点 / 大纲埋点 /
+ * 回收点三处摘抄，统一 `toLowerCase()` 后 `includes`（大小写不敏感），状态与关键词叠加。
+ * 筛选纯派生、不动数据层，中栏 `rows` 换成过滤后的可见行，全量行仍供右栏选中 / 写操作使用
+ * （被筛掉的伏笔仍可在右栏编辑）；`ForeshadowView` 空态区分「还没有伏笔」与
+ * 「没有匹配的伏笔」，标题栏「新建」成功后清空条件保证新行可见；回收站视图不受筛选影响。
+ * **因 `App.tsx` 不在本批可改范围**，无法把 Provider 挂到活动栏与写作页的共同祖先，
+ * 条件改放模块级外部 store（`foreshadow/foreshadowFilterContext.ts`，`useSyncExternalStore`），
+ * 对外 API（`filters` / `setFilter` / `clearAll`）与灵感 `useInspirationFilters` 一致，
+ * 条件按书打标、换书自然失效。派生纯函数独立成 `foreshadow/foreshadowFilterMatch.ts`。
+ * 教学文案同步（大纲「伏笔」组新增「搜索与筛选」条、卷四伏笔章新增「搜索与筛选」节）。
+ *
+ * 同批（AI 多会话批）：章节右栏 AI 由「每章单条会话」改为多会话——数据层与 preload 通道
+ * 本已完备（`sessions.list|create|rename|delete`、`messages.list` 等），**本次未改
+ * preload / IPC / `aiChat.ts`**，只把 UI 接出来。`chatRuntime` 的 `loadChapterSession`
+ * （自己取最近一条 / 无则新建）改为 `loadSessionMessages`（只按 `sessionId` 读历史），
+ * 会话选择上移到新增的 `ai/useAiSessions.ts`（列表 / 切换 / 新建草稿 / 重命名 / 删除，
+ * 默认行为仍是该章 `updated_at DESC, id DESC` 的第一条）；新增 `ai/AiSessionMenu.tsx`
+ * 承载面板头部「当前会话 + 新建 + 会话(N)」与会话弹窗（窄栏放不下侧栏列表，故用 Modal）。
+ * 新建会话为**草稿态**（`activeSessionId = null`），首次发送才 `sessions.create` 落库，
+ * 避免产生空会话行；生成中禁用全部会话操作（含新建 / 重命名 / 删除），删除走 `useConfirm`
+ * 二次确认且消息级联删除。`useAiConversation` 新增 `hydrating`（读历史期间禁用发送），
+ * 并新增 `persistAssistantPartial`：用户点停止、切换会话 / 章节、关闭或卸载面板时，
+ * 已生成的半截回复按与 `done` 同口径落库（此前静默丢弃）；**上游 error 中断仍不落库**
+ * （`handleError` 只标记错误气泡）。`AiPanel` 的纯工具（可回插判定 / 取文与字数 / 下拉选项）
+ * 拆到 `ai/panelUtils.ts` 以守住单文件 500 行。教学文案同步（卷二章节页两栏说明、卷四右栏
+ * 章节页签说明与 AI 段、大纲 AI 页签段）。
  *
  * `v105`（灵感 / 伏笔回收站批）：灵感与伏笔此前只做软删除、界面没有恢复入口，本批补齐
  * 与章节 / 大纲对称的回收站——数据层新增 `listDeleted` / `restore` / `purge` /

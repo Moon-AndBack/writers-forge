@@ -16,8 +16,10 @@
  * - 实体域：`useDossierFilters` + `useDossierSubtypes`，分类 = 子类，搜索 = 名称 + 别名；
  * - 灵感域：`useInspirationFilters` + 「内置预置 ∪ 已用标签」，分类 = 标签，
  *   搜索 = 标题 + 内容 + 标签；
- * 两分支只在「条件 / 选项 / 写入方式」上不同，两行布局、搜索防抖、提交与切换守卫
- * 全部共用同一棵 JSX（`dossierModule` 仅作为数据源分支的判据）。
+ * - 伏笔域：`useForeshadowFilters`，分类 = 派生状态（建设中 / 埋设中 / 已回收 / 已废弃），
+ *   搜索 = 名称 + 描述 + 回收备注 + 三处原文摘抄；
+ * 三分支只在「条件 / 选项 / 写入方式」上不同，两行布局、搜索防抖、提交与切换守卫
+ * 全部共用同一棵 JSX（`dossierModule` 仅作为实体分支的判据，其余按模块 id 分流）。
  *
  * 收起保护：`onKeepOpen` 由活动栏提供，同时取消活动栏自身的收起计时与浮层计时；
  * 搜索框 `onFocus` 也调它，保证「Tab 聚焦输入框」不会因鼠标不在而收起。
@@ -40,8 +42,14 @@ import { cn } from '@renderer/lib/cn'
 import { SearchInput } from '../components/ui'
 import { SearchIcon } from '../components/icons'
 import { HoverPopupShell } from '../components/HoverPopupShell'
+import type { ForeshadowDisplayStatus } from '../../../shared/foreshadowStatus'
 import { FILTER_ALL, useDossierFilters } from '../pages/writer/dossier/dossierFilterContext'
 import { useDossierSubtypes } from '../pages/writer/dossier/useDossierSubtypes'
+import {
+  FORESHADOW_FILTER_STATUSES,
+  useForeshadowFilters
+} from '../pages/writer/foreshadow/foreshadowFilterContext'
+import { FORESHADOW_STATUS_LABEL_KEYS } from '../pages/writer/foreshadow/foreshadowTree'
 import { useInspirationFilters } from '../pages/writer/inspiration/inspirationFilterContext'
 import { mergeInspirationTags } from '../pages/writer/inspiration/inspirationPresets'
 import { useActivityBar } from './activityBarContext'
@@ -77,6 +85,7 @@ export default function ActivityBarFilterPopover({
 }: ActivityBarFilterPopoverProps) {
   const { t: tDossier } = useTranslation('dossier')
   const { t: tInspiration } = useTranslation('inspiration')
+  const { t: tForeshadow } = useTranslation('foreshadow')
   const {
     bookId: dossierBookId,
     filters: dossierFilters,
@@ -87,6 +96,8 @@ export default function ActivityBarFilterPopover({
     setFilter: setInspirationFilter,
     tags: inspirationTags
   } = useInspirationFilters()
+  const { filters: foreshadowFilters, setFilter: setForeshadowFilter } =
+    useForeshadowFilters(dossierBookId)
   const { active } = useActivityBar()
   // 模块切换统一经守卫：有未保存草稿时由写作页弹「保存并切换 / 放弃并切换」。
   const requestSwitch = useRequestSwitch()
@@ -100,11 +111,24 @@ export default function ActivityBarFilterPopover({
   )
 
   const entryQuery =
-    dossierModule !== null ? dossierFilters[dossierModule].query : inspirationFilters.query
+    dossierModule !== null
+      ? dossierFilters[dossierModule].query
+      : module === 'inspiration'
+        ? inspirationFilters.query
+        : foreshadowFilters.query
   const activeValue: string | null =
-    dossierModule !== null ? dossierFilters[dossierModule].subtype : inspirationFilters.tag
+    dossierModule !== null
+      ? dossierFilters[dossierModule].subtype
+      : module === 'inspiration'
+        ? inspirationFilters.tag
+        : foreshadowFilters.status
 
-  const allLabel = dossierModule !== null ? tDossier('filter.all') : tInspiration('filter.all')
+  const allLabel =
+    dossierModule !== null
+      ? tDossier('filter.all')
+      : module === 'inspiration'
+        ? tInspiration('filter.all')
+        : tForeshadow('filter.all')
   const copy =
     dossierModule !== null
       ? {
@@ -113,12 +137,19 @@ export default function ActivityBarFilterPopover({
           search: tDossier('filter.search'),
           listAria: tDossier('filter.subtypeAria')
         }
-      : {
-          searchPlaceholder: tInspiration('filter.searchPlaceholder'),
-          searchAria: tInspiration('filter.searchAria'),
-          search: tInspiration('filter.search'),
-          listAria: tInspiration('filter.tagAria')
-        }
+      : module === 'inspiration'
+        ? {
+            searchPlaceholder: tInspiration('filter.searchPlaceholder'),
+            searchAria: tInspiration('filter.searchAria'),
+            search: tInspiration('filter.search'),
+            listAria: tInspiration('filter.tagAria')
+          }
+        : {
+            searchPlaceholder: tForeshadow('filter.searchPlaceholder'),
+            searchAria: tForeshadow('filter.searchAria'),
+            search: tForeshadow('filter.search'),
+            listAria: tForeshadow('filter.statusAria')
+          }
 
   // 搜索框本地受控值：挂载时取该模块 Context 中已有的 query（不是清空），
   // 之后只在本组件内更新，停止输入后再提交。
@@ -146,9 +177,10 @@ export default function ActivityBarFilterPopover({
       if (value === committedRef.current) return
       committedRef.current = value
       if (dossierModule !== null) setDossierFilter(dossierModule, { query: value })
-      else setInspirationFilter({ query: value })
+      else if (module === 'inspiration') setInspirationFilter({ query: value })
+      else setForeshadowFilter({ query: value })
     },
-    [dossierModule, setDossierFilter, setInspirationFilter]
+    [dossierModule, module, setDossierFilter, setForeshadowFilter, setInspirationFilter]
   )
 
   /**
@@ -228,7 +260,8 @@ export default function ActivityBarFilterPopover({
     commitQuery('')
   }
 
-  // 「全部」恒在；实体分支按分类表顺序追加子类，灵感分支追加「预设 ∪ 已用标签」。
+  // 「全部」恒在；实体分支按分类表顺序追加子类，灵感分支追加「预设 ∪ 已用标签」，
+  // 伏笔分支按派生状态固定顺序追加四个状态。
   const options = useMemo<Array<{ value: string | null; label: string }>>(() => {
     if (dossierModule !== null) {
       return [
@@ -236,11 +269,20 @@ export default function ActivityBarFilterPopover({
         ...subtypes.map((row) => ({ value: String(row.id), label: row.name }))
       ]
     }
+    if (module === 'inspiration') {
+      return [
+        { value: null, label: allLabel },
+        ...mergeInspirationTags(inspirationTags).map((tag) => ({ value: tag, label: tag }))
+      ]
+    }
     return [
       { value: null, label: allLabel },
-      ...mergeInspirationTags(inspirationTags).map((tag) => ({ value: tag, label: tag }))
+      ...FORESHADOW_FILTER_STATUSES.map((status) => ({
+        value: status,
+        label: tForeshadow(FORESHADOW_STATUS_LABEL_KEYS[status])
+      }))
     ]
-  }, [allLabel, dossierModule, inspirationTags, subtypes])
+  }, [allLabel, dossierModule, inspirationTags, module, subtypes, tForeshadow])
 
   const isCurrentModule = active === module
 
@@ -249,8 +291,10 @@ export default function ActivityBarFilterPopover({
     // 筛选条件先写入（立即生效，不受守卫影响），模块切换交给守卫裁决。
     if (dossierModule !== null) {
       setDossierFilter(dossierModule, { subtype: value ?? FILTER_ALL })
-    } else {
+    } else if (module === 'inspiration') {
       setInspirationFilter({ tag: value })
+    } else {
+      setForeshadowFilter({ status: value === null ? null : (value as ForeshadowDisplayStatus) })
     }
     requestSwitch(module)
   }

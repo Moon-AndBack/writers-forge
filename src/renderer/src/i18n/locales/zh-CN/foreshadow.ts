@@ -14,6 +14,16 @@ const foreshadow = {
   title: '伏笔',
   emptyTitle: '还没有伏笔',
   emptyDesc: '在正文中选中一段文字，右键选择「添加伏笔」',
+  emptyFilteredTitle: '没有匹配的伏笔',
+  emptyFilteredDesc: '调整搜索关键词或状态筛选后再试',
+  /** 活动栏筛选浮层：分类 = 派生状态，搜索覆盖名称 / 描述 / 摘抄 / 回收备注。 */
+  filter: {
+    all: '全部',
+    searchPlaceholder: '搜索伏笔',
+    searchAria: '搜索伏笔',
+    search: '搜索',
+    statusAria: '按状态筛选伏笔'
+  },
   listItem: {
     anchored: '已锚定',
     unanchored: '未锚定',

@@ -7,6 +7,8 @@
 import { useCallback, useMemo } from 'react'
 import type { WriterModule } from '../../../shell/activityBarModules'
 import type { ForeshadowBundle } from './foreshadowTree'
+import { useForeshadowFilters } from './foreshadowFilterContext'
+import { filterForeshadowRows } from './foreshadowFilterMatch'
 import { useForeshadowWorkspace } from './useForeshadowWorkspace'
 
 export function useForeshadowBundle(
@@ -42,6 +44,16 @@ export function useForeshadowBundle(
     reload
   } = useForeshadowWorkspace(enabled, bookId)
 
+  // 条件真源在渲染层共享 store（活动栏浮层写入）；这里只读并本地派生可见行。
+  // 全量 `rows` 仍供选中派生 / 写操作使用，筛选不改变右栏选中项。
+  const { filters: foreshadowFilters, clearAll: clearForeshadowFilters } =
+    useForeshadowFilters(bookId)
+  const visibleRows = useMemo(
+    () => filterForeshadowRows(rows, foreshadowFilters.status, foreshadowFilters.query),
+    [rows, foreshadowFilters]
+  )
+  const hasFilter = foreshadowFilters.status !== null || foreshadowFilters.query.trim() !== ''
+
   const handleSelect = useCallback(
     (id: number): void => {
       select(id)
@@ -54,7 +66,9 @@ export function useForeshadowBundle(
     if (!enabled) return null
     return {
       bookId,
-      rows,
+      rows: visibleRows,
+      hasFilter,
+      clearFilters: clearForeshadowFilters,
       activeId,
       activeRow,
       loading,
@@ -81,7 +95,9 @@ export function useForeshadowBundle(
   }, [
     enabled,
     bookId,
-    rows,
+    visibleRows,
+    hasFilter,
+    clearForeshadowFilters,
     activeId,
     activeRow,
     loading,

@@ -61,12 +61,12 @@ export function isDossierModule(module: WriterModule): module is DossierModule {
   return (DOSSIER_MODULES as readonly WriterModule[]).includes(module)
 }
 
-/** 使用活动栏筛选浮层的模块：实体五域 + 灵感（分类分别为子类 / 标签）。 */
-export type FilterableModule = DossierModule | 'inspiration'
+/** 使用活动栏筛选浮层的模块：实体五域 + 灵感 + 伏笔（分类分别为子类 / 标签 / 派生状态）。 */
+export type FilterableModule = DossierModule | 'inspiration' | 'foreshadow'
 
 /** 判定模块是否挂活动栏筛选浮层（hover 打开、搜索 / 分类写条件）。 */
 export function isFilterableModule(module: WriterModule): module is FilterableModule {
-  return isDossierModule(module) || module === 'inspiration'
+  return isDossierModule(module) || module === 'inspiration' || module === 'foreshadow'
 }
 
 /** 活动栏模块清单（顺序即渲染顺序）：章节 / 大纲 / 剧情 / 世界观 / 角色 / 势力 /

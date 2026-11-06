@@ -10,7 +10,8 @@ import {
   chatLog,
   createLocalId,
   createRequestId,
-  loadChapterSession,
+  loadSessionMessages,
+  persistAssistantPartial,
   UNKNOWN_ERROR
 } from './chatRuntime'
 import type { ActiveRequest, AiConversationMessage, AiConversationState } from './chatRuntime'
@@ -21,8 +22,9 @@ export type { AiConversationMessage, AiConversationState }
 /**
  * 章节右栏 AI · 会话 + 消息 + 流式状态机（统一输入区口径）。
  *
- * 会话按「书 + 章」单例（取最近一条 / 无则新建）；`chapterId` 变化时中止在途请求 →
- * 清空消息 → 重载历史。**所有请求（润色 / 续写 / 改写 / 翻译 / 自由对话）**
+ * 会话由 `useAiSessions` 选中后经 `sessionId` 传入（默认仍是该章最近一条）；
+ * `chapterId` / `sessionId` 变化时中止在途请求（半截回复落库）→ 清空消息 → 重载历史。
+ * **所有请求（润色 / 续写 / 改写 / 翻译 / 自由对话）**
  * 走同一条 `send`：消息进对话列表并落库，流式事件按 `requestId` 过滤。
  *
  * 请求组装交给 `composeMessages`（system + user）；自由对话额外带历史消息，
@@ -33,11 +35,16 @@ export function useAiConversation(input: {
   chapterId: number | null
   active: boolean
   model: string
+  /** 当前选中的会话；null = 新对话草稿（首次发送时创建）。 */
+  sessionId: number | null
+  /** 新会话创建成功后回传（用于刷新会话列表并切到该条）。 */
+  onSessionCreated?: (id: number) => void
 }): AiConversationState {
-  const { bookId, chapterId, active, model } = input
+  const { bookId, chapterId, active, model, sessionId, onSessionCreated } = input
 
   const [messages, setMessages] = useState<AiConversationMessage[]>([])
   const [generating, setGenerating] = useState(false)
+  const [hydrating, setHydrating] = useState(false)
 
   /** 消息的同步副本：流式回调 / 发送路径都读它，避免闭包拿到过期的 state。 */
   const messagesRef = useRef<AiConversationMessage[]>([])
@@ -47,11 +54,17 @@ export function useAiConversation(input: {
   const bookIdRef = useRef(bookId)
   const chapterIdRef = useRef<number | null>(chapterId)
   const activeRequestRef = useRef<ActiveRequest | null>(null)
+  /** 会话创建回调走 ref：send / ensureSession 在异步路径里读最新值，且不拖累依赖。 */
+  const onSessionCreatedRef = useRef(onSessionCreated)
 
   // 模型快照：发送 / 建会话都在异步路径里读，用 ref 取最新值。
   useEffect(() => {
     modelRef.current = model
   }, [model])
+
+  useEffect(() => {
+    onSessionCreatedRef.current = onSessionCreated
+  }, [onSessionCreated])
 
   /* ---------- 消息写入（同步副本 + state 双写） ---------- */
 
@@ -112,6 +125,7 @@ export function useAiConversation(input: {
       if (chapterIdRef.current !== chapter) return null
       const id = created?.id ?? null
       sessionIdRef.current = id
+      if (id !== null) onSessionCreatedRef.current?.(id)
       return id
     } catch (error) {
       chatLog.warn('AI 会话创建失败', error)
@@ -123,6 +137,9 @@ export function useAiConversation(input: {
 
   /**
    * 中止在途请求并摘下它（迟到事件随之被过滤）；`finalize` 为 true 时把流式产物定稿。
+   *
+   * 无论中止原因（用户点停止 / 切会话 / 切章 / 卸载），已生成的半截回复都落库，
+   * 不再静默丢弃（`persistAssistantPartial`）。
    */
   const stopActive = useCallback(
     (finalize: boolean): void => {
@@ -132,6 +149,7 @@ export function useAiConversation(input: {
       // 先摘掉在途请求：之后的迟到事件（含 aborted 错误）一律被 requestId 过滤丢弃。
       activeRequestRef.current = null
       setGenerating(false)
+      persistAssistantPartial(request)
 
       const api = window.api?.ai
       if (api) void api.chat.abort(request.requestId).catch(() => undefined)
@@ -199,7 +217,10 @@ export function useAiConversation(input: {
       unsubscribe()
       const request = activeRequestRef.current
       activeRequestRef.current = null
-      if (request !== null) void api.chat.abort(request.requestId).catch(() => undefined)
+      if (request !== null) {
+        persistAssistantPartial(request)
+        void api.chat.abort(request.requestId).catch(() => undefined)
+      }
     }
   }, [handleDelta, handleDone, handleError])
 
@@ -283,51 +304,60 @@ export function useAiConversation(input: {
     stopActive(true)
   }, [stopActive])
 
-  /* ---------- 章节 / 面板切换：清空 + 载入会话 ---------- */
+  /* ---------- 章节 / 会话 / 面板切换：清空 + 载入历史 ---------- */
 
   useEffect(() => {
+    const chapterChanged = bookIdRef.current !== bookId || chapterIdRef.current !== chapterId
     bookIdRef.current = bookId
     chapterIdRef.current = chapterId
+
+    // 会话由本 hook 的 send 路径新建（内部 ref 已指向该 id）：忽略这次 prop 变化，
+    // 否则会在请求刚启动时把在途请求中止掉。其余变化（切换 / 删除 / 新建草稿）都重载。
+    if (!chapterChanged && active && sessionId !== null && sessionIdRef.current === sessionId) {
+      return undefined
+    }
+
+    // 切章 / 切会话 / 开关面板的清理序列：中止在途请求（半截回复落库）→
+    // 同步指向目标会话 → 清空消息。同步执行，避免闪一帧旧内容。
+    stopActive(false)
+    sessionIdRef.current = sessionId
+    applyMessages([])
+
+    if (!active || chapterId === null || sessionId === null) {
+      return undefined
+    }
+
     let cancelled = false
 
     void (async () => {
-      // 切章 / 开关面板的清理序列：中止在途请求 → 丢弃会话 id → 清空消息。
-      // （在 async 前段同步执行，与本次渲染同批提交，不会闪一帧旧章内容。）
-      stopActive(false)
-      sessionIdRef.current = null
-      applyMessages([])
-
-      if (!active || chapterId === null) return
+      setHydrating(true)
       const api = window.api?.ai
-      if (!api) return
+      if (!api) {
+        if (!cancelled) setHydrating(false)
+        return
+      }
 
       try {
-        const provider = await resolveProvider()
-        if (cancelled) return
-
-        const snapshot = await loadChapterSession({
+        const history = await loadSessionMessages({
           api,
-          bookId,
-          chapterId,
-          provider,
-          model: modelRef.current,
+          sessionId,
           isCancelled: () => cancelled
         })
-        if (cancelled || snapshot === null) return
-
-        sessionIdRef.current = snapshot.sessionId
+        if (cancelled || history === null) return
         // 载入期间用户已发起新请求（乐观消息已在界面上）：不用历史覆盖，避免丢失流式占位。
         if (activeRequestRef.current !== null) return
-        applyMessages(snapshot.messages)
+        applyMessages(history)
       } catch (error) {
         if (!cancelled) chatLog.warn('AI 会话载入失败', error)
+      } finally {
+        if (!cancelled) setHydrating(false)
       }
     })()
 
     return () => {
       cancelled = true
     }
-  }, [active, bookId, chapterId, applyMessages, resolveProvider, stopActive])
+  }, [active, bookId, chapterId, sessionId, applyMessages, stopActive])
 
-  return { messages, generating, send, abort }
+  return { messages, generating, hydrating: active && sessionId !== null && hydrating, send, abort }
 }

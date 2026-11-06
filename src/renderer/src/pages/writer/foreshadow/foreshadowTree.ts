@@ -339,8 +339,12 @@ export type ForeshadowClearAnchorOutcome = 'ok' | 'recovered' | 'failed'
  */
 export interface ForeshadowBundle {
   bookId: string
-  /** 未删除伏笔（后端顺序：`updated_at DESC, id DESC`）。 */
+  /** 未删除伏笔（后端顺序：`updated_at DESC, id DESC`；已按活动栏条件过滤）。 */
   rows: ForeshadowRow[]
+  /** 当前是否有筛选条件（状态或非空关键词）：用于区分「无数据」与「筛空」。 */
+  hasFilter: boolean
+  /** 清空筛选条件（新建成功后调用，确保新行可见）。 */
+  clearFilters: () => void
   /** 当前选中项 id（null = 列表为空）。 */
   activeId: number | null
   /** 当前选中行（null = 列表为空）。 */

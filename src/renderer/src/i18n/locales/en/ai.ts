@@ -116,6 +116,29 @@ const ai = {
       placeholder: 'Enter your request; Enter to send, Shift+Enter for a new line'
     },
     stop: 'Stop',
+    sessions: {
+      title: 'Conversations',
+      current: 'Current conversation',
+      draft: 'New conversation',
+      untitled: 'Conversation {{id}}',
+      openCount: 'Conversations ({{count}})',
+      new: 'New',
+      rename: 'Rename',
+      renameTitle: 'Rename conversation',
+      renameLabel: 'Conversation name',
+      renameFailed: 'Rename failed, please try again',
+      save: 'Save',
+      cancel: 'Cancel',
+      close: 'Close',
+      delete: 'Delete',
+      deleteTitle: 'Delete conversation',
+      deleteConfirm:
+        'Delete "{{title}}"? All messages in this conversation will be deleted permanently.',
+      deleteFailed: 'Failed to delete the conversation, please try again',
+      busyHint: 'You cannot switch or manage conversations while generating; stop first.',
+      loading: 'Loading conversation…',
+      empty: 'No conversations in this chapter yet. Click "New" to start one.'
+    },
     empty: {
       noChapter: 'Select a chapter first',
       chat: 'No conversation yet. Type a request or tick a context option to start'

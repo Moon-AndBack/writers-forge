@@ -94,6 +94,8 @@ export default function ForeshadowView({
   const handleCreated = useCallback((): void => {
     setCreateOpen(false)
     showToast(t('toast.createSuccess'))
+    // 新建的多为「建设中」且可能不匹配当前筛选：先清条件，确保新行可见。
+    bundle.clearFilters()
     // 列表按 `updated_at DESC` 排序，新建行即首条；刷新后选中它。
     void bundle.reload(true)
   }, [bundle, showToast, t])
@@ -121,7 +123,11 @@ export default function ForeshadowView({
             ) : bundle.loading && bundle.rows.length === 0 ? (
               <div className="foreshadow-loading">{tCommon('loading')}</div>
             ) : bundle.rows.length === 0 ? (
-              <EmptyState title={t('emptyTitle')} description={t('emptyDesc')} />
+              /* 区分「全书没有伏笔」与「当前筛选下没有匹配」：后者提示调整条件。 */
+              <EmptyState
+                title={bundle.hasFilter ? t('emptyFilteredTitle') : t('emptyTitle')}
+                description={bundle.hasFilter ? t('emptyFilteredDesc') : t('emptyDesc')}
+              />
             ) : (
               <div
                 className="wf-card-grid foreshadow-grid"
