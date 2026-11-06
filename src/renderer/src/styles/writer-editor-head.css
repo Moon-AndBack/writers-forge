@@ -1,32 +1,9 @@
 /* ============================================================
    写作视图 — 中栏（编辑区 / 文档）
-   对应 template/index.html 的 .editor-bar/.editor-inner/
-   .doc-title/.doc-meta/.doc-body/.caret/.editor-foot 与各模块正文块
-   （.outline-block、.profile-*、.asset-*、.notes-split）。
+   对应 template/index.html 的 .editor-inner/
+   .doc-title/.doc-meta/.doc-body/.caret/.editor-foot。
    半透明底统一改不透明色；品牌浅底用 color-mix 混入 --pane。
    ============================================================ */
-
-/* ---------- 工具条 ---------- */
-.editor-bar {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 1px;
-  padding: 10px 14px 4px;
-}
-
-.editor-bar .spacer {
-  flex: 1;
-}
-
-.editor-bar .bar-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-mute);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 0 4px;
-}
 
 /* 标题 / 信息头部块（章节视图）：置于滚动区之外，始终固定显示。
    头部与写作版心解耦：不随 --page-width / 页宽设置变化，

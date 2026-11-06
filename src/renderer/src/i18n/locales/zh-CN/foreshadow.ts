@@ -29,7 +29,6 @@ const foreshadow = {
   anchor: {
     invalid: '原文已改动，锚点已失效',
     missing: '找不到锚定的原文',
-    chapter: '章节 · {{name}}',
     outline: '大纲 · {{name}}',
     unnamedTarget: '未命名条目'
   },
@@ -80,7 +79,6 @@ const foreshadow = {
   },
   dialog: {
     createTitle: '新建伏笔',
-    editTitle: '编辑伏笔',
     unsavedSwitch: {
       title: '有未保存的改动',
       message: '当前伏笔的改动尚未保存。点「保存」先落库再继续，点「不保存」放弃这些改动直接继续。',

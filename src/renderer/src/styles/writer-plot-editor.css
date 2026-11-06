@@ -147,15 +147,6 @@
   display: block;
 }
 
-.plot-field-label {
-  display: block;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--text-dim);
-  margin-bottom: 6px;
-  letter-spacing: 0.2px;
-}
-
 /* 底部保存条（剧情编辑器）：独立底色卡片，与正文卡同令牌
    （--soft-solid + --line + --r-lg），`flex: none` 固定不参与压缩；
    与正文卡的 8px 间距由 `.plot-editor` 的 gap 提供。无 transform（§8）。 */

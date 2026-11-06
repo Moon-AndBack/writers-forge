@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
+import { cn } from '@renderer/lib/cn'
 import '../../styles/components/overlay.css'
 
 /** 下拉菜单项：普通项或分隔线 */
@@ -39,10 +40,6 @@ export interface DropdownProps {
   className?: string
   /** 展开状态变化回调 */
   onOpenChange?: (open: boolean) => void
-}
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(' ')
 }
 
 function isSelectable(item: DropdownItem | undefined): boolean {
@@ -179,7 +176,7 @@ export function Dropdown({
   return (
     <div
       ref={rootRef}
-      className={cx('wf-dropdown', open && 'is-open', disabled && 'is-disabled', className)}
+      className={cn('wf-dropdown', open && 'is-open', disabled && 'is-disabled', className)}
       onKeyDown={handleKeyDown}
     >
       <span
@@ -195,7 +192,7 @@ export function Dropdown({
 
       {open ? (
         <div
-          className={cx(
+          className={cn(
             'wf-dropdown__menu',
             align === 'end' ? 'wf-dropdown__menu--end' : 'wf-dropdown__menu--start'
           )}
@@ -214,7 +211,7 @@ export function Dropdown({
                 }}
                 type="button"
                 role={checkable ? 'menuitemcheckbox' : 'menuitem'}
-                className={cx(
+                className={cn(
                   'wf-dropdown__item',
                   index === activeIndex && 'is-active',
                   item.checked && 'is-checked',

@@ -1,5 +1,6 @@
 import { forwardRef } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { cn } from '@renderer/lib/cn'
 import '../../styles/components/button.css'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
@@ -16,10 +17,6 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean
   /** 图标或文本内容。 */
   children?: ReactNode
-}
-
-function cn(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(' ')
 }
 
 /**

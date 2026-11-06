@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { cn } from '@renderer/lib/cn'
 import '../../styles/components/segmented.css'
 
 export interface SegmentedOption<T extends string = string> {
@@ -23,10 +24,6 @@ export interface SegmentedProps<T extends string = string> {
   className?: string
   /** 无障碍名称。 */
   'aria-label'?: string
-}
-
-function cn(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(' ')
 }
 
 /**

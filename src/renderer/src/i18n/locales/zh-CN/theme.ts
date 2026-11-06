@@ -18,7 +18,6 @@ const theme = {
   },
   acrylic: {
     label: '透明效果',
-    desc: '窗口背景使用亚克力材质',
     supportedDesc: '窗口背景使用亚克力材质',
     unsupportedDesc: '当前系统不支持（需 Windows 11 22H2+）',
     switchAria: '透明效果（Acrylic）'

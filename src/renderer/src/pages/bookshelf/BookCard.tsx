@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { KeyboardEvent, MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { cn } from '@renderer/lib/cn'
 import { Badge, IconButton, Progress, Tag } from '../../components/ui'
 import type { BadgeTone } from '../../components/ui'
 import { getCoverGradient } from './bookMeta'
@@ -50,10 +51,6 @@ const STATUS_TONE: Record<BookStatus, BadgeTone> = {
   paused: 'neutral',
   dropped: 'danger',
   revising: 'brand'
-}
-
-function cn(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(' ')
 }
 
 function TrashIcon() {

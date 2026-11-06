@@ -10,6 +10,7 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
+import { cn } from '@renderer/lib/cn'
 import '../../styles/components/form.css'
 export interface ComboboxOption {
   value: string
@@ -30,9 +31,6 @@ export interface ComboboxProps {
   disabled?: boolean
   /** 过滤后无候选时的提示文案。 */
   emptyText?: string
-}
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(' ')
 }
 const PANEL_GAP = 6
 const PANEL_PAD = 8
@@ -203,7 +201,7 @@ export function Combobox({
   return (
     <div
       ref={rootRef}
-      className={cx(
+      className={cn(
         'wf-select',
         'wf-combobox',
         size && size !== 'md' && `wf-select--${size}`,
@@ -272,7 +270,7 @@ export function Combobox({
                       }}
                       role="option"
                       aria-selected={isSelected}
-                      className={cx(
+                      className={cn(
                         'wf-select__option',
                         isSelected && 'is-selected',
                         index === highlightedIndex && 'is-active'

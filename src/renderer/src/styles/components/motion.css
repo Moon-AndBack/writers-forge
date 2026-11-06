@@ -67,12 +67,8 @@
 }
 
 /* ---------- 通用工具类 ----------
-   仅供新代码 / 后续收敛批次取用；当前无任何元素挂载这两个类，
+   仅供新代码 / 后续收敛批次取用；当前无任何元素挂载该工具类，
    因此本文件对现有界面零视觉影响。 */
-.wf-enter-up {
-  animation: wf-enter-up var(--dur-base) var(--ease-out) both;
-}
-
 .wf-enter-fade {
   animation: wf-enter-fade var(--dur-base) var(--ease-out) both;
 }

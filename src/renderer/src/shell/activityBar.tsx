@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { MouseEvent as ReactMouseEvent, ReactElement, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MorphIcon } from 'morphicons/react'
+import { cn } from '@renderer/lib/cn'
 import { IconButton } from '../components/ui'
 import { useTooltip } from '../components/ui'
 import { POPOVER_SHOW_DELAY } from '../components/popoverTiming'
@@ -43,10 +44,6 @@ export function ActivityBarProvider({ children }: { children: ReactNode }) {
   )
 
   return <ActivityBarContext.Provider value={value}>{children}</ActivityBarContext.Provider>
-}
-
-function cn(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(' ')
 }
 
 /** 判定事件落点是否落在可筛选模块图标上（`IconButton` 的 `data-module` 钩子）。 */

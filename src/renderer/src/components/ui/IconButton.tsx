@@ -2,6 +2,7 @@ import { forwardRef, useCallback } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { useTooltip } from './Tooltip'
 import type { TooltipPlacement } from './Tooltip'
+import { cn } from '@renderer/lib/cn'
 import '../../styles/components/icon-button.css'
 
 export type IconButtonVariant = 'ghost' | 'solid'
@@ -23,10 +24,6 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
   tooltipPlacement?: TooltipPlacement
   /** 图标内容（建议内联 SVG，随 currentColor 着色）。 */
   children?: ReactNode
-}
-
-function cn(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(' ')
 }
 
 /**

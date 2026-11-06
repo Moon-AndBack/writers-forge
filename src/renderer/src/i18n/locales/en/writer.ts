@@ -6,32 +6,8 @@
 import type { ZhCNResources } from '../zh-CN'
 
 const writer = {
-  side: {
-    chapters: 'Chapters',
-    outline: 'Outline lines',
-    plot: 'Plot',
-    worldview: 'Setting entries',
-    characters: 'Characters',
-    factions: 'Factions',
-    power_system: 'Power systems',
-    items: 'Items & techniques',
-    timeline: 'Timeline',
-    foreshadow: 'Foreshadowing',
-    inspiration: 'Inspiration'
-  },
-  right: {
-    worldview: 'Related settings',
-    characters: 'Character info',
-    factions: 'Faction info',
-    power_system: 'Power system info',
-    items: 'Item & technique info',
-    timeline: 'Timeline',
-    foreshadow: 'Foreshadowing info',
-    inspiration: 'Inspiration info'
-  },
   sidePaneAria: 'Sidebar',
   rightPaneAria: 'Right panel',
-  worldTitleAria: 'Setting title',
   rightTabs: {
     aria: 'Right pane tabs',
     outline: 'Outline',

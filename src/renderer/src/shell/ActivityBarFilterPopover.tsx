@@ -36,6 +36,7 @@ import type {
   MouseEvent as ReactMouseEvent
 } from 'react'
 import { useTranslation } from 'react-i18next'
+import { cn } from '@renderer/lib/cn'
 import { SearchInput } from '../components/ui'
 import { SearchIcon } from '../components/icons'
 import { HoverPopupShell } from '../components/HoverPopupShell'
@@ -50,10 +51,6 @@ import { useRequestSwitch } from './unsavedSwitchGuard'
 
 /** 搜索输入提交防抖（ms）：停止打字后 200ms 再写 Context。 */
 const QUERY_DEBOUNCE = 200
-
-function cn(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(' ')
-}
 
 export interface ActivityBarFilterPopoverProps {
   /** 触发浮层的可筛选模块。 */

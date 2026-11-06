@@ -22,7 +22,6 @@ const foreshadow = {
   anchor: {
     invalid: 'The source text has changed; the anchor is invalid',
     missing: 'Anchored text not found',
-    chapter: 'Chapter · {{name}}',
     outline: 'Outline · {{name}}',
     unnamedTarget: 'Untitled item'
   },
@@ -74,7 +73,6 @@ const foreshadow = {
   },
   dialog: {
     createTitle: 'New foreshadowing',
-    editTitle: 'Edit foreshadowing',
     unsavedSwitch: {
       title: 'Unsaved changes',
       message:

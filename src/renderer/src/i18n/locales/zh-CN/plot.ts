@@ -83,8 +83,7 @@ const plot = {
     emptyNodes: '这条剧情线还没有节点，点击上方 ＋ 添加',
     editTime: '设置时间',
     editTitle: '设置标题',
-    moreCharacters: '+{{n}}',
-    moreCharactersTitle: '还有 {{n}} 个出场实体'
+    moreCharacters: '+{{n}}'
   },
   editor: {
     fieldTime: '时间',

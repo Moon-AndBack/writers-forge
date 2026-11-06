@@ -9,17 +9,3 @@
 
 /* 顶部切换器的满宽 + 与「卷名」输入框等高（.wf-seg--fill，见
    styles/components/segmented.css，三弹窗共用，此处不再单独覆盖）。 */
-
-/* 正文卷形态：卷号（只读）+ 自定义名 两列。 */
-.new-volume-normal {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
-}
-
-.new-volume-normal .doc-title-input:disabled,
-.new-volume-normal input:disabled {
-  color: var(--text-mute);
-  background: var(--soft-solid);
-  cursor: default;
-}

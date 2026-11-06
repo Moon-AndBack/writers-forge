@@ -19,7 +19,6 @@ const theme = {
   },
   acrylic: {
     label: 'Transparency',
-    desc: 'Use acrylic material for the window background',
     supportedDesc: 'Use acrylic material for the window background',
     unsupportedDesc: 'Not supported on this system (requires Windows 11 22H2+)',
     switchAria: 'Transparency (Acrylic)'

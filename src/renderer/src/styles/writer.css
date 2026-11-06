@@ -345,35 +345,7 @@ body.is-resizing .splitter {
 /* 右栏已不再有面板头：`.pane-head` / `.pane-title` 随独立时间线右栏改为卡片式后移除
    （各模块标题统一由中栏承载，右栏首块直接从栏级内衬起排，见 `.rp-body--no-head`）。 */
 
-/* ---------- 迷你按钮 / 分段（不透明底） ---------- */
-.mini-btn {
-  width: 26px;
-  height: 26px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-xs);
-  color: var(--text-dim);
-  transition:
-    background 0.1s var(--ease),
-    color 0.1s var(--ease),
-    transform 0.08s var(--ease);
-}
-
-.mini-btn:hover {
-  background: var(--soft-hover-solid);
-  color: var(--text);
-}
-
-.mini-btn:active {
-  background: var(--soft-press-solid);
-  transform: scale(0.96);
-}
-
-.mini-btn > svg {
-  width: 14px;
-  height: 14px;
-}
-
+/* ---------- 分段（不透明底） ---------- */
 .mini-seg {
   display: flex;
   gap: 2px;

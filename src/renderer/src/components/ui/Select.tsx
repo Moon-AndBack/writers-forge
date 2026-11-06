@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
+import { cn } from '@renderer/lib/cn'
 import '../../styles/components/form.css'
 
 export interface SelectOption {
@@ -34,10 +35,6 @@ export interface SelectProps {
 
 function sizeModifier(size: SelectProps['size']): string {
   return size && size !== 'md' ? `wf-select--${size}` : ''
-}
-
-function cx(...parts: Array<string | false | null | undefined>): string {
-  return parts.filter(Boolean).join(' ')
 }
 
 /** 面板与触发器的间距（对齐原 form-select.css 的 top: calc(100% + 6px)） */
@@ -219,7 +216,7 @@ export function Select({
   return (
     <div
       ref={rootRef}
-      className={cx(
+      className={cn(
         'wf-select',
         sizeModifier(size),
         open && 'is-open',
@@ -243,7 +240,7 @@ export function Select({
         onClick={() => (open ? closePanel() : openPanel())}
         onKeyDown={handleTriggerKeyDown}
       >
-        <span className={cx('wf-select__value', !selected && 'is-placeholder')}>
+        <span className={cn('wf-select__value', !selected && 'is-placeholder')}>
           {selected ? selected.label : (placeholder ?? t('selectPlaceholder'))}
         </span>
         <span className="wf-select__caret" aria-hidden="true">
@@ -292,7 +289,7 @@ export function Select({
                       role="option"
                       aria-selected={isSelected}
                       aria-disabled={option.disabled || undefined}
-                      className={cx(
+                      className={cn(
                         'wf-select__option',
                         isSelected && 'is-selected',
                         index === activeIndex && 'is-active',

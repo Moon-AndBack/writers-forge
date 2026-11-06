@@ -173,11 +173,6 @@
   background: color-mix(in srgb, var(--brand) 8%, var(--pane));
 }
 
-/* 面板底部「新建卷」入口：幽灵按钮，hover 出柔和底。 */
-.outline-add-volume {
-  padding: 6px 2px 2px;
-}
-
 /* ---------- 大纲「新建」创建弹窗（标题栏「添加」按钮） ----------
    单弹窗三形态（条目 / 分组 / 正文卷）+ 名称输入，复用全局 Modal / Segmented /
    FormField / Input / Button（对齐 NewVolumeDialog 范式）。 */

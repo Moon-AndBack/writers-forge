@@ -71,32 +71,17 @@
   --chip-base: #94adc7;
 }
 
-/* ---------- 灰度档（存量用途）：同一色系的深浅档（10% → 30%，步长 4%） ----------
-   这 6 档**不再用于分类配色**（分类配色已由 `chip-preset-colors.css` 的 `.chip-p-*`
-   按 23 个预设子类各给一色）；保留定义仅因 `CategoryTreePicker` 仍在中性胶囊
-   （`.chip-pill--neutral`）上用 `.chip-s2` / `.chip-s0` 表达父 / 子分类的灰度层次。 */
+/* ---------- 灰度档（存量用途） ----------
+   这组色阶**不再用于分类配色**（分类配色已由 `chip-preset-colors.css` 的 `.chip-p-*`
+   按 23 个预设子类各给一色）；仅保留 `CategoryTreePicker` 在中性胶囊
+   （`.chip-pill--neutral`）上仍取用的 `.chip-s2` / `.chip-s0` 两档
+   （父 / 子分类的灰度层次）。 */
 .chip-s0 {
   --chip-mix: 10%;
 }
 
-.chip-s1 {
-  --chip-mix: 14%;
-}
-
 .chip-s2 {
   --chip-mix: 18%;
-}
-
-.chip-s3 {
-  --chip-mix: 22%;
-}
-
-.chip-s4 {
-  --chip-mix: 26%;
-}
-
-.chip-s5 {
-  --chip-mix: 30%;
 }
 
 /* ---------- 暗色适配 ----------

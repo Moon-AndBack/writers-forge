@@ -5,37 +5,10 @@
    颜色取自 theme.css 令牌，半透明底用 color-mix 派生，四主题通用。
    ============================================================ */
 
-/* ---------- 中栏标题栏计数 ---------- */
-.dossier-hint {
-  font-size: 11px;
-  color: var(--text-mute);
-}
-
 /* ---------- 卡片网格 ---------- */
 /* 网格布局统一走通用 `.wf-card-grid`（styles/components/card-grid.css：弹性轨道
    250~320px + 左对齐，与伏笔模块共用）。`.dossier-grid` 仅作五域的语义钩子保留：
    关系行宽度测量经 `gridRef` 读计算样式，不依赖该类名。 */
-
-/* ---------- 世界观子类分组 ---------- */
-.dossier-groups {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.dossier-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.dossier-group__title {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--text-dim);
-}
 
 /* ---------- 设定卡 ----------
    卡片外壳（布局 / 内衬 / 圆角 / 柔和底 / 常态阴影 / 进场动画 / hover 与选中光晕）
@@ -95,7 +68,6 @@
 
 .dossier-subtype__select-row .wf-select,
 .dossier-subtype__add > input,
-.dossier-subtype__add .ui-input,
 .dossier-subtype__add .wf-input {
   min-width: 0;
 }
@@ -146,12 +118,6 @@
 .dossier-detail__empty {
   font-size: 12px;
   color: var(--text-mute);
-}
-
-.dossier-detail__footer {
-  margin-top: 2px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
 }
 
 .dossier-rel-add {

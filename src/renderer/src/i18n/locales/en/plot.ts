@@ -82,8 +82,7 @@ const plot = {
     emptyNodes: 'This plot line has no nodes yet; click ＋ above to add one',
     editTime: 'Set time',
     editTitle: 'Set title',
-    moreCharacters: '+{{n}}',
-    moreCharactersTitle: '{{n}} more entities in this scene'
+    moreCharacters: '+{{n}}'
   },
   editor: {
     fieldTime: 'Time',

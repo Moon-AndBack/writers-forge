@@ -9,12 +9,6 @@
 /* ============================================================
    中栏：纵向时间轴
    ============================================================ */
-.plot-hint {
-  font-size: 10.5px;
-  color: var(--text-mute);
-  white-space: nowrap;
-}
-
 .plot-timeline {
   --plot-col-time: 86px;
   --plot-col-node: 52px;
@@ -149,16 +143,6 @@
   line-clamp: 4;
   max-height: calc(4 * 1.6em);
   overflow: hidden;
-}
-
-/* 只读说明文本（时间线起点面板 / 右栏只读详情等）：与壳的描述同口径
-   （12.5 / 1.6 / 弱化色），不参与卡内 4 行裁剪。 */
-.plot-scene-desc {
-  margin: 0;
-  font-size: 12.5px;
-  line-height: 1.6;
-  color: var(--text-dim);
-  white-space: pre-wrap;
 }
 
 /* 正文单段：段首缩进两字，无段间距；`white-space` 归一（容器继承的 pre-wrap
