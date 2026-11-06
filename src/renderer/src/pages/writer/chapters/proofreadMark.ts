@@ -6,14 +6,19 @@ import type { EditorState, Transaction } from '@tiptap/pm/state'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import type { ActiveCleanWord, CleanWordCategory } from '../../../../../preload/types/cleanWords'
+import {
+  getCleanWordsEpoch,
+  loadActiveCleanWords,
+  onCleanWordsInvalidated
+} from '../../../components/editor/cleanWordCache'
 
 /**
  * 章节正文违禁词标注（**只提示不阻断**）。
  *
  * 口径：
  * - 词源＝`window.api.cleanWords.active()`（只含 enabled=1，主进程 `database/cleanWords` 真源）；
- * - 词表在渲染层进程内缓存一次（模块级 Promise），扫描全程零 IPC；词库变更后经
- *   `resetActiveCleanWords()` 全量失效（模块级 Promise + 各控制器快照）并立即重扫；
+ * - 词表缓存与失效广播在 `components/editor/cleanWordCache.ts`（模块级 Promise，扫描全程零 IPC）；
+ *   词库变更后经其 `resetActiveCleanWords()` 失效，本模块订阅后清各控制器快照并立即重扫；
  * - 匹配为**最长匹配 + 不重叠**（首字分桶，每桶按词长降序，逐位 `startsWith`）；
  * - 命中以 `Decoration.inline` 铺**波浪下划线**（类名 `wf-clean-hit`），只改装饰不改文档，
  *   不与实体高亮的 `background` / `color` 冲突；
@@ -57,49 +62,7 @@ export interface CleanWordScanHit {
   replacement: string
 }
 
-/* ---------- 词表加载（进程内缓存，避免每次扫描 IPC） ---------- */
-
-/** 词表缓存 Promise：成功即常驻；失败置空以便下次重试。 */
-let activeWordsPromise: Promise<ActiveCleanWord[]> | null = null
-
-/** 词表代次：每次失效自增，用于丢弃「失效前发起、失效后才返回」的旧词表。 */
-let wordsEpoch = 0
-
-/**
- * 取启用中的违禁词（**模块级缓存**，一次 IPC）。
- *
- * 词库在设置页改动后如需即时生效，调 `resetActiveCleanWords()` 使缓存失效；
- * 本批无词库编辑入口，故不在扫描链路里反复取版本。
- */
-export function loadActiveCleanWords(): Promise<ActiveCleanWord[]> {
-  if (activeWordsPromise === null) {
-    activeWordsPromise = window.api.cleanWords
-      .active()
-      .then((words) => words.filter((item) => item.word.trim() !== ''))
-      .catch(() => {
-        activeWordsPromise = null
-        return []
-      })
-  }
-  return activeWordsPromise
-}
-
-/**
- * 清除词表缓存并让所有在挂载中的编辑器立即重扫。
- *
- * 调用场景：词库被改动（导入 / 启用 / 禁用 / 删除）后。
- * 只清模块级 Promise 不够——各控制器的 `words` 快照也要清，否则已打开的编辑器
- * 会一直用旧词表扫描，用户看到的标记与词库不一致。
- */
-export function resetActiveCleanWords(): void {
-  activeWordsPromise = null
-  wordsEpoch += 1
-  for (const controller of activeControllers) {
-    if (controller.disposed) continue
-    controller.words = null
-    requestScan(controller, true)
-  }
-}
+/* ---------- 词表（缓存与失效广播在共享层，见 components/editor/cleanWordCache.ts） ---------- */
 
 /* ---------- 匹配 ---------- */
 
@@ -335,6 +298,16 @@ function requestScan(controller: ProofreadController, immediate = false): void {
   )
 }
 
+// 词库改动 → 共享层广播失效：丢弃各控制器的词表快照并立即重扫（模块级订阅；控制器
+// 只在编辑器的 `view` 回调里产生，故注册时机不早于任何控制器）。
+onCleanWordsInvalidated(() => {
+  for (const controller of activeControllers) {
+    if (controller.disposed) continue
+    controller.words = null
+    requestScan(controller, true)
+  }
+})
+
 /**
  * 扫一轮：取词表（首次走 IPC）→ 整篇匹配 → 写装饰 + 发布计数。
  *
@@ -352,10 +325,10 @@ async function runScan(controller: ProofreadController): Promise<void> {
       controller.pending = false
       const { editor } = controller
       if (controller.disposed || editor.isDestroyed || !editor.isInitialized) return
-      const epoch = wordsEpoch
+      const epoch = getCleanWordsEpoch()
       const words = controller.words ?? (await loadActiveCleanWords())
       if (controller.disposed || editor.isDestroyed) return
-      if (epoch !== wordsEpoch) {
+      if (epoch !== getCleanWordsEpoch()) {
         // 等待期间词表被重置：这份快照已过期，丢掉并立刻用新词表重扫（不要把旧快照写回 `words`）。
         controller.words = null
         controller.pending = true

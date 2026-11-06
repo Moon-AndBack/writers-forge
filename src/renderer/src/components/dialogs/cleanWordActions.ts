@@ -3,9 +3,9 @@ import type {
   CleanWordImportInput,
   CleanWordImportResult
 } from '../../../../preload/types/cleanWords'
-// 违禁词表改动后必须令检测词表缓存失效。`proofreadMark` 属页面层，此处引用与
-// `useCleanWordsLibrary` 同一既有例外（单个副作用函数，§9 例外条款）。
-import { resetActiveCleanWords } from '../../pages/writer/chapters/proofreadMark'
+// 违禁词表改动后必须令检测词表缓存失效。缓存与失效广播在共享层
+// （`components/editor/cleanWordCache.ts`），页面层扫描插件订阅后重扫。
+import { resetActiveCleanWords } from '../editor/cleanWordCache'
 
 /**
  * 违禁词入库动作（**唯一实现**，供词库弹窗与正文右键菜单共用，§9）。

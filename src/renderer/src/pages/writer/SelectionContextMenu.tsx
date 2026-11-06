@@ -2,29 +2,36 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Editor } from '@tiptap/core'
-import { deriveForeshadowStatus } from '../../../../shared/foreshadowStatus'
 import { sliceSelectedText } from '../../../../shared/foreshadowAnchorText'
 import type { ForeshadowAnchor } from '../../../../main/database/foreshadows'
 import type { CleanWordCategory } from '../../../../preload/types/cleanWords'
-import { EditorContextMenu } from './EditorContextMenu'
-import { FormatButton } from './FormatPopover'
-import { buildAnchor } from './foreshadowAnchor'
-import { resolveParagraphAnchor } from './paragraphAnchor'
-import { useAttachForeshadow } from './useAttachForeshadow'
+import { EditorContextMenu } from '../../components/editor/EditorContextMenu'
+import { FormatButton } from '../../components/editor/FormatPopover'
+import { buildAnchor } from '../../components/editor/foreshadowAnchor'
+import { resolveParagraphAnchor } from '../../components/editor/paragraphAnchor'
+import { useAttachForeshadow } from '../../components/editor/useAttachForeshadow'
 import {
   FORESHADOW_MARKS_REFRESH_EVENT,
   refreshForeshadowMarks,
   type ForeshadowLabelResolver
-} from './useForeshadowMarks'
-import ForeshadowCreateDialog from '../dialogs/ForeshadowCreateDialog'
-import ForeshadowRecoverDialog from '../dialogs/ForeshadowRecoverDialog'
-import { useForeshadowFilters } from '../../pages/writer/foreshadow/foreshadowFilterContext'
-import { CATEGORIES, CATEGORY_LABEL_KEYS, MAX_WORD_CHARS } from '../dialogs/cleanWordsMeta'
-import type { CleanWordAddOutcome } from '../dialogs/cleanWordActions'
-import { useToast } from '../ui'
+} from '../../components/editor/useForeshadowMarks'
+import ForeshadowCreateDialog from './foreshadow/ForeshadowCreateDialog'
+import { fetchRecoverable, readSelectedText, toSearchQuery } from './selectionMenuUtils'
+import ForeshadowRecoverDialog from '../../components/dialogs/ForeshadowRecoverDialog'
+import { useForeshadowFilters } from './foreshadow/foreshadowFilterContext'
+import {
+  CATEGORIES,
+  CATEGORY_LABEL_KEYS,
+  MAX_WORD_CHARS
+} from '../../components/dialogs/cleanWordsMeta'
+import type { CleanWordAddOutcome } from '../../components/dialogs/cleanWordActions'
+import { useToast } from '../../components/ui'
 
 /**
  * 正文右键**选区菜单**（章节编辑器 / 大纲编辑器共用，§9 唯一实现）。
+ *
+ * 置于写作页层（`pages/writer`）而非 `components/editor`：菜单项与弹窗绑定伏笔 / 违禁词
+ * 两个写作模块（`foreshadow/**`），共享层不得反向依赖页面层。
  *
  * ⚠️ 菜单壳（`EditorContextMenu`）每个实例都会各自在 `editor.view.dom` 上挂
  * `contextmenu` 监听并各自 `preventDefault`——同一编辑器上**只允许挂一个**本类菜单，
@@ -103,47 +110,7 @@ const TOAST_KEYS = {
   failed: 'selectionMenu.wordFailed'
 } as const satisfies Record<CleanWordAddOutcome, string>
 
-/**
- * 取选中的文字片段（所在块文本按段内区间截取后 trim）。
- *
- * 选区跨块 / 空选区时 `resolveParagraphAnchor` 返回 null，此处回退空串（调用方不动作）。
- */
-function readSelectedText(editor: Editor | null): string {
-  if (!editor) return ''
-  const info = resolveParagraphAnchor(editor)
-  if (!info) return ''
-  return sliceSelectedText(info.quote, info.charStart, info.charEnd).trim()
-}
-
-/**
- * 搜索词规整：搜索是**逐段 `indexOf`**，换行永远匹配不到。
- * 顶层块内一般无换行（锚点函数已排除跨块选区），但富文本段落内的硬换行会出现在
- * 块文本里——取首个非空行，避免整条查询直接失效。
- */
-function toSearchQuery(text: string): string {
-  return (
-    text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .find((line) => line !== '') ?? ''
-  )
-}
-
-/**
- * 读取全书伏笔并判断是否存在「可回收」项（**派生状态为 `planted`**）。
- * 建设中 / 已废弃 / 已回收均不可回收（回收点优先，废弃记录不再参与判断）。
- * 失败按不可回收处理（永不抛错）：菜单项置灰比误开空弹窗更稳妥。
- */
-async function fetchRecoverable(bookId: string): Promise<boolean> {
-  try {
-    const rows = await window.api.foreshadow.list(bookId)
-    return rows.some((row) => deriveForeshadowStatus(row) === 'planted')
-  } catch {
-    return false
-  }
-}
-
-interface SelectionMenuContentProps {
+export interface SelectionMenuContentProps {
   editor: Editor | null
   /** 收起菜单（由壳提供）。 */
   close: () => void

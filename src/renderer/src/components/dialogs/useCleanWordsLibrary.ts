@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next'
 import { useToast } from '../ui'
 import type { SegmentedOption, SelectOption } from '../ui'
 import type { CleanWordCount, CleanWordRow } from '../../../../preload/types/cleanWords'
-// 词库改动后令检测词表缓存失效（`proofreadMark` 属页面层，共享层引用页面层属分层倒挂，
-// 此处仅为单个副作用函数的例外（§9 例外条款））。
-import { resetActiveCleanWords } from '../../pages/writer/chapters/proofreadMark'
+// 词库改动后令检测词表缓存失效。缓存与失效广播在共享层
+// （`components/editor/cleanWordCache.ts`），页面层扫描插件订阅后重扫。
+import { resetActiveCleanWords } from '../editor/cleanWordCache'
 import { addCleanWords } from './cleanWordActions'
 import { CATEGORIES, CATEGORY_LABEL_KEYS, PAGE_SIZE, isCategory } from './cleanWordsMeta'
 import type { CategoryFilter, SourceFilter } from './cleanWordsMeta'

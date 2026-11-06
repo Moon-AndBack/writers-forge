@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ForeshadowAnchor } from '../../../../main/database/foreshadows'
-import { Button, FormField, Input, Modal, Textarea } from '../ui'
-import ForeshadowDescriptionField from '../../pages/writer/foreshadow/ForeshadowDescriptionField'
-import '../../styles/components/foreshadow-create-dialog.css'
+import type { ForeshadowAnchor } from '../../../../../main/database/foreshadows'
+import { Button, FormField, Input, Modal, Textarea } from '../../../components/ui'
+import ForeshadowDescriptionField from './ForeshadowDescriptionField'
+import '../../../styles/components/foreshadow-create-dialog.css'
 
 export interface ForeshadowCreateDialogProps {
   /** 书籍 id（`foreshadow.create` 的所属书，锚点目标须同书）。 */
@@ -32,6 +32,9 @@ export interface ForeshadowCreateDialogProps {
 
 /**
  * 「新建伏笔」弹窗（正文右键「添加伏笔」与标题栏「新建」共用）。
+ *
+ * 位于伏笔域（`pages/writer/foreshadow`）：描述字段需要实体高亮 / 悬停（页面层实体域），
+ * 放在 `components/dialogs` 会让共享层反向依赖页面层。
  *
  * - 字段顺序：名称（必填，用户输入）/ 关联（只读）/ 选中文字（只读）/ 描述（可选富文本，
  *   仅实体自动高亮）；
