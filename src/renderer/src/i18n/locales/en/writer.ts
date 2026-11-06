@@ -13,7 +13,8 @@ const writer = {
     outline: 'Outline',
     plot: 'Plot',
     ai: 'AI',
-    foreshadow: 'Foreshadowing'
+    foreshadow: 'Foreshadowing',
+    inspiration: 'Inspiration'
   },
   rightOutline: {
     outlineLabel: 'Outline',

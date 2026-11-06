@@ -1,0 +1,173 @@
+/* ============================================================
+   章节模块右栏「灵感」页签：全书灵感只读平铺总览 + 只读详情
+   ------------------------------------------------------------------
+   与 writer-foreshadow-overview.css 同构，去掉「按状态分组」与实体胶囊相关规则：
+   列表卡（`.rp-card--list`）内直接是一张 `.wf-card-grid`（不分组、不加组容器）。
+   卡片复用中栏 `InspirationCard` 的 `readonly` / `compact` 变体，只做右栏覆盖，
+   不另造平行卡片（AGENTS §9）。`readonly` 只隐藏删除按钮，卡片传入 `onSelect`
+   后仍是可点 / 可键盘选中的卡（点击进只读详情），故恢复 hover / 键盘焦点的边缘
+   光晕（仅描边 / 阴影，无 transform，AGENTS §8）。
+   ============================================================ */
+
+/* 右栏网格：与伏笔总览同款——轨道上限放开为 `1fr`（最窄右栏下单列吃满容器），
+   用 `auto-fill` 保留空轨道，使单卡仍是标准列宽而不是被拉成整行宽。 */
+.wf-card-grid.inspiration-overview-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+}
+
+/* 总览卡底色改 `--pane`：列表卡已由通用 `pane-region` 提供 `--soft-solid` 软底，
+   卡若仍用中栏的 `--soft-solid` 会与容器同色，故改 `--pane` 让卡成为软底之上的
+   内容层。常态不投影，只留 `--line` 细描边作为边界。 */
+.inspiration-overview-grid > .inspiration-card {
+  background: var(--pane);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+/* 卡片可点进只读详情：hover / 键盘焦点恢复通用 `.wf-card--halo` 的同一套边缘光晕
+   （品牌色描边环 + 外发光，纯阴影，无 transform，AGENTS §8）。0,3,0 显式回写，
+   避免被上方 0,2,0 的 `box-shadow: none` 压住。 */
+.inspiration-overview-grid > .inspiration-card:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+.inspiration-overview-grid > .inspiration-card:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+/* 紧凑变体：右栏窄栏下收窄内衬 / 字号，正文摘要由 3 行降为 2 行——
+   总览是浏览态，3 行会把右栏卡抬得比中栏卡更高。壳的紧凑钩子是
+   `wf-entity-card--compact`；`.inspiration-card` 前缀把特异性提到 (0,2,0)。 */
+.inspiration-card.wf-entity-card--compact {
+  gap: 6px;
+  padding: 11px 12px;
+  /* 右栏卡不需要中栏的 120px 最小高（`.wf-card--halo`），内容少时保持紧凑。 */
+  min-height: 0;
+}
+
+.inspiration-card.wf-entity-card--compact .wf-entity-card__title {
+  font-size: 13px;
+}
+
+.inspiration-card.wf-entity-card--compact .inspiration-card__desc {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+/* ---------- 只读详情 ---------- */
+/* 结构对齐伏笔只读详情：面板纵向 flex（滚动区 + 底部返回栏），
+   值块复用共享 `.wf-readonly-block`（--control-on-soft 底 + 内描边）。 */
+.inspiration-readonly {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 8px;
+  /* 切换条目时随选中行重建 → 挂进场动画即重播（纯上浮，非 hover 态）。 */
+  animation: wf-enter-up var(--dur-base) var(--ease) backwards;
+}
+
+.inspiration-readonly__scroll {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 2px 8px;
+  overflow-y: auto;
+}
+
+/* 单一软底块承载标题 / 标签 / 正文（与灵感编辑态的 `.inspiration-fields` 同观感）。 */
+.inspiration-readonly__fields {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+.inspiration-readonly__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.inspiration-readonly__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.inspiration-readonly__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* 正文段吃掉剩余高度；内容超高时由 `__scroll` 统一滚动。 */
+.inspiration-readonly__section--content {
+  flex: 1 1 auto;
+}
+
+/* 段落小标题：与伏笔只读详情 / 锚点块标题同口径（10px / 700 / 弱化色）。 */
+.inspiration-readonly__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+}
+
+/* 纯文本正文：保留换行与首尾空白，长词 / 长链接不撑破右栏。 */
+.inspiration-readonly__content {
+  flex: 1 1 auto;
+  min-height: 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.inspiration-readonly__empty {
+  color: var(--text-mute);
+}
+
+/* 标签：平铺 + 换行（详情空间足够，不做卡片的单行收口）。胶囊规格由通用 `Tag` 提供。 */
+.inspiration-readonly__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 底部返回栏：与伏笔只读详情 / 各保存条同一套容器（--soft-solid 软底 + --line
+   细描边 + --r-lg 圆角 + 10 / 12 内衬）；按钮挂共享类 `.wf-btn--on-soft`。 */
+.inspiration-readonly__bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}

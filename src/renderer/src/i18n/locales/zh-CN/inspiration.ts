@@ -31,7 +31,12 @@ const inspiration = {
   },
   detail: {
     emptyTitle: '未选择灵感',
-    emptyDesc: '在列表中选择一条灵感，查看并编辑详情'
+    emptyDesc: '在列表中选择一条灵感，查看并编辑详情',
+    back: '返回灵感列表'
+  },
+  /** 章节模块右栏「灵感」页签：全书灵感只读总览。 */
+  overview: {
+    empty: '全书还没有灵感'
   },
   action: {
     create: '新建灵感',

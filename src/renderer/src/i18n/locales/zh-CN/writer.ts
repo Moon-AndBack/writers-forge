@@ -19,7 +19,8 @@ const writer = {
     outline: '大纲',
     plot: '剧情',
     ai: 'AI',
-    foreshadow: '伏笔'
+    foreshadow: '伏笔',
+    inspiration: '灵感'
   },
   rightOutline: {
     outlineLabel: '大纲',

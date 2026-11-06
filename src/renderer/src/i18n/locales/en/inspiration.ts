@@ -31,7 +31,11 @@ const inspiration = {
   },
   detail: {
     emptyTitle: 'No inspiration selected',
-    emptyDesc: 'Select an inspiration in the list to view and edit its details'
+    emptyDesc: 'Select an inspiration in the list to view and edit its details',
+    back: 'Back to inspiration list'
+  },
+  overview: {
+    empty: 'No inspiration in this book yet'
   },
   action: {
     create: 'New inspiration',

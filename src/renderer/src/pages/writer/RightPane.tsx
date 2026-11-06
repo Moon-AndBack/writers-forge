@@ -16,6 +16,7 @@ import PlotEditor from './plot/PlotEditor'
 import type { PlotLineRow, PlotSceneRow, UpdatePlotScenePatch } from './plot/plotTree'
 import { AiPanel } from './right/AiPanel'
 import { ForeshadowOverviewPanel } from './right/ForeshadowOverviewPanel'
+import { InspirationOverviewPanel } from './right/InspirationOverviewPanel'
 import { OutlineRightPanel } from './right/OutlineRightPanel'
 import { PlotFilterPanel } from './right/PlotFilterPanel'
 import { RightPaneTabs, type RightPaneTab } from './right/RightPaneTabs'
@@ -29,15 +30,17 @@ const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { curr
  * 写作页右栏：按模块渲染对应 `.rp-view`（内容统一为 `.rp-body`；各模块均不设面板头，
  * 模块标题由中栏承载，首块直接从栏级内衬起排）。
  *
- * - **章节模块**：右栏为「大纲 / 剧情 / 伏笔 / AI」四页签（页签条 + 大纲面板 + 剧情面板 +
- *   伏笔总览面板 + AI 面板）。
+ * - **章节模块**：右栏为「大纲 / 剧情 / 伏笔 / AI / 灵感」五页签（页签条 + 大纲面板 +
+ *   剧情面板 + 伏笔总览面板 + AI 面板 + 灵感总览面板）。
  *   剧情页签走 `PlotFilterPanel`（时间线 + 剧情线双下拉筛选 + 只读时间轴卡片 + 悬停正文浮窗），
- *   与大纲模块右栏同款面板，只是多一层页签条。四个面板**始终挂载**，只用 `hidden` 切换显隐，
+ *   与大纲模块右栏同款面板，只是多一层页签条。五个面板**始终挂载**，只用 `hidden` 切换显隐，
  *   列表滚动位置不因页签切换丢失；页签状态只在章节模块内记忆（`chapterTab`，默认「大纲」）。
  *   AI 页签挂载 `AiPanel`（模型 / 功能下拉 + 快捷结果 / 对话两种模式，结果可回插正文），
  *   惰性加载：`active` 仅在页签可见时为真，不可见时不发起任何模型 / 会话请求。
  *   伏笔页签挂载 `ForeshadowOverviewPanel`（全书伏笔按派生状态分组的只读卡片总览），
  *   同样惰性加载，且切离章节模块时不拉数据。
+ *   灵感页签挂载 `InspirationOverviewPanel`（全书灵感平铺的只读卡片总览，点卡片在右栏内
+ *   展开只读详情），同样惰性加载，且切离章节模块时不拉数据。
  * - **大纲模块**：右栏直接挂载同一 `PlotFilterPanel`（无页签条）：时间线 + 剧情线双下拉筛选 +
  *   只读时间轴卡片 + 实体胶囊 + 悬停正文浮窗，点击只选中，不提供正文编辑器。
  * - **剧情模块**：右栏为节点正文富文本编辑器（`PlotEditor`：正文 + 底部保存条；
@@ -172,7 +175,7 @@ export function RightPane({
       aria-label={t('rightPaneAria')}
       aria-hidden={hidden || undefined}
     >
-      {/* 章节模块：右栏内「大纲 | 剧情 | 伏笔 | AI」四页签；四面板常驻，切页签不卸载。 */}
+      {/* 章节模块：右栏内「大纲 | 剧情 | 伏笔 | AI | 灵感」五页签；五面板常驻，切页签不卸载。 */}
       <div className={`rp-view${module === 'chapters' ? ' is-active' : ''}`} data-view="chapters">
         <RightPaneTabs value={chapterTab} onChange={setChapterTab} />
         <div className="rp-tabpanel" hidden={chapterTab !== 'outline'}>
@@ -209,6 +212,16 @@ export function RightPane({
             `active` 仅在页签可见时为真（惰性加载）；面板本身常驻，切页签不丢状态。 */}
         <div className="rp-tabpanel" hidden={chapterTab !== 'ai'}>
           <AiPanel bookId={bookId ?? ''} chapterId={chapterId} active={chapterTab === 'ai'} />
+        </div>
+        {/* 灵感页签：全书灵感平铺的只读卡片总览，点卡片在右栏内展开只读详情。
+            `active` 仅在「章节模块 + 灵感页签可见」时为真（惰性加载，切离章节模块即停拉）；
+            面板常驻，切页签不丢滚动位置。数据由面板自行拉取（不启用 `useInspirationBundle`，
+            后者仅在灵感模块激活时返回值）。 */}
+        <div className="rp-tabpanel" hidden={chapterTab !== 'inspiration'}>
+          <InspirationOverviewPanel
+            bookId={bookId ?? ''}
+            active={module === 'chapters' && chapterTab === 'inspiration'}
+          />
         </div>
       </div>
 
