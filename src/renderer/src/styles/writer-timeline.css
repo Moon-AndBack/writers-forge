@@ -1,7 +1,7 @@
 /* ============================================================
    写作视图 · 独立时间线右栏
    ------------------------------------------------------------------
-   右栏自上而下两张卡：「起点」卡（可编辑 + 保存，读写当前选中时间线）
+   右栏自上而下两张卡：「起点」卡（富文本可编辑 + 卡外底部 `SaveBar`，读写当前选中时间线）
    与「选中场景详情卡」（只读）：卡头（标题 + 时间）+ 只读正文值块，
    无面板头（模块标题由中栏承载）。底座与其它右栏同口径：
    `--soft-solid` + 1px `--line` + `--r-lg` + 14px 内衬；
@@ -17,7 +17,10 @@
 .rp-view[data-view='timeline'] .rp-body {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   gap: 8px;
+  /* 滚动全部由内层（起点卡富文本字段 / 详情卡 `.rp-read`）承担，外层不产生滚动条。 */
+  overflow: hidden;
 }
 
 /* ---------- 卡片底座 ---------- */
@@ -32,12 +35,56 @@
   border-radius: var(--r-lg);
 }
 
-/* ---------- 起点卡（可编辑 + 保存） ---------- */
-/* 起点卡按内容排高、不吃剩余高度（`.timeline-card` 默认 `flex: none`），
-   剩余高度留给下方详情卡。控件走通用 `Input` / `Button`，容器挂 `.on-soft`
-   让输入框换用 `--control-on-soft` 底 + 描边（见 form.css）。 */
+/* ---------- 起点卡（富文本 + 卡外保存条） ---------- */
+/* 起点卡吃掉右栏剩余高度（`SaveBar` 在卡外、按内容高度），高度链：
+   `.rp-body`（flex column + min-height 0）→ 起点卡（flex 1 1 auto + min-height 0）
+   → 字段（flex 1）→ 控件容器（flex column）→ `.short-rich-field--fill`。
+   每层都带 `min-height: 0`，内容超高时由富文本字段自身滚动（与伏笔右栏同口径）。
+   容器挂 `.on-soft`：富文本字段换用 `--control-on-soft` 底 + 描边（见 form / short-rich-field.css）。 */
 .timeline-origin-card {
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 10px;
+}
+
+/* 卡头 / 说明文案按内容高度，不参与剩余空间分配。 */
+.timeline-origin-card > .timeline-card__head,
+.timeline-origin-card > .timeline-card__desc {
+  flex: none;
+}
+
+/* 描述字段是卡内唯一伸缩项。 */
+.timeline-origin-card > .wf-field {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 控件容器同步转纵向 flex（默认 block 无法把高度分给富文本字段）。 */
+.timeline-origin-card > .wf-field > .wf-field__control {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 首行缩进：只作用于文档顶层段落（`.ProseMirror > p` 直接子级）；
+   列表项 / 引用 / 代码块内的嵌套段落不匹配，不影响其它右栏。 */
+.timeline-origin-card .short-rich-field .ProseMirror > p {
+  text-indent: 2em;
+}
+
+/* 保存条：与剧情 / 设定档案 / 伏笔同款外观（--soft-solid 软底 + --line 描边 +
+   --r-lg 圆角）；`SaveBar` 内部按钮自带 `margin-left: auto` 靠右。
+   `.rp-body` 已有 8px gap，故不再叠 `margin-top`。 */
+.timeline-save-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
 }
 
 /* 说明文案：12px 弱化，长文案可换行。 */
@@ -47,30 +94,6 @@
   line-height: 1.6;
   color: var(--text-mute);
   overflow-wrap: anywhere;
-}
-
-/* 起点输入框：宽度由 `.wf-input` 的 100% 兜底，这里只约束窄栏收缩。 */
-.timeline-origin__value {
-  min-width: 0;
-}
-
-/* 动作行：保存按钮 + 保存结果 / 空态说明同一行，窄栏允许换行。 */
-.timeline-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.timeline-card__hint {
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--text-mute);
-  overflow-wrap: anywhere;
-}
-
-.timeline-card__hint.is-saved {
-  color: var(--ok);
 }
 
 /* 卡头：标题 14 / 600，时间等辅助信息弱化右对齐（窄栏允许换行，不挤压标题）。 */

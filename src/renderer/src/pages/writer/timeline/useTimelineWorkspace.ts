@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
+import type { RichTextBodyValue } from '../../../components/editor/useRichTextBodyEditor'
 import {
   parseTimelineList,
   resolveActiveEntry,
+  resolveEntryDescriptionJson,
   serializeTimelineList,
   timelineActiveKey,
   timelineListKey,
@@ -21,19 +23,22 @@ export interface TimelineWorkspace {
   activeEntry: TimelineEntry | null
   /** 当前选中时间线的 origin（可能为空 → 由消费方回退默认）。 */
   origin: string
-  /** 当前选中时间线的起点描述（可能为空）。 */
+  /** 当前选中时间线的起点描述（派生纯文本，供中栏展示；可能为空）。 */
   description: string
+  /** 当前选中时间线的起点描述富文本（Tiptap JSON 串；老数据已经读侧兜底派生，无描述为 `''`）。 */
+  descriptionJson: string
   /** 是否已完成首读。 */
   loaded: boolean
   /** 切换选中时间线（写 `timeline:active:<bookId>`）。 */
   selectTimeline: (id: string) => void
   /** 新建时间线（追加并选中；name 为空 → 空名，展示层经 `t('timeline.defaultName')` 兜底）。 */
-  createTimeline: (name: string, description?: string) => Promise<TimelineEntry | null>
+  createTimeline: (name: string, description?: RichTextBodyValue) => Promise<TimelineEntry | null>
   /**
    * 更新**当前选中时间线**的起点描述（只改对应条目，其余条目原样写回）。
+   * 入参为编辑器归一值：同时写 `description`（派生纯文本）与 `descriptionJson`（富文本真源）；
    * 起点时间（origin）固定不可编辑；写入成功后同步列表态；返回是否落库成功。
    */
-  updateDescription: (description: string) => Promise<boolean>
+  updateDescription: (value: RichTextBodyValue) => Promise<boolean>
   /**
    * 重命名指定时间线：读磁盘最新列表 → 只改目标条目的 `name` → 原样写回。
    * 空名回退默认空名（展示层经 `t('timeline.defaultName')` 兜底）；返回是否落库成功。
@@ -71,7 +76,9 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
         id: 'default',
         name: DEFAULT_TIMELINE_NAME,
         origin: '',
-        description: ''
+        description: '',
+        // 显式写空富文本：与保存路径的「双列」口径一致（读侧仍可兜底老数据）。
+        descriptionJson: ''
       }
       parsed = [entry]
       active = 'default'
@@ -117,16 +124,20 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
   )
 
   const createTimeline = useCallback(
-    async (name: string, description?: string): Promise<TimelineEntry | null> => {
+    async (name: string, description?: RichTextBodyValue): Promise<TimelineEntry | null> => {
       const entryName = name.trim() !== '' ? name.trim() : DEFAULT_TIMELINE_NAME
-      const entryDescription = description && description.trim() !== '' ? description.trim() : ''
+      // 新建弹窗已产出富文本归一值：`text` 与 `json` 一并按「双列」写入；
+      // 未提供（缺省）时按空文档写空串（读侧仍可对老数据兜底派生）。
+      const entryDescription = description?.text.trim() ?? ''
+      const entryDescriptionJson = description?.json ?? ''
       const id = `tl_${Date.now()}`
       // origin 固定空串（展示层回退「元年」）；新建时填的是起点描述。
       const newEntry: TimelineEntry = {
         id,
         name: entryName,
         origin: '',
-        description: entryDescription
+        description: entryDescription,
+        descriptionJson: entryDescriptionJson
       }
       // 与 `updateDescription` / `renameTimeline` 同款「磁盘最新列表 → 改 → 写回」：以磁盘为准，
       // 避免内存列表过期时覆盖其它已落库的条目；磁盘为空时回退内存列表。
@@ -169,17 +180,21 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
   )
 
   // 起点描述保存：先按磁盘最新列表做读-改-写，避免内存列表过期时覆盖其它时间线的改动；
-  // 只替换当前选中条目的 `description`，其余条目（含固定 origin）原样写回。
+  // 只替换当前选中条目的描述两列（`description` 派生纯文本 + `descriptionJson` 富文本真源），
+  // 其余条目（含固定 origin）原样写回。
   const updateDescription = useCallback(
-    async (description: string): Promise<boolean> => {
+    async (value: RichTextBodyValue): Promise<boolean> => {
       const listRaw = await window.api?.settings.get(listKey)
       const current = parseTimelineList(listRaw ?? null)
       const base = current.length > 0 ? current : list
       const target = resolveActiveEntry(base, activeId)
       if (target === null) return false
-      const nextDescription = description.trim()
+      const nextDescription = value.text.trim()
+      const nextDescriptionJson = value.json ?? ''
       const nextList = base.map((entry) =>
-        entry.id === target.id ? { ...entry, description: nextDescription } : entry
+        entry.id === target.id
+          ? { ...entry, description: nextDescription, descriptionJson: nextDescriptionJson }
+          : entry
       )
       try {
         await window.api?.settings.set(listKey, serializeTimelineList(nextList))
@@ -198,6 +213,10 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
     null
   const origin = activeEntry?.origin ?? ''
   const description = activeEntry?.description ?? ''
+  // 中栏元年卡与右栏同源口径：老数据只有 `description`（无 `descriptionJson`）时，
+  // 读侧经共享纯函数派生成文档，避免「描述还在、中栏却显示故事开始了」的假空态。
+  const descriptionJson =
+    activeEntry === null ? '' : (resolveEntryDescriptionJson(activeEntry) ?? '')
 
   // 重命名：与 `updateDescription` 同款「磁盘最新列表 → 读-改-写」，避免内存列表过期时
   // 覆盖其它条目的改动；只替换目标条目的 `name`，空名回退默认空名（展示层兜底）。
@@ -268,6 +287,7 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
     activeEntry,
     origin,
     description,
+    descriptionJson,
     loaded,
     selectTimeline,
     createTimeline,

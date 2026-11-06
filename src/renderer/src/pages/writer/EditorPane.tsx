@@ -2,6 +2,7 @@ import { memo, useCallback, useMemo } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { WriterModule } from '../../shell/activityBar'
+import type { RichTextBodyValue } from '../../components/editor/useRichTextBodyEditor'
 import ChaptersView from './chapters/ChaptersView'
 import ChaptersTrashView from './chapters/ChaptersTrashView'
 import { useChapterLabels } from './chapters/useChapterLabels'
@@ -112,14 +113,14 @@ export interface EditorPaneProps {
   timelineSelection?: TimelineSelection
   /** 当前选中时间线的 origin（中栏显示）。 */
   timelineOrigin?: string
-  /** 当前选中时间线的起点描述（中栏元年卡正文；为空回退「故事开始了」）。 */
-  timelineDescription?: string
+  /** 当前选中时间线的起点描述富文本（Tiptap JSON 串；中栏元年卡逐段渲染，为空回退「故事开始了」）。 */
+  timelineDescriptionJson?: string
   /** 当前激活时间线名称（新建剧情线弹窗只读展示用）。 */
   activeTimelineName?: string
   /** 当前激活时间线 id（新建剧情线继承用）。 */
   activeTimelineId?: string | null
   /** 新建时间线入口（标题栏按钮）；缺省则不渲染。 */
-  onCreateTimeline?: (name: string, origin?: string) => void | Promise<unknown>
+  onCreateTimeline?: (name: string, description?: RichTextBodyValue) => void | Promise<unknown>
   /** 设定档案五域装配包（仅活动模块为五域之一时非空；中栏卡片视图消费）。 */
   dossier?: DossierBundle | null
   /** 伏笔装配包（仅活动模块为伏笔时非空；中栏列表视图消费）。 */
@@ -177,7 +178,7 @@ function EditorPaneComponent({
   onSelectTimelineScene,
   timelineSelection,
   timelineOrigin,
-  timelineDescription,
+  timelineDescriptionJson,
   activeTimelineName,
   activeTimelineId,
   onCreateTimeline,
@@ -387,7 +388,7 @@ function EditorPaneComponent({
         <TimelineView
           bookId={bookId}
           origin={timelineOrigin}
-          description={timelineDescription}
+          descriptionJson={timelineDescriptionJson}
           activeTimelineId={activeTimelineId}
           onCreateTimeline={onCreateTimeline}
           originSelected={timelineOriginSelected}

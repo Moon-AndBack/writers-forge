@@ -1,21 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, FormField, Input } from '../../../components/ui'
+import ShortRichTextField from '../../../components/editor/ShortRichTextField'
+import type { RichTextBodyValue } from '../../../components/editor/useRichTextBodyEditor'
+import { FormField } from '../../../components/ui'
+import SaveBar from '../SaveBar'
 import {
   parseTimelineList,
   resolveActiveEntry,
+  resolveEntryDescriptionJson,
   timelineActiveKey,
   timelineListKey
 } from './timelineOrigin'
+
+/** 空正文归一值（与 `useRichTextBodyEditor` 同口径；模块级常量保证引用稳定）。 */
+const EMPTY_VALUE: RichTextBodyValue = { text: '', json: null }
 
 export interface TimelineOriginPanelProps {
   /** 书籍 id（路由参数）；按书读取 `timeline:list:<bookId>`。 */
   bookId?: string
   /** 当前选中时间线 id；切换时重新读取对应条目的描述。 */
   activeTimelineId?: string | null
-  /** 写回当前选中时间线的起点描述（页面层 `updateDescription`）。 */
-  onSaveDescription: (description: string) => Promise<boolean>
+  /** 写回当前选中时间线的起点描述（页面层 `updateDescription`，入参为编辑器归一值）。 */
+  onSaveDescription: (value: RichTextBodyValue) => Promise<boolean>
   /**
    * 关闭前统一 flush 入口：本卡挂载期间写入「补存当前草稿」回调（无脏内容为空操作）。
    * 与章节 / 大纲的 flushRef 同款，供 `useFlushAllModules` 聚合调用。
@@ -24,14 +31,16 @@ export interface TimelineOriginPanelProps {
 }
 
 /**
- * 独立时间线右栏「起点」卡：读写**当前选中时间线**的 `description`。
+ * 独立时间线右栏「起点」卡：读写**当前选中时间线**的起点描述（富文本）。
  *
- * - 起点时间（年份 0 / 「元年」）固定不可编辑，本卡不展示时间行，只有描述输入框；
+ * - 起点时间（年份 0 / 「元年」）固定不可编辑，本卡不展示时间行，只有描述字段；
  * - 数据按 `bookId` 定位 `timeline:list:<bookId>`，再以 `activeTimelineId` 选中条目；
- * - 输入框 +「保存描述」按钮，失焦与按钮共用同一个 `handleSave`；
- * - 写入委托页面层 `updateDescription`（只改对应条目，其余条目原样写回，并同步列表态）；
- * - 关闭前统一 flush：未保存草稿由本卡注册的补存回调落库（无脏内容为空操作，幂等）；
- * - 描述为空时输入框仅显示占位示例，落库仍为空串。
+ * - 保存口径与其它右栏一致：字段只改本地草稿，**点卡外底部 `SaveBar` 的保存按钮**才落库
+ *   （不做失焦自动保存）；
+ * - 脏态基线（`storedJson`）与 `initialJson` 同走 `resolveEntryDescriptionJson`：老数据
+ *   （只有纯文本）首帧也不会假 dirty；
+ * - 关闭前 / 切模块统一 flush：未保存草稿由本卡注册的补存回调落库（无脏内容为空操作）；
+ * - 描述为空时字段仅显示占位示例，落库仍为空串 / `null`。
  */
 export default function TimelineOriginPanel({
   bookId,
@@ -40,16 +49,17 @@ export default function TimelineOriginPanel({
   flushRef
 }: TimelineOriginPanelProps) {
   const { t } = useTranslation('timeline')
-  const { t: tCommon } = useTranslation('common')
-  const [draft, setDraft] = useState('')
-  const [stored, setStored] = useState('')
+  // 富文本初始正文只在挂载时读取一次（外层按 `bookId + activeTimelineId` 重建即回退草稿）。
+  const [initialJson, setInitialJson] = useState<string | null>(null)
+  const [draft, setDraft] = useState<RichTextBodyValue>(EMPTY_VALUE)
+  /** 已落库基线（归一 JSON 串；空正文 = `''`）。 */
+  const [storedJson, setStoredJson] = useState('')
   const [loaded, setLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  // 同步守卫：失焦与按钮点击可能背靠背触发，state 尚未重渲染时也能拦住第二次写入。
+  // 同步守卫：按钮连点 / flush 可能背靠背触发，state 尚未重渲染时也能拦住第二次写入。
   const savingRef = useRef(false)
   // 关闭前 flush 用的最新态镜像（state 异步更新，flush 需读到已落库值与当前草稿）。
-  const draftRef = useRef('')
+  const draftRef = useRef<RichTextBodyValue>(EMPTY_VALUE)
   const storedRef = useRef('')
   const loadedRef = useRef(false)
   const inFlightSaveRef = useRef<Promise<boolean> | null>(null)
@@ -65,20 +75,25 @@ export default function TimelineOriginPanel({
         if (cancelled) return
         const list = parseTimelineList(listRaw ?? null)
         const entry = resolveActiveEntry(list, activeTimelineId ?? storedActive ?? null)
-        const entryDescription = entry?.description.trim() ?? ''
-        setStored(entryDescription)
-        setDraft(entryDescription)
-        storedRef.current = entryDescription
-        draftRef.current = entryDescription
+        // 基线必须与 `initialJson` 走同一兜底函数（老数据只有纯文本 → 派生成文档），
+        // 否则草稿与落库基线不同源，首帧就会假 dirty。
+        const baseline = entry === null ? null : resolveEntryDescriptionJson(entry)
+        const baselineText = entry?.description ?? ''
+        setInitialJson(baseline)
+        setStoredJson(baseline ?? '')
+        storedRef.current = baseline ?? ''
+        setDraft({ text: baselineText, json: baseline })
+        draftRef.current = { text: baselineText, json: baseline }
         loadedRef.current = true
         setLoaded(true)
       })
       .catch(() => {
         if (cancelled) return
-        setStored('')
-        setDraft('')
+        setInitialJson(null)
+        setStoredJson('')
         storedRef.current = ''
-        draftRef.current = ''
+        setDraft(EMPTY_VALUE)
+        draftRef.current = EMPTY_VALUE
         loadedRef.current = true
         setLoaded(true)
       })
@@ -87,43 +102,38 @@ export default function TimelineOriginPanel({
     }
   }, [bookId, listKey, activeKey, activeTimelineId])
 
-  const dirty = loaded && draft.trim() !== stored
+  // 脏态比较**归一 JSON 串**（空正文视为 `''`）：`null` / `''` 不因表示差异误判。
+  const dirty = loaded && (draft.json ?? '') !== storedJson
 
-  const handleSave = async (): Promise<void> => {
-    if (!loaded || savingRef.current) return
-    const next = draft.trim()
-    if (next === storedRef.current) {
-      setSaved(true)
-      return
-    }
+  const handleSave = useCallback(async (): Promise<void> => {
+    if (!loadedRef.current || savingRef.current) return
+    const value = draftRef.current
+    const nextJson = value.json ?? ''
+    if (nextJson === storedRef.current) return
     savingRef.current = true
     setSaving(true)
-    const task = onSaveDescription(next)
+    const task = onSaveDescription(value)
     inFlightSaveRef.current = task
     const ok = await task
     inFlightSaveRef.current = null
     savingRef.current = false
     setSaving(false)
-    if (!ok) {
-      setSaved(false)
-      return
-    }
-    storedRef.current = next
-    setStored(next)
-    setSaved(true)
-  }
+    if (!ok) return
+    storedRef.current = nextJson
+    setStoredJson(nextJson)
+  }, [onSaveDescription])
 
-  // 每次渲染刷新 flush 用的保存入口（闭包捕获最新草稿 / 落库值）。
+  // 每次渲染刷新 flush 用的保存入口（闭包捕获最新落库值 / 保存函数）。
   useEffect(() => {
     handleSaveRef.current = handleSave
   })
 
-  // 关闭前 flush：先等在途保存结束，再按最新草稿与已落库值判定是否补存。
+  // 关闭前 flush：先等在途保存结束，再按最新草稿与已落库基线判定是否补存。
   // 无脏内容 / 未加载 / 已与落库值一致时为空操作（幂等，不重复写）。
   const flushSave = useCallback(async (): Promise<void> => {
     if (inFlightSaveRef.current) await inFlightSaveRef.current
     if (!loadedRef.current) return
-    if (draftRef.current.trim() === storedRef.current) return
+    if ((draftRef.current.json ?? '') === storedRef.current) return
     await handleSaveRef.current()
   }, [])
 
@@ -136,49 +146,36 @@ export default function TimelineOriginPanel({
   }, [flushRef, flushSave])
 
   return (
-    <section className="timeline-card timeline-origin-card on-soft" aria-label={t('originTitle')}>
-      <div className="timeline-card__head">
-        <span className="timeline-card__title">{t('originTitle')}</span>
-      </div>
-      <p className="timeline-card__desc">{t('originDesc')}</p>
-      <FormField label={t('originDescLabel')} htmlFor="timeline-origin-desc">
-        <Input
-          id="timeline-origin-desc"
-          className="timeline-origin__value"
-          value={draft}
-          disabled={!loaded}
-          spellCheck={false}
-          autoComplete="off"
-          placeholder={t('originPlaceholder')}
-          onChange={(event) => {
-            draftRef.current = event.target.value
-            setDraft(event.target.value)
-            setSaved(false)
-          }}
-          onBlur={() => {
-            if (dirty) void handleSave()
-          }}
-        />
-      </FormField>
-      <div className="timeline-card__actions">
-        <Button
-          variant="secondary"
-          className="wf-btn--on-soft"
-          size="sm"
-          disabled={!loaded}
-          loading={saving}
-          onClick={() => void handleSave()}
-        >
-          {t('originSave')}
-        </Button>
-        {saved ? (
-          <span className="timeline-card__hint is-saved" role="status">
-            {t('originSaved')}
-          </span>
-        ) : !loaded ? (
-          <span className="timeline-card__hint">{tCommon('loading')}</span>
+    <>
+      <section className="timeline-card timeline-origin-card on-soft" aria-label={t('originTitle')}>
+        <div className="timeline-card__head">
+          <span className="timeline-card__title">{t('originTitle')}</span>
+        </div>
+        <p className="timeline-card__desc">{t('originDesc')}</p>
+        {/* 首读完成后再挂字段：`initialJson` 只在挂载时读取一次，必须先拿到归一基线。 */}
+        {loaded ? (
+          <FormField label={t('originDescLabel')}>
+            <ShortRichTextField
+              initialJson={initialJson}
+              onChange={(value) => {
+                draftRef.current = value
+                setDraft(value)
+              }}
+              placeholder={t('originPlaceholder')}
+              ariaLabel={t('originDescLabel')}
+              fill
+            />
+          </FormField>
         ) : null}
-      </div>
-    </section>
+      </section>
+      <SaveBar
+        className="timeline-save-bar"
+        dirty={dirty}
+        saving={saving}
+        onSave={() => {
+          void handleSave()
+        }}
+      />
+    </>
   )
 }

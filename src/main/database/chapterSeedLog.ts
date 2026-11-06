@@ -11,10 +11,34 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v108'
+export const CHAPTER_SEED_VERSION = 'v110'
 
 /**
- * 最近版本变更日志（v108；更早版本见上述历史文件）。
+ * 最近版本变更日志（v110；更早版本见上述历史文件）。
+ *
+ * `v110`（时间线起点描述切换补存批）：修复「切换时间线丢失未提交起点描述草稿」——起点卡按
+ * `bookId:activeTimelineId` 重建（卸载重挂），v109 下线失焦自动保存后该缺口暴露。`Writer.tsx`
+ * 的三个切换入口（左栏选中 / 新建后隐式切换 / 删除当前 active 后隐式切换）统一在改
+ * `activeTimelineId` 之前 `await flushModule('timeline')`，复用既有「时间线起点描述」补存步骤
+ * （在途去重、内部 try/catch + 日志）；补存失败不阻断切换。补存先于 `setActiveId`，故
+ * `updateDescription` 闭包里的 `activeId` 仍是旧条目，写入不会串到新条目。教学文案同步
+ * （卷三「主时间线：只读聚合」节、大纲「主时间线只读聚合」「多时间线与过滤」条目）。
+ *
+ * `v109`（时间线起点描述改富文本批）：独立时间线右栏「起点」卡由「单行输入框 +「保存描述」
+ * 按钮 + 失焦自动保存 + 已保存提示」改为**富文本编辑区 + 卡外底部 `SaveBar`**——字段占满
+ * 卡片剩余高度（`fill`）、高度链每层 `min-height: 0`、段落首行缩进两字（只作用于文档顶层
+ * `.ProseMirror > p`），保存统一走卡外保存条（有脏才可点、保存中防连点），失焦自动保存
+ * 下线；切模块 / 关窗仍经 `useFlushAllModules` 的「时间线起点描述」步骤补存挂载期间的脏草稿。
+ * 数据层为双字段：`TimelineEntry` 新增 `descriptionJson`（富文本真源），`description` 保留为
+ * 派生纯文本摘要；主进程 `TimelineEntry` / `normalizeEntry` 条件透传（老数据不补字段、
+ * **不做启动期迁移**），读侧统一经 `resolveEntryDescriptionJson` 兜底（`descriptionJson`
+ * 可用则原样使用，否则由 `plainTextToDocJson(description)` 派生，纯空白 → `null`），
+ * 右栏脏态基线与 `initialJson` 同走该函数，避免老数据首帧假 dirty。中栏元年卡改用
+ * `docJsonToParagraphs(descriptionJson)` 逐段渲染 `.plot-scene-para`（空态仍回退
+ * 「故事开始了」，零新增 CSS）。新建时间线弹窗第二字段改 `ShortRichTextField`（不 `fill`，
+ * 弹窗内按内容高度），提交真正落 `{ text, json }`，不再依赖读侧兜底。教学文案同步
+ * （卷三「主时间线：只读聚合」「多时间线」节、大纲「主时间线只读聚合」「多时间线与过滤」
+ * 「全局快捷键」条目、卷二「快捷键」条目）。
  *
  * `v108`（章节右栏「灵感」页签批）：章节模块右栏由四页签扩为五页签——
  * 大纲 / 剧情 / 伏笔 / AI / 灵感（新页签排在最后）。灵感页签把**全书**灵感平铺成卡片

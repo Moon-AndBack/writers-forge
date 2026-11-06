@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../components/ui'
+import type { RichTextBodyValue } from '../../components/editor/useRichTextBodyEditor'
 import type { WriterModule } from '../../shell/activityBar'
 import type { ChapterRow, VolumeRow } from './chapters/chapterTree'
 import ConfirmDialog from './ConfirmDialog'
@@ -142,8 +143,8 @@ export function RightPane({
   timelineOriginSelected?: boolean
   /** 当前选中时间线 id（右栏 origin 面板跟随切换）。 */
   activeTimelineId?: string | null
-  /** 写回当前选中时间线的起点描述（右栏「起点」卡保存）。 */
-  onUpdateTimelineDescription: (description: string) => Promise<boolean>
+  /** 写回当前选中时间线的起点描述（右栏「起点」卡保存；入参为编辑器归一值）。 */
+  onUpdateTimelineDescription: (value: RichTextBodyValue) => Promise<boolean>
   /** 时间线起点卡关闭前 flush 入口（页面层聚合调用）。 */
   timelineFlushRef?: RefObject<(() => Promise<void>) | null>
   /** 设定档案五域装配包（仅活动模块为五域之一时非空；详情面板消费）。 */

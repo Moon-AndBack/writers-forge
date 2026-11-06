@@ -2,6 +2,7 @@ import type { ReactElement, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
 import ReadonlyRichText from '../../../components/editor/ReadonlyRichText'
+import type { RichTextBodyValue } from '../../../components/editor/useRichTextBodyEditor'
 import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
 import { plotSceneTime, plotSceneTitle, type PlotSceneRow } from '../plot/plotTree'
 import TimelineOriginPanel from '../timeline/TimelineOriginPanel'
@@ -57,8 +58,8 @@ export interface TimelineRightPanelProps {
   bookId?: string
   /** 当前选中时间线 id；切换时起点卡重新加载对应条目。 */
   activeTimelineId?: string | null
-  /** 写回当前选中时间线的起点描述（页面层 `useTimelineWorkspace.updateDescription`）。 */
-  onUpdateDescription: (description: string) => Promise<boolean>
+  /** 写回当前选中时间线的起点描述（页面层 `useTimelineWorkspace.updateDescription`，入参为编辑器归一值）。 */
+  onUpdateDescription: (value: RichTextBodyValue) => Promise<boolean>
   /** 关闭前统一 flush 入口（起点卡挂载时写入；页面层聚合调用）。 */
   flushRef?: RefObject<(() => Promise<void>) | null>
   /** 时间线选中场景（只读详情）；null = 未选中场景（originSelected 为 false 时渲染空态）。 */

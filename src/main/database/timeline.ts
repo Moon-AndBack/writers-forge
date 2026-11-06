@@ -24,8 +24,10 @@ export interface TimelineEntry {
   id: string
   name: string
   origin: string
-  /** 起点描述（渲染层可编辑）；不存在 / 非字符串时不写入，保持老数据原样。 */
+  /** 起点描述（派生纯文本，渲染层可编辑）；不存在 / 非字符串时不写入，保持老数据原样。 */
   description?: string
+  /** 起点描述富文本（Tiptap JSON 串，富文本真源）；不存在 / 非字符串时不写入。 */
+  descriptionJson?: string
 }
 
 /** 按书列表 settings 键。 */
@@ -62,12 +64,15 @@ function normalizeEntry(raw: unknown): TimelineEntry | null {
   const origin = typeof obj.origin === 'string' ? obj.origin : ''
   // 透传渲染层扩展字段 `description`：缺失 / 非字符串时不写入（不给老数据凭空补空串）。
   const description = typeof obj.description === 'string' ? obj.description : undefined
+  // 富文本起点描述 `descriptionJson`：同款条件透传（老数据不补字段，由读侧兜底）。
+  const descriptionJson = typeof obj.descriptionJson === 'string' ? obj.descriptionJson : undefined
   if (id === null) return null
   return {
     id,
     name: name === '' ? DEFAULT_TIMELINE_NAME : name,
     origin,
-    ...(description === undefined ? {} : { description })
+    ...(description === undefined ? {} : { description }),
+    ...(descriptionJson === undefined ? {} : { descriptionJson })
   }
 }
 

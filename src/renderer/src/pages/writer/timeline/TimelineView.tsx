@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LoadErrorState } from '../../../components/LoadErrorState'
+import type { RichTextBodyValue } from '../../../components/editor/useRichTextBodyEditor'
 import { EntityStyleCard } from '../../../components/ui'
+import { docJsonToParagraphs } from '../../../../../shared/richTextDoc'
 import TimelineActivityActions from './TimelineActivityActions'
 import NewTimelineDialog from './NewTimelineDialog'
 import {
@@ -27,12 +29,12 @@ export interface TimelineViewProps {
   bookId?: string
   /** 当前选中时间线的 origin（渲染层持有；缺省时按书键自行读取）。 */
   origin?: string
-  /** 当前选中时间线的起点描述（纯文本；为空时元年卡回退 `t('originNote')`）。 */
-  description?: string
+  /** 当前选中时间线的起点描述富文本（Tiptap JSON 串；为空时元年卡回退 `t('originNote')`）。 */
+  descriptionJson?: string
   /** 当前选中时间线 id（用于自行读取 origin 时定位）。 */
   activeTimelineId?: string | null
   /** 新建时间线入口（标题栏按钮触发）；缺省则不渲染入口。 */
-  onCreateTimeline?: (name: string, description?: string) => void | Promise<unknown>
+  onCreateTimeline?: (name: string, description?: RichTextBodyValue) => void | Promise<unknown>
   /** 当前选中场景 id（页面层持有，与右栏只读详情共享；null = 未选中）。 */
   selectedSceneId?: number | null
   /** 是否选中元年卡（页面层持有，与右栏起点编辑共享）。 */
@@ -62,7 +64,7 @@ export interface TimelineViewProps {
 export default function TimelineView({
   bookId,
   origin,
-  description = '',
+  descriptionJson = '',
   activeTimelineId = null,
   onCreateTimeline,
   selectedSceneId = null,
@@ -147,8 +149,9 @@ export default function TimelineView({
 
   const resolvedStored = origin !== undefined ? (isStoredOrigin(origin) ? origin : null) : stored
   const originDisplay = isStoredOrigin(resolvedStored) ? resolvedStored.trim() : t('originDefault')
-  // 元年卡正文 = 当前时间线的起点描述（用户可编辑）；为空时回退「故事开始了」。
-  const originNoteDisplay = description.trim() !== '' ? description : t('originNote')
+  // 元年卡正文 = 当前时间线的起点描述富文本（用户可编辑）：按块级段落拆行、逐段渲染
+  // （段首缩进由 `.plot-scene-para` 提供）；无段落（空文档 / 老数据空描述）时回退「故事开始了」。
+  const originParagraphs = useMemo(() => docJsonToParagraphs(descriptionJson), [descriptionJson])
   // 按当前选中时间线过滤剧情线 / 场景：仅显示该时间线归属的剧情线及其下场景。
   // activeTimelineId 为空时回退全量（时间线未加载 / 无时间线兜底），避免首帧空白。
   const filteredLines = useMemo(() => {
@@ -234,7 +237,15 @@ export default function TimelineView({
                             {t('originTitle')}
                           </h3>
                         }
-                        description={originNoteDisplay}
+                        description={
+                          originParagraphs.length > 0
+                            ? originParagraphs.map((paragraph, index) => (
+                                <p className="plot-scene-para" key={`origin-para-${index}`}>
+                                  {paragraph}
+                                </p>
+                              ))
+                            : t('originNote')
+                        }
                         descriptionClassName="plot-scene-body"
                       />
                     ) : null}
