@@ -117,14 +117,15 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
     remove: removeSession
   } = useAiSessions({ bookId, chapterId, active })
 
-  const { messages, generating, hydrating, send, abort } = useAiConversation({
-    bookId,
-    chapterId,
-    active,
-    model,
-    sessionId: activeSessionId,
-    onSessionCreated: notifySessionCreated
-  })
+  const { messages, generating, compressing, hydrating, summary, notice, send, abort } =
+    useAiConversation({
+      bookId,
+      chapterId,
+      active,
+      model,
+      sessionId: activeSessionId,
+      onSessionCreated: notifySessionCreated
+    })
 
   const handleNewSession = useCallback((): void => {
     selectSession(null)
@@ -142,12 +143,14 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
     useEditorMetrics(editor)
 
   /**
-   * 上下文占用估算（纯展示）：历史消息 + 输入框草稿 + 携带正文。
-   * 窗口值按模型缓存，模型不变不重复 IPC；面板未激活时返回 null。
+   * 上下文占用估算：未压缩历史 + 已存摘要 + 输入框草稿 + 携带正文。
+   * 窗口值按模型缓存，模型不变不重复 IPC；目录刷新后缓存失效并自动重取。
    */
   const usage = useContextUsage({
     model,
     messages,
+    covered: summary?.covered ?? 0,
+    summaryText: summary?.content ?? '',
     draft: input,
     carryContext: carryFull ? readFullText(editor) : carrySelection ? selectionText : '',
     active
@@ -243,8 +246,8 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
   /* ---------- 发送 ---------- */
 
   const handleSend = (): void => {
-    // 生成中 / 会话或历史载入中由发送按钮切换成「停止」或禁用，此处再兜一层（Enter 也能触发）。
-    if (generating || hydrating || sessionsLoading || chapterId === null) return
+    // 生成中 / 整理上下文 / 会话或历史载入中由发送按钮切换成「停止」或禁用，此处再兜一层。
+    if (generating || compressing || hydrating || sessionsLoading || chapterId === null) return
 
     const text = input.trim()
     const hasContext = carryFull ? totalChars > 0 : carrySelection ? selectionChars > 0 : false
@@ -263,15 +266,19 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
         : ''
     const display =
       text === '' ? `[${actionLabel}]${carryLabel !== '' ? ` ${carryLabel}` : ''}` : undefined
-    send({
+    const draft = input
+    setInput('')
+    void send({
       action,
       input: text,
       context,
       ...(display !== undefined ? { display } : {}),
       // 作品设定只进 system（见 `composeMessages`）；开关关闭 / 无文本时不传。
       ...(carryBuiltin ? { bookContext: profile.context } : {})
+    }).then((accepted) => {
+      // 超预算被拒：消息未发出，把输入恢复回输入框，方便换模型 / 减少携带内容后重发。
+      if (!accepted) setInput(draft)
     })
-    setInput('')
   }
 
   const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
@@ -309,6 +316,7 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
       : null
 
   const canSend =
+    !compressing &&
     !hydrating &&
     !sessionsLoading &&
     (input.trim() !== '' ||
@@ -351,15 +359,24 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
         {messages.length === 0 ? (
           <div className="rp-list-empty">{emptyText}</div>
         ) : (
-          messages.map((message) => (
-            <ChatMessage
-              key={message.id}
-              message={message}
-              canApply={canApplyMessage(message)}
-              onApplyReplace={handleApplyReplace}
-              onApplyInsert={handleApplyInsert}
-            />
-          ))
+          messages.map((message) =>
+            message.divider !== undefined ? (
+              <div key={message.id} className="ai-chat__divider" role="separator">
+                {t(
+                  message.divider.kind === 'truncated' ? 'message.truncated' : 'message.compacted',
+                  { rounds: message.divider.rounds }
+                )}
+              </div>
+            ) : (
+              <ChatMessage
+                key={message.id}
+                message={message}
+                canApply={canApplyMessage(message)}
+                onApplyReplace={handleApplyReplace}
+                onApplyInsert={handleApplyInsert}
+              />
+            )
+          )
         )}
       </div>
 
@@ -404,6 +421,8 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
           modelHint={modelHint}
           hint={carryHint}
           usage={usage}
+          compressing={compressing}
+          notice={notice}
         />
       </div>
 

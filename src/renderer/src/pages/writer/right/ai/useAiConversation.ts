@@ -1,21 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type {
-  AiChatMessage,
-  AiError,
-  AiProviderId,
-  AiUsage
-} from '../../../../../../preload/types/ai'
+import type { AiError, AiProviderId, AiUsage } from '../../../../../../preload/types/ai'
 import {
   appendMessage,
   chatLog,
   createLocalId,
   createRequestId,
+  insertCompactionDivider,
   loadSessionMessages,
   persistAssistantPartial,
   UNKNOWN_ERROR
 } from './chatRuntime'
-import type { ActiveRequest, AiConversationMessage, AiConversationState } from './chatRuntime'
+import type {
+  ActiveRequest,
+  AiContextNotice,
+  AiConversationMessage,
+  AiConversationState
+} from './chatRuntime'
 import { composeMessages, type AiComposeInput } from './functions'
+import { encodeSummaryRow, prepareOutgoingMessages } from './contextSummary'
+import type { SavedSummary } from './contextSummary'
+import { resolveContextLimit } from './useContextUsage'
 
 export type { AiConversationMessage, AiConversationState }
 
@@ -44,11 +48,16 @@ export function useAiConversation(input: {
 
   const [messages, setMessages] = useState<AiConversationMessage[]>([])
   const [generating, setGenerating] = useState(false)
+  const [compressing, setCompressing] = useState(false)
   const [hydrating, setHydrating] = useState(false)
+  const [summary, setSummary] = useState<SavedSummary | null>(null)
+  const [notice, setNotice] = useState<AiContextNotice | null>(null)
 
   /** 消息的同步副本：流式回调 / 发送路径都读它，避免闭包拿到过期的 state。 */
   const messagesRef = useRef<AiConversationMessage[]>([])
   const sessionIdRef = useRef<number | null>(null)
+  /** 当前会话摘要的同步副本（发送路径在异步分支里读）。 */
+  const summaryRef = useRef<SavedSummary | null>(null)
   const providerRef = useRef<AiProviderId>('deepseek')
   const modelRef = useRef(model)
   const bookIdRef = useRef(bookId)
@@ -71,6 +80,11 @@ export function useAiConversation(input: {
   const applyMessages = useCallback((next: AiConversationMessage[]): void => {
     messagesRef.current = next
     setMessages(next)
+  }, [])
+
+  const applySummary = useCallback((next: SavedSummary | null): void => {
+    summaryRef.current = next
+    setSummary(next)
   }, [])
 
   const patchMessage = useCallback(
@@ -152,6 +166,7 @@ export function useAiConversation(input: {
       // 先摘掉在途请求：之后的迟到事件（含 aborted 错误）一律被 requestId 过滤丢弃。
       activeRequestRef.current = null
       setGenerating(false)
+      setCompressing(false)
       persistAssistantPartial(request)
 
       const api = window.api?.ai
@@ -231,27 +246,24 @@ export function useAiConversation(input: {
   /* ---------- 发送 ---------- */
 
   const send = useCallback(
-    (compose: AiComposeInput): void => {
-      // 同一时刻只允许一个请求（UI 也会按 generating 禁用）。
-      if (activeRequestRef.current !== null) return
+    (compose: AiComposeInput): Promise<boolean> => {
+      // 同一时刻只允许一个请求（UI 也会按 generating / compressing 禁用）。
+      if (activeRequestRef.current !== null) return Promise.resolve(false)
       const api = window.api?.ai
-      if (!api) return
+      if (!api) return Promise.resolve(false)
 
       // system + user 两条（输入与上下文都为空时为空数组 → 直接忽略）。
       const composed = composeMessages(compose)
-      if (composed.length === 0) return
+      if (composed.length === 0) return Promise.resolve(false)
 
       // 自由对话带历史（不含空内容消息；报错中断的半截回复仍带上——它是模型自己的产出，
       // 丢掉会断掉多轮连贯性，界面已另行标注「因错误中断」，system 不落库）。
-      const history: AiChatMessage[] =
+      const history: AiConversationMessage[] =
         compose.action === 'chat'
-          ? messagesRef.current
-              .filter(
-                (m) => m.content.trim() !== '' && (m.interrupted === true || m.error === undefined)
-              )
-              .map((m): AiChatMessage => ({ role: m.role, content: m.content }))
+          ? messagesRef.current.filter(
+              (m) => m.content.trim() !== '' && (m.interrupted === true || m.error === undefined)
+            )
           : []
-      const requestMessages: AiChatMessage[] = [composed[0], ...history, ...composed.slice(1)]
 
       const requestId = createRequestId()
       const assistantId = createLocalId('assistant')
@@ -262,49 +274,100 @@ export function useAiConversation(input: {
         sessionId: sessionIdRef.current
       }
       activeRequestRef.current = request
+      setNotice(null)
       setGenerating(true)
+      setCompressing(false)
 
+      const baseMessages = messagesRef.current
       // user 气泡只在有展示文本时出现：输入为空时退回面板给的 `display`（如「[润色] 整章正文」），
       // 让「只勾上下文」的轮次在历史里也看得出做了什么；`display` 不进模型消息。
       const userText = compose.input.trim() || compose.display?.trim() || ''
       applyMessages([
-        ...messagesRef.current,
+        ...baseMessages,
         ...(userText !== ''
           ? [{ id: createLocalId('user'), role: 'user' as const, content: userText }]
           : []),
         { id: assistantId, role: 'assistant' as const, content: '', streaming: true }
       ])
 
-      void (async () => {
+      /** 超预算拒绝：撤掉本轮乐观消息、恢复输入（由调用方按 false 处理）。 */
+      const reject = (usedTokens: number, limitTokens: number): false => {
+        if (activeRequestRef.current === request) {
+          activeRequestRef.current = null
+          setGenerating(false)
+          setCompressing(false)
+          setNotice({ usedTokens, limitTokens })
+          applyMessages(baseMessages)
+        }
+        return false
+      }
+
+      return (async (): Promise<boolean> => {
         // 所有请求都要落库，故先确保会话（同时供 opencode 的 x-opencode-session 头）。
         const sessionId = await ensureSession()
-        // 等待期间被中止 / 切章 / 卸载：放弃本次启动。
-        if (activeRequestRef.current !== request) return
+        // 等待期间被中止 / 切章 / 卸载：放弃本次启动（调用方恢复输入）。
+        if (activeRequestRef.current !== request) return false
         request.sessionId = sessionId
-
-        if (sessionId !== null && userText !== '') {
-          void appendMessage(sessionId, 'user', userText)
-        }
 
         try {
           const provider = await resolveProvider()
-          if (activeRequestRef.current !== request) return
+          if (activeRequestRef.current !== request) return false
           const modelId = modelRef.current.trim()
+
+          // 发送前判定：固定部分超窗口 → 拒绝；达 80% → 摘要 / 截断。
+          const limitTokens = (await resolveContextLimit(modelId)).tokens
+          if (activeRequestRef.current !== request) return false
+
+          if (compose.action === 'chat') setCompressing(true)
+          const prepared = await prepareOutgoingMessages({
+            composed,
+            history,
+            summary: compose.action === 'chat' ? summaryRef.current : null,
+            limitTokens,
+            provider,
+            model: modelId,
+            persistSummary: async (covered, text) => {
+              if (sessionId === null) return null
+              await appendMessage(sessionId, 'system', encodeSummaryRow(covered, text))
+              return { id: 0, content: text, covered }
+            }
+          })
+          if (activeRequestRef.current !== request) return false
+          setCompressing(false)
+
+          if (!prepared.ok) {
+            return reject(prepared.usedTokens, prepared.limitTokens)
+          }
+
+          if (compose.action === 'chat' && prepared.summary) {
+            applySummary(prepared.summary)
+          }
+          if (prepared.divider?.kind === 'compacted') {
+            const covered = prepared.summary?.covered ?? summaryRef.current?.covered ?? 0
+            applyMessages(insertCompactionDivider(messagesRef.current, covered, prepared.divider))
+          }
+
+          if (sessionId !== null && userText !== '') {
+            void appendMessage(sessionId, 'user', userText)
+          }
+
           await api.chat.start({
             requestId,
-            messages: requestMessages,
+            messages: prepared.messages,
             ...(sessionId !== null ? { sessionId: String(sessionId) } : {}),
             provider,
             ...(modelId !== '' ? { model: modelId } : {})
           })
+          return true
         } catch (error) {
-          if (activeRequestRef.current !== request) return
+          if (activeRequestRef.current !== request) return true
           chatLog.warn('AI 请求启动失败', error)
           handleError(request, UNKNOWN_ERROR)
+          return true
         }
       })()
     },
-    [applyMessages, ensureSession, handleError, resolveProvider]
+    [applyMessages, applySummary, ensureSession, handleError, resolveProvider]
   )
 
   const abort = useCallback((): void => {
@@ -329,6 +392,8 @@ export function useAiConversation(input: {
     stopActive(false)
     sessionIdRef.current = sessionId
     applyMessages([])
+    applySummary(null)
+    setNotice(null)
 
     if (!active || chapterId === null || sessionId === null) {
       return undefined
@@ -345,15 +410,16 @@ export function useAiConversation(input: {
       }
 
       try {
-        const history = await loadSessionMessages({
+        const loaded = await loadSessionMessages({
           api,
           sessionId,
           isCancelled: () => cancelled
         })
-        if (cancelled || history === null) return
+        if (cancelled || loaded === null) return
         // 载入期间用户已发起新请求（乐观消息已在界面上）：不用历史覆盖，避免丢失流式占位。
         if (activeRequestRef.current !== null) return
-        applyMessages(history)
+        applySummary(loaded.summary)
+        applyMessages(loaded.messages)
       } catch (error) {
         if (!cancelled) chatLog.warn('AI 会话载入失败', error)
       } finally {
@@ -364,7 +430,16 @@ export function useAiConversation(input: {
     return () => {
       cancelled = true
     }
-  }, [active, bookId, chapterId, sessionId, applyMessages, stopActive])
+  }, [active, bookId, chapterId, sessionId, applyMessages, applySummary, stopActive])
 
-  return { messages, generating, hydrating: active && sessionId !== null && hydrating, send, abort }
+  return {
+    messages,
+    generating,
+    compressing,
+    hydrating: active && sessionId !== null && hydrating,
+    summary,
+    notice,
+    send,
+    abort
+  }
 }

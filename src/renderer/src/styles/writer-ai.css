@@ -34,6 +34,26 @@
   overflow-wrap: anywhere;
 }
 
+/* 超预算拒绝：两行说明（结论 + 建议），只换文字色 / 描边，不做位移（§8）。 */
+.ai-panel__notice {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px;
+  border-radius: var(--r-md, 6px);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 28%, transparent);
+  overflow-wrap: anywhere;
+}
+
+.ai-panel__notice-hint {
+  color: var(--text-dim);
+}
+
 /* ---------- 上下文占用条（ContextMeter） ----------
    纯展示：已用 / 上限 + 进度条 + 来源说明。进度条常态取 --brand，≥80% 转 --warn，
    超 100% 转 --danger（阈值在 ContextMeter.tsx 的 WARN_RATIO 定义）。
@@ -374,6 +394,25 @@
   padding: 8px;
   border-radius: var(--r-lg);
   background: var(--soft-solid);
+}
+
+/* 压缩分隔行：不是气泡，只做一条居中细线 + 小字说明（不写进正文、不进模型）。 */
+.ai-chat__divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-mute);
+  text-align: center;
+}
+
+.ai-chat__divider::before,
+.ai-chat__divider::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--line);
 }
 
 /* ---------- 消息气泡 ----------

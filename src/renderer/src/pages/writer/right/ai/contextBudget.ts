@@ -67,6 +67,14 @@ export function estimateMessages(messages: readonly { content: string }[]): numb
   return total
 }
 
+/** 数字口径：`1_234` → `1.2K`，`1_048_576` → `1M`（占用条与拒绝提示共用）。 */
+export function formatTokenCount(value: number): string {
+  const compact = (scaled: number): string => scaled.toFixed(1).replace(/\.0$/, '')
+  if (value >= 1_000_000) return `${compact(value / 1_000_000)}M`
+  if (value >= 1_000) return `${compact(value / 1_000)}K`
+  return String(value)
+}
+
 /** 估算结果：用于 UI 展示。 */
 export interface ContextUsage {
   usedTokens: number

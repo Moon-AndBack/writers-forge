@@ -88,7 +88,11 @@ const ai = {
   },
   message: {
     /** 上游报错中断的结构化标记（随消息 `status` 展示，不进正文）。 */
-    interrupted: '此回复因错误中断'
+    interrupted: '此回复因错误中断',
+    /** 上下文压缩分隔行（不是气泡，不进正文）。 */
+    compacted: '已压缩前 {{rounds}} 轮对话',
+    /** 摘要生成失败 / 后续再超限时的纯截断说明。 */
+    truncated: '摘要暂不可用，已省略较早的 {{rounds}} 轮对话'
   },
   panel: {
     model: {
@@ -122,7 +126,10 @@ const ai = {
       summary: '{{used}} / {{limit}}（{{percent}}）',
       percent: '{{ratio}}%',
       unknownModel: '未知模型 · 按 {{tokens}} 估算',
-      matchedFrom: '匹配自 {{id}}'
+      matchedFrom: '匹配自 {{id}}',
+      compressing: '正在整理上下文…',
+      overBudget: '本期对话过长：约 {{used}} / {{limit}}（上下文窗口）',
+      overBudgetHint: '建议换用窗口更大的模型、手动填写模型窗口，或减少携带的正文。'
     },
     builtin: {
       toggle: '携带内置提示词',

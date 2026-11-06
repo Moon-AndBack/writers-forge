@@ -2,12 +2,14 @@
  * 设置页 · AI 分区「模型目录」行（展示组件）。
  *
  * 只负责展示目录状态与刷新入口：条数 / 上次更新时间 / 是否过期。
- * 目录用于上下文窗口估算，本批不接入对话发送链路。
+ * 目录用于上下文窗口估算与自动压缩；刷新成功后清空渲染层窗口缓存，
+ * 已打开的 AI 面板会重新向主进程解析窗口值。
  */
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui'
 import type { AiCatalogMeta, AiError } from '../../../../preload/types/ai'
+import { invalidateLimitCache } from '../writer/right/ai/useContextUsage'
 import SettingRow from './SettingRow'
 import { ERROR_KEYS, UNKNOWN_ERROR } from './aiSectionSupport'
 
@@ -74,7 +76,11 @@ export function AiCatalogRow() {
     setState({ status: 'loading' })
     void api.catalog
       .get('refresh')
-      .then(applyMeta)
+      .then((meta) => {
+        // 目录变了 → 所有模型的窗口可能重算；清空渲染层缓存，占用条与压缩判定同步更新。
+        if (meta.ok) invalidateLimitCache()
+        applyMeta(meta)
+      })
       .catch(() => setState({ status: 'error', error: UNKNOWN_ERROR }))
   }
 

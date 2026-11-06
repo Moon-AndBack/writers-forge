@@ -1,6 +1,14 @@
 import { createLogger } from '@renderer/lib/log'
-import type { AiApi, AiError, AiMessageStatus, AiUsage } from '../../../../../../preload/types/ai'
+import type {
+  AiApi,
+  AiChatRole,
+  AiError,
+  AiMessageStatus,
+  AiUsage
+} from '../../../../../../preload/types/ai'
 import type { AiComposeInput } from './functions'
+import { findSummary } from './contextSummary'
+import type { CompactionMarker, SavedSummary } from './contextSummary'
 
 /**
  * 章节右栏 AI · 会话运行期常量与纯工具（无 React）。
@@ -31,6 +39,17 @@ export interface AiConversationMessage {
    * 由落库状态还原，气泡据此显示结构化标记，且禁止回插正文。
    */
   interrupted?: boolean
+  /**
+   * 上下文压缩分隔行（不是气泡、不是消息）：`compacted` = 已把较早对话压成摘要，
+   * `truncated` = 摘要不可用 / 后续超限，直接省略了较早对话。
+   */
+  divider?: CompactionMarker
+}
+
+/** 发送被拒的原因（超预算时给 UI 展示已用 / 窗口）。 */
+export interface AiContextNotice {
+  usedTokens: number
+  limitTokens: number
 }
 
 /** `useAiConversation` 的对外状态与动作。 */
@@ -38,10 +57,16 @@ export interface AiConversationState {
   messages: AiConversationMessage[]
   /** 是否正在生成（有在途请求）。 */
   generating: boolean
+  /** 是否正在为发送整理上下文（摘要 / 截断期间为 true）。 */
+  compressing: boolean
   /** 是否正在读取会话历史（切换会话时短暂为 true，期间禁用发送）。 */
   hydrating: boolean
-  /** 发送一次请求（所有请求都进对话历史并落库）。 */
-  send: (compose: AiComposeInput) => void
+  /** 当前会话已存的上下文摘要（无则 null）。 */
+  summary: SavedSummary | null
+  /** 上次发送因超预算被拒绝的信息（下次发送时清空）。 */
+  notice: AiContextNotice | null
+  /** 发送一次请求；返回 false 表示被拒绝（调用方应恢复输入）。 */
+  send: (compose: AiComposeInput) => Promise<boolean>
   /** 中止当前请求。 */
   abort: () => void
 }
@@ -87,7 +112,7 @@ export function createLocalId(prefix: string): string {
  */
 export async function appendMessage(
   sessionId: number,
-  role: 'user' | 'assistant',
+  role: AiChatRole,
   content: string,
   options?: { usage?: AiUsage; status?: AiMessageStatus }
 ): Promise<void> {
@@ -131,7 +156,11 @@ export function persistAssistantPartial(
 }
 
 /**
- * 载入指定会话的历史消息（`system` 行已剔除）。
+ * 载入指定会话的历史消息。
+ *
+ * `system` 行不进入消息列表，而是作为**上下文摘要**单独返回：取最后一条
+ * `role = 'system'` 行（摘要由 `appendMessage(sessionId, 'system', ...)` 写入，
+ * 带 `covered` 隐藏标记）。其余 system 行一律忽略，避免脏数据渲染成气泡。
  *
  * 会话选择由 `useAiSessions` 负责（默认仍取该章最近一条）；本函数只按 id 读取，
  * 返回 null 表示已被取消（切会话 / 切章 / 卸载）。
@@ -140,17 +169,65 @@ export async function loadSessionMessages(input: {
   api: AiApi
   sessionId: number
   isCancelled: () => boolean
-}): Promise<AiConversationMessage[] | null> {
+}): Promise<{ messages: AiConversationMessage[]; summary: SavedSummary | null } | null> {
   const { api, sessionId, isCancelled } = input
   const rows = await api.messages.list(sessionId)
   if (isCancelled()) return null
 
-  return rows
+  const summary = findSummary(rows)
+  const messages: AiConversationMessage[] = rows
     .filter((row) => row.role !== 'system')
     .map((row) => ({
       id: String(row.id),
-      role: row.role === 'assistant' ? 'assistant' : 'user',
+      role: row.role === 'assistant' ? ('assistant' as const) : ('user' as const),
       content: row.content,
       ...(row.status === 'interrupted' ? { interrupted: true } : {})
     }))
+
+  // 重启 / 切回会话后仍标出压缩边界，避免用户误以为被覆盖的历史还会整段发给模型。
+  if (summary !== null && summary.covered > 0) {
+    const rounds = messages
+      .slice(0, summary.covered)
+      .filter((message) => message.role === 'user').length
+    return {
+      messages: insertCompactionDivider(messages, summary.covered, {
+        kind: 'compacted',
+        rounds
+      }),
+      summary
+    }
+  }
+
+  return { messages, summary }
+}
+
+/**
+ * 把压缩分隔行插到「已覆盖消息」与「保留的 recent」之间。
+ *
+ * `covered` 是非 system 消息的条数（分隔行本身不计数）；找不到边界时追加到末尾。
+ */
+export function insertCompactionDivider(
+  messages: AiConversationMessage[],
+  covered: number,
+  marker: CompactionMarker
+): AiConversationMessage[] {
+  let seen = 0
+  let index = messages.length
+  for (let i = 0; i < messages.length; i += 1) {
+    const message = messages[i]
+    if (!message || message.divider !== undefined) continue
+    if (seen === covered) {
+      index = i
+      break
+    }
+    seen += 1
+  }
+
+  const divider: AiConversationMessage = {
+    id: createLocalId('divider'),
+    role: 'assistant',
+    content: '',
+    divider: marker
+  }
+  return [...messages.slice(0, index), divider, ...messages.slice(index)]
 }

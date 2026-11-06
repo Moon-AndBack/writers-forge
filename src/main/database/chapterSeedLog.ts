@@ -11,10 +11,25 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v113'
+export const CHAPTER_SEED_VERSION = 'v114'
 
 /**
- * 最近版本变更日志（v113；更早版本见上述历史文件）。
+ * 最近版本变更日志（v114；更早版本见上述历史文件）。
+ *
+ * `v114`（上下文摘要压缩批）：右栏 AI 在发送前按「模型上下文窗口」做预算判定——
+ * `estimateMessages([system, 本轮 user])` 本身超窗口则拒绝发送（不截断携带正文）；
+ * 总占用达到 80% 时自动把较早对话压成一段摘要（无确认弹窗），摘要以 `role = 'system'`
+ * 行写回 `ai_chat_messages`（现有 CHECK 已允许，**不改表结构、不改原文**），行首隐藏标记
+ * `<!--wf-summary covered=N-->` 记录已覆盖的消息条数，重启后复用、不重复摘要；摘要并入
+ * **第一条** system（不新增第二条，兼容只认首条的转接站），并保留 recent 到 50% 目标。
+ * 摘要失败退化为纯截断，不阻断发送；压缩后保证 `[system, ...recent, user]` ≤ 200 条。
+ * 摘要请求走新增的 `ai:chat:complete`（非流式、独立 requestId、60s 超时、不经过
+ * `claimChat`、不推流式事件），入参校验独立为 `readCompleteInput`（400 条上限，单条仍
+ * 10 万字符）；`MAX_MESSAGES = 200` 仍是发送链路防线。渲染层 `useContextUsage` 的窗口
+ * 缓存新增失效入口（目录刷新 / `ai:catalog:override` 后清空），占用条改为只计未压缩历史
+ * + 摘要。UI 新增「正在整理上下文…」、消息流压缩分隔行（「已压缩前 N 轮对话」）与超预算
+ * 拒绝提示（已用 / 窗口 + 建议）。教学文案同步（设置「AI 助手」新增「模型目录」与
+ * 「上下文占用与自动压缩」两节，大纲「AI 写作助手」条目补充压缩说明）。
  *
  * `v113`（模型列表缓存批）：AI 模型列表改为「本地缓存优先 + 后台刷新」。`settings` 表
  * 新增键 `ai:models:v1:<provider>`，值为 `{ baseUrl, models, fetchedAt }`：打开设置 /

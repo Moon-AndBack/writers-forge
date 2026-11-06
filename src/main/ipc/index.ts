@@ -1,6 +1,7 @@
 import type { DiagnosticsReport } from '../database/diagnostics'
 import { registerAiIpc } from './ai'
 import { registerAiCatalogIpc } from './aiCatalog'
+import { registerAiCompleteIpc } from './aiComplete'
 import { registerBooksIpc } from './books'
 import { registerCategoriesIpc } from './categories'
 import { registerChapterSearchIpc } from './chapterSearch'
@@ -32,6 +33,7 @@ import { registerWorldSubtypesIpc } from './worldSubtypes'
 export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
   registerAiIpc()
   registerAiCatalogIpc()
+  registerAiCompleteIpc()
   registerBooksIpc()
   registerCategoriesIpc()
   registerChaptersIpc()

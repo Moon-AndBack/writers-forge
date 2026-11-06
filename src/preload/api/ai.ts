@@ -120,6 +120,7 @@ export const aiApi = {
   chat: {
     start: (input) => ipcRenderer.invoke('ai:chat:start', input),
     abort: (requestId) => ipcRenderer.invoke('ai:chat:abort', { requestId }),
+    complete: (input) => ipcRenderer.invoke('ai:chat:complete', input),
     onStream: (callback) => {
       streamListeners.add(callback)
       return () => {

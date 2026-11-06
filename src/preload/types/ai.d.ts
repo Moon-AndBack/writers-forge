@@ -101,6 +101,29 @@ export interface AiChatStartInput {
 export type AiStreamUnsubscribe = () => void
 
 /**
+ * 非流式一次性补全入参（`ai:chat:complete`，用于生成上下文摘要）。
+ *
+ * 与 `AiChatStartInput` 的差异：不接受 `requestId` / `sessionId`，条数上限放宽到 400
+ * （摘要输入就是超限历史），主进程内部生成独立 requestId 且不发流式事件。
+ */
+export interface AiChatCompleteInput {
+  messages: AiChatMessage[]
+  /** 缺省回退到当前配置的服务商（摘要要求与当前对话同 provider）。 */
+  provider?: AiProviderId
+  /** 缺省回退到当前配置的模型（摘要要求与当前对话同模型）。 */
+  model?: string
+  maxTokens?: number
+}
+
+/** 非流式补全结果：失败以 `ok=false` + 脱敏错误表达，不抛异常。 */
+export interface AiChatCompleteResult {
+  ok: boolean
+  text?: string
+  usage?: AiUsage
+  error?: AiError
+}
+
+/**
  * AI 域 preload 暴露面（挂载于 `window.api.ai`）。
  *
  * 通道对应关系见 `main/ipc/ai.ts` 的 `registerAiIpc` 注释块，两侧须同步。
@@ -135,6 +158,11 @@ export interface AiApi {
     start: (input: AiChatStartInput) => Promise<void>
     /** 中止指定请求；无在途请求返回 false。 */
     abort: (requestId: string) => Promise<boolean>
+    /**
+     * 非流式一次性补全（摘要专用）：不占流式请求表、不推送 `ai:chat:*` 事件。
+     * 与 `start` 完全隔离，不会影响面板正在进行的流式请求。
+     */
+    complete: (input: AiChatCompleteInput) => Promise<AiChatCompleteResult>
     /** 订阅流式事件（delta / done / error），返回退订函数（组件卸载时必调）。 */
     onStream: (callback: (event: AiStreamEvent) => void) => AiStreamUnsubscribe
   }

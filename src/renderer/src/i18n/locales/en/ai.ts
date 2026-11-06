@@ -91,7 +91,9 @@ const ai = {
     insufficient_quota: 'Insufficient balance in your provider account; please top up and retry'
   },
   message: {
-    interrupted: 'This reply was interrupted by an error'
+    interrupted: 'This reply was interrupted by an error',
+    compacted: 'Compacted the previous {{rounds}} conversation turns',
+    truncated: 'Summary unavailable; earlier {{rounds}} turns were omitted'
   },
   panel: {
     model: {
@@ -125,7 +127,11 @@ const ai = {
       summary: '{{used}} / {{limit}} ({{percent}})',
       percent: '{{ratio}}%',
       unknownModel: 'Unknown model; estimating with {{tokens}}',
-      matchedFrom: 'Matched from {{id}}'
+      matchedFrom: 'Matched from {{id}}',
+      compressing: 'Organizing the context…',
+      overBudget: 'This conversation is too long: about {{used}} / {{limit}} (context window)',
+      overBudgetHint:
+        'Switch to a model with a larger window, set the window manually, or carry less text.'
     },
     builtin: {
       toggle: 'Carry built-in prompt',

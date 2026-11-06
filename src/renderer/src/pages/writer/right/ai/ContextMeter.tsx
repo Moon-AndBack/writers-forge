@@ -1,17 +1,9 @@
 import type { ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { ContextUsage } from './contextBudget'
+import { formatTokenCount, type ContextUsage } from './contextBudget'
 
-/** 警示阈值：占用达到 80% 后进度条转警示色（压缩 / 拒绝在第 3 步接入）。 */
+/** 警示阈值：占用达到 80% 后进度条转警示色（第 3 步起同时触发自动压缩）。 */
 const WARN_RATIO = 0.8
-
-/** 数字口径：`1_234` → `1.2K`，`1_048_576` → `1M`。 */
-function formatTokens(value: number): string {
-  const compact = (scaled: number): string => scaled.toFixed(1).replace(/\.0$/, '')
-  if (value >= 1_000_000) return `${compact(value / 1_000_000)}M`
-  if (value >= 1_000) return `${compact(value / 1_000)}K`
-  return String(value)
-}
 
 type MeterTone = 'normal' | 'warn' | 'danger'
 
@@ -42,8 +34,8 @@ export function ContextMeter({ usage }: { usage: ContextUsage }): ReactElement {
         <span className="ai-context__label">{label}</span>
         <span className="ai-context__value">
           {t('panel.context.summary', {
-            used: formatTokens(usage.usedTokens),
-            limit: formatTokens(usage.limitTokens),
+            used: formatTokenCount(usage.usedTokens),
+            limit: formatTokenCount(usage.limitTokens),
             percent: t('panel.context.percent', { ratio: percent })
           })}
         </span>
@@ -64,7 +56,7 @@ export function ContextMeter({ usage }: { usage: ContextUsage }): ReactElement {
       </div>
       {usage.limitSource === 'default' ? (
         <div className="ai-context__note">
-          {t('panel.context.unknownModel', { tokens: formatTokens(usage.limitTokens) })}
+          {t('panel.context.unknownModel', { tokens: formatTokenCount(usage.limitTokens) })}
         </div>
       ) : usage.limitSource === 'catalog' && usage.matchedId !== null ? (
         <div

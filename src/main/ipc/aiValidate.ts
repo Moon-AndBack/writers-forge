@@ -11,6 +11,14 @@ import type { AiChatMessage, AiConfigPatch, AiModelsListMode, AiProviderId } fro
 /** 单次对话消息条数 / 单条正文长度上限（字符数）。 */
 const MAX_MESSAGES = 200
 
+/**
+ * 摘要压缩请求的消息条数上限（`ai:chat:complete` 专用）。
+ *
+ * 不复用 `MAX_MESSAGES`：200 条是发送链路的防线，而摘要的输入恰恰是
+ * 「已经超限的历史」，必须单独放宽；单条正文仍沿用 10 万字符上限。
+ */
+const MAX_COMPLETE_MESSAGES = 400
+
 /** 单条消息正文上限（`ai:messages:append` 复用）。 */
 export const MAX_MESSAGE_CHARS = 100_000
 
@@ -73,8 +81,8 @@ export function readModelsListInput(input: unknown): ModelsListInput | null {
 }
 
 /** 解析消息数组（逐条校验角色与正文长度）。 */
-function readMessages(value: unknown): AiChatMessage[] | null {
-  if (!Array.isArray(value) || value.length === 0 || value.length > MAX_MESSAGES) return null
+function readMessages(value: unknown, maxMessages = MAX_MESSAGES): AiChatMessage[] | null {
+  if (!Array.isArray(value) || value.length === 0 || value.length > maxMessages) return null
   const messages: AiChatMessage[] = []
   for (const item of value) {
     if (!isRecord(item)) return null
@@ -151,6 +159,44 @@ export function readChatStartInput(input: unknown): ChatStartInput | null {
     if (typeof temperature !== 'number' || !Number.isFinite(temperature)) return null
     if (temperature < 0 || temperature > 2) return null
     parsed.temperature = temperature
+  }
+  if (input.maxTokens !== undefined) {
+    if (!isPositiveInt(input.maxTokens) || input.maxTokens > 1_000_000) return null
+    parsed.maxTokens = input.maxTokens
+  }
+
+  return parsed
+}
+
+/** `ai:chat:complete` 解析后的入参（非流式一次性补全，用于生成对话摘要）。 */
+export interface ChatCompleteInput {
+  messages: AiChatMessage[]
+  provider?: AiProviderId
+  model?: string
+  maxTokens?: number
+}
+
+/**
+ * 解析摘要补全入参。
+ *
+ * 与 `readChatStartInput` 的差异：**条数上限放宽到 400**（摘要输入就是超限历史），
+ * 且不接受 `requestId` / `sessionId` / `temperature`——摘要请求由主进程生成独立
+ * `requestId`，不占用面板的流式请求表。
+ */
+export function readCompleteInput(input: unknown): ChatCompleteInput | null {
+  if (!isRecord(input)) return null
+  const messages = readMessages(input.messages, MAX_COMPLETE_MESSAGES)
+  if (!messages) return null
+
+  const parsed: ChatCompleteInput = { messages }
+
+  if (input.provider !== undefined) {
+    if (!isAiProviderId(input.provider)) return null
+    parsed.provider = input.provider
+  }
+  if (input.model !== undefined) {
+    if (!isTextWithin(input.model, MAX_ID_CHARS)) return null
+    parsed.model = input.model
   }
   if (input.maxTokens !== undefined) {
     if (!isPositiveInt(input.maxTokens) || input.maxTokens > 1_000_000) return null
