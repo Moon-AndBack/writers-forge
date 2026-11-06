@@ -78,6 +78,7 @@ export function RightPane({
   timelineScene = null,
   activeTimelineId = null,
   onUpdateTimelineDescription,
+  timelineFlushRef,
   dossier = null,
   foreshadow = null,
   inspiration = null
@@ -137,6 +138,8 @@ export function RightPane({
   activeTimelineId?: string | null
   /** 写回当前选中时间线的起点描述（右栏「起点」卡保存）。 */
   onUpdateTimelineDescription: (description: string) => Promise<boolean>
+  /** 时间线起点卡关闭前 flush 入口（页面层聚合调用）。 */
+  timelineFlushRef?: RefObject<(() => Promise<void>) | null>
   /** 设定档案五域装配包（仅活动模块为五域之一时非空；详情面板消费）。 */
   dossier?: DossierBundle | null
   /** 伏笔装配包（仅活动模块为伏笔时非空；详情面板消费）。 */
@@ -261,6 +264,7 @@ export function RightPane({
           bookId={bookId}
           activeTimelineId={activeTimelineId}
           onUpdateDescription={onUpdateTimelineDescription}
+          flushRef={timelineFlushRef}
           scene={timelineScene}
         />
       </div>

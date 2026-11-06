@@ -28,6 +28,18 @@ const timeline = {
   originPlaceholder: 'e.g. The story begins here',
   originSave: 'Save description',
   originSaved: 'Saved',
+  rename: 'Rename',
+  delete: 'Delete',
+  deleteLastDisabled: 'Keep at least one timeline',
+  renameFailed: 'Rename failed. Please try again.',
+  deleteFailed: 'Delete failed. Please try again.',
+  dialog: {
+    delete: {
+      title: 'Delete timeline',
+      message: 'Delete the timeline “{{name}}”? This cannot be undone.',
+      confirm: 'Delete'
+    }
+  },
   timelineSelect: {
     label: 'Timeline',
     placeholder: 'Select timeline'

@@ -82,6 +82,10 @@ interface SidePaneProps {
   activeTimelineId: string | null
   /** 时间线选中回调。 */
   onSelectTimeline: (id: string) => void
+  /** 重命名时间线（写 `name`，空名回退默认名）。 */
+  onRenameTimeline: (id: string, name: string) => Promise<boolean>
+  /** 删除时间线（至少保留一条；返回是否成功）。 */
+  onDeleteTimeline: (id: string) => Promise<boolean>
 }
 
 /**
@@ -125,7 +129,9 @@ export function SidePane({
   onDeletePlotLine,
   timelineEntries,
   activeTimelineId,
-  onSelectTimeline
+  onSelectTimeline,
+  onRenameTimeline,
+  onDeleteTimeline
 }: SidePaneProps) {
   const { t } = useTranslation('writer')
   const classes = `sidepane${autoHidden ? ' is-auto-hidden' : ''}`
@@ -198,6 +204,8 @@ export function SidePane({
           timelines={timelineEntries}
           activeId={activeTimelineId}
           onSelect={onSelectTimeline}
+          onRename={onRenameTimeline}
+          onDelete={onDeleteTimeline}
         />
       </div>
     </aside>

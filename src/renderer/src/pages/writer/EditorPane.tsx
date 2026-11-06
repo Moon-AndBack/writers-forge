@@ -107,6 +107,8 @@ export interface EditorPaneProps {
   onSelectTimelineScene?: (id: number) => void
   /** 当前选中时间线的 origin（中栏显示）。 */
   timelineOrigin?: string
+  /** 当前选中时间线的起点描述（中栏元年卡正文；为空回退「故事开始了」）。 */
+  timelineDescription?: string
   /** 当前激活时间线名称（新建剧情线弹窗只读展示用）。 */
   activeTimelineName?: string
   /** 当前激活时间线 id（新建剧情线继承用）。 */
@@ -168,6 +170,7 @@ function EditorPaneComponent({
   timelineSelectedSceneId = null,
   onSelectTimelineScene,
   timelineOrigin,
+  timelineDescription,
   activeTimelineName,
   activeTimelineId,
   onCreateTimeline,
@@ -376,6 +379,7 @@ function EditorPaneComponent({
         <TimelineView
           bookId={bookId}
           origin={timelineOrigin}
+          description={timelineDescription}
           activeTimelineId={activeTimelineId}
           onCreateTimeline={onCreateTimeline}
           selectedSceneId={timelineSelectedSceneId}

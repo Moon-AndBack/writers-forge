@@ -6,7 +6,7 @@ import { DEFAULT_TIMELINE_ORIGIN } from './books'
 /** 时间线（多起点 / 多 origin 集合）数据层 helper。
  *
  * 存储约定（settings JSON）：
- * - 列表键：`timeline:list:<bookId>` → JSON 数组 `TimelineEntry[]`：`{ id, name, origin }`
+ * - 列表键：`timeline:list:<bookId>` → JSON 数组 `TimelineEntry[]`：`{ id, name, origin, description? }`
  * - 选中键：`timeline:active:<bookId>` → 选中 id 字符串
  * - 默认时间线 id：`'default'`，名称 / origin 默认均为空串（展示层 i18n 兜底，不落中文）
  *
@@ -24,6 +24,8 @@ export interface TimelineEntry {
   id: string
   name: string
   origin: string
+  /** 起点描述（渲染层可编辑）；不存在 / 非字符串时不写入，保持老数据原样。 */
+  description?: string
 }
 
 /** 按书列表 settings 键。 */
@@ -58,8 +60,15 @@ function normalizeEntry(raw: unknown): TimelineEntry | null {
   const id = typeof obj.id === 'string' && obj.id.trim() !== '' ? obj.id.trim() : null
   const name = typeof obj.name === 'string' ? obj.name : ''
   const origin = typeof obj.origin === 'string' ? obj.origin : ''
+  // 透传渲染层扩展字段 `description`：缺失 / 非字符串时不写入（不给老数据凭空补空串）。
+  const description = typeof obj.description === 'string' ? obj.description : undefined
   if (id === null) return null
-  return { id, name: name === '' ? DEFAULT_TIMELINE_NAME : name, origin }
+  return {
+    id,
+    name: name === '' ? DEFAULT_TIMELINE_NAME : name,
+    origin,
+    ...(description === undefined ? {} : { description })
+  }
 }
 
 /** 解析列表 JSON；非法 / 空 → []。 */

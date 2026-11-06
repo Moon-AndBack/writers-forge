@@ -179,11 +179,15 @@ function seedGuideBook(): void {
   // 设定 demo 数据（统一设定库，唯一来源）由 `seedDemoWorldEntities` 在书行灌入后播种。
   // 教学书首启即有默认时间线：列表 + 选中 id（settings JSON）；名称 / 起点落空串，
   // 中文默认名与默认起点由展示层 i18n 兜底（`timeline.defaultName` / `timeline.originDefault`）。
-  setSetting(
-    `timeline:list:${GUIDE_BOOK.id}`,
-    JSON.stringify([{ id: 'default', name: '', origin: '' }])
-  )
-  setSetting(`timeline:active:${GUIDE_BOOK.id}`, 'default')
+  // **仅在键不存在时初始化**（对齐 `ensureTimelineList` 语义）：已存在的列表可能带用户填写的
+  // 起点描述，重灌教学书不得覆盖（否则每次 `CHAPTER_SEED_VERSION` 提升都会抹掉用户描述）。
+  if (getSetting(`timeline:list:${GUIDE_BOOK.id}`) === null) {
+    setSetting(
+      `timeline:list:${GUIDE_BOOK.id}`,
+      JSON.stringify([{ id: 'default', name: '', origin: '' }])
+    )
+    setSetting(`timeline:active:${GUIDE_BOOK.id}`, 'default')
+  }
 }
 
 /**

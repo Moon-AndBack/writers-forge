@@ -33,6 +33,16 @@ export interface TimelineWorkspace {
    * 起点时间（origin）固定不可编辑；写入成功后同步列表态；返回是否落库成功。
    */
   updateDescription: (description: string) => Promise<boolean>
+  /**
+   * 重命名指定时间线：读磁盘最新列表 → 只改目标条目的 `name` → 原样写回。
+   * 空名回退默认空名（展示层经 `t('timeline.defaultName')` 兜底）；返回是否落库成功。
+   */
+  renameTimeline: (id: string, name: string) => Promise<boolean>
+  /**
+   * 删除指定时间线：读磁盘最新列表 → 移除目标条目 → 原样写回。
+   * 至少保留一条（删最后一条返回 false）；删的是当前选中项时 active 切到剩余第一条。
+   */
+  removeTimeline: (id: string) => Promise<boolean>
   /** 重新读取。 */
   reload: () => void
 }
@@ -156,6 +166,59 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
   const origin = activeEntry?.origin ?? ''
   const description = activeEntry?.description ?? ''
 
+  // 重命名：与 `updateDescription` 同款「磁盘最新列表 → 读-改-写」，避免内存列表过期时
+  // 覆盖其它条目的改动；只替换目标条目的 `name`，空名回退默认空名（展示层兜底）。
+  const renameTimeline = useCallback(
+    async (id: string, name: string): Promise<boolean> => {
+      const listRaw = await window.api?.settings.get(listKey)
+      const current = parseTimelineList(listRaw ?? null)
+      const base = current.length > 0 ? current : list
+      if (!base.some((entry) => entry.id === id)) return false
+      const nextName = name.trim() !== '' ? name.trim() : DEFAULT_TIMELINE_NAME
+      const nextList = base.map((entry) => (entry.id === id ? { ...entry, name: nextName } : entry))
+      try {
+        await window.api?.settings.set(listKey, serializeTimelineList(nextList))
+        setList(nextList)
+        return true
+      } catch {
+        return false
+      }
+    },
+    [list, listKey]
+  )
+
+  // 删除：至少保留一条（删最后一条直接拒绝）；删的是当前选中项时把 active 切到剩余第一条，
+  // 并同步写回 `timeline:active:<bookId>`（被删条目的选中键不会残留）。
+  const removeTimeline = useCallback(
+    async (id: string): Promise<boolean> => {
+      const listRaw = await window.api?.settings.get(listKey)
+      const current = parseTimelineList(listRaw ?? null)
+      const base = current.length > 0 ? current : list
+      if (base.length <= 1) return false
+      if (!base.some((entry) => entry.id === id)) return false
+      const nextList = base.filter((entry) => entry.id !== id)
+
+      const activeRaw = await window.api?.settings.get(activeKey)
+      const currentActive = activeRaw ?? activeId
+      const nextActive =
+        currentActive !== null && nextList.some((entry) => entry.id === currentActive)
+          ? currentActive
+          : nextList[0].id
+      try {
+        await window.api?.settings.set(listKey, serializeTimelineList(nextList))
+        if (nextActive !== currentActive) {
+          await window.api?.settings.set(activeKey, nextActive)
+          setActiveId(nextActive)
+        }
+        setList(nextList)
+        return true
+      } catch {
+        return false
+      }
+    },
+    [activeId, activeKey, list, listKey]
+  )
+
   return {
     list,
     activeId,
@@ -166,6 +229,8 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
     selectTimeline,
     createTimeline,
     updateDescription,
+    renameTimeline,
+    removeTimeline,
     reload: load
   }
 }

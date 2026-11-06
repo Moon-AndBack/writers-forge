@@ -139,6 +139,11 @@ export default function Writer({ bookId }: WriterProps) {
   // 会额外强制隐藏，与本偏好叠加（见 rightPaneVisibilityProvider 注释）。
   const { hidden: rightPaneHidden, show: showRightPane } = useRightPaneVisibility()
 
+  // 保存失败提示（不切换 / 删除失败 / 脏态保留，可重试）：多处共用同一条 toast。
+  const { show: showSaveFailed, node: saveFailedToast } = useToast()
+  const { t: tCommon } = useTranslation('common')
+  const { t: tModule } = useTranslation('module')
+
   /* ---------- 章节页动作（左栏 hover / 标题栏按钮组 / 回收站共享） ---------- */
 
   // 新建卷（弹窗提交）：章节域与大纲域**共用本入口**（写入主进程 `CreateVolumeInput`）。
@@ -191,7 +196,13 @@ export default function Writer({ bookId }: WriterProps) {
      同一时间线早退：`Select` 对当前项、`TimelinePanel` 点当前行都会触发 onChange，
      此时无实际变化，不应弹框。 */
   // 先取出稳定成员再进回调依赖，避免整个 `timeline` / `plot` 装配对象入依赖（每次渲染新引用）。
-  const { activeId: activeTimelineId, selectTimeline, createTimeline } = timeline
+  const {
+    activeId: activeTimelineId,
+    selectTimeline,
+    createTimeline,
+    renameTimeline,
+    removeTimeline
+  } = timeline
   const { guardSwitch: guardPlotSwitch } = plot
   const handleSelectTimeline = useCallback(
     (id: string): void => {
@@ -210,6 +221,32 @@ export default function Writer({ bookId }: WriterProps) {
       })
     },
     [guardPlotSwitch, createTimeline]
+  )
+
+  // 时间线重命名：active 不变，不触发剧情切换守卫；结果交回面板做失败提示。
+  const handleRenameTimeline = useCallback(
+    (id: string, name: string): Promise<boolean> => renameTimeline(id, name).catch(() => false),
+    [renameTimeline]
+  )
+
+  // 删除时间线：删当前 active 等同隐式切换（右栏草稿 / 剧情过滤会变），先走剧情守卫；
+  // 删其它条目不影响当前编辑上下文，直接执行。确认框不等待守卫结算（守卫内自行落库 + 提示）。
+  const handleDeleteTimeline = useCallback(
+    (id: string): Promise<boolean> => {
+      const run = (): Promise<boolean> =>
+        removeTimeline(id)
+          .catch(() => false)
+          .then((ok) => {
+            if (!ok) showSaveFailed(tCommon('saveFailed'))
+            return ok
+          })
+      if (id !== activeTimelineId) return run()
+      guardPlotSwitch(() => {
+        void run()
+      })
+      return Promise.resolve(true)
+    },
+    [activeTimelineId, guardPlotSwitch, removeTimeline, showSaveFailed, tCommon]
   )
 
   // 设定档案四域透传包（仅活动模块为四域之一时非空；选中 + 右栏隐藏时自动展开已收进 hook）。
@@ -232,13 +269,16 @@ export default function Writer({ bookId }: WriterProps) {
      失败不阻断其它，整体恒 resolve（见 `useFlushAllModules`）。 */
   const chapterFlushRef = useRef<(() => Promise<void>) | null>(null)
   const outlineFlushRef = useRef<(() => Promise<void>) | null>(null)
+  // 时间线起点描述：右栏起点卡挂载时写入补存入口（关窗前统一 flush）。
+  const timelineFlushRef = useRef<(() => Promise<void>) | null>(null)
   const { flushAll, flushModule } = useFlushAllModules({
     chapterFlushRef,
     outlineFlushRef,
     plotSaveRef: plot.saveRef,
     saveDossierDraft: dossierBundle?.saveDraft ?? null,
     saveForeshadowDraft: foreshadowBundle?.saveDraft ?? null,
-    saveInspirationDraft: inspirationBundle?.saveDraft ?? null
+    saveInspirationDraft: inspirationBundle?.saveDraft ?? null,
+    timelineFlushRef
   })
   useRegisterBeforeCloseFlush(flushAll)
 
@@ -261,11 +301,6 @@ export default function Writer({ bookId }: WriterProps) {
      同模块 / 无脏 → 直接切；当前模块（五域 / 剧情 / 伏笔 / 灵感）有脏草稿 → 弹两态确认。
      脏态判定、保存 / 放弃分派与章节 / 大纲切走前强制落库均收进
      `useWriterModuleSwitch`；与右栏域内 `switchPending`（切条目）是两个独立场景。 */
-  // 保存失败提示（不切换、脏态保留，可重试）。
-  const { show: showSaveFailed, node: saveFailedToast } = useToast()
-  const { t: tCommon } = useTranslation('common')
-  const { t: tModule } = useTranslation('module')
-
   const switchGuard = useWriterModuleSwitch({
     active,
     setActive,
@@ -322,6 +357,8 @@ export default function Writer({ bookId }: WriterProps) {
               timelineEntries={timeline.list}
               activeTimelineId={timeline.activeId}
               onSelectTimeline={handleSelectTimeline}
+              onRenameTimeline={handleRenameTimeline}
+              onDeleteTimeline={handleDeleteTimeline}
             />
           }
           center={
@@ -360,6 +397,7 @@ export default function Writer({ bookId }: WriterProps) {
               timelineSelectedSceneId={selectedTimelineSceneId}
               onSelectTimelineScene={handleSelectTimelineScene}
               timelineOrigin={timeline.origin}
+              timelineDescription={timeline.description}
               activeTimelineName={timeline.activeEntry?.name}
               activeTimelineId={timeline.activeId}
               onCreateTimeline={handleCreateTimeline}
@@ -399,6 +437,7 @@ export default function Writer({ bookId }: WriterProps) {
               timelineScene={timelineScene}
               activeTimelineId={timeline.activeId}
               onUpdateTimelineDescription={timeline.updateDescription}
+              timelineFlushRef={timelineFlushRef}
               dossier={dossierBundle}
               foreshadow={foreshadowBundle}
               inspiration={inspirationBundle}

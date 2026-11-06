@@ -25,6 +25,18 @@ const timeline = {
   originPlaceholder: '例：故事从这里开始',
   originSave: '保存描述',
   originSaved: '已保存',
+  rename: '重命名',
+  delete: '删除',
+  deleteLastDisabled: '至少保留一条时间线',
+  renameFailed: '重命名失败，请重试',
+  deleteFailed: '删除失败，请重试',
+  dialog: {
+    delete: {
+      title: '删除时间线',
+      message: '确定删除时间线「{{name}}」吗？此操作不可撤销。',
+      confirm: '删除'
+    }
+  },
   timelineSelect: {
     label: '时间线',
     placeholder: '选择时间线'

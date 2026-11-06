@@ -26,6 +26,8 @@ export interface TimelineViewProps {
   bookId?: string
   /** 当前选中时间线的 origin（渲染层持有；缺省时按书键自行读取）。 */
   origin?: string
+  /** 当前选中时间线的起点描述（纯文本；为空时元年卡回退 `t('originNote')`）。 */
+  description?: string
   /** 当前选中时间线 id（用于自行读取 origin 时定位）。 */
   activeTimelineId?: string | null
   /** 新建时间线入口（标题栏按钮触发）；缺省则不渲染入口。 */
@@ -55,6 +57,7 @@ export interface TimelineViewProps {
 export default function TimelineView({
   bookId,
   origin,
+  description = '',
   activeTimelineId = null,
   onCreateTimeline,
   selectedSceneId = null,
@@ -116,6 +119,8 @@ export default function TimelineView({
 
   const resolvedStored = origin !== undefined ? (isStoredOrigin(origin) ? origin : null) : stored
   const originDisplay = isStoredOrigin(resolvedStored) ? resolvedStored.trim() : t('originDefault')
+  // 元年卡正文 = 当前时间线的起点描述（用户可编辑）；为空时回退「故事开始了」。
+  const originNoteDisplay = description.trim() !== '' ? description : t('originNote')
   // 按当前选中时间线过滤剧情线 / 场景：仅显示该时间线归属的剧情线及其下场景。
   // activeTimelineId 为空时回退全量（时间线未加载 / 无时间线兜底），避免首帧空白。
   const filteredLines = useMemo(() => {
@@ -193,7 +198,7 @@ export default function TimelineView({
                             {t('originTitle')}
                           </h3>
                         }
-                        description={t('originNote')}
+                        description={originNoteDisplay}
                         descriptionClassName="plot-scene-body"
                       />
                     ) : null}

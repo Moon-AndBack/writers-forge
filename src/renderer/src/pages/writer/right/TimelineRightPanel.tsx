@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react'
+import type { ReactElement, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import ReadonlyRichText from '../../../components/editor/ReadonlyRichText'
 import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
@@ -61,6 +61,8 @@ export interface TimelineRightPanelProps {
   activeTimelineId?: string | null
   /** 写回当前选中时间线的起点描述（页面层 `useTimelineWorkspace.updateDescription`）。 */
   onUpdateDescription: (description: string) => Promise<boolean>
+  /** 关闭前统一 flush 入口（起点卡挂载时写入；页面层聚合调用）。 */
+  flushRef?: RefObject<(() => Promise<void>) | null>
   /** 时间线选中场景（只读详情）；null = 未选中（渲染空态）。 */
   scene: PlotSceneRow | null
 }
@@ -70,6 +72,7 @@ export function TimelineRightPanel({
   bookId,
   activeTimelineId,
   onUpdateDescription,
+  flushRef,
   scene
 }: TimelineRightPanelProps): ReactElement {
   return (
@@ -79,6 +82,7 @@ export function TimelineRightPanel({
         bookId={bookId}
         activeTimelineId={activeTimelineId}
         onSaveDescription={onUpdateDescription}
+        flushRef={flushRef}
       />
       <TimelineSceneDetail scene={scene} />
     </div>
