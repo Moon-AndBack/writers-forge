@@ -130,7 +130,7 @@ const ai = {
       label: 'Action',
       polish: 'Polish',
       continue: 'Continue',
-      rewrite: 'Rewrite',
+      rewrite: 'Rewrite this passage',
       translate: 'Translate',
       chat: 'Free chat'
     },

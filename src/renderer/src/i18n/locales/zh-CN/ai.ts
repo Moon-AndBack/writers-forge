@@ -130,7 +130,7 @@ const ai = {
       label: '功能',
       polish: '润色',
       continue: '续写',
-      rewrite: '改写',
+      rewrite: '重写本段',
       translate: '翻译',
       chat: '自由对话'
     },
