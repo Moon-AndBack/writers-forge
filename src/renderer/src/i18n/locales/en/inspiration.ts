@@ -40,7 +40,7 @@ const inspiration = {
   dialog: {
     delete: {
       title: 'Delete inspiration',
-      message: 'Delete “{{title}}”? This cannot be undone.',
+      message: 'Delete “{{title}}”? It will be moved to the trash and can be restored.',
       confirm: 'Delete'
     },
     unsavedSwitch: {
@@ -48,6 +48,25 @@ const inspiration = {
       message:
         'The current inspiration has unsaved changes. Choose “Save” to store them first, or “Don’t save” to discard them and continue.',
       discard: 'Don’t save'
+    }
+  },
+  trash: {
+    title: 'Inspiration trash',
+    groupItems: 'Inspirations',
+    restoreItem: 'Restore inspiration',
+    purgeItem: 'Delete inspiration permanently',
+    dialog: {
+      purge: {
+        title: 'Delete inspiration permanently',
+        message: '“{{name}}” will be permanently deleted and cannot be recovered.',
+        confirm: 'Delete permanently'
+      },
+      purgeAll: {
+        title: 'Empty inspiration trash',
+        message:
+          'All inspirations in the trash will be permanently deleted and cannot be recovered.',
+        confirm: 'Empty'
+      }
     }
   },
   toast: {

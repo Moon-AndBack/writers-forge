@@ -218,3 +218,53 @@ export function deleteInspiration(id: number): boolean {
   db.prepare(`UPDATE inspirations SET deleted_at = ${NOW} WHERE id = ?`).run(id)
   return true
 }
+
+/** 回收站中的灵感行（= {@link InspirationRow}，`deletedAt` 非 null）。 */
+export type DeletedInspirationRow = InspirationRow
+
+/**
+ * 列出某书回收站中的灵感（软删行），按 `deleted_at DESC, id DESC`（最近删除优先）。
+ * 标签仍经 {@link mapRow} 反序列化，供回收站列表展示。
+ */
+export function listDeletedInspirations(bookId: string): DeletedInspirationRow[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT ${INSPIRATION_COLUMNS} FROM inspirations
+       WHERE book_id = ? AND deleted_at IS NOT NULL
+       ORDER BY deleted_at DESC, id DESC`
+    )
+    .all(bookId) as InspirationDbRow[]
+  return rows.map(mapRow)
+}
+
+/**
+ * 还原灵感：仅对回收站中的行生效，清空 `deleted_at` 并刷新 `updated_at`
+ * （列表按 `updated_at DESC` 排序，刚还原的行回到最前）；不存在 / 未删除返回 false。
+ */
+export function restoreInspiration(id: number): boolean {
+  const db = getDb()
+  const row = db
+    .prepare('SELECT deleted_at AS deletedAt FROM inspirations WHERE id = ?')
+    .get(id) as { deletedAt: string | null } | undefined
+  if (!row || row.deletedAt === null) return false
+  db.prepare(`UPDATE inspirations SET deleted_at = NULL, updated_at = ${NOW} WHERE id = ?`).run(id)
+  return true
+}
+
+/**
+ * 彻底删除灵感（物理删）：仅对回收站中的行生效；`inspirations` 无关联表 / 被引用外键，
+ * 删除本行即完成，不存在 / 未删除返回 false。
+ */
+export function purgeInspiration(id: number): boolean {
+  const result = getDb()
+    .prepare('DELETE FROM inspirations WHERE id = ? AND deleted_at IS NOT NULL')
+    .run(id)
+  return result.changes > 0
+}
+
+/** 清空某书灵感回收站：物理删除全部软删行，返回删除条数。 */
+export function purgeAllDeletedInspirations(bookId: string): number {
+  return getDb()
+    .prepare('DELETE FROM inspirations WHERE book_id = ? AND deleted_at IS NOT NULL')
+    .run(bookId).changes
+}

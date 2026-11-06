@@ -10,15 +10,23 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconButton } from '../../../components/ui'
 import { useSetActivityActions } from '../../../shell/activityActions'
-import { EditorActionSep } from '../../../components/editor/EditorActionGroup'
+import { EditorActionSep, EditorTrashButton } from '../../../components/editor/EditorActionGroup'
 import { PlusIcon } from '../icons'
 
 export interface ForeshadowActivityActionsProps {
   /** 打开「新建伏笔」弹窗（弹窗本体挂载在中栏视图内）。 */
   onCreate: () => void
+  /** 切换中栏回收站视图。 */
+  onToggleTrash: () => void
+  /** 回收站视图是否打开（按钮呈激活态）。 */
+  trashOpen: boolean
 }
 
-export default function ForeshadowActivityActions({ onCreate }: ForeshadowActivityActionsProps) {
+export default function ForeshadowActivityActions({
+  onCreate,
+  onToggleTrash,
+  trashOpen
+}: ForeshadowActivityActionsProps) {
   const { t } = useTranslation('foreshadow')
 
   const node = useMemo(
@@ -34,9 +42,11 @@ export default function ForeshadowActivityActions({ onCreate }: ForeshadowActivi
         >
           <PlusIcon />
         </IconButton>
+        {/* 回收站入口与章节 / 大纲标题栏同款（共享 `EditorTrashButton`，自带分隔线）。 */}
+        <EditorTrashButton onToggleTrash={onToggleTrash} trashOpen={trashOpen} />
       </>
     ),
-    [onCreate, t]
+    [onCreate, onToggleTrash, trashOpen, t]
   )
 
   useSetActivityActions('foreshadow', node)

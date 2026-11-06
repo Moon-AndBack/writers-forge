@@ -86,7 +86,7 @@ const foreshadow = {
     },
     delete: {
       title: '删除伏笔',
-      message: '确定删除「{{title}}」？此操作不可撤销。',
+      message: '确定删除「{{title}}」？将移入回收站，可再还原。',
       confirm: '删除'
     },
     removeAnchor2: {
@@ -122,6 +122,25 @@ const foreshadow = {
     save: '保存',
     cancel: '取消',
     delete: '删除'
+  },
+  /** 中栏回收站（标题栏垃圾桶按钮切换；条目 / 清空文案在本 ns，计数与空态复用 chapters）。 */
+  trash: {
+    title: '伏笔回收站',
+    groupItems: '伏笔',
+    restoreItem: '还原伏笔',
+    purgeItem: '彻底删除伏笔',
+    dialog: {
+      purge: {
+        title: '彻底删除伏笔',
+        message: '「{{name}}」将被永久删除且无法恢复（正文埋点 / 大纲埋点 / 回收点一并删除）。',
+        confirm: '彻底删除'
+      },
+      purgeAll: {
+        title: '清空伏笔回收站',
+        message: '回收站中的全部伏笔将被永久删除且无法恢复。',
+        confirm: '清空'
+      }
+    }
   },
   toast: {
     createSuccess: '伏笔已创建',

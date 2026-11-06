@@ -22,6 +22,12 @@ import {
   clearForeshadowRecoverAnchor
 } from '../database/foreshadowsClear'
 import {
+  listDeletedForeshadows,
+  purgeAllDeletedForeshadows,
+  purgeForeshadow,
+  restoreForeshadow
+} from '../database/foreshadowsTrash'
+import {
   getForeshadow,
   listForeshadows,
   listForeshadowsByChapter,
@@ -258,6 +264,12 @@ function resolveAnchorHits(chapterId: unknown, outlineItemId: unknown): Foreshad
  *                            recoverAnchor?: … | null })         → ForeshadowRow | null
  *   （状态不在此通道写入：废弃 / 恢复走 `foreshadow:setAbandoned`，回收由回收点派生）
  * - foreshadow:delete       (id: number)                           → boolean（软删除）
+ * - foreshadow:listDeleted  (bookId: string)                       → ForeshadowRow[]（回收站：
+ *                                                                     软删行，`deleted_at DESC`）
+ * - foreshadow:restore      (id: number)                           → boolean（还原，仅回收站行）
+ * - foreshadow:purge        (id: number)                           → boolean（物理删除整行，
+ *                                                                     双埋点 / 回收点一并消失）
+ * - foreshadow:purgeAllDeleted (bookId: string)                    → number（清空本书回收站）
  * - foreshadow:attachAnchor (id: number, anchor: { kind, … })      → AttachForeshadowAnchorResult
  *   （按锚点 `kind` 补对应槽位：目标槽位已占用 → `full`，`none` / 畸形 → `invalid`，
  *    不存在 → `notFound`；以 `{ ok: false, reason }` 返回，不抛错）
@@ -314,6 +326,28 @@ export function registerForeshadowsIpc(): void {
   ipcMain.handle('foreshadow:delete', (_event, id: unknown) => {
     if (!isPositiveInt(id)) return false
     return runWrite('foreshadow:delete', { id }, () => deleteForeshadow(id))
+  })
+
+  ipcMain.handle('foreshadow:listDeleted', (_event, bookId: unknown) => {
+    if (typeof bookId !== 'string' || bookId === '') return []
+    return listDeletedForeshadows(bookId)
+  })
+
+  ipcMain.handle('foreshadow:restore', (_event, id: unknown) => {
+    if (!isPositiveInt(id)) return false
+    return runWrite('foreshadow:restore', { id }, () => restoreForeshadow(id))
+  })
+
+  ipcMain.handle('foreshadow:purge', (_event, id: unknown) => {
+    if (!isPositiveInt(id)) return false
+    return runWrite('foreshadow:purge', { id }, () => purgeForeshadow(id))
+  })
+
+  ipcMain.handle('foreshadow:purgeAllDeleted', (_event, bookId: unknown) => {
+    if (typeof bookId !== 'string' || bookId === '') return 0
+    return runWrite('foreshadow:purgeAllDeleted', { bookId }, () =>
+      purgeAllDeletedForeshadows(bookId)
+    )
   })
 
   ipcMain.handle('foreshadow:attachAnchor', (_event, id: unknown, anchor: unknown) => {

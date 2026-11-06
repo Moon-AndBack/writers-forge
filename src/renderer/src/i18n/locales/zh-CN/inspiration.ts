@@ -40,13 +40,32 @@ const inspiration = {
   dialog: {
     delete: {
       title: '删除灵感',
-      message: '确定删除「{{title}}」？此操作不可撤销。',
+      message: '确定删除「{{title}}」？将移入回收站，可再还原。',
       confirm: '删除'
     },
     unsavedSwitch: {
       title: '有未保存的改动',
       message: '当前灵感的改动尚未保存。点「保存」先落库再继续，点「不保存」放弃这些改动直接继续。',
       discard: '不保存'
+    }
+  },
+  /** 中栏回收站（标题栏垃圾桶按钮切换；条目 / 清空文案在本 ns，计数与空态复用 chapters）。 */
+  trash: {
+    title: '灵感回收站',
+    groupItems: '灵感',
+    restoreItem: '还原灵感',
+    purgeItem: '彻底删除灵感',
+    dialog: {
+      purge: {
+        title: '彻底删除灵感',
+        message: '「{{name}}」将被永久删除且无法恢复。',
+        confirm: '彻底删除'
+      },
+      purgeAll: {
+        title: '清空灵感回收站',
+        message: '回收站中的全部灵感将被永久删除且无法恢复。',
+        confirm: '清空'
+      }
     }
   },
   toast: {

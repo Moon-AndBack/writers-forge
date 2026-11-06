@@ -11,10 +11,21 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v104'
+export const CHAPTER_SEED_VERSION = 'v105'
 
 /**
- * 最近版本变更日志（v104；更早版本见上述历史文件）。
+ * 最近版本变更日志（v105；更早版本见上述历史文件）。
+ *
+ * `v105`（灵感 / 伏笔回收站批）：灵感与伏笔此前只做软删除、界面没有恢复入口，本批补齐
+ * 与章节 / 大纲对称的回收站——数据层新增 `listDeleted` / `restore` / `purge` /
+ * `purgeAllDeleted`（灵感在 `inspirations.ts`，伏笔在 `foreshadowsTrash.ts`；伏笔物理删除
+ * 整行，正文埋点 / 大纲埋点 / 回收点随行一并消失，与删除章 / 大纲条目时外键级联同语义）；
+ * IPC 新增 `inspiration:listDeleted|restore|purge|purgeAllDeleted` 与伏笔同名通道，
+ * preload 同步。UI 在灵感 / 伏笔模块标题栏复用共享 `EditorTrashButton`（垃圾桶图标）打开
+ * 中栏回收站视图，视图复用 `TrashListView` / `useTrashData`（零新增 CSS）；灵感行显示
+ * 标题 + 标签，伏笔行显示名称 + 描述摘要；卡片删除确认文案由「此操作不可撤销」改为
+ * 「将移入回收站，可再还原」。教学文案同步（伏笔 / 灵感模块的删除说明补充回收站入口与
+ * 还原 / 彻底删除 / 清空三种操作）。
  *
  * `v104`（写作页全局快捷键批）：主进程已移除应用菜单（`Menu.setApplicationMenu(null)`），
  * 菜单加速键不可用，新增渲染层全局快捷键 `useWriterShortcuts`（仅 `Writer` 挂载期间监听
