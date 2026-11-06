@@ -118,6 +118,17 @@ export function buildQuickSystemPrompt(action: AiQuickAction, bookContext?: stri
   return joinPromptParts([QUICK_TASK_PROMPTS[action], bookContext, OUTPUT_RULES])
 }
 
+/**
+ * 气泡附带内容（本次携带的上下文预览）。
+ *
+ * 只用于界面展示：`text` 为选中原文（气泡内按 3 行折叠，可展开）或
+ * 「卷名 · 章名」全称；**不落库**——重开会话后历史气泡只保留 `content`。
+ */
+export interface AiComposeAttachment {
+  kind: 'selection' | 'full'
+  text: string
+}
+
 /** 一次发送请求的组成要素（来自统一输入区）。 */
 export interface AiComposeInput {
   /** 功能（含「自由对话」）。 */
@@ -127,10 +138,16 @@ export interface AiComposeInput {
   /** 勾选的上下文（选中文本或整章正文；未勾选时为空串）。 */
   context: string
   /**
-   * 气泡展示文本（可选）：用户输入为空时由面板传入占位文案（如「[润色] 整章正文」）。
-   * 仅用于 UI 显示与落库，不参与发给模型的 user 消息组装。
+   * 气泡正文兜底（可选）：用户输入为空时由面板传入替代文本（完整选中文本 /
+   * 「卷名 · 章名」），作为 user 消息的 `content` 展示与落库。
+   * 不参与发给模型的 user 消息组装。
    */
   display?: string
+  /**
+   * 气泡附带预览（可选）：输入与上下文同时存在时挂上，让气泡同时呈现
+   * 「用户输入 + 携带内容」。仅用于本次会话内的界面展示，不落库。
+   */
+  attach?: AiComposeAttachment
   /**
    * 作品设定（可选）：按当前书籍频道 / 分类拼出的写作风格约束（见 `bookContext.ts`）。
    * 只进 system（任务规则之后、输出格式约束之前），不进 user；面板关闭「携带内置提示词」时不传。

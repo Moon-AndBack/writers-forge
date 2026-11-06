@@ -113,6 +113,8 @@ const ai = {
   message: {
     interrupted: 'This reply was interrupted by an error',
     otherChapter: 'This reply comes from another chapter and cannot be inserted into this chapter',
+    expand: 'Expand',
+    collapse: 'Collapse',
     compacted: 'Compacted the previous {{rounds}} conversation turns',
     truncated: 'Summary unavailable; earlier {{rounds}} turns were omitted'
   },
@@ -202,9 +204,9 @@ const ai = {
     },
     apply: {
       replace: 'Replace selection',
-      insert: 'Insert after cursor',
+      insert: 'Insert after selection',
       replaced: 'Selection replaced',
-      inserted: 'Inserted after cursor',
+      inserted: 'Inserted after selection',
       failed:
         'Could not write to the chapter: it may be finalized (read-only), or the editor is unavailable'
     }

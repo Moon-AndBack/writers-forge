@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../components/ui'
 import type { RichTextBodyValue } from '../../components/editor/useRichTextBodyEditor'
 import type { WriterModule } from '../../shell/activityBar'
 import type { ChapterRow, VolumeRow } from './chapters/chapterTree'
+import { useChapterLabels } from './chapters/useChapterLabels'
 import ConfirmDialog from './ConfirmDialog'
 import DossierDetail from './dossier/DossierDetail'
 import type { DossierBundle } from './dossier/dossierTree'
@@ -176,6 +177,18 @@ export function RightPane({
   const [chapterTab, setChapterTab] = useState<RightPaneTab>('outline')
   const [outlineTab, setOutlineTab] = useState<RightPaneTab>('plot')
 
+  // AI 气泡的「卷名 · 章名」：与正文编辑头 / 伏笔关联串同源（见 EditorPane 的拼法）。
+  const { volumeLabel, chapterLabel } = useChapterLabels()
+  const aiChapterPath = useMemo(() => {
+    if (chapterId === null) return undefined
+    const chapter = chapters.find((row) => row.id === chapterId)
+    if (chapter === undefined) return undefined
+    const volume = volumes.find((row) => row.id === chapter.volumeId)
+    return volume !== undefined
+      ? `${volumeLabel(volume)} · ${chapterLabel(chapter)}`
+      : chapterLabel(chapter)
+  }, [chapterId, chapters, volumes, volumeLabel, chapterLabel])
+
   const isChapterView = module === 'chapters'
   const isOutlineView = module === 'outline'
   const paneTabs = isOutlineView ? OUTLINE_RIGHT_PANE_TABS : CHAPTER_RIGHT_PANE_TABS
@@ -252,6 +265,7 @@ export function RightPane({
           <AiPanel
             bookId={bookId ?? ''}
             chapterId={chapterId}
+            chapterPath={aiChapterPath}
             active={isChapterView && activeTab === 'ai'}
           />
         </div>

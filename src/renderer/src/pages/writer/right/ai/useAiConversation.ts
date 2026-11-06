@@ -299,8 +299,9 @@ export function useAiConversation(input: {
       setGenerating(true)
       setCompressing(false)
       const baseMessages = messagesRef.current
-      // user 气泡只在有展示文本时出现：输入为空时退回面板给的 `display`（如「[润色] 整章正文」），
-      // 让「只勾上下文」的轮次在历史里也看得出做了什么；`display` 不进模型消息。
+      // user 气泡只在有展示文本时出现：输入为空时退回面板给的 `display`
+      // （完整选中文本 / 「卷名 · 章名」），让「只勾上下文」的轮次在历史里也看得出做了什么；
+      // `display` 不进模型消息。输入与上下文同时存在时，`attach` 另挂预览（不落库）。
       const userText = compose.input.trim() || compose.display?.trim() || ''
       applyMessages(
         createOptimisticMessages({
@@ -308,7 +309,8 @@ export function useAiConversation(input: {
           userText,
           assistantId: request.assistantId,
           chapterId: request.chapterId,
-          action: compose.action
+          action: compose.action,
+          ...(compose.attach !== undefined ? { attach: compose.attach } : {})
         })
       )
       /** 超预算拒绝：撤掉本轮乐观消息、恢复输入（由调用方按 false 处理）。 */

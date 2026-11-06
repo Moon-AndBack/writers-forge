@@ -1,6 +1,7 @@
 import type { Editor } from '@tiptap/core'
 import { readEditorSelection } from '../../../../components/editor/useEditorSelection'
 import type { AiConversationMessage } from './chatRuntime'
+import type { AiComposeAction } from './functions'
 
 /**
  * AI 面板的纯工具（从 `AiPanel.tsx` 拆出，控制单文件行数，AGENTS §3）。
@@ -9,29 +10,60 @@ import type { AiConversationMessage } from './chatRuntime'
  * 不持有 React 状态，也不碰请求与落库。
  */
 
+/** 功能 → 文案 key（静态映射，避免拼接 key 丢类型）。胶囊与下拉共用。 */
+export const ACTION_LABEL_KEYS = {
+  polish: 'panel.action.polish',
+  continue: 'panel.action.continue',
+  rewrite: 'panel.action.rewrite',
+  translate: 'panel.action.translate',
+  chat: 'panel.action.chat'
+} as const satisfies Record<AiComposeAction, string>
+
+/** 一条 assistant 回复允许的回插动作集合。 */
+export interface ApplyActions {
+  /** 替换发送时选中的那段正文。 */
+  replace: boolean
+  /** 插入到发送时选区的末尾之后。 */
+  insert: boolean
+}
+
 /**
- * assistant 回复可回插的判定：**来自当前章**、非流式、无错误、未中断、正文非空
- * （user 消息恒不可回插）。
+ * assistant 回复可回插的判定 + 按功能收敛的动作集合。
+ *
+ * 前置条件（任一不满足 → `null`，完全不可回插）：**来自当前章**、assistant、
+ * 非流式、无错误、未中断、正文非空（user 消息恒不可回插）。
  *
  * 来源章规则：消息必须带 `chapterId` 且等于当前章——无章聊天产生的消息（`null`）
  * 与其它章的消息都拒绝回插，避免把 A 章的回复写进 B 章正文。
  *
- * `interrupted` 的半截回复同样不允许回插正文档：内容停在句子中间，且这类消息本就带着
- * 「未走完」的语义，写进正文只会留下残篇。
+ * 动作矩阵：
+ * - `polish` / `rewrite` / `translate`：只替换（成品替换选中段）；
+ * - `continue`：只插入（续写接在选中段之后）；
+ * - `chat` / 历史消息（`action` 为 `undefined`）：两种都允许（自由对话无法预判用途）。
  */
-export function canApplyMessage(
+export function applyActionsFor(
   message: AiConversationMessage,
   currentChapterId: number | null
-): boolean {
-  if (currentChapterId === null) return false
-  if (message.chapterId == null || message.chapterId !== currentChapterId) return false
-  return (
+): ApplyActions | null {
+  if (currentChapterId === null) return null
+  if (message.chapterId == null || message.chapterId !== currentChapterId) return null
+  const eligible =
     message.role === 'assistant' &&
     message.streaming !== true &&
     message.error === undefined &&
     message.interrupted !== true &&
     message.content.trim() !== ''
-  )
+  if (!eligible) return null
+
+  if (message.action === 'continue') return { replace: false, insert: true }
+  if (
+    message.action === 'polish' ||
+    message.action === 'rewrite' ||
+    message.action === 'translate'
+  ) {
+    return { replace: true, insert: false }
+  }
+  return { replace: true, insert: true }
 }
 
 /** 当前选区字数（空选区 / 无编辑器 → 0）。 */

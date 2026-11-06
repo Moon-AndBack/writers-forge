@@ -325,6 +325,54 @@
   max-width: 100%;
 }
 
+/* 功能胶囊：Tag 默认圆角 --r-xs，这里覆写为胶囊形（999px）。
+   只改圆角 / 间距，不做位移（§8）。 */
+.wf-tag.ai-msg__chip {
+  margin-bottom: 6px;
+  border-radius: 999px;
+}
+
+/* 携带内容预览：分隔线区分「用户输入」与「选中正文 / 卷章名」。 */
+.ai-msg__attach {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--control-on-soft-line);
+}
+
+.ai-msg__attach-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text-dim);
+}
+
+/* 3 行截断：只裁切视觉，不隐藏文本（展开后完整显示）。 */
+.ai-msg__text.is-clamped,
+.ai-msg__attach-text.is-clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* 气泡内「展开 / 收起」：纯文本按钮（不引入 Button 的按压位移）。 */
+.ai-msg__toggle {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--brand);
+  background: transparent;
+  cursor: pointer;
+}
+
+.ai-msg__toggle:hover {
+  text-decoration: underline;
+}
+
 .ai-msg--user {
   align-items: flex-end;
 }

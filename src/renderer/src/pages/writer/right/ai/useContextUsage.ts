@@ -26,7 +26,7 @@ const limitCache = new Map<string, ResolvedLimit>()
 /** 缓存失效订阅者：已挂载的面板收到通知后重跑一次 `ai:catalog:limit`。 */
 const limitCacheListeners = new Set<() => void>()
 
-/** IPC 不可用 / 解析失败时的兜底：按 32K 默认窗口估算（UI 标注「未知模型」）。 */
+/** IPC 不可用 / 解析失败时的兜底：按默认窗口估算（未知模型 1M，UI 标注「未知模型」）。 */
 const FALLBACK_LIMIT: ResolvedLimit = {
   tokens: DEFAULT_CONTEXT_WINDOW,
   source: 'default',

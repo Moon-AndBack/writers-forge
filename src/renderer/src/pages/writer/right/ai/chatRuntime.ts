@@ -7,7 +7,7 @@ import type {
   AiProviderId,
   AiUsage
 } from '../../../../../../preload/types/ai'
-import type { AiComposeAction, AiComposeInput } from './functions'
+import type { AiComposeAction, AiComposeAttachment, AiComposeInput } from './functions'
 import { findSummary } from './contextSummary'
 import type { CompactionMarker, SavedSummary } from './contextSummary'
 
@@ -43,7 +43,7 @@ export interface AiConversationMessage {
   content: string
   /**
    * 消息产生时所在的章（发送瞬间快照）；无章聊天 / 分隔行为 `undefined`。
-   * 回插校验据此判断「是否来自当前章」（见 `panelUtils.canApplyMessage`）。
+   * 回插校验据此判断「是否来自当前章」（见 `panelUtils.applyActionsFor`）。
    */
   chapterId?: number | null
   /**
@@ -51,6 +51,11 @@ export interface AiConversationMessage {
    * 历史消息 / 未知值为 `undefined`；供气泡胶囊与按功能收敛的回插按钮使用。
    */
   action?: AiComposeAction
+  /**
+   * 本次携带的上下文预览（仅 user 消息、仅本次会话内存中）：输入与选中 / 全文
+   * 同时存在时展示在气泡第二段。**不落库**，重开会话后历史气泡只剩 `content`。
+   */
+  attach?: AiComposeAttachment
   /** 是否正在流式输出。 */
   streaming?: boolean
   /** 错误消息（assistant 气泡内的错误提示）。 */
@@ -174,9 +179,10 @@ export function createActiveRequest(input: {
  * 构造发送瞬间的乐观消息（user 展示气泡 + assistant 流式占位）。
  *
  * `chapterId` 是本次请求的章快照：消息随会话跨章保留，回插时据此判断来源章
- * （见 `panelUtils.canApplyMessage`）。
- * `action` 同时挂在 user 与 assistant 上：user 气泡据此显示「[润色]」胶囊（下方接
- * 选中内容），assistant 气泡据此收敛回插按钮。
+ * （见 `panelUtils.applyActionsFor`）。
+ * `action` 同时挂在 user 与 assistant 上：user 气泡据此显示功能胶囊，assistant
+ * 气泡据此收敛回插按钮。
+ * `attach` 只挂 user 气泡（携带内容预览），不落库。
  */
 export function createOptimisticMessages(input: {
   base: AiConversationMessage[]
@@ -184,8 +190,9 @@ export function createOptimisticMessages(input: {
   assistantId: string
   chapterId: number | null
   action: AiComposeAction
+  attach?: AiComposeAttachment
 }): AiConversationMessage[] {
-  const { base, userText, assistantId, chapterId, action } = input
+  const { base, userText, assistantId, chapterId, action, attach } = input
   return [
     ...base,
     ...(userText !== ''
@@ -195,7 +202,8 @@ export function createOptimisticMessages(input: {
             role: 'user' as const,
             content: userText,
             chapterId,
-            action
+            action,
+            ...(attach !== undefined ? { attach } : {})
           }
         ]
       : []),

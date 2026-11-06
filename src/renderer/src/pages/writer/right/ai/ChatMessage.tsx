@@ -1,9 +1,12 @@
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Markdown from 'react-markdown'
 import type { Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Button } from '../../../../components/ui'
+import { Button, Tag } from '../../../../components/ui'
 import { AI_ERROR_TEXT_KEYS } from './aiErrorText'
+import { ACTION_LABEL_KEYS } from './panelUtils'
+import type { ApplyActions } from './panelUtils'
 import type { AiConversationMessage } from './chatRuntime'
 
 /**
@@ -43,10 +46,49 @@ const MD_COMPONENTS: Components = {
   em: ({ children }) => <em className="ai-md-em">{children}</em>
 }
 
+/**
+ * 可折叠长文本：默认按 3 行截断（CSS `-webkit-line-clamp`），实际溢出时才出现
+ * 「展开 / 收起」。用 `scrollHeight` 与 `clientHeight` 比对判断是否截断，
+ * 避免按字符数猜测（中英文 / 换行差异大）。
+ */
+function CollapsibleText({ text, className }: { text: string; className: string }) {
+  const { t } = useTranslation('ai')
+  const ref = useRef<HTMLParagraphElement | null>(null)
+  const [expanded, setExpanded] = useState(false)
+  const [overflowing, setOverflowing] = useState(false)
+
+  useEffect(() => {
+    const node = ref.current
+    if (node === null || expanded) return
+    setOverflowing(node.scrollHeight > node.clientHeight + 1)
+  }, [text, expanded])
+
+  return (
+    <>
+      <p ref={ref} className={`${className}${expanded ? '' : ' is-clamped'}`}>
+        {text}
+      </p>
+      {overflowing ? (
+        <button
+          type="button"
+          className="ai-msg__toggle"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {t(expanded ? 'message.collapse' : 'message.expand')}
+        </button>
+      ) : null}
+    </>
+  )
+}
+
 export interface ChatMessageProps {
   message: AiConversationMessage
-  /** 是否显示「替换选中 / 插入到光标后」按钮（仅 assistant 消息、非流式、非错误、未中断时）。 */
-  canApply: boolean
+  /**
+   * 该消息允许的回插动作；`null` = 不可回插
+   * （非 assistant / 流式 / 错误 / 中断 / 空正文 / 跨章）。
+   */
+  applyActions: ApplyActions | null
   /** 消息来自其它章（跨章会话）：assistant 气泡上加一条轻量来源提示。 */
   fromOtherChapter?: boolean
   onApplyReplace: (text: string) => void
@@ -57,13 +99,15 @@ export interface ChatMessageProps {
  * 单条 AI 消息气泡（对话模式与快捷结果共用）。
  *
  * - user / assistant 靠对齐方向与底色区分（无 transform，§8）；
+ * - user 气泡：功能胶囊 + 正文（输入或上下文兜底）+ 携带内容预览（分隔线后 3 行折叠）；
  * - assistant 走 `react-markdown` + `remark-gfm`（元素类名见 `MD_COMPONENTS`）；
  * - 流式中追加闪烁光标（只动 opacity）；错误走 `ai` ns 的 `error.<code>`；
- * - `canApply` 时给出回插正文的两个动作，文本由父组件透传给 `applyToEditor`。
+ * - 回插按钮按 `applyActions` 渲染：润色 / 重写 / 翻译只替换，续写只插入，
+ *   自由对话与历史消息两种都给。
  */
 export function ChatMessage({
   message,
-  canApply,
+  applyActions,
   fromOtherChapter = false,
   onApplyReplace,
   onApplyInsert
@@ -74,7 +118,8 @@ export function ChatMessage({
   const error = message.error
   const interrupted = message.interrupted === true
   const hasContent = message.content.trim() !== ''
-  const showActions = canApply && !isUser && !streaming && error === undefined && hasContent
+  const chipLabel =
+    isUser && message.action !== undefined ? t(ACTION_LABEL_KEYS[message.action]) : null
   // 来源章提示只挂在 assistant 气泡上：它才是「能不能回插」的对象，user 消息加标记只是噪音。
   const showForeign = fromOtherChapter && !isUser && hasContent
 
@@ -84,17 +129,30 @@ export function ChatMessage({
         className={`ai-msg__bubble${error !== undefined ? ' is-error' : ''}`}
         aria-busy={streaming || undefined}
       >
-        {hasContent ? (
-          isUser ? (
-            <p className="ai-msg__text">{message.content}</p>
-          ) : (
-            <div className="ai-msg__body">
-              <Markdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>
-                {message.content}
-              </Markdown>
-              {streaming ? <span className="ai-msg__cursor" aria-hidden="true" /> : null}
-            </div>
-          )
+        {isUser ? (
+          <>
+            {chipLabel !== null ? (
+              <Tag tone="brand" className="ai-msg__chip">
+                {chipLabel}
+              </Tag>
+            ) : null}
+            {hasContent ? (
+              <CollapsibleText text={message.content} className="ai-msg__text" />
+            ) : null}
+            {/* 输入与携带内容同时存在时：分隔线后展示选中预览 / 「卷名 · 章名」。 */}
+            {message.attach !== undefined ? (
+              <div className="ai-msg__attach">
+                <CollapsibleText text={message.attach.text} className="ai-msg__attach-text" />
+              </div>
+            ) : null}
+          </>
+        ) : hasContent ? (
+          <div className="ai-msg__body">
+            <Markdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>
+              {message.content}
+            </Markdown>
+            {streaming ? <span className="ai-msg__cursor" aria-hidden="true" /> : null}
+          </div>
         ) : streaming ? (
           <span className="ai-msg__cursor ai-msg__cursor--solo" aria-hidden="true" />
         ) : null}
@@ -108,14 +166,18 @@ export function ChatMessage({
         {/* 来源章提示：跨章会话里其它章的回复不能回插本章正文，给一条轻量说明。 */}
         {showForeign ? <p className="ai-msg__foreign">{t('message.otherChapter')}</p> : null}
       </div>
-      {showActions ? (
+      {applyActions !== null && !isUser ? (
         <div className="ai-msg__actions">
-          <Button size="sm" variant="secondary" onClick={() => onApplyReplace(message.content)}>
-            {t('panel.apply.replace')}
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => onApplyInsert(message.content)}>
-            {t('panel.apply.insert')}
-          </Button>
+          {applyActions.replace ? (
+            <Button size="sm" variant="secondary" onClick={() => onApplyReplace(message.content)}>
+              {t('panel.apply.replace')}
+            </Button>
+          ) : null}
+          {applyActions.insert ? (
+            <Button size="sm" variant="ghost" onClick={() => onApplyInsert(message.content)}>
+              {t('panel.apply.insert')}
+            </Button>
+          ) : null}
         </div>
       ) : null}
     </article>

@@ -17,7 +17,7 @@ import type { AiComposeAction } from './ai/functions'
 import { useAiConversation } from './ai/useAiConversation'
 import { useAiSessions } from './ai/useAiSessions'
 import { AiSessionBar } from './ai/AiSessionBar'
-import { canApplyMessage, readFullText, toOption } from './ai/panelUtils'
+import { ACTION_LABEL_KEYS, applyActionsFor, readFullText, toOption } from './ai/panelUtils'
 import { useAiModels } from './ai/useAiModels'
 import { useBookProfile } from './ai/useBookProfile'
 import { AiControls } from './ai/AiControls'
@@ -27,21 +27,14 @@ import { AiComposerStatus } from './ai/AiComposerStatus'
 import { useContextUsage } from './ai/useContextUsage'
 import { useEditorMetrics } from './ai/useEditorMetrics'
 
-/** 功能 → 文案 key（静态映射，避免拼接 key 丢类型）。 */
-const ACTION_LABEL_KEYS = {
-  polish: 'panel.action.polish',
-  continue: 'panel.action.continue',
-  rewrite: 'panel.action.rewrite',
-  translate: 'panel.action.translate',
-  chat: 'panel.action.chat'
-} as const satisfies Record<AiComposeAction, string>
-
 /** 失焦期选区镜像饰带类名（样式见 `styles/writer-ai.css` 的 `.ai-selection-mirror`）。 */
 const AI_SELECTION_MIRROR_CLASS = 'ai-selection-mirror'
 
 export interface AiPanelProps {
   bookId: string
   chapterId: number | null
+  /** 当前章的「卷名 · 章名」（携带全文时气泡用它替代正文；缺失时退回功能名）。 */
+  chapterPath?: string
   /** 页签是否可见（用于惰性加载）。 */
   active: boolean
 }
@@ -59,6 +52,9 @@ export interface AiPanelProps {
  * 无论润色 / 续写 / 改写 / 翻译 / 自由对话都带（可由开关关闭）。
  * 「携带全文」（整章正文）与「携带选中文本」互斥，默认勾「选中文本」。
  *
+ * 气泡口径：胶囊显示功能名；输入为空时正文顶替为「完整选中文本 / 卷名 · 章名」，
+ * 输入与携带内容同时存在时另挂 `attach` 预览（分隔线后 3 行折叠，不落库）。
+ *
  * 模型切换只写本面板的 `modelOverride`（作为 `useAiConversation` 的 `model` 入参），
  * **不写回**全局 AI 配置，避免临时选择污染设置页。
  *
@@ -70,7 +66,7 @@ export interface AiPanelProps {
  * 选区快照：点「发送」的瞬间读一次 `readEditorSelection(editor)` 存入 `selectionRef`
  * ——回插时用这份 range，不重新读，保证「发起请求时选中的那段」就是被替换 / 插入参照的那段。
  */
-export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
+export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps) {
   const { t } = useTranslation('ai')
   const { show: showToast, node: toastNode } = useToast()
   const { editor } = useRichTextEditor('chapter')
@@ -262,14 +258,18 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
     const context = carryFull ? readFullText(editor) : carrySelection ? (snapshot?.text ?? '') : ''
     if (text === '' && context.trim() === '') return
 
-    const actionLabel = t(ACTION_LABEL_KEYS[action])
-    const carryLabel = carryFull
-      ? t('panel.carry.fullLabel')
-      : carrySelection
-        ? t('panel.carry.selectionLabel')
-        : ''
+    // 气泡正文兜底：输入为空时用「完整选中文本 / 卷名 · 章名」顶替 content。
+    // 选中文本不在此截断——气泡内按 3 行折叠，展开即看全文；全文场景本就是短串。
+    const fullLabel = chapterPath ?? t('panel.carry.fullLabel')
     const display =
-      text === '' ? `[${actionLabel}]${carryLabel !== '' ? ` ${carryLabel}` : ''}` : undefined
+      text !== '' ? undefined : carryFull ? fullLabel : context.trim() !== '' ? context : undefined
+    // 输入与携带内容同时存在：另挂预览（分隔线 + 3 行折叠），不落库。
+    const attach =
+      text !== '' && context.trim() !== ''
+        ? carryFull
+          ? { kind: 'full' as const, text: fullLabel }
+          : { kind: 'selection' as const, text: context }
+        : undefined
     const draft = input
     setInput('')
     void send({
@@ -277,6 +277,7 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
       input: text,
       context,
       ...(display !== undefined ? { display } : {}),
+      ...(attach !== undefined ? { attach } : {}),
       // 作品设定只进 system（见 `composeMessages`）；开关关闭 / 无文本时不传。
       ...(carryBuiltin ? { bookContext: profile.context } : {})
     }).then((accepted) => {
@@ -374,7 +375,7 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
               <ChatMessage
                 key={message.id}
                 message={message}
-                canApply={canApplyMessage(message, chapterId)}
+                applyActions={applyActionsFor(message, chapterId)}
                 fromOtherChapter={message.chapterId != null && message.chapterId !== chapterId}
                 onApplyReplace={handleApplyReplace}
                 onApplyInsert={handleApplyInsert}
