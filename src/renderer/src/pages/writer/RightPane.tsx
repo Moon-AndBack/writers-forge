@@ -20,8 +20,13 @@ import { ForeshadowOverviewPanel } from './right/ForeshadowOverviewPanel'
 import { InspirationOverviewPanel } from './right/InspirationOverviewPanel'
 import { OutlineRightPanel } from './right/OutlineRightPanel'
 import { PlotFilterPanel } from './right/PlotFilterPanel'
-import { RightPaneTabs, type RightPaneTab } from './right/RightPaneTabs'
+import { RightPaneTabs } from './right/RightPaneTabs'
 import { TimelineRightPanel } from './right/TimelineRightPanel'
+import {
+  CHAPTER_RIGHT_PANE_TABS,
+  OUTLINE_RIGHT_PANE_TABS,
+  type RightPaneTab
+} from './right/rightPaneTabSets'
 import type { TimelineEntry } from './timeline/timelineOrigin'
 
 /** 调用方未传保存入口时的占位 ref（仅保证必填契约，编辑器写入无副作用）。 */
@@ -31,19 +36,21 @@ const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { curr
  * 写作页右栏：按模块渲染对应 `.rp-view`（内容统一为 `.rp-body`；各模块均不设面板头，
  * 模块标题由中栏承载，首块直接从栏级内衬起排）。
  *
- * - **章节模块**：右栏为「大纲 / 剧情 / 伏笔 / AI / 灵感」五页签（页签条 + 大纲面板 +
- *   剧情面板 + 伏笔总览面板 + AI 面板 + 灵感总览面板）。
- *   剧情页签走 `PlotFilterPanel`（时间线 + 剧情线双下拉筛选 + 只读时间轴卡片 + 悬停正文浮窗），
- *   与大纲模块右栏同款面板，只是多一层页签条。五个面板**始终挂载**，只用 `hidden` 切换显隐，
- *   列表滚动位置不因页签切换丢失；页签状态只在章节模块内记忆（`chapterTab`，默认「大纲」）。
+ * - **章节模块 / 大纲模块**：两模块共用**同一套**右栏页签容器与面板实例（只切换页签子集，
+ *   不重复挂载面板）。
+ *   - 章节模块：五页签「大纲 / 剧情 / 伏笔 / 灵感 / AI」（页签条 + 大纲面板 + 剧情面板 +
+ *     伏笔总览面板 + 灵感总览面板 + AI 面板）；页签状态 `chapterTab`，默认「大纲」。
+ *   - 大纲模块：三页签「剧情 / 伏笔 / 灵感」（与章节页同款，不含「大纲」与「AI」）；
+ *     页签状态 `outlineTab`，默认「剧情」。
+ *   五个面板**始终挂载**，只用 `hidden` 切换显隐，列表滚动位置不因页签切换丢失；大纲模块下
+ *   「大纲」页签不在可见集内，`OutlineRightPanel` 常驻但恒隐藏。剧情页签走 `PlotFilterPanel`
+ *   （时间线 + 剧情线双下拉筛选 + 只读时间轴卡片 + 悬停正文浮窗），两模块同款面板。
  *   AI 页签挂载 `AiPanel`（模型 / 功能下拉 + 快捷结果 / 对话两种模式，结果可回插正文），
- *   惰性加载：`active` 仅在页签可见时为真，不可见时不发起任何模型 / 会话请求。
+ *   惰性加载：`active` 仅在「章节模块 + 页签可见」时为真，不可见时不发起任何模型 / 会话请求。
  *   伏笔页签挂载 `ForeshadowOverviewPanel`（全书伏笔按派生状态分组的只读卡片总览），
- *   同样惰性加载，且切离章节模块时不拉数据。
+ *   同样惰性加载，且切离这两个模块时不拉数据。
  *   灵感页签挂载 `InspirationOverviewPanel`（全书灵感平铺的只读卡片总览，点卡片在右栏内
- *   展开只读详情），同样惰性加载，且切离章节模块时不拉数据。
- * - **大纲模块**：右栏直接挂载同一 `PlotFilterPanel`（无页签条）：时间线 + 剧情线双下拉筛选 +
- *   只读时间轴卡片 + 实体胶囊 + 悬停正文浮窗，点击只选中，不提供正文编辑器。
+ *   展开只读详情），同样惰性加载，且切离这两个模块时不拉数据。
  * - **剧情模块**：右栏为节点正文富文本编辑器（`PlotEditor`：正文 + 底部保存条；
  *   未保存切换由 `ConfirmDialog` 两态确认）。
  * - **伏笔模块**：右栏为详情表单（名称 / 描述 / 状态 + 只读锚点 + 底部保存条；
@@ -165,8 +172,20 @@ export function RightPane({
   // 域内切条目的「保存」失败提示：不切换、脏态保留，可直接再点一次重试。
   const { show: showSaveFailed, node: saveFailedToast } = useToast()
 
-  // 章节模块页签独立记忆（默认「大纲」）；三个面板始终挂载。
+  // 页签状态按模块隔离：章节默认「大纲」，大纲默认「剧情」；两模块共用同一套面板实例。
   const [chapterTab, setChapterTab] = useState<RightPaneTab>('outline')
+  const [outlineTab, setOutlineTab] = useState<RightPaneTab>('plot')
+
+  const isChapterView = module === 'chapters'
+  const isOutlineView = module === 'outline'
+  const paneTabs = isOutlineView ? OUTLINE_RIGHT_PANE_TABS : CHAPTER_RIGHT_PANE_TABS
+  const storedTab = isOutlineView ? outlineTab : chapterTab
+  // 当前页签不在本模块可见集内（如章节停在「大纲 / AI」后切到大纲模块）→ 回退本模块首项。
+  const activeTab = paneTabs.includes(storedTab) ? storedTab : paneTabs[0]
+  const handleTabChange = (next: RightPaneTab): void => {
+    if (isOutlineView) setOutlineTab(next)
+    else setChapterTab(next)
+  }
 
   return (
     <aside
@@ -176,17 +195,24 @@ export function RightPane({
       aria-label={t('rightPaneAria')}
       aria-hidden={hidden || undefined}
     >
-      {/* 章节模块：右栏内「大纲 | 剧情 | 伏笔 | AI | 灵感」五页签；五面板常驻，切页签不卸载。 */}
-      <div className={`rp-view${module === 'chapters' ? ' is-active' : ''}`} data-view="chapters">
-        <RightPaneTabs value={chapterTab} onChange={setChapterTab} />
-        <div className="rp-tabpanel" hidden={chapterTab !== 'outline'}>
+      {/* 章节 / 大纲模块：共用同一套页签容器与面板实例（只切页签子集，不重复挂载面板）。
+          章节五页签「大纲 | 剧情 | 伏笔 | 灵感 | AI」、大纲三页签「剧情 | 伏笔 | 灵感」；
+          五面板常驻，切页签不卸载。 */}
+      <div
+        className={`rp-view${isChapterView || isOutlineView ? ' is-active' : ''}`}
+        data-view={isOutlineView ? 'outline' : 'chapters'}
+      >
+        <RightPaneTabs value={activeTab} onChange={handleTabChange} tabs={paneTabs} />
+        {/* 大纲页签：仅章节模块可见（大纲模块页签集不含 outline，此处恒 hidden，但保持挂载）。 */}
+        <div className="rp-tabpanel" hidden={!isChapterView || activeTab !== 'outline'}>
           <OutlineRightPanel
             volumes={outlineVolumes}
             items={outlineItems}
             activeVolumeId={activeVolumeId}
           />
         </div>
-        <div className="rp-tabpanel" hidden={chapterTab !== 'plot'}>
+        {/* 剧情页签：两模块同款面板（双下拉筛选 + 只读时间轴卡片 + 悬停正文浮窗）。 */}
+        <div className="rp-tabpanel" hidden={activeTab !== 'plot'}>
           <PlotFilterPanel
             lines={plotAllLines}
             scenes={plotScenes}
@@ -196,48 +222,39 @@ export function RightPane({
             bookId={bookId ?? ''}
           />
         </div>
-        {/* 伏笔页签：全书伏笔按派生状态分组的只读卡片总览。
-            `active` 仅在「章节模块 + 伏笔页签可见」时为真（惰性加载，切离章节模块即停拉）；
+        {/* 伏笔页签：全书伏笔按派生状态分组的只读卡片总览（章节 / 大纲两模块同款）。
+            `active` 仅在「章节或大纲模块 + 伏笔页签可见」时为真（惰性加载，切离即停拉）；
             面板常驻，切页签不丢滚动位置。数据由面板自行拉取（不启用 `useForeshadowBundle`，
             避免顺带挂载伏笔详情面板）。 */}
-        <div className="rp-tabpanel" hidden={chapterTab !== 'foreshadow'}>
+        <div className="rp-tabpanel" hidden={activeTab !== 'foreshadow'}>
           <ForeshadowOverviewPanel
             bookId={bookId ?? ''}
-            active={module === 'chapters' && chapterTab === 'foreshadow'}
+            active={(isChapterView || isOutlineView) && activeTab === 'foreshadow'}
             chapters={chapters}
             volumes={volumes}
             outlineItems={outlineItems}
           />
         </div>
-        {/* AI 页签：模型 / 功能下拉 + 快捷结果或对话列表，结果可回插正文。
-            `active` 仅在页签可见时为真（惰性加载）；面板本身常驻，切页签不丢状态。 */}
-        <div className="rp-tabpanel" hidden={chapterTab !== 'ai'}>
-          <AiPanel bookId={bookId ?? ''} chapterId={chapterId} active={chapterTab === 'ai'} />
-        </div>
-        {/* 灵感页签：全书灵感平铺的只读卡片总览，点卡片在右栏内展开只读详情。
-            `active` 仅在「章节模块 + 灵感页签可见」时为真（惰性加载，切离章节模块即停拉）；
+        {/* 灵感页签：全书灵感平铺的只读卡片总览，点卡片在右栏内展开只读详情（两模块同款）。
+            `active` 仅在「章节或大纲模块 + 灵感页签可见」时为真（惰性加载，切离即停拉）；
             面板常驻，切页签不丢滚动位置。数据由面板自行拉取（不启用 `useInspirationBundle`，
             后者仅在灵感模块激活时返回值）。 */}
-        <div className="rp-tabpanel" hidden={chapterTab !== 'inspiration'}>
+        <div className="rp-tabpanel" hidden={activeTab !== 'inspiration'}>
           <InspirationOverviewPanel
             bookId={bookId ?? ''}
-            active={module === 'chapters' && chapterTab === 'inspiration'}
+            active={(isChapterView || isOutlineView) && activeTab === 'inspiration'}
           />
         </div>
-      </div>
-
-      {/* 大纲模块：右栏挂载与章节「剧情」页签同款的面板（不带页签条）：
-          双下拉筛选 + 只读时间轴卡片 + 实体胶囊 + 悬停正文浮窗。
-          不补页签条占位，首张卡直接从栏级 8px 内衬起排。 */}
-      <div className={`rp-view${module === 'outline' ? ' is-active' : ''}`} data-view="outline">
-        <PlotFilterPanel
-          lines={plotAllLines}
-          scenes={plotScenes}
-          timelines={timelines}
-          activeTimelineId={activeTimelineId}
-          activeLineId={activePlotLineId}
-          bookId={bookId ?? ''}
-        />
+        {/* AI 页签：模型 / 功能下拉 + 快捷结果或对话列表，结果可回插正文。
+            `active` 仅在「章节模块 + 页签可见」时为真（惰性加载）；大纲模块页签集不含 AI，
+            必须为假，否则会话与流式状态会一直挂着。面板本身常驻，切页签不丢状态。 */}
+        <div className="rp-tabpanel" hidden={!isChapterView || activeTab !== 'ai'}>
+          <AiPanel
+            bookId={bookId ?? ''}
+            chapterId={chapterId}
+            active={isChapterView && activeTab === 'ai'}
+          />
+        </div>
       </div>
 
       {/* 剧情模块：右栏为选中节点的正文富文本编辑器（底部手动保存）。 */}
