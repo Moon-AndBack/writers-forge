@@ -91,7 +91,6 @@ const plot = {
     fieldTimeYear: 'Year',
     fieldTimeDesc: 'Time description',
     fieldTitle: 'Title',
-    fieldContent: 'Plot content',
     timePlaceholder: 'e.g. Day 4 · Noon',
     timeYearPlaceholder: 'e.g. 3',
     eraUnset: 'Unset',

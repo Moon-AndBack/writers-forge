@@ -204,9 +204,9 @@ export default function Writer({ bookId }: WriterProps) {
   // 新建时间线内部同样 `setActiveId`（隐式切换），入参与返回值语义保持原样：
   // 调用方仅 `void` 调用、不消费返回值，故包装后仍以 void 暴露。
   const handleCreateTimeline = useCallback(
-    (name: string, origin?: string): void => {
+    (name: string, description?: string): void => {
       guardPlotSwitch(() => {
-        void createTimeline(name, origin)
+        void createTimeline(name, description)
       })
     },
     [guardPlotSwitch, createTimeline]
@@ -398,7 +398,7 @@ export default function Writer({ bookId }: WriterProps) {
               timelines={timeline.list}
               timelineScene={timelineScene}
               activeTimelineId={timeline.activeId}
-              onTimelineOriginChange={timeline.updateOrigin}
+              onUpdateTimelineDescription={timeline.updateDescription}
               dossier={dossierBundle}
               foreshadow={foreshadowBundle}
               inspiration={inspirationBundle}

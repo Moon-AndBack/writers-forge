@@ -2,7 +2,7 @@
  * 独立时间线模块 · 起点 / 时间线键工具（渲染层）。
  *
  * 多时间线数据层（批1）：
- * - 列表键：`timeline:list:<bookId>` → JSON 数组 `TimelineEntry[]`：`{ id, name, origin }`
+ * - 列表键：`timeline:list:<bookId>` → JSON 数组 `TimelineEntry[]`：`{ id, name, origin, description }`
  * - 选中键：`timeline:active:<bookId>` → 选中 id 字符串
  * - 老键 `timeline:origin:<bookId>` 仅 migration 兼容；新代码读写新键。
  *
@@ -13,11 +13,16 @@
 /** 默认时间线 id。 */
 export const DEFAULT_TIMELINE_ID = 'default'
 
-/** 时间线条目（与主进程 `TimelineEntry` 同口径）。 */
+/**
+ * 时间线条目（渲染层）。主进程 `TimelineEntry` 只读 `id` / `name` / `origin`；
+ * `description` 为渲染层扩展字段（起点描述），由本模块解析 / 序列化。
+ */
 export interface TimelineEntry {
   id: string
   name: string
   origin: string
+  /** 起点描述（可编辑）；老数据缺失 → `''`。 */
+  description: string
 }
 
 /** 按书列表 settings 键。 */
@@ -58,7 +63,9 @@ export function parseTimelineList(raw: string | null): TimelineEntry[] {
       // 缺名回填空串，展示层经 `t('timeline.defaultName')` 兜底（不写入中文默认名）。
       const name = typeof obj.name === 'string' && obj.name.trim() !== '' ? obj.name : ''
       const origin = typeof obj.origin === 'string' ? obj.origin : ''
-      result.push({ id, name, origin })
+      // 向后兼容：老数据无 `description`（或非字符串）→ 空串，不丢弃条目。
+      const description = typeof obj.description === 'string' ? obj.description : ''
+      result.push({ id, name, origin, description })
     }
     return result
   } catch {

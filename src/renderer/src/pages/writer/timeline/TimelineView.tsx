@@ -29,7 +29,7 @@ export interface TimelineViewProps {
   /** 当前选中时间线 id（用于自行读取 origin 时定位）。 */
   activeTimelineId?: string | null
   /** 新建时间线入口（标题栏按钮触发）；缺省则不渲染入口。 */
-  onCreateTimeline?: (name: string, origin?: string) => void | Promise<unknown>
+  onCreateTimeline?: (name: string, description?: string) => void | Promise<unknown>
   /** 当前选中场景 id（页面层持有，与右栏只读详情共享；null = 未选中）。 */
   selectedSceneId?: number | null
   /** 场景选中回调（页面层包装：选中 + 隐藏时自动展开右栏）。 */
@@ -158,8 +158,8 @@ export default function TimelineView({
       {createOpen && onCreateTimeline ? (
         <NewTimelineDialog
           onClose={() => setCreateOpen(false)}
-          onSubmit={(name, originValue) => {
-            void onCreateTimeline(name, originValue)
+          onSubmit={(name, description) => {
+            void onCreateTimeline(name, description)
           }}
         />
       ) : null}

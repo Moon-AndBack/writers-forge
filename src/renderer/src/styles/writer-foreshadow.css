@@ -330,54 +330,20 @@
   display: inline-flex;
 }
 
-/* 软底容器内的次按钮（保存条「废弃 / 恢复」、只读详情「返回」）：尺寸（高 / 内边距 /
-   圆角 / 字号 / 过渡）全部由统一 `.wf-btn` 决定，与同栏主按钮同为默认 md 规格、同用
-   `Button` 组件，此处**只**换底色 —— 容器已是 --soft-solid 软底，`secondary` 的
-   --soft-solid 填充（或 ghost 的透明底）会与容器同色，故统一改用「软底上的控件」
-   令牌 --control-on-soft 灰底 + --control-on-soft-line 细描边（取值口径同 form.css 的
-   `.on-soft`）；文字色沿用 secondary 的 --text（ghost 由基类取 --text-dim）。
-   两处语义同为「软底容器里的次要动作」，故合并同一组规则，避免复制一套。
-   容器前缀把特异性提到 (0,2,0)，压过 `.wf-btn--secondary` / `.wf-btn--ghost` 的底色，
-   无需 !important。 */
-.foreshadow-save-bar__abandon .wf-btn,
-.foreshadow-detail-bar .wf-btn {
-  background: var(--control-on-soft);
-  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
-}
-/* hover / 按压只加深填充（按压沿用 hover 底 + 基类 translateY）。 */
-.foreshadow-save-bar__abandon .wf-btn:hover:not(:disabled),
-.foreshadow-detail-bar .wf-btn:hover:not(:disabled),
-.foreshadow-save-bar__abandon .wf-btn:active:not(:disabled),
-.foreshadow-detail-bar .wf-btn:active:not(:disabled) {
-  background: var(--control-on-soft-hover);
-}
-/* 禁用：保留灰底、撤掉描边（已回收的废弃按钮即此态），仅由基类 `.wf-btn:disabled` 降不透明度。 */
-.foreshadow-save-bar__abandon .wf-btn:disabled,
-.foreshadow-detail-bar .wf-btn:disabled {
-  background: var(--control-on-soft);
-  box-shadow: none;
-}
+/* 软底容器内的次按钮（保存条「废弃 / 恢复」、只读详情「返回」）统一挂共享类
+   `.wf-btn--on-soft`（components/button.css：--control-on-soft 灰底 + 内描边，
+   hover / 按压加深填充，禁用保留灰底），此处不再重复声明。 */
 
 /* ---------- 右栏「伏笔」页签：只读详情 ---------- */
 /* 结构复用 .foreshadow-panel / __scroll / .foreshadow-fields；本段只补详情专属排版。
    名称行 + 状态胶囊、描述段、相关实体平铺换行、底部返回栏。
 
-   字段软底块（名称 / 描述 / 相关实体三块统一）：
-   容器 `.foreshadow-fields.on-soft` 已铺 `--soft-solid` 软底，块内若用同色会糊成一片，
-   故取「软底上的控件」令牌 `--control-on-soft` + `--control-on-soft-line` 细描边
-   （与 form.css `.on-soft` 的输入框、本文件保存条次按钮同一口径，四主题通用）；
-   内衬 10 / 12、圆角 `--r-lg` 与输入类控件（`.wf-textarea`）对齐。
+   字段软底块（名称 / 描述 / 相关实体三块统一）：容器 `.foreshadow-fields.on-soft`
+   已铺 `--soft-solid` 软底，块内若用同色会糊成一片，故复用通用只读值块
+   `.wf-readonly-block`（components/surface.css：--control-on-soft 底 +
+   --control-on-soft-line 内描边 + 10 / 12 内衬，JSX 侧追加类）。
    块只裹「值」，标签（描述 / 相关实体）留在块外——与编辑态「标签在上、控件在下」
    的层级一致；名称块的标题与状态本就是值，直接落在块内。 */
-.foreshadow-detail__head,
-.foreshadow-detail__desc,
-.foreshadow-detail__entities {
-  padding: 10px 12px;
-  background: var(--control-on-soft);
-  border-radius: var(--r-lg);
-  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
-}
-
 .foreshadow-detail__head {
   display: flex;
   align-items: flex-start;

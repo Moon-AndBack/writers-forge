@@ -12,20 +12,19 @@ const timeline = {
     title: '新建时间线',
     nameLabel: '名称',
     namePlaceholder: '例：主时间线',
-    originLabel: '起点',
-    originPlaceholder: '例：元年'
+    descLabel: '起点描述',
+    descPlaceholder: '例：故事从这里开始'
   },
-  originLabel: '起点',
   originTitle: '起点',
   originDefault: '元年',
-  originDesc: '主时间线只读线的起点时间，默认「元年」；可在右栏修改。',
+  originDesc:
+    '起点时间固定为「元年」，不可修改；此处填写当前时间线的起点描述，点「保存描述」或离开输入框即保存。',
   originNote: '故事开始了',
   readonlyNote: '只读 · 不参与剧情线计数与排序',
-  originAria: '时间线起点',
-  originPlaceholder: '例：元年',
-  originSave: '保存起点',
+  originDescLabel: '起点描述',
+  originPlaceholder: '例：故事从这里开始',
+  originSave: '保存描述',
   originSaved: '已保存',
-  originEmpty: '未设置起点时显示「元年」',
   timelineSelect: {
     label: '时间线',
     placeholder: '选择时间线'

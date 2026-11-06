@@ -26,8 +26,8 @@ import type { TimelineEntry } from './timeline/timelineOrigin'
 const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { current: null }
 
 /**
- * 写作页右栏：按模块渲染对应 `.rp-view`（面板头 `.pane-head` + 内容 `.rp-body`；
- * 设定档案五域 / 伏笔 / 灵感详情不设面板头，模块标题由中栏承载）。
+ * 写作页右栏：按模块渲染对应 `.rp-view`（内容统一为 `.rp-body`；各模块均不设面板头，
+ * 模块标题由中栏承载，首块直接从栏级内衬起排）。
  *
  * - **章节模块**：右栏为「大纲 / 剧情 / 伏笔 / AI」四页签（页签条 + 大纲面板 + 剧情面板 +
  *   伏笔总览面板 + AI 面板）。
@@ -77,7 +77,7 @@ export function RightPane({
   onResolvePlotSwitch,
   timelineScene = null,
   activeTimelineId = null,
-  onTimelineOriginChange,
+  onUpdateTimelineDescription,
   dossier = null,
   foreshadow = null,
   inspiration = null
@@ -86,7 +86,7 @@ export function RightPane({
   paneRef: RefObject<HTMLElement | null>
   /** 是否隐藏（标题栏面板开关的偏好；隐藏时挂 `.is-hidden`）。 */
   hidden?: boolean
-  /** 书籍 id（路由参数）；时间线起点按书键读写。 */
+  /** 书籍 id（路由参数）；时间线起点按书键读取。 */
   bookId?: string
   /** 当前选中章节 id（AI 面板按章加载会话；null = 未选中章节）。 */
   chapterId?: number | null
@@ -135,8 +135,8 @@ export function RightPane({
   timelineScene?: PlotSceneRow | null
   /** 当前选中时间线 id（右栏 origin 面板跟随切换）。 */
   activeTimelineId?: string | null
-  /** origin 保存成功后回调（供页面层同步中栏显示）。 */
-  onTimelineOriginChange?: (origin: string) => void
+  /** 写回当前选中时间线的起点描述（右栏「起点」卡保存）。 */
+  onUpdateTimelineDescription: (description: string) => Promise<boolean>
   /** 设定档案五域装配包（仅活动模块为五域之一时非空；详情面板消费）。 */
   dossier?: DossierBundle | null
   /** 伏笔装配包（仅活动模块为伏笔时非空；详情面板消费）。 */
@@ -253,16 +253,15 @@ export function RightPane({
         />
       </div>
 
-      {/* 独立时间线：起点说明 + 可编辑起点（按书键经 settings 读写）+ 选中场景只读详情。 */}
+      {/* 独立时间线：不设面板头（模块标题由中栏承载）——`.rp-body--no-head` 补顶部内衬，
+          上为当前选中时间线的「起点」卡（可编辑起点描述），下为选中场景的只读详情卡
+          （样式见 writer-timeline.css）。 */}
       <div className={`rp-view${module === 'timeline' ? ' is-active' : ''}`} data-view="timeline">
-        <div className="pane-head">
-          <span className="pane-title">{t('right.timeline')}</span>
-        </div>
         <TimelineRightPanel
           bookId={bookId}
-          scene={timelineScene}
           activeTimelineId={activeTimelineId}
-          onOriginChange={onTimelineOriginChange}
+          onUpdateDescription={onUpdateTimelineDescription}
+          scene={timelineScene}
         />
       </div>
 

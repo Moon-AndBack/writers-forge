@@ -1,10 +1,10 @@
 /* ============================================================
-   写作视图 · 剧情（plot）— 右栏节点编辑器 / 时间线只读详情
+   写作视图 · 剧情（plot）— 右栏节点编辑器
    ------------------------------------------------------------------
    自 `writer-plot.css` 原样搬移（保持单文件 ≤500 行，§3）。
-   剧情模块右栏：正文卡 / 富文本正文容器与空态占位 / 独立保存条；
-   时间线模块右栏：选中场景只读详情的间距规则（`.plot-editor` / `.plot-field*`），
-   以及时间线起点编辑器的行内操作行（`.plot-editor-actions`）。
+   剧情模块右栏：正文卡 / 富文本正文容器与空态占位 / 独立保存条。
+   独立时间线右栏的卡片与只读详情已迁至 `writer-timeline.css`，
+   本文件只保留剧情模块共用的 `.plot-editor` / `.plot-field*`。
    剧情编辑器外层内衬由 `.rp-body` 提供，正文与保存条各为独立底色卡片。
    ============================================================ */
 
@@ -15,10 +15,10 @@
   display: flex;
   flex-direction: column;
   gap: 13px;
-  /* 剧情编辑器根不再挂 `.pane-region`：本批改为「正文卡 + 保存条卡」两张独立
-     底色卡（见 `.plot-editor-fields` / `.plot-save-bar`）；时间线右栏
-     （`.timeline-origin-panel` / `.timeline-scene-detail`）仍沿用 `.pane-region`
-     单卡底座。外层 8px 内衬由 `.rp-body` 提供，本类只保留 flex / gap。 */
+  /* 剧情编辑器根不挂 `.pane-region`：正文卡 + 保存条卡为两张独立底色卡
+     （见 `.plot-editor-fields` / `.plot-save-bar`）；外层 8px 内衬由 `.rp-body`
+     提供，本类只保留 flex / gap。独立时间线右栏已改用自有卡片（见
+     writer-timeline.css），不再引用本类。 */
 }
 
 /* 剧情视图右栏：`.rp-body` 改为纵向 flex 容器，令编辑器撑满剩余高度、
@@ -40,16 +40,15 @@
 }
 
 /* 表单字段分组：本批起同时承载正文卡底座（仅 plot 视图追加底色 / 描边 / 圆角，
-   见下方 `[data-view='plot']` 规则）；时间线起点不引用本类。 */
+   见下方 `[data-view='plot']` 规则）；时间线右栏自有卡片，不引用本类。 */
 .plot-editor-fields {
   display: flex;
   flex-direction: column;
   gap: 13px;
 }
 
-/* 剧情可编辑根：仅 plot 视图的编辑器撑满右栏剩余高度
-   （时间线只读详情 `.timeline-scene-detail` 不拉高），与 `.rp-body` /
-   表单组 / 内容字段构成四级 min-height:0 撑高链。 */
+/* 剧情可编辑根：仅 plot 视图的编辑器撑满右栏剩余高度（独立时间线右栏的卡片
+   不参与拉高），与 `.rp-body` / 表单组 / 内容字段构成四级 min-height:0 撑高链。 */
 .rp-view[data-view='plot'] .plot-editor {
   flex: 1;
   min-height: 0;
@@ -169,52 +168,4 @@
   background: var(--soft-solid);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-}
-
-/* 时间线起点编辑器的行内操作行（剧情编辑器已改用独立保存条）。 */
-.plot-editor-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 0;
-  padding-top: 8px;
-  position: relative;
-}
-
-/* 操作行上缘横线：左右渐隐（复用状态栏 `.statusbar::before` 口径，无整段硬线）。 */
-.plot-editor-actions::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 1px;
-  background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 80%, transparent);
-}
-
-.plot-auto-save {
-  margin-left: auto;
-  font-size: 10.5px;
-  color: var(--text-mute);
-}
-
-/* ============================================================
-   时间线右栏：选中场景只读详情的进场
-   ------------------------------------------------------------------
-   `TimelineRightPanel` 的详情根挂 `key={scene.id}`，切换场景即重建 → 动画重播。
-   只动透明度（wf-enter-fade）：时间线右栏 `.rp-body` 保留块级滚动，位移会瞬时
-   撑出 8px 可滚动区域、闪一下纵向滚动条。时长 / 缓动 / fill-mode 口径同上。 */
-.rp-view[data-view='timeline'] .timeline-scene-detail {
-  animation: wf-enter-fade var(--dur-base) var(--ease) backwards;
-}
-
-/* 时间线只读详情里的富文本正文：父链是「自动高度 flex 列」
-   （`.timeline-scene-detail` 不拉高、滚动由 `.rp-body` 承担），不能沿用大纲右栏
-   `.rp-read` 的「定高父容器 + 内部滚动」假设，否则会塌成 0 高或出现双重滚动条。
-   这里按内容自然撑高、取消内滚；内衬归零以与上方标题 / 时间值左对齐。
-   仅命中时间线视图，不影响大纲右栏的 `.rp-read`。 */
-.rp-view[data-view='timeline'] .timeline-scene-detail .rp-read {
-  flex: none;
-  overflow: visible;
-  padding: 0;
 }

@@ -17,6 +17,7 @@
 @import './writer-right-outline.css';
 @import './writer-ai.css';
 @import './writer-plot.css';
+@import './writer-timeline.css';
 @import './writer-dossier.css';
 @import './writer-dossier-relation.css';
 @import './writer-dossier-card.css';
@@ -335,32 +336,14 @@ body.is-resizing .splitter {
   padding: 8px;
 }
 
-/* 无面板头的视图（设定档案五域 / 伏笔详情，标题由中栏承载）：顶部内衬补 4px，
+/* 无面板头的视图（设定档案五域 / 伏笔 / 灵感 / 时间线，标题由中栏承载）：顶部内衬补 4px，
    避免首张详情卡直接贴住栏顶；其余视图沿用基准 8px。 */
 .rp-body--no-head {
   padding-top: 12px;
 }
 
-/* ---------- 面板标题 ---------- */
-.pane-head {
-  flex: none;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 14px 14px 8px;
-}
-
-.pane-title {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-mute);
-}
-
-.pane-head .spacer {
-  margin-left: auto;
-}
+/* 右栏已不再有面板头：`.pane-head` / `.pane-title` 随独立时间线右栏改为卡片式后移除
+   （各模块标题统一由中栏承载，右栏首块直接从栏级内衬起排，见 `.rp-body--no-head`）。 */
 
 /* ---------- 迷你按钮 / 分段（不透明底） ---------- */
 .mini-btn {

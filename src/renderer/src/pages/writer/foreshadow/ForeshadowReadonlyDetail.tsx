@@ -128,7 +128,7 @@ export function ForeshadowReadonlyDetail({
         onMouseLeave={entityHover.onMouseLeave}
       >
         <div className="foreshadow-fields on-soft">
-          <div className="foreshadow-detail__head">
+          <div className="foreshadow-detail__head wf-readonly-block">
             <span className="foreshadow-detail__title">
               {row.title.trim() === '' ? t('field.untitled') : row.title}
             </span>
@@ -145,7 +145,7 @@ export function ForeshadowReadonlyDetail({
             <ReadonlyRichText
               json={descriptionJson}
               emptyText={t('detail.descriptionEmpty')}
-              className="foreshadow-detail__desc"
+              className="foreshadow-detail__desc wf-readonly-block"
               extensions={extensions}
             />
           </div>
@@ -154,7 +154,7 @@ export function ForeshadowReadonlyDetail({
             <div className="foreshadow-detail__section">
               <div className="foreshadow-detail__label">{t('listItem.relatedEntities')}</div>
               <div
-                className="foreshadow-detail__entities"
+                className="foreshadow-detail__entities wf-readonly-block"
                 role="group"
                 aria-label={t('listItem.relatedEntities')}
               >
@@ -199,7 +199,7 @@ export function ForeshadowReadonlyDetail({
       </div>
 
       <div className="foreshadow-detail-bar">
-        <Button variant="secondary" onClick={onBack}>
+        <Button variant="secondary" className="wf-btn--on-soft" onClick={onBack}>
           {t('detail.back')}
         </Button>
       </div>

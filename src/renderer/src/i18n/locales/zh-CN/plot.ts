@@ -92,7 +92,6 @@ const plot = {
     fieldTimeYear: '年份',
     fieldTimeDesc: '时间描述',
     fieldTitle: '标题',
-    fieldContent: '剧情内容',
     timePlaceholder: '例：第 4 天 · 正午',
     timeYearPlaceholder: '例：3',
     eraUnset: '未设置',

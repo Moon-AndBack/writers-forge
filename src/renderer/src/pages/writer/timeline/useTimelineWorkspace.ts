@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   parseTimelineList,
+  resolveActiveEntry,
   serializeTimelineList,
   timelineActiveKey,
   timelineListKey,
@@ -19,14 +20,19 @@ export interface TimelineWorkspace {
   activeEntry: TimelineEntry | null
   /** 当前选中时间线的 origin（可能为空 → 由消费方回退默认）。 */
   origin: string
+  /** 当前选中时间线的起点描述（可能为空）。 */
+  description: string
   /** 是否已完成首读。 */
   loaded: boolean
   /** 切换选中时间线（写 `timeline:active:<bookId>`）。 */
   selectTimeline: (id: string) => void
   /** 新建时间线（追加并选中；name 为空 → 空名，展示层经 `t('timeline.defaultName')` 兜底）。 */
-  createTimeline: (name: string, origin?: string) => Promise<TimelineEntry | null>
-  /** 编辑当前选中时间线的 origin 并写回列表。 */
-  updateOrigin: (origin: string) => void
+  createTimeline: (name: string, description?: string) => Promise<TimelineEntry | null>
+  /**
+   * 更新**当前选中时间线**的起点描述（只改对应条目，其余条目原样写回）。
+   * 起点时间（origin）固定不可编辑；写入成功后同步列表态；返回是否落库成功。
+   */
+  updateDescription: (description: string) => Promise<boolean>
   /** 重新读取。 */
   reload: () => void
 }
@@ -48,7 +54,12 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
     let active = activeRaw ?? null
 
     if (parsed.length === 0) {
-      const entry: TimelineEntry = { id: 'default', name: DEFAULT_TIMELINE_NAME, origin: '' }
+      const entry: TimelineEntry = {
+        id: 'default',
+        name: DEFAULT_TIMELINE_NAME,
+        origin: '',
+        description: ''
+      }
       parsed = [entry]
       active = 'default'
       await window.api?.settings.set(listKey, serializeTimelineList(parsed))
@@ -93,11 +104,17 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
   )
 
   const createTimeline = useCallback(
-    async (name: string, origin?: string): Promise<TimelineEntry | null> => {
+    async (name: string, description?: string): Promise<TimelineEntry | null> => {
       const entryName = name.trim() !== '' ? name.trim() : DEFAULT_TIMELINE_NAME
-      const entryOrigin = origin && origin.trim() !== '' ? origin.trim() : ''
+      const entryDescription = description && description.trim() !== '' ? description.trim() : ''
       const id = `tl_${Date.now()}`
-      const newEntry: TimelineEntry = { id, name: entryName, origin: entryOrigin }
+      // origin 固定空串（展示层回退「元年」）；新建时填的是起点描述。
+      const newEntry: TimelineEntry = {
+        id,
+        name: entryName,
+        origin: '',
+        description: entryDescription
+      }
       const nextList = [...list, newEntry]
       setList(nextList)
       setActiveId(id)
@@ -108,14 +125,28 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
     [list, listKey, activeKey]
   )
 
-  const updateOrigin = useCallback(
-    (origin: string) => {
-      if (activeId === null) return
-      const next = list.map((entry) => (entry.id === activeId ? { ...entry, origin } : entry))
-      setList(next)
-      void window.api?.settings.set(listKey, serializeTimelineList(next))
+  // 起点描述保存：先按磁盘最新列表做读-改-写，避免内存列表过期时覆盖其它时间线的改动；
+  // 只替换当前选中条目的 `description`，其余条目（含固定 origin）原样写回。
+  const updateDescription = useCallback(
+    async (description: string): Promise<boolean> => {
+      const listRaw = await window.api?.settings.get(listKey)
+      const current = parseTimelineList(listRaw ?? null)
+      const base = current.length > 0 ? current : list
+      const target = resolveActiveEntry(base, activeId)
+      if (target === null) return false
+      const nextDescription = description.trim()
+      const nextList = base.map((entry) =>
+        entry.id === target.id ? { ...entry, description: nextDescription } : entry
+      )
+      try {
+        await window.api?.settings.set(listKey, serializeTimelineList(nextList))
+        setList(nextList)
+        return true
+      } catch {
+        return false
+      }
     },
-    [list, activeId, listKey]
+    [activeId, list, listKey]
   )
 
   const activeEntry =
@@ -123,16 +154,18 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
     (list.length > 0 ? list[0] : null) ??
     null
   const origin = activeEntry?.origin ?? ''
+  const description = activeEntry?.description ?? ''
 
   return {
     list,
     activeId,
     activeEntry,
     origin,
+    description,
     loaded,
     selectTimeline,
     createTimeline,
-    updateOrigin,
+    updateDescription,
     reload: load
   }
 }

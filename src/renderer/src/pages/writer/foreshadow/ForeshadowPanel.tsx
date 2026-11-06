@@ -451,7 +451,13 @@ function AbandonAction({
     <>
       {tooltip}
       <span ref={anchorRef} {...anchorProps} className="foreshadow-save-bar__abandon">
-        <Button variant="secondary" disabled={disabled} loading={busy} onClick={onToggle}>
+        <Button
+          variant="secondary"
+          className="wf-btn--on-soft"
+          disabled={disabled}
+          loading={busy}
+          onClick={onToggle}
+        >
           {abandoned ? restoreLabel : abandonLabel}
         </Button>
       </span>

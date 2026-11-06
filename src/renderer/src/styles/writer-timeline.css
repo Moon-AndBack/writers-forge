@@ -1,0 +1,148 @@
+/* ============================================================
+   写作视图 · 独立时间线右栏
+   ------------------------------------------------------------------
+   右栏自上而下两张卡：「起点」卡（可编辑 + 保存，读写当前选中时间线）
+   与「选中场景详情卡」（只读）：卡头（标题 + 时间）+ 只读正文值块，
+   无面板头（模块标题由中栏承载）。底座与其它右栏同口径：
+   `--soft-solid` + 1px `--line` + `--r-lg` + 14px 内衬；
+   正文值块复用通用 `.wf-readonly-block`（components/surface.css）。
+   剧情模块共用的 `.plot-editor` / `.plot-field` 等类留在
+   writer-plot-editor.css，本文件只放时间线专属规则。
+   ============================================================ */
+
+/* 右栏纵向流：详情卡吃掉栏内剩余高度；
+   高度链：`.rp-view`（flex: 1 + min-height: 0）→ `.rp-body`（flex: 1 + min-height: 0）→
+   详情卡（flex: 1 1 auto + min-height: 0）→ `.timeline-detail__section` → `.rp-read`。
+   每层都带 `min-height: 0`，否则 flex 项的最小内容高度会把卡片撑破。 */
+.rp-view[data-view='timeline'] .rp-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ---------- 卡片底座 ---------- */
+.timeline-card {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+/* ---------- 起点卡（可编辑 + 保存） ---------- */
+/* 起点卡按内容排高、不吃剩余高度（`.timeline-card` 默认 `flex: none`），
+   剩余高度留给下方详情卡。控件走通用 `Input` / `Button`，容器挂 `.on-soft`
+   让输入框换用 `--control-on-soft` 底 + 描边（见 form.css）。 */
+.timeline-origin-card {
+  gap: 10px;
+}
+
+/* 说明文案：12px 弱化，长文案可换行。 */
+.timeline-card__desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-mute);
+  overflow-wrap: anywhere;
+}
+
+/* 起点输入框：宽度由 `.wf-input` 的 100% 兜底，这里只约束窄栏收缩。 */
+.timeline-origin__value {
+  min-width: 0;
+}
+
+/* 动作行：保存按钮 + 保存结果 / 空态说明同一行，窄栏允许换行。 */
+.timeline-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeline-card__hint {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-mute);
+  overflow-wrap: anywhere;
+}
+
+.timeline-card__hint.is-saved {
+  color: var(--ok);
+}
+
+/* 卡头：标题 14 / 600，时间等辅助信息弱化右对齐（窄栏允许换行，不挤压标题）。 */
+.timeline-card__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.timeline-card__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.timeline-card__meta {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: right;
+  color: var(--text-mute);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- 详情卡卡身 ---------- */
+/* 详情卡在 `.rp-body` 里吃掉整栏剩余高度（覆盖 `.timeline-card` 的
+   `flex: none`）；`min-height: 0` 允许在栏高不足时收缩，把空间让给正文区，
+   由 `.rp-read` 内滚而不是撑破卡片。 */
+.rp-view[data-view='timeline'] .timeline-scene-detail {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 正文区：吃掉卡的剩余高度（卡头 + 正文两段）。
+   `flex: 1 1 auto` + `min-height: 0`：卡头按内容高度，正文区吸收其余空间。 */
+.timeline-detail__section {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* 只读正文：吃掉值块剩余高度，内容超出时在 `.rp-read` 内滚（内衬由值块
+   `.wf-readonly-block` 统一提供 10 / 12）。`flex: 1 1 auto` 覆盖 `.rp-read` 的
+   `flex: 1` 基数，`min-height: 0` 保证滚动链路成立；`.rp-read__doc` 是
+   `flex: 1 0 auto`（不收缩），因此文档按内容排高、由外层 `.rp-read` 滚动。 */
+.rp-view[data-view='timeline'] .timeline-scene-detail .rp-read {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 首行缩进：只作用于文档顶层段落（`.ProseMirror > p` 直接子级）。
+   列表项 / 引用 / 表格内的段落是嵌套节点，标题是 h1–h6、代码块是 pre，
+   均不匹配；其 `text-indent` 仍由 `.rp-read .ProseMirror p` 的 0 兜底，
+   故不会出现列表项或表头跟着缩进。作用域限定本详情卡，不影响其它右栏。 */
+.rp-view[data-view='timeline'] .timeline-scene-detail .rp-read .ProseMirror > p {
+  text-indent: 2em;
+}
+
+/* ---------- 进场 ----------
+   `TimelineRightPanel` 的详情根挂 `key={scene.id}`，切换场景即重建 → 动画重播。
+   只动透明度（wf-enter-fade）：纵向位移会瞬时撑出可滚动区域、闪一下滚动条。
+   时长 / 缓动 / fill-mode 口径同其它右栏详情卡。 */
+.rp-view[data-view='timeline'] .timeline-scene-detail {
+  animation: wf-enter-fade var(--dur-base) var(--ease) backwards;
+}

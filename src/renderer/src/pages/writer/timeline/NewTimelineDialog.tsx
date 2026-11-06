@@ -5,15 +5,15 @@ import { Button, FormField, Input, Modal } from '../../../components/ui'
 export interface NewTimelineDialogProps {
   /** 关闭（取消 / 遮罩 / Esc / 关闭按钮）。 */
   onClose: () => void
-  /** 提交新建（name 可空 → 默认名；origin 可空 → 空起点）。 */
-  onSubmit: (name: string, origin: string) => void
+  /** 提交新建（name 可空 → 默认名；description 可空 → 空起点描述）。 */
+  onSubmit: (name: string, description: string) => void
 }
 
 export default function NewTimelineDialog({ onClose, onSubmit }: NewTimelineDialogProps) {
   const { t } = useTranslation('timeline')
   const { t: tCommon } = useTranslation('common')
   const [name, setName] = useState('')
-  const [origin, setOrigin] = useState('')
+  const [description, setDescription] = useState('')
   const inputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export default function NewTimelineDialog({ onClose, onSubmit }: NewTimelineDial
   }, [])
 
   const submit = (): void => {
-    onSubmit(name, origin)
+    onSubmit(name, description)
     onClose()
   }
 
@@ -62,14 +62,14 @@ export default function NewTimelineDialog({ onClose, onSubmit }: NewTimelineDial
             }}
           />
         </FormField>
-        <FormField label={t('newDialog.originLabel')} htmlFor="new-timeline-origin">
+        <FormField label={t('newDialog.descLabel')} htmlFor="new-timeline-desc">
           <Input
-            id="new-timeline-origin"
-            value={origin}
-            placeholder={t('newDialog.originPlaceholder')}
+            id="new-timeline-desc"
+            value={description}
+            placeholder={t('newDialog.descPlaceholder')}
             autoComplete="off"
             spellCheck={false}
-            onChange={(event) => setOrigin(event.target.value)}
+            onChange={(event) => setDescription(event.target.value)}
           />
         </FormField>
       </div>

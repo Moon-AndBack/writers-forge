@@ -149,6 +149,23 @@
   border-radius: var(--r-lg);
 }
 
+/* ---------- Readonly block 只读值块 ----------
+   软底容器（`.on-soft` 卡）内承载只读值的最小块：`--control-on-soft` 底 +
+   `--control-on-soft-line` 内描边 + `--r-lg` 圆角 + 10 / 12 内衬（与输入类控件
+   对齐）。伏笔只读详情（名称行 / 描述 / 相关实体）与时间线右栏场景详情共用。 */
+.wf-readonly-block {
+  padding: 10px 12px;
+  background: var(--control-on-soft);
+  border-radius: var(--r-lg);
+  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
+}
+
+/* 值块也可能挂在只读富文本（`.rp-read`）上：其自带 8px 内衬且位于页面级样式，
+   与组件层加载次序不确定，故用双类提升一级特异性，保证内衬恒为 10 / 12。 */
+.rp-read.wf-readonly-block {
+  padding: 10px 12px;
+}
+
 /* ---------- Tag 标签 ----------
    原型：.field-chip（可关闭）/ .book-tag / .list-tag / .mood-chip / .scene-tag。 */
 .wf-tag {

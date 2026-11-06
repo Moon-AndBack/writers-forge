@@ -7,10 +7,10 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v96'
+export const CHAPTER_SEED_VERSION = 'v101'
 
 /**
- * 教学书种子变更日志（v3 → v96，逐版记录教学文案与结构变化）。
+ * 教学书种子变更日志（v3 → v100，逐版记录教学文案与结构变化）。
  *
  * 版本说明：`v3` 反映新结构（卷三 kind、`outline_items` 取代 `outline_chapters`、
  * 段落挂 `chapter_id`、大纲正文内联）；旧格式段落清除（`purgeLegacyParagraphs`）已随
@@ -429,4 +429,59 @@ export const CHAPTER_SEED_VERSION = 'v96'
  * ns 的 `detail.delete` 键（仅右栏使用）同步删除。教学文案（卷四「实体与面板」的「灵感」章
  * 「删除与未保存保护」节、大纲「灵感」分组条目）由「两处删除」改为「只有卡片一处」，
  * 键提升让老库也能看到新文案。
+ * `v97`（时间线右栏卡片化批）：独立时间线右栏改为与其它右栏一致的卡片式布局——去掉面板头
+ * （`.pane-head` / `.pane-title` 规则随唯一使用点一并从 writer.css 移除），`.rp-body` 改
+ * `rp-body--no-head` + 纵向 flex（卡间距 8px，滚动仍归栏级）；「起点」卡保留可编辑
+ * （`--soft-solid` + 1px `--line` + `--r-lg` + 14px 内衬，控件改用 `FormField` + `Input` +
+ * `Button`，软底令牌 `.on-soft` / `.wf-btn--on-soft`，失焦仍自动保存），并删除与详情卡重复的
+ * 只读说明；选中场景详情卡改为卡头（标题 14 / 600 + 弱化时间）+ 卡身「剧情内容」标签 +
+ * 只读富文本值块 + 卡脚只读说明。只读值块抽为共享 `.wf-readonly-block`（surface.css），
+ * 伏笔只读详情（名称行 / 描述 / 相关实体）与软底次按钮同步复用、视觉不变；`.timeline-*`
+ * 专属规则迁至新建的 `writer-timeline.css`（剧情共用 `.plot-editor` / `.plot-field` 留在
+ * 原文件），无引用的 `.plot-line-rename` / `.plot-add-btn` / `.plot-editor-actions` /
+ * `.plot-auto-save` 随之下线，`timeline` ns 的 `originLabel`（仅起点卡标签使用）随卡片标题去重
+ * 双端删除。教学文案（卷三「剧情时间轴与主时间线」的主时间线节、大纲「剧情与时间线」组
+ * 「主时间线只读聚合」条目）同步，键提升让老库也能看到新文案。
+ * `v98`（时间线起点卡只读批）：独立时间线右栏「起点」卡改为**只读展示**——移除输入框、
+ * 「保存起点」按钮、失焦自动保存与 `draft` / `saved` / `loaded` 编辑态，只保留卡头、说明
+ * 文案与只读值块（复用共享 `.wf-readonly-block`，与场景详情值块同口径）；起点仍在新建
+ * 时间线时填写、数据层 / settings 键不变，只是不再提供修改入口。`onOriginChange` 透传链、
+ * `useTimelineWorkspace.updateOrigin`、CSS `.timeline-card__actions` / `__hint` 与
+ * `timeline` ns 的 `originAria` / `originPlaceholder` / `originSave` / `originSaved` /
+ * `originEmpty` 一并下线，`originDesc` 改为只读口径。教学文案（卷三「剧情时间轴与主时间线」
+ * 的主时间线节、大纲「剧情与时间线」组「主时间线只读聚合」条目）改为「起点为只读说明，
+ * 不可编辑」，键提升让老库也能看到新文案。
+ * `v99`（时间线右栏去起点卡批）：独立时间线右栏删除整张「起点」卡——`TimelineOriginPanel`
+ * 组件文件、`settings.get` 读取起点逻辑与 `bookId` / `activeTimelineId` 透传一并下线
+ * （两者仍供剧情筛选与 AI 面板使用，`RightPane` 保留），右栏只剩选中场景的只读详情卡；
+ * 详情卡同时删除「剧情内容」标签与卡脚只读说明，卡身只保留只读正文值块。CSS
+ * `.timeline-detail__label` / `.timeline-card__foot` / `.timeline-card__desc` /
+ * `.timeline-origin__value` 随唯一使用点下线，`timeline` ns 的 `originDesc` 与 `plot` ns 的
+ * `editor.fieldContent` 双端删除（`readonlyNote` 仍由右栏空态使用，保留）。起点数据
+ * （`timeline:list:*` / `timeline:active:*` 与新建时间线弹窗填写的起点）不变，只是右栏不再
+ * 展示。教学文案（卷三「剧情时间轴与主时间线」的主时间线节、大纲「剧情与时间线」组
+ * 「主时间线只读聚合」条目）改为「右栏只有选中节点的只读详情卡」，键提升让老库也能看到新文案。
+ * `v100`（时间线起点卡恢复可编辑批）：独立时间线右栏恢复「起点」卡——按 `bookId` +
+ * 当前选中时间线 id 读取 `timeline:list:<bookId>` 中该条目的 `origin`，输入框（`Input`）+
+ * 「保存起点」按钮（`Button` + `.wf-btn--on-soft`），失焦自动保存与按钮共用同一保存函数；
+ * 写回只改当前条目的 `origin`（其余条目原样写回），成功后提示「已保存」。`useTimelineWorkspace`
+ * 恢复 `updateOrigin` 作为唯一写入方（同步更新列表态，中栏起点随之刷新），右栏恢复
+ * `bookId` / `activeTimelineId` / `onUpdateTimelineOrigin` 透传链；CSS 新增
+ * `.timeline-origin-card` / `.timeline-card__desc` / `.timeline-card__actions` /
+ * `.timeline-card__hint`，`timeline` ns 双端恢复 `originDesc` / `originAria` /
+ * `originPlaceholder` / `originSave` / `originSaved` / `originEmpty`（`originLabel` 仍由卡片
+ * 标题承载，不恢复）。详情卡保持无「剧情内容」标签、无卡脚。教学文案（卷三「剧情时间轴与
+ * 主时间线」的主时间线节、大纲「剧情与时间线」组「主时间线只读聚合」条目）改为
+ * 「右栏 = 起点卡（可编辑 + 保存）+ 选中节点只读详情卡」，键提升让老库也能看到新文案。
+ * `v101`（起点卡改为编辑描述批）：独立时间线右栏「起点」卡改为编辑**起点描述**——起始时间
+ * 「元年」（数值 0）固定不可编辑，卡上不再显示时间行，只有描述输入框（`FormField` + `Input`）
+ * 与「保存描述」按钮，失焦仍自动保存；`TimelineEntry`（渲染层）新增 `description` 字段
+ * （settings JSON，无 schema 迁移，老数据缺失 / 非字符串按空串兜底），`useTimelineWorkspace`
+ * 的 `updateOrigin` 更名 `updateDescription`（读-改-写只替换目标条目的 `description`），
+ * 新建时间线弹窗第二字段改为「起点描述」并写入 `description`；`origin` 保留但不再有写入入口
+ * （新建条目固定空串，中栏仍按 `origin` / 默认「元年」展示）。`timeline` ns 双端删除
+ * `originAria` / `originEmpty`、`newDialog.originLabel` / `originPlaceholder` 改为
+ * `descLabel` / `descPlaceholder`，新增 `originDescLabel`，「保存起点」改「保存描述」。
+ * 教学文案（卷三「剧情时间轴与主时间线」的主时间线节、大纲「剧情与时间线」组「主时间线
+ * 只读聚合」条目）改为「起点卡编辑起点描述，不显示时间行」，键提升让老库也能看到新文案。
  */

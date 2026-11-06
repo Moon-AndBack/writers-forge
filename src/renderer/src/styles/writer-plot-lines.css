@@ -2,7 +2,7 @@
    写作视图 · 剧情（plot）— 左栏剧情线列表
    ------------------------------------------------------------------
    自 `writer-plot.css` 原样搬移（保持单文件 ≤500 行，§3）。
-   剧情线行 / 色点 / 名段渐隐 / 内联重命名 / 行尾 hover 操作 / 新增线按钮。
+   剧情线行 / 色点 / 名段渐隐 / 行尾 hover 操作。
    底座（--soft-solid 圆角底 + 6px 内衬）由通用 `.pane-region` 承载。
    hover 仅颜色 / 描边 / 阴影过渡，无 transform（§8）。
    ============================================================ */
@@ -78,20 +78,6 @@
   font-weight: 600;
 }
 
-/* 内联重命名输入：口径同 .vol-rename（无边框 / 品牌浅底 / 随主题着色）。 */
-.plot-line-rename {
-  flex: 1;
-  min-width: 0;
-  padding: 0 4px;
-  border-radius: var(--r-xs);
-  font-size: 13.5px;
-  font-weight: 600;
-  line-height: 1.5;
-  color: var(--text-dim);
-  background: color-mix(in srgb, var(--brand) 8%, var(--pane));
-  caret-color: var(--caret);
-}
-
 .plot-line-count {
   flex: none;
   font-family: var(--mono);
@@ -134,24 +120,4 @@
 .plot-line:hover .plot-line-name,
 .plot-line:focus-within .plot-line-name {
   margin-right: 50px;
-}
-
-.plot-add-btn {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  width: 100%;
-  padding: 8px 9px;
-  border-radius: var(--r-xs);
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-dim);
-  transition:
-    background 0.1s var(--ease),
-    color 0.1s var(--ease);
-}
-
-.plot-add-btn:hover {
-  background: var(--soft-hover-solid);
-  color: var(--text);
 }

@@ -15,21 +15,19 @@ const timeline = {
     title: 'New timeline',
     nameLabel: 'Name',
     namePlaceholder: 'e.g. Main timeline',
-    originLabel: 'Origin',
-    originPlaceholder: 'e.g. Year One'
+    descLabel: 'Starting-point description',
+    descPlaceholder: 'e.g. The story begins here'
   },
-  originLabel: 'Origin',
   originTitle: 'Origin',
   originDefault: 'Year One',
   originDesc:
-    'Start time of the read-only main timeline, default “Year One”; editable in the right pane.',
+    'The starting-point time is fixed at “Year One” and cannot be changed; describe the starting point of the current timeline here. Click “Save description” or leave the input to save.',
   originNote: 'The story began',
   readonlyNote: 'Read-only · excluded from plot line counts and ordering',
-  originAria: 'Timeline origin',
-  originPlaceholder: 'e.g. Year One',
-  originSave: 'Save origin',
+  originDescLabel: 'Starting-point description',
+  originPlaceholder: 'e.g. The story begins here',
+  originSave: 'Save description',
   originSaved: 'Saved',
-  originEmpty: 'Shows “Year One” when no origin is set',
   timelineSelect: {
     label: 'Timeline',
     placeholder: 'Select timeline'
