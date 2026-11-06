@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { EmptyState } from '../../../components/EmptyState'
 import { IconButton, Select } from '../../../components/ui'
 import { PencilIcon } from '../icons'
 import { TrashIcon } from '../../../components/icons'
@@ -124,8 +125,9 @@ export default function PlotPanel({
         </div>
         {lines.length === 0 ? (
           /* 空态：无任何剧情线时居中提示；引导文案指路标题栏「新建剧情线」入口。 */
-          <div className="placeholder-view is-compact" role="note">
-            <span className="placeholder-icon" aria-hidden="true">
+          <EmptyState
+            compact
+            icon={
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -140,10 +142,10 @@ export default function PlotPanel({
                 <circle cx="6" cy="18" r="3" />
                 <path d="M18 9a9 9 0 0 1-9 9" />
               </svg>
-            </span>
-            <div className="placeholder-title">{t('emptyTitle')}</div>
-            <div className="placeholder-desc">{t('emptyDesc')}</div>
-          </div>
+            }
+            title={t('emptyTitle')}
+            description={t('emptyDesc')}
+          />
         ) : (
           <div className="plot-line-list pane-region">
             {lines.map((line) => {

@@ -9,6 +9,7 @@
  */
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { EmptyState } from '../../../components/EmptyState'
 import { useToast } from '../../../components/ui'
 import ConfirmDialog from '../ConfirmDialog'
 import InspirationActivityActions from './InspirationActivityActions'
@@ -61,14 +62,10 @@ export default function InspirationView({ bundle }: InspirationViewProps) {
           {bundle.loading ? (
             <div className="inspiration-loading">{tCommon('loading')}</div>
           ) : bundle.rows.length === 0 ? (
-            <div className="placeholder-view" role="note">
-              <div className="placeholder-title">
-                {hasFilter ? t('emptyFilteredTitle') : t('emptyTitle')}
-              </div>
-              <div className="placeholder-desc">
-                {hasFilter ? t('emptyFilteredDesc') : t('emptyDesc')}
-              </div>
-            </div>
+            <EmptyState
+              title={hasFilter ? t('emptyFilteredTitle') : t('emptyTitle')}
+              description={hasFilter ? t('emptyFilteredDesc') : t('emptyDesc')}
+            />
           ) : (
             <div className="wf-card-grid inspiration-grid">
               {bundle.rows.map((row) => (

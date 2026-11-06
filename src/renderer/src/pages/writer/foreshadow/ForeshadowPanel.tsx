@@ -24,6 +24,7 @@ import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { deriveForeshadowStatus } from '../../../../../shared/foreshadowStatus'
 import { sliceSelectedText } from '../../../../../shared/foreshadowAnchorText'
+import { EmptyState } from '../../../components/EmptyState'
 import { FormField, Input, Button, useToast, useTooltip } from '../../../components/ui'
 import SaveBar from '../SaveBar'
 import ConfirmDialog from '../ConfirmDialog'
@@ -70,12 +71,7 @@ export default function ForeshadowPanel({
   }, [row, onDirtyChange])
 
   if (row === null) {
-    return (
-      <div className="placeholder-view is-compact" role="note">
-        <div className="placeholder-title">{t('detail.emptyTitle')}</div>
-        <div className="placeholder-desc">{t('detail.emptyDesc')}</div>
-      </div>
-    )
+    return <EmptyState compact title={t('detail.emptyTitle')} description={t('detail.emptyDesc')} />
   }
 
   return (

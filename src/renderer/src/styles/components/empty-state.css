@@ -1,0 +1,53 @@
+/* ============================================================
+   通用空态（EmptyState）
+   ------------------------------------------------------------------
+   结构：图标（可选）+ 主文案 + 说明（可选）；`is-compact` 适配侧栏容器。
+   选择器沿用既有 `.placeholder-view` 命名，迁移自 writer.css，视觉不变。
+   ============================================================ */
+.placeholder-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 260px;
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-mute);
+}
+
+.placeholder-view .placeholder-icon {
+  width: 40px;
+  height: 40px;
+  opacity: 0.35;
+}
+
+.placeholder-view .placeholder-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.placeholder-view .placeholder-desc {
+  font-size: 12px;
+  color: var(--text-mute);
+}
+
+.placeholder-view.is-compact {
+  gap: 7px;
+  min-height: 180px;
+  padding: 28px 12px;
+}
+
+.placeholder-view.is-compact .placeholder-icon {
+  width: 30px;
+  height: 30px;
+}
+
+.placeholder-view.is-compact .placeholder-title {
+  font-size: 12.5px;
+}
+
+.placeholder-view.is-compact .placeholder-desc {
+  font-size: 11px;
+}

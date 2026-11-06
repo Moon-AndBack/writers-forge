@@ -137,8 +137,7 @@ const common = {
   loadMore: 'Load more',
   restoreDefaultWidth: 'Double-click to restore default width',
   restoreDefaultSplit: 'Drag to resize the panes; double-click to restore the default split',
-  comingSoon: 'Coming soon',
-  comingSoonDesc: 'Coming soon · No content yet'
+  comingSoon: 'Coming soon'
 } satisfies ZhCNResources['common']
 
 export default common

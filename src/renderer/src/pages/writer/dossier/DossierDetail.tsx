@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
+import { EmptyState } from '../../../components/EmptyState'
 import { useModuleLabel } from '../../../shell/activityBarModules'
 import SaveBar from '../SaveBar'
 import {
@@ -79,10 +80,11 @@ export default function DossierDetail({
 
   if (detail === null) {
     return (
-      <div className="placeholder-view is-compact" role="note">
-        <div className="placeholder-title">{t('detail.emptyTitle', { module: moduleLabel })}</div>
-        <div className="placeholder-desc">{t('detail.emptyDesc')}</div>
-      </div>
+      <EmptyState
+        compact
+        title={t('detail.emptyTitle', { module: moduleLabel })}
+        description={t('detail.emptyDesc')}
+      />
     )
   }
 

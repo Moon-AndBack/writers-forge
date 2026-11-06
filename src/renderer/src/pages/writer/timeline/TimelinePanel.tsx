@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { EmptyState } from '../../../components/EmptyState'
 import { IconButton, useToast } from '../../../components/ui'
 import { TrashIcon } from '../../../components/icons'
 import { PencilIcon } from '../icons'
@@ -76,10 +77,7 @@ export default function TimelinePanel({
     <div className="pane-body">
       <div className="pane-scroll">
         {timelines.length === 0 ? (
-          <div className="placeholder-view is-compact" role="note">
-            <div className="placeholder-title">{t('emptyTitle')}</div>
-            <div className="placeholder-desc">{t('emptyDesc')}</div>
-          </div>
+          <EmptyState compact title={t('emptyTitle')} description={t('emptyDesc')} />
         ) : (
           <div className="timeline-list pane-region">
             {timelines.map((entry) => {

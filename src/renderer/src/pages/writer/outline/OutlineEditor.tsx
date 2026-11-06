@@ -9,6 +9,7 @@ import {
   RICH_TEXT_EXTENSIONS
 } from '../../../components/editor/richTextExtensions'
 import { formatRelativeTime } from '@renderer/lib/relativeTime'
+import { EmptyState } from '../../../components/EmptyState'
 import DocMeta from '../../../components/editor/DocMeta'
 import DocTitleField from '../../../components/editor/DocTitleField'
 import DocCharCount from '../DocCharCount'
@@ -352,10 +353,7 @@ export default function OutlineEditor({
             <div className="editor-inner">
               {target === null ? (
                 /* 未选中目标：明确空态，指引从左侧大纲树选择。 */
-                <div className="placeholder-view" role="note">
-                  <div className="placeholder-title">{t('emptySelect')}</div>
-                  <div className="placeholder-desc">{t('emptySelectHint')}</div>
-                </div>
+                <EmptyState title={t('emptySelect')} description={t('emptySelectHint')} />
               ) : (
                 /* 正文区：空态（含未选条目后的空文档 / 载体缺失兜底）时追加 .is-empty，
                     诗词文案经 CSS 变量传入，由首段 p::before 渲染——与章节视图同款占位。

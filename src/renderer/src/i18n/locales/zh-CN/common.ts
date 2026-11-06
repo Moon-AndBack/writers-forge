@@ -146,8 +146,7 @@ const common = {
   loadMore: '加载更多',
   restoreDefaultWidth: '双击恢复默认宽度',
   restoreDefaultSplit: '拖动调整上下两栏高度，双击恢复默认比例',
-  comingSoon: '即将推出',
-  comingSoonDesc: '即将推出 · 暂无内容'
+  comingSoon: '即将推出'
 }
 
 export default common

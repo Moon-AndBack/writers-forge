@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
+import { EmptyState } from '../../../components/EmptyState'
 import SaveBar from '../SaveBar'
 import PlotBodyEditor, { type PlotBodyValue } from './PlotBodyEditor'
 import { type PlotLineRow, type PlotSceneRow, type UpdatePlotScenePatch } from './plotTree'
@@ -75,12 +76,11 @@ export default function PlotEditor({
   return (
     <>
       {scene === null ? (
-        <div className="placeholder-view is-compact" role="note">
-          <div className="placeholder-title">{t('editor.emptyEdit')}</div>
-          <div className="placeholder-desc">
-            {line ? t('editor.clickCard') : t('editor.selectLineFirst')}
-          </div>
-        </div>
+        <EmptyState
+          compact
+          title={t('editor.emptyEdit')}
+          description={line ? t('editor.clickCard') : t('editor.selectLineFirst')}
+        />
       ) : (
         <PlotEditorForm
           key={scene.id}

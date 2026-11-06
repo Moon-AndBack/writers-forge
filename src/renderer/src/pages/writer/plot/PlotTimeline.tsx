@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { Editor } from '@tiptap/core'
 import { useTranslation } from 'react-i18next'
+import { EmptyState } from '../../../components/EmptyState'
 import { PlusIcon } from '../icons'
 import { useConfirm } from '../chapters/useConfirm'
 import { HoverCard } from '../entities/HoverCard'
@@ -216,10 +217,10 @@ export default function PlotTimeline({
       <div className="editor-scroll">
         <div className="editor-inner is-full">
           {line === null ? (
-            <div className="placeholder-view" role="note">
-              <div className="placeholder-title">{t('timeline.emptyLineTitle')}</div>
-              <div className="placeholder-desc">{t('timeline.emptyLineDesc')}</div>
-            </div>
+            <EmptyState
+              title={t('timeline.emptyLineTitle')}
+              description={t('timeline.emptyLineDesc')}
+            />
           ) : (
             <div className="plot-timeline" ref={timelineRef} style={timelineStyle}>
               {scenes.length === 0 ? (

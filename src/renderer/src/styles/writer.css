@@ -373,55 +373,6 @@ body.is-resizing .splitter {
   box-shadow: var(--sh-xs);
 }
 
-/* ---------- 模块占位视图（剧情 / 角色 / 势力 / 物品功法 / 时间线 / 伏笔 / 灵感） ---------- */
-.placeholder-view {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 260px;
-  padding: 48px 24px;
-  text-align: center;
-  color: var(--text-mute);
-}
-
-.placeholder-view .placeholder-icon {
-  width: 40px;
-  height: 40px;
-  opacity: 0.35;
-}
-
-.placeholder-view .placeholder-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-dim);
-}
-
-.placeholder-view .placeholder-desc {
-  font-size: 12px;
-  color: var(--text-mute);
-}
-
-.placeholder-view.is-compact {
-  gap: 7px;
-  min-height: 180px;
-  padding: 28px 12px;
-}
-
-.placeholder-view.is-compact .placeholder-icon {
-  width: 30px;
-  height: 30px;
-}
-
-.placeholder-view.is-compact .placeholder-title {
-  font-size: 12.5px;
-}
-
-.placeholder-view.is-compact .placeholder-desc {
-  font-size: 11px;
-}
-
 /* ---------- 断点（对齐原型） ---------- */
 /* 右栏在 ≤1240px 隐藏：左栏默认 300px、右栏默认 600px，可见最小视口 1241px 时
    中栏约 297px（悬浮活动栏）/ 253px（固定活动栏，被 .editor-pane 的 280px 下限兜住，

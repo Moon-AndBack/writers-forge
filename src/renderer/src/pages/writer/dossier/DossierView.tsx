@@ -7,6 +7,7 @@ import type { OverflowPopupControl } from '../../../components/useOverflowPopup'
 import { POPOVER_HIDE_DELAY, POPOVER_SHOW_DELAY } from '../../../components/popoverTiming'
 import { useModuleLabel } from '../../../shell/activityBarModules'
 import type { DossierModule } from '../../../shell/activityBarModules'
+import { EmptyState } from '../../../components/EmptyState'
 import { HoverCard } from '../entities/HoverCard'
 import type { HoverAnchor } from '../entities/HoverCard'
 import ConfirmDialog from '../ConfirmDialog'
@@ -296,16 +297,13 @@ export default function DossierView({ bundle }: DossierViewProps) {
           {loading && rows.length === 0 ? (
             <div className="dossier-detail__empty">{tCommon('loading')}</div>
           ) : rows.length === 0 ? (
-            <div className="placeholder-view" role="note">
-              <div className="placeholder-title">{t('emptyTitle', { module: moduleLabel })}</div>
-              <div className="placeholder-desc">{t('emptyDesc')}</div>
-            </div>
+            <EmptyState
+              title={t('emptyTitle', { module: moduleLabel })}
+              description={t('emptyDesc')}
+            />
           ) : visibleRows.length === 0 ? (
             /* 有数据但被筛选条件全部滤掉：与「模块还没有条目」的空态文案区分。 */
-            <div className="placeholder-view" role="note">
-              <div className="placeholder-title">{t('filter.emptyTitle')}</div>
-              <div className="placeholder-desc">{t('filter.emptyDesc')}</div>
-            </div>
+            <EmptyState title={t('filter.emptyTitle')} description={t('filter.emptyDesc')} />
           ) : (
             <div
               className="wf-card-grid dossier-grid"

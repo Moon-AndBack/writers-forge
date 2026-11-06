@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconButton } from '../../../components/ui'
+import { EmptyState } from '../../../components/EmptyState'
 import { ChevronIcon, DocIcon, PencilIcon, PlusIcon } from '../icons'
 import { TrashIcon } from '../../../components/icons'
 import { useConfirm } from '../chapters/useConfirm'
@@ -200,13 +201,12 @@ export default function OutlinePanel({
       <div className="pane-scroll">
         {isEmpty ? (
           /* 空态：无非卷条目且无任何卷时居中提示；引导文案指路标题栏「添加」按钮。 */
-          <div className="placeholder-view is-compact" role="note">
-            <span className="placeholder-icon" aria-hidden="true">
-              <DocIcon width={30} />
-            </span>
-            <div className="placeholder-title">{t('emptyTitle')}</div>
-            <div className="placeholder-desc">{t('emptyDesc')}</div>
-          </div>
+          <EmptyState
+            compact
+            icon={<DocIcon width={30} />}
+            title={t('emptyTitle')}
+            description={t('emptyDesc')}
+          />
         ) : (
           <>
             {/* 置顶区（独立条目 + 分组容器）。 */}

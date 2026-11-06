@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { readGridCardWidth } from '../../../components/cardGridMetrics'
 import { useStableMeasure } from '../../../components/useStableMeasure'
 import ForeshadowCreateDialog from '../../../components/dialogs/ForeshadowCreateDialog'
+import { EmptyState } from '../../../components/EmptyState'
 import { useToast } from '../../../components/ui'
 import ConfirmDialog from '../ConfirmDialog'
 import { HoverCard } from '../entities/HoverCard'
@@ -97,10 +98,7 @@ export default function ForeshadowView({
           {bundle.loading && bundle.rows.length === 0 ? (
             <div className="foreshadow-loading">{tCommon('loading')}</div>
           ) : bundle.rows.length === 0 ? (
-            <div className="placeholder-view" role="note">
-              <div className="placeholder-title">{t('emptyTitle')}</div>
-              <div className="placeholder-desc">{t('emptyDesc')}</div>
-            </div>
+            <EmptyState title={t('emptyTitle')} description={t('emptyDesc')} />
           ) : (
             <div
               className="wf-card-grid foreshadow-grid"

@@ -1,5 +1,6 @@
 import type { ReactElement, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
+import { EmptyState } from '../../../components/EmptyState'
 import ReadonlyRichText from '../../../components/editor/ReadonlyRichText'
 import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
 import { plotSceneTime, plotSceneTitle, type PlotSceneRow } from '../plot/plotTree'
@@ -11,10 +12,7 @@ function TimelineSceneDetail({ scene }: { scene: PlotSceneRow | null }): ReactEl
   const { t: tTimeline } = useTranslation('timeline')
   if (scene === null) {
     return (
-      <div className="placeholder-view is-compact" role="note">
-        <div className="placeholder-title">{t('editor.emptySelect')}</div>
-        <div className="placeholder-desc">{tTimeline('readonlyNote')}</div>
-      </div>
+      <EmptyState compact title={t('editor.emptySelect')} description={tTimeline('readonlyNote')} />
     )
   }
   const eraLabels = {

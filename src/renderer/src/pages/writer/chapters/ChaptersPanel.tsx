@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconButton } from '../../../components/ui'
 import { TrashIcon } from '../../../components/icons'
+import { EmptyState } from '../../../components/EmptyState'
 import { ChevronIcon, PencilIcon, PlusIcon, SpecialChapterIcon, SpecialVolumeIcon } from '../icons'
 import { useTreeExpansion } from '../useTreeExpansion'
 import {
@@ -333,15 +334,14 @@ export default function ChaptersPanel({
     <div className="pane-body">
       <div className="pane-scroll">
         {groups.length === 0 ? (
-          /* 空态：无任何卷时居中提示（样式复用 writer.css 的模块占位类，紧凑变体）。
+          /* 空态：无任何卷时居中提示（复用通用 EmptyState 的紧凑变体）。
              引导文案指路标题栏「新建卷」（入口不在本侧栏，故不给可点击假象）。 */
-          <div className="placeholder-view is-compact" role="note">
-            <span className="placeholder-icon" aria-hidden="true">
-              <SpecialVolumeIcon width={30} />
-            </span>
-            <div className="placeholder-title">{t('emptyTitle')}</div>
-            <div className="placeholder-desc">{t('emptyDesc')}</div>
-          </div>
+          <EmptyState
+            compact
+            icon={<SpecialVolumeIcon width={30} />}
+            title={t('emptyTitle')}
+            description={t('emptyDesc')}
+          />
         ) : (
           /* 分区容器卡：拆为上下两块——上卡自定义卷（`custom`，如「番外」）、下卡正文卷
              （`normal`，自动编号）；卡内保持 sort_order 顺序（仅分组，不重排）；

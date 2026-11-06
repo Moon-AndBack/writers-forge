@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
+import { EmptyState } from '../../../components/EmptyState'
 import { ChipInput, FormField, Input, Textarea, useToast } from '../../../components/ui'
 import SaveBar from '../SaveBar'
 import { PRESET_INSPIRATION_TAGS } from './inspirationPresets'
@@ -40,10 +41,7 @@ export default function InspirationPanel({ bundle }: InspirationPanelProps) {
   }, [row, onDirtyChange])
 
   return row === null ? (
-    <div className="placeholder-view is-compact" role="note">
-      <div className="placeholder-title">{t('detail.emptyTitle')}</div>
-      <div className="placeholder-desc">{t('detail.emptyDesc')}</div>
-    </div>
+    <EmptyState compact title={t('detail.emptyTitle')} description={t('detail.emptyDesc')} />
   ) : (
     <InspirationPanelForm
       key={`${row.id}-${bundle.draftResetKey}`}
