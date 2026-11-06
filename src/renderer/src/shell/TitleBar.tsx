@@ -14,14 +14,14 @@ import { useTitleBarActions } from './titleBarActions'
 import '../styles/titlebar.css'
 
 /**
- * 设置弹窗按需加载：6 个 Section（`pages/settings/*`）与 `settings.css` 合计约
+ * 设置弹窗按需加载：`pages/settings/*`（弹窗与 6 个 Section）与 `settings.css` 合计约
  * 24 kB，只有用户点齿轮时才需要，故从入口 chunk 拆出独立 chunk。
  *
  * 模块说明符在本文件只此一处（`lazy` 与 hover 预取共用同一个函数），Vite 只会
  * 产出一个 chunk；`import()` 自身带模块缓存，重复调用不会重复请求。
  */
-const loadSettingsDialog = (): Promise<typeof import('../components/dialogs/SettingsDialog')> =>
-  import('../components/dialogs/SettingsDialog')
+const loadSettingsDialog = (): Promise<typeof import('../pages/settings/SettingsDialog')> =>
+  import('../pages/settings/SettingsDialog')
 
 const SettingsDialog = lazy(loadSettingsDialog)
 

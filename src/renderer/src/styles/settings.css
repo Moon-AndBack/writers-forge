@@ -1,6 +1,6 @@
 /* ============================================================
    设置弹窗（SettingsDialog）样式
-   由 components/dialogs/SettingsDialog.tsx 直接 import（在组件库样式之后，故可
+   由 pages/settings/SettingsDialog.tsx 直接 import（在组件库样式之后，故可
    覆盖 `.wf-card` 的高度上限与 `.wf-window__body` 的内衬假设）。
    内容渲染在 `Modal` 的 `.wf-window--xl`（880px）面板内：标题区 / 关闭按钮由
    Window 提供，滚动交给 `.wf-window__body`（单层滚动），本文件只负责内容排版。
