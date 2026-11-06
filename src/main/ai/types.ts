@@ -128,6 +128,22 @@ export interface AiConfigUpdateResult {
 export type AiModelsListMode = 'cache' | 'refresh'
 
 /**
+ * 模型上下文窗口目录的元信息（`ai:catalog:get` 返回值）。
+ *
+ * 不返回全量条目：目录最多 1000 条，体积过大且渲染层当前只需展示状态。
+ */
+export interface AiCatalogMeta {
+  ok: boolean
+  /** 目录拉取时刻（毫秒时间戳）；无缓存时省略。 */
+  fetchedAt?: number
+  /** 缓存是否已超过有效期（7 天）。 */
+  stale?: boolean
+  /** 目录条目数；无缓存时省略。 */
+  count?: number
+  error?: AiError
+}
+
+/**
  * 模型列表缓存条目（settings 表 `ai:models:v1:<provider>` 的值结构）。
  */
 export interface AiModelCacheEntry {

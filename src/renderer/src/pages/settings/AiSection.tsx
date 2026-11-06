@@ -13,6 +13,7 @@ import type { AiProviderId } from '../../../../preload/types/ai'
 import SectionCard from './SectionCard'
 import SettingRow from './SettingRow'
 import AiApiKeyRow from './AiApiKeyRow'
+import AiCatalogRow from './AiCatalogRow'
 import AiModelRow from './AiModelRow'
 import AiTestRow from './AiTestRow'
 import { UNKNOWN_ERROR, type TestState } from './aiSectionSupport'
@@ -188,6 +189,8 @@ export default function AiSection() {
         onRefresh={handleRefreshModels}
         onUseList={resetModelMode}
       />
+
+      <AiCatalogRow />
 
       <AiApiKeyRow
         value={apiKey}

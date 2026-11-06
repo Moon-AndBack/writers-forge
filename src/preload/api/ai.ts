@@ -112,6 +112,11 @@ export const aiApi = {
     list: (provider, mode = 'cache') => ipcRenderer.invoke('ai:models:list', { provider, mode })
   },
   test: (provider) => ipcRenderer.invoke('ai:test', { provider }),
+  catalog: {
+    get: (mode = 'cache') => ipcRenderer.invoke('ai:catalog:get', { mode }),
+    limit: (model) => ipcRenderer.invoke('ai:catalog:limit', { model }),
+    override: (model, tokens) => ipcRenderer.invoke('ai:catalog:override', { model, tokens })
+  },
   chat: {
     start: (input) => ipcRenderer.invoke('ai:chat:start', input),
     abort: (requestId) => ipcRenderer.invoke('ai:chat:abort', { requestId }),

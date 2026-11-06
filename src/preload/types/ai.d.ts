@@ -11,6 +11,7 @@
 
 import type {
   AiChatMessage as MainAiChatMessage,
+  AiCatalogMeta,
   AiConfigPatch,
   AiConfigUpdateResult,
   AiConfigView,
@@ -20,6 +21,7 @@ import type {
   AiStreamEvent,
   AiUsage
 } from '../../main/ai/types'
+import type { ResolvedLimit } from '../../main/ai/modelMatch'
 import type {
   AiChatMessageRow,
   AiChatRole,
@@ -30,6 +32,7 @@ import type {
 } from '../../main/database/aiChat'
 
 export type {
+  AiCatalogMeta,
   AiConfigPatch,
   AiConfigUpdateResult,
   AiConfigView,
@@ -43,7 +46,8 @@ export type {
   AiChatSessionRow,
   AiMessageStatus,
   AppendAiMessageInput,
-  CreateAiSessionInput
+  CreateAiSessionInput,
+  ResolvedLimit
 }
 
 /** 对话消息（与 `main/ai` 的 `AiChatMessage` 同构）。 */
@@ -114,6 +118,18 @@ export interface AiApi {
   }
   /** 连通性测试（仅模型列表往返计时）。 */
   test: (provider: AiProviderId) => Promise<AiTestResult>
+  /**
+   * 上下文窗口目录：缓存元信息 / 单模型解析 / 用户覆写。
+   *
+   * `get('cache')` 未命中返回 `{ ok: false }`（不带 error）；
+   * `get('refresh')` 失败时保留旧缓存并附带缓存元信息。
+   */
+  catalog: {
+    get: (mode?: 'cache' | 'refresh') => Promise<AiCatalogMeta>
+    limit: (model: string) => Promise<ResolvedLimit>
+    /** `tokens === null` 表示清除覆写；入参非法返回 false。 */
+    override: (model: string, tokens: number | null) => Promise<boolean>
+  }
   /** 流式对话：start 立即返回，内容全部走 `onStream`。 */
   chat: {
     start: (input: AiChatStartInput) => Promise<void>

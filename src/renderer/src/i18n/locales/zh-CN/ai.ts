@@ -36,6 +36,17 @@ const ai = {
     custom: '自定义模型…',
     useList: '从列表选择'
   },
+  catalog: {
+    label: '模型目录',
+    description: '用于识别各模型的上下文窗口；离线时使用内置基线',
+    refresh: '刷新模型目录',
+    loading: '正在刷新模型目录…',
+    summary: '已收录 {{count}} 个模型',
+    updatedAt: '更新于 {{time}}',
+    stale: '目录已过期，建议刷新',
+    idle: '尚未获取目录，将使用内置基线',
+    failed: '刷新模型目录失败：{{message}}'
+  },
   apiKey: {
     label: 'API Key',
     description: '密钥经系统安全存储加密后保存在本地',

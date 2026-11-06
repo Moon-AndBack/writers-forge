@@ -19,6 +19,9 @@ import type {
  * 分层：
  * - `config.ts`            配置与密钥（safeStorage）
  * - `modelCache.ts`        模型列表本地缓存（settings KV，12 小时 TTL）
+ * - `catalog.ts`           上下文窗口目录拉取（OpenRouter 公共目录）
+ * - `catalogCache.ts`      上下文窗口目录 / 用户覆写缓存（settings KV，7 天 TTL）
+ * - `modelMatch.ts`        模型 → 上下文窗口匹配与解析
  * - `http.ts`              OpenAI SDK 客户端 / 超时 / 错误归一化
  * - `providers/deepseek`   DeepSeek 官方 API（OpenAI 兼容）
  * - `providers/opencode`   opencode Go（OpenAI 兼容，需 `x-opencode-session` 头）
@@ -36,6 +39,18 @@ const PROVIDERS: Record<AiProviderId, AiProviderAdapter> = {
 export * from './types'
 export { getAiConfig, getProviderBaseUrl, setAiConfig } from './config'
 export { MODEL_CACHE_TTL_MS, readModelCache, writeModelCache } from './modelCache'
+export { fetchCatalog } from './catalog'
+export type { CatalogEntry } from './catalog'
+export {
+  CATALOG_TTL_MS,
+  isCatalogStale,
+  readCatalog,
+  readOverrides,
+  writeCatalog,
+  writeOverride
+} from './catalogCache'
+export { DEFAULT_CONTEXT_WINDOW, matchCatalog, resolveContextLimit } from './modelMatch'
+export type { CatalogMatch, MatchConfidence, ResolvedLimit } from './modelMatch'
 
 /** 取得适配器（运行时兜底，防止未来 IPC 传入非法值）。 */
 function getAdapter(provider: AiProviderId): AiProviderAdapter {

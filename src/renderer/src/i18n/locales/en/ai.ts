@@ -36,6 +36,17 @@ const ai = {
     custom: 'Custom model…',
     useList: 'Choose from list'
   },
+  catalog: {
+    label: 'Model catalog',
+    description: 'Identifies each model’s context window; the built-in baseline is used offline',
+    refresh: 'Refresh model catalog',
+    loading: 'Refreshing model catalog…',
+    summary: '{{count}} models in the catalog',
+    updatedAt: 'Updated {{time}}',
+    stale: 'The catalog is out of date; please refresh',
+    idle: 'The catalog has not been fetched yet; the built-in baseline will be used',
+    failed: 'Failed to refresh the model catalog: {{message}}'
+  },
   apiKey: {
     label: 'API Key',
     description: 'The key is encrypted by system secure storage and saved locally',
