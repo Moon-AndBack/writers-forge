@@ -23,6 +23,7 @@ import {
 import type { OutlineVolumeContentRef } from './outline/useOutlineVolumes'
 import PlotTimeline from './plot/PlotTimeline'
 import TimelineView from './timeline/TimelineView'
+import type { TimelineSelection } from './usePlotTimelineBundle'
 import type {
   CreatePlotLineOptions,
   CreatePlotSceneInput,
@@ -107,6 +108,8 @@ export interface EditorPaneProps {
   onSelectTimelineOrigin?: () => void
   /** 时间线场景选中回调（页面层包装：选中 + 隐藏时自动展开右栏）。 */
   onSelectTimelineScene?: (id: number) => void
+  /** 时间线选中项（`'origin'` / 场景 id / null；页面层持有，中栏据此点亮选中场景卡）。 */
+  timelineSelection?: TimelineSelection
   /** 当前选中时间线的 origin（中栏显示）。 */
   timelineOrigin?: string
   /** 当前选中时间线的起点描述（中栏元年卡正文；为空回退「故事开始了」）。 */
@@ -172,6 +175,7 @@ function EditorPaneComponent({
   timelineOriginSelected = false,
   onSelectTimelineOrigin,
   onSelectTimelineScene,
+  timelineSelection,
   timelineOrigin,
   timelineDescription,
   activeTimelineName,
@@ -389,6 +393,7 @@ function EditorPaneComponent({
           originSelected={timelineOriginSelected}
           onSelectOrigin={onSelectTimelineOrigin}
           onSelectScene={onSelectTimelineScene}
+          selectedSceneId={typeof timelineSelection === 'number' ? timelineSelection : null}
         />
       </div>
 

@@ -198,8 +198,8 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
   /* ---------- 剧情页动作（左栏剧情线 / 中栏时间轴 / 右栏编辑器共享） ----------
      剧情装配见 usePlotWorkspace；剧情 / 时间线两处选中回调（更新选中 + 右栏隐藏时
      自动展开）收进 usePlotTimelineBundle，与 dossier 的 useDossierBundle 同款透传包。 ---------- */
-  // 解构沿用原名，三栏 props 与行为不变。
   const {
+    timelineSelection,
     timelineOriginSelected,
     timelineScene,
     onSelectPlotScene: handleSelectPlotScene,
@@ -207,11 +207,8 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
     onSelectTimelineScene: handleSelectTimelineScene
   } = usePlotTimelineBundle(plot, timeline.activeId, rightPaneHidden, showRightPane)
 
-  /* 时间线切换 / 新建是会改变剧情线过滤集的「跨域切换」：本 hook 之外改 `activeId`
-     会让右栏表单按 `key={scene.id}` 重挂、草稿静默丢失，因此统一经剧情守卫包一层
-     （有未保存草稿 → 挂起并由右栏两态确认，确认后执行；无改动 → 直接执行）。
-     同一时间线早退：`Select` 对当前项、`TimelinePanel` 点当前行都会触发 onChange，
-     此时无实际变化，不应弹框。 */
+  /* 时间线切换 / 新建会改剧情线过滤集（右栏按 `key={scene.id}` 重挂、草稿丢失），统一经
+     剧情守卫包一层（脏 → 两态确认，无改动直执行）；同一时间线早退（Select / 点当前行）。 */
   // 先取出稳定成员再进回调依赖，避免整个 `timeline` / `plot` 装配对象入依赖（每次渲染新引用）。
   const {
     activeId: activeTimelineId,
@@ -280,10 +277,9 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
     showRightPane
   )
 
-  /* ---------- 关闭前统一 flush（外壳调用；主进程生命周期接线在下一步） ----------
+  /* ---------- 关闭前统一 flush（外壳调用） ----------
      各模块未落库内容统一在此聚合落库：章节 / 大纲由中栏常驻视图经 ref 写入落盘入口，
-     剧情用右栏表单的保存入口，设定档案 / 伏笔 / 灵感用各自装配包的 `saveDraft`；任一模块
-     失败不阻断其它，整体恒 resolve（见 `useFlushAllModules`）。 */
+     剧情用右栏表单保存入口，设定档案 / 伏笔 / 灵感用 `saveDraft`；任一失败不阻断其它。 */
   const chapterFlushRef = useRef<(() => Promise<void>) | null>(null)
   const outlineFlushRef = useRef<(() => Promise<void>) | null>(null)
   // 时间线起点描述：右栏选中起点（起点卡挂载）时写入补存入口（关窗前统一 flush）。
@@ -299,8 +295,7 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
   })
   useRegisterBeforeCloseFlush(flushAll)
 
-  // 设定档案右栏正文编辑器的聚焦态（真源在本页）：右栏 `DossierBodyEditor` 经通用注册表
-  // `useRichTextEditor('dossier').reportEditing` 上报，标题栏动作据此切换「新建 / 工具栏」两态。
+  // 设定档案右栏正文编辑器聚焦态（真源在本页）：右栏 `DossierBodyEditor` 经通用注册表上报。
   const [dossierEditing, setDossierEditing] = useState(false)
 
   // 富文本编辑器槽位表：编辑器实例由各域右栏自行注册，此处只提供聚焦态真源与上报入口。
@@ -314,10 +309,8 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
   )
 
   /* ---------- 模块切换未保存守卫（活动栏图标 / 筛选浮层发起） ----------
-     外壳经 `useRequestSwitch` 把目标模块交给本页裁决：
-     同模块 / 无脏 → 直接切；当前模块（五域 / 剧情 / 伏笔 / 灵感）有脏草稿 → 弹两态确认。
-     脏态判定、保存 / 放弃分派与章节 / 大纲切走前强制落库均收进
-     `useWriterModuleSwitch`；与右栏域内 `switchPending`（切条目）是两个独立场景。 */
+     外壳经 `useRequestSwitch` 把目标模块交给本页裁决：同模块 / 无脏 → 直接切，有脏草稿 → 两态确认。
+     脏态判定、保存 / 放弃分派与章节 / 大纲切走前强制落库收进 `useWriterModuleSwitch`。 */
   const switchGuard = useWriterModuleSwitch({
     active,
     setActive,
@@ -421,6 +414,7 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
               onDeletePlotScene={plot.deleteScene}
               onCreatePlotLine={plot.createLine}
               timelineOriginSelected={timelineOriginSelected}
+              timelineSelection={timelineSelection}
               onSelectTimelineOrigin={handleSelectTimelineOrigin}
               onSelectTimelineScene={handleSelectTimelineScene}
               timelineOrigin={timeline.origin}
