@@ -34,91 +34,65 @@
   overflow-wrap: anywhere;
 }
 
-/* 超预算拒绝：两行说明（结论 + 建议），只换文字色 / 描边，不做位移（§8）。 */
-.ai-panel__notice {
+/* ---------- 底部单行状态栏 ----------
+   从左到右：字数（Tag）· 状态信息（错误 / 超预算 / 整理中 / 模型提示，四者互斥，
+   共用状态槽）· 上下文百分比（Badge）· 模型列表刷新按钮（IconButton）。
+   状态信息占满剩余宽度，过长单行省略，完整内容走自绘 Tooltip；百分比 ≥80% 除换色
+   外另加 ⚠ 前缀（不只靠颜色，a11y）。只用颜色 / 描边，无 transform（AGENTS §8）。 */
+.ai-composer-status {
   flex: none;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 4px 6px;
-  border-radius: var(--r-md, 6px);
-  font-size: 10.5px;
-  line-height: 1.5;
-  color: var(--danger);
-  background: color-mix(in srgb, var(--danger) 8%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 28%, transparent);
-  overflow-wrap: anywhere;
-}
-
-.ai-panel__notice-hint {
-  color: var(--text-dim);
-}
-
-/* ---------- 上下文占用条（ContextMeter） ----------
-   纯展示：已用 / 上限 + 进度条 + 来源说明。进度条常态取 --brand，≥80% 转 --warn，
-   超 100% 转 --danger（阈值在 ContextMeter.tsx 的 WARN_RATIO 定义）。
-   只用颜色 / 描边变化，无 transform、无位移动画（AGENTS §8）。 */
-.ai-context {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
   padding: 0 2px;
 }
 
-.ai-context__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
-  min-width: 0;
-  font-size: 10.5px;
-  line-height: 1.5;
-  color: var(--text-mute);
-}
-
-.ai-context__label {
+/* 字数：计数类 Tag（与统计 Tag 同口径），固定不压缩。 */
+.ai-composer-status__chars {
   flex: none;
 }
 
-.ai-context__value {
+/* 状态槽：错误 / 超预算 / 整理中 / 模型提示互斥共用；占满剩余宽度并单行省略。 */
+.ai-composer-status__message {
+  flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-dim);
+  font-size: 10.5px;
+  line-height: 1.5;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.ai-context__bar {
-  position: relative;
-  height: 3px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--soft);
-  box-shadow: inset 0 0 0 1px var(--line);
+.ai-composer-status__message[data-tone='danger'] {
+  color: var(--danger);
 }
 
-.ai-context__fill {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--brand);
-}
-
-.ai-context[data-tone='warn'] .ai-context__fill {
-  background: var(--warn);
-}
-
-.ai-context[data-tone='danger'] .ai-context__fill {
-  background: var(--danger);
-}
-
-.ai-context__note {
-  font-size: 10px;
-  line-height: 1.4;
+.ai-composer-status__message[data-tone='mute'] {
   color: var(--text-mute);
-  overflow-wrap: anywhere;
+}
+
+/* 可聚焦（供键盘查看 Tooltip）：焦点环与 IconButton 同口径。 */
+.ai-composer-status__message:focus-visible {
+  border-radius: var(--r-xs);
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: 1px;
+}
+
+/* 右侧组：百分比 + 刷新按钮，始终贴行尾。 */
+.ai-composer-status__right {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+/* Tooltip 锚点包装：Badge 未 forwardRef，浮层锚点挂在这层。 */
+.ai-composer-status__usage {
+  flex: none;
+  display: inline-flex;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- 会话栏（面板头部） ----------

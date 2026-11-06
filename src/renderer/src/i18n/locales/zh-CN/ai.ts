@@ -121,6 +121,7 @@ const ai = {
       loading: '正在获取模型列表…',
       empty: '未获取到模型，将使用默认模型',
       refresh: '刷新',
+      refreshAria: '刷新模型列表',
       failed: '获取模型失败：{{message}}'
     },
     action: {
@@ -148,6 +149,8 @@ const ai = {
       unknownModel: '未知模型 · 按 {{tokens}} 估算',
       matchedFrom: '匹配自 {{id}}',
       calibrated: '已按最近一次真实用量校准',
+      nearLimit: '接近上限',
+      overLimit: '已超上限',
       compressing: '正在整理上下文…',
       overBudget: '本期对话过长：约 {{used}} / {{limit}}（上下文窗口）',
       overBudgetHint: '建议换用窗口更大的模型、手动填写模型窗口，或减少携带的正文。'

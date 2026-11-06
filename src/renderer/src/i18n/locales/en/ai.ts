@@ -122,6 +122,7 @@ const ai = {
       loading: 'Fetching model list…',
       empty: 'No models found; the default model will be used',
       refresh: 'Refresh',
+      refreshAria: 'Refresh model list',
       failed: 'Failed to fetch models: {{message}}'
     },
     action: {
@@ -149,6 +150,8 @@ const ai = {
       unknownModel: 'Unknown model; estimating with {{tokens}}',
       matchedFrom: 'Matched from {{id}}',
       calibrated: 'Calibrated against the latest actual usage',
+      nearLimit: 'Near limit',
+      overLimit: 'Over limit',
       compressing: 'Organizing the context…',
       overBudget: 'This conversation is too long: about {{used}} / {{limit}} (context window)',
       overBudgetHint:
