@@ -81,6 +81,23 @@ export function SearchIcon(): ReactElement {
   )
 }
 
+/** 关闭（×）：搜索浮窗 / 弹层右上「关闭」。 */
+export function CloseIcon(): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  )
+}
+
 /** 回收站（垃圾桶）：标题栏「回收站」/ 删除操作。 */
 export function TrashIcon(): ReactElement {
   return (
