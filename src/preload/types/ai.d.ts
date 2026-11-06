@@ -178,14 +178,14 @@ export interface AiApi {
     /** 订阅流式事件（delta / done / error），返回退订函数（组件卸载时必调）。 */
     onStream: (callback: (event: AiStreamEvent) => void) => AiStreamUnsubscribe
   }
-  /** 会话：按「书 + 章」归属。 */
+  /** 会话：按书归属（与章解耦）。 */
   sessions: {
-    list: (bookId: string, chapterId: number) => Promise<AiChatSessionRow[]>
+    list: (bookId: string) => Promise<AiChatSessionRow[]>
     create: (input: CreateAiSessionInput) => Promise<AiChatSessionRow | null>
     delete: (id: number) => Promise<boolean>
     rename: (id: number, title: string) => Promise<boolean>
   }
-  /** 消息：按会话按写入顺序。 */
+  /** 消息：按会话按写入顺序；追加时 `AppendAiMessageInput.chapterId` 记录来源章（可空）。 */
   messages: {
     list: (sessionId: number) => Promise<AiChatMessageRow[]>
     append: (input: AppendAiMessageInput) => Promise<AiChatMessageRow | null>

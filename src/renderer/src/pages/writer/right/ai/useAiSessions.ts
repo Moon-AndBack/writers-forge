@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AiChatSessionRow } from '../../../../../../preload/types/ai'
 import { chatLog } from './chatRuntime'
 
-/** 会话列表状态（按「书 + 章」作用域隔离，切章瞬间即视为空，不等异步刷新）。 */
+/** 会话列表状态（按书作用域隔离；切章不影响会话列表）。 */
 interface SessionScope {
   key: string
   list: AiChatSessionRow[]
@@ -10,7 +10,7 @@ interface SessionScope {
 }
 
 export interface AiSessionsState {
-  /** 当前章的全部会话（最近活跃倒序）。 */
+  /** 当前书的全部会话（最近活跃倒序）。 */
   sessions: AiChatSessionRow[]
   /** 当前选中的会话；null = 新对话草稿（首次发送时才创建）。 */
   activeSessionId: number | null
@@ -31,30 +31,32 @@ export interface AiSessionsState {
 /**
  * 章节右栏 AI · 会话列表与当前选中。
  *
- * 默认行为保持「打开该章最近一条会话」（`listAiSessions` 已按 `updated_at DESC, id DESC`
- * 排序，取第一条）；此外提供切换 / 新建（草稿）/ 重命名 / 删除。
+ * 会话按书归属（与章解耦）：默认行为保持「打开该书最近一条会话」
+ * （`listAiSessions` 已按 `updated_at DESC, id DESC` 排序，取第一条）；
+ * 此外提供切换 / 新建（草稿）/ 重命名 / 删除。切章不改变会话作用域。
  *
- * 作用域用 `key` 标记：切书 / 切章时 `state.key` 与当前 key 不一致，对外立即表现为
- * 「空列表 + 无选中」，避免把上一章会话 id 传给对话 hook 误载入。
+ * 作用域用 `key`（书 id）标记：切书时 `state.key` 与当前 key 不一致，对外立即表现为
+ * 「空列表 + 无选中」，避免把上一本书的会话 id 传给对话 hook 误载入。
  */
 export function useAiSessions(input: {
   bookId: string
+  /** 已不参与会话作用域（会话按书归属）；保留入参兼容现有调用方，下一批移除。 */
   chapterId: number | null
   active: boolean
 }): AiSessionsState {
-  const { bookId, chapterId, active } = input
-  const key = `${bookId}:${chapterId ?? 0}`
+  const { bookId, active } = input
+  const key = bookId
 
   const [state, setState] = useState<SessionScope>({ key: '', list: [], activeId: null })
   const [loading, setLoading] = useState(false)
-  /** 当前作用域 key（异步 refresh 回来时对照，丢弃切书 / 切章前的过期结果）。 */
+  /** 当前作用域 key（异步 refresh 回来时对照，丢弃切书前的过期结果）。 */
   const scopeKeyRef = useRef(key)
 
   useEffect(() => {
     scopeKeyRef.current = key
   }, [key])
 
-  /** 对外作用域：key 不匹配（切书 / 切章）时一律为空，直到新列表返回。 */
+  /** 对外作用域：key 不匹配（切书）时一律为空，直到新列表返回。 */
   const scoped = useMemo<SessionScope>(
     () => (state.key === key ? state : { key, list: [], activeId: null }),
     [state, key]
@@ -62,16 +64,14 @@ export function useAiSessions(input: {
 
   const refresh = useCallback(
     async (preferId?: number): Promise<void> => {
-      const chapter = chapterId
-      if (chapter === null) return
       const api = window.api?.ai
       if (!api) return
 
-      const scopeKey = `${bookId}:${chapter}`
+      const scopeKey = bookId
       try {
-        const list = await api.sessions.list(bookId, chapter)
+        const list = await api.sessions.list(bookId)
         setState((prev) => {
-          // 切书 / 切章后才回来的旧请求：不写回，避免把新章的列表状态覆盖成旧章。
+          // 切书后才回来的旧请求：不写回，避免把新书的列表状态覆盖成旧书。
           if (scopeKeyRef.current !== scopeKey) return prev
           const sameScope = prev.key === scopeKey
           // preferId 只在「新作用域」或「当前已是该条」时采纳：避免迟到的创建刷新
@@ -96,12 +96,12 @@ export function useAiSessions(input: {
         chatLog.warn('AI 会话列表读取失败', error)
       }
     },
-    [bookId, chapterId]
+    [bookId]
   )
 
-  // 打开面板 / 切书 / 切章：拉一次列表（默认选中最近一条）。
+  // 打开面板 / 切书：拉一次列表（默认选中最近一条）；切章不重拉。
   useEffect(() => {
-    if (!active || chapterId === null) return
+    if (!active) return
     let cancelled = false
 
     // 异步 IIFE：加载态的 setState 不放在 effect 同步段（避免级联渲染告警）。
@@ -110,7 +110,7 @@ export function useAiSessions(input: {
       try {
         const api = window.api?.ai
         if (!api) return
-        const list = await api.sessions.list(bookId, chapterId)
+        const list = await api.sessions.list(bookId)
         if (cancelled) return
         setState((prev) => {
           const preferred = prev.key === key ? prev.activeId : null
@@ -127,7 +127,7 @@ export function useAiSessions(input: {
     return () => {
       cancelled = true
     }
-  }, [active, bookId, chapterId, key])
+  }, [active, bookId, key])
 
   const select = useCallback(
     (id: number | null): void => {
@@ -179,8 +179,8 @@ export function useAiSessions(input: {
   return {
     sessions: scoped.list,
     activeSessionId: scoped.activeId,
-    // 切书 / 切章时 state.key 尚未跟上：对外仍算加载中，避免空态文案闪一下。
-    loading: active && chapterId !== null && (state.key !== key || loading),
+    // 切书时 state.key 尚未跟上：对外仍算加载中，避免空态文案闪一下。
+    loading: active && (state.key !== key || loading),
     refresh,
     select,
     notifyCreated,

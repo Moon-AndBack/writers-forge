@@ -18,8 +18,8 @@
  * - `categories` → `schema/categories.ts`
  * - `images` → `schema/images.ts`
  * - `chip_colors`（胶囊配色，全局、无外键）→ `schema/chipColors.ts`
- * - `ai_chat_sessions` / `ai_chat_messages`（AI 对话会话 / 多轮消息，按章归属）→
- *   `schema/aiChat.ts`
+ * - `ai_chat_sessions` / `ai_chat_messages`（AI 对话会话 / 多轮消息；会话按书归属，
+ *   消息的 `chapter_id` 为纯来源标记）→ `schema/aiChat.ts`
  * - `world_entities` / 模块子表 `world_character` / 通用附属表 → `schema/worldEntities.ts`
  *   （`world_power_system` 属第五类模块子表，清单见 `schema/worldPowers.ts` 分片；
  *   `world_worldview` / `world_item` / `world_faction` 已于第 3 批下线，见文末说明）
@@ -270,23 +270,23 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
     name: 'chip_colors',
     columns: ['id', 'scope', 'module', 'preset_key', 'bg', 'fg', 'sort_order', 'updated_at']
   },
-  // AI 对话（按章归属的会话 + 多轮消息）：见 `schema/aiChat.ts`
+  // AI 对话（按书归属的会话 + 多轮消息；消息的 `chapter_id` 为纯来源标记）：见 `schema/aiChat.ts`
   {
     name: 'ai_chat_sessions',
-    columns: [
-      'id',
-      'book_id',
-      'chapter_id',
-      'provider',
-      'model',
-      'title',
-      'created_at',
-      'updated_at'
-    ]
+    columns: ['id', 'book_id', 'provider', 'model', 'title', 'created_at', 'updated_at']
   },
   {
     name: 'ai_chat_messages',
-    columns: ['id', 'session_id', 'role', 'content', 'status', 'usage_json', 'created_at']
+    columns: [
+      'id',
+      'session_id',
+      'chapter_id',
+      'role',
+      'content',
+      'status',
+      'usage_json',
+      'created_at'
+    ]
   },
   // 违禁词库（全局共享词表，无书域 / 实体外键）：见 `schema/cleanWords.ts`
   {
@@ -415,8 +415,8 @@ export const EXPECTED_INDEXES: readonly string[] = [
   'idx_categories_channel',
   // schema/images.ts（1）
   'idx_images_book',
-  // schema/aiChat.ts（2：按章查会话 / 按会话按序取消息）
-  'idx_ai_chat_sessions_book_chapter',
+  // schema/aiChat.ts（2：按书查会话 / 按会话按序取消息）
+  'idx_ai_chat_sessions_book',
   'idx_ai_chat_messages_session',
   // schema/worldEntities.ts（10）
   'idx_world_entities_book_type',

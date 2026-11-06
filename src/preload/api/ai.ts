@@ -134,7 +134,7 @@ export const aiApi = {
     }
   },
   sessions: {
-    list: (bookId, chapterId) => ipcRenderer.invoke('ai:sessions:list', { bookId, chapterId }),
+    list: (bookId) => ipcRenderer.invoke('ai:sessions:list', { bookId }),
     create: (input) => ipcRenderer.invoke('ai:sessions:create', input),
     delete: (id) => ipcRenderer.invoke('ai:sessions:delete', { id }),
     rename: (id, title) => ipcRenderer.invoke('ai:sessions:rename', { id, title })

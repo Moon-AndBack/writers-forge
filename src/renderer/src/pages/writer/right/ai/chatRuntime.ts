@@ -80,6 +80,8 @@ export interface ActiveRequest {
   content: string
   /** 发起时快照的会话 id（落库时按它，不受切章影响）。 */
   sessionId: number | null
+  /** 发起时所在的章（落库为消息的 `chapterId` 来源标记；无章聊天为 null）。 */
+  chapterId: number | null
   /** 发送前对 `prepared.messages` 的 token 估算（校准分母；0 = 尚未计算，不参与校准）。 */
   estimatedPromptTokens: number
   /** 校准键 `provider/model`（发送前回填；空串 = 未知，不参与校准）。 */
@@ -112,19 +114,21 @@ export function createLocalId(prefix: string): string {
  *
  * 用户消息在发送时写、助手回复在 `done` / 用户停止 / 上游报错时写；
  * `status` 缺省为 `done`，只有上游报错中断写 `interrupted`（见 `persistAssistantPartial`）。
+ * `chapterId` 记录消息产生时所在的章（无章聊天为 null），供回插校验。
  * 内容一律按原样落库，中断说明属于界面文案，**不进正文**。
  */
 export async function appendMessage(
   sessionId: number,
   role: AiChatRole,
   content: string,
-  options?: { usage?: AiUsage; status?: AiMessageStatus }
+  options?: { usage?: AiUsage; status?: AiMessageStatus; chapterId?: number | null }
 ): Promise<void> {
   const api = window.api?.ai
   if (!api) return
   try {
     await api.messages.append({
       sessionId,
+      chapterId: options?.chapterId ?? null,
       role,
       content,
       ...(options?.status !== undefined ? { status: options.status } : {}),
@@ -154,6 +158,7 @@ export function persistAssistantPartial(
   if (request.sessionId === null || request.content.trim() === '') return
   request.persisted = true
   void appendMessage(request.sessionId, 'assistant', request.content, {
+    chapterId: request.chapterId,
     ...(options?.usage !== undefined ? { usage: options.usage } : {}),
     ...(options?.status !== undefined ? { status: options.status } : {})
   })

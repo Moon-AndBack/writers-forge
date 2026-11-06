@@ -37,8 +37,10 @@ export type { AiConversationMessage, AiConversationState }
 /**
  * 章节右栏 AI · 会话 + 消息 + 流式状态机（统一输入区口径）。
  *
- * 会话由 `useAiSessions` 选中后经 `sessionId` 传入（默认仍是该章最近一条）；
+ * 会话由 `useAiSessions` 选中后经 `sessionId` 传入（默认仍是该书最近一条）；
  * `chapterId` / `sessionId` 变化时中止在途请求（半截回复落库）→ 清空消息 → 重载历史。
+ * 会话按书归属、与章解耦：切章不改变会话归属；消息落库时记录**发起时**所在的章，
+ * 供回插校验（无章聊天为 null）。
  * **所有请求（润色 / 续写 / 改写 / 翻译 / 自由对话）**
  * 走同一条 `send`：消息进对话列表并落库，流式事件按 `requestId` 过滤。
  *
@@ -130,24 +132,20 @@ export function useAiConversation(input: {
     }
   }, [])
 
-  /** 确保当前章节有会话（已有则直接复用）。 */
+  /** 确保当前书有会话（会话按书归属，与章无关；已有则直接复用）。 */
   const ensureSession = useCallback(async (): Promise<number | null> => {
     if (sessionIdRef.current !== null) return sessionIdRef.current
-    const chapter = chapterIdRef.current
     const api = window.api?.ai
-    if (chapter === null || !api) return null
+    if (!api) return null
     const book = bookIdRef.current
     const provider = await resolveProvider()
 
     try {
       const created = await api.sessions.create({
         bookId: book,
-        chapterId: chapter,
         provider,
         model: modelRef.current
       })
-      // 建会话期间已切章：不采纳这条过期会话（列表里留空会话，无害）。
-      if (chapterIdRef.current !== chapter) return null
       const id = created?.id ?? null
       sessionIdRef.current = id
       if (id !== null) onSessionCreatedRef.current?.(id)
@@ -296,6 +294,7 @@ export function useAiConversation(input: {
         assistantId,
         content: '',
         sessionId: sessionIdRef.current,
+        chapterId: chapterIdRef.current,
         estimatedPromptTokens: 0,
         calibrationKey: ''
       }
@@ -359,7 +358,9 @@ export function useAiConversation(input: {
             compress,
             persistSummary: async (covered, text) => {
               if (sessionId === null) return null
-              await appendMessage(sessionId, 'system', encodeSummaryRow(covered, text))
+              await appendMessage(sessionId, 'system', encodeSummaryRow(covered, text), {
+                chapterId: request.chapterId
+              })
               return { id: 0, content: text, covered }
             }
           })
@@ -383,7 +384,7 @@ export function useAiConversation(input: {
           }
 
           if (sessionId !== null && userText !== '') {
-            void appendMessage(sessionId, 'user', userText)
+            void appendMessage(sessionId, 'user', userText, { chapterId: request.chapterId })
           }
 
           await api.chat.start({
@@ -433,7 +434,8 @@ export function useAiConversation(input: {
     applySummary(null)
     setNotice(null)
 
-    if (!active || chapterId === null || sessionId === null) {
+    // 会话与章解耦：无选中章节时仍可载入当前会话历史。
+    if (!active || sessionId === null) {
       return undefined
     }
 

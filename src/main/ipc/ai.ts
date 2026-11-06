@@ -101,12 +101,12 @@ type TestResult = { ok: boolean; latencyMs: number; error?: AiError }
  * - ai:test              ({ provider })                          → { ok, latencyMs, error? }
  * - ai:chat:start        (input)                                 → void（后续走事件）
  * - ai:chat:abort        ({ requestId })                         → boolean
- * - ai:sessions:list     ({ bookId, chapterId })                 → AiChatSessionRow[]
- * - ai:sessions:create   ({ bookId, chapterId, provider, model, title? }) → AiChatSessionRow | null
+ * - ai:sessions:list     ({ bookId })                              → AiChatSessionRow[]
+ * - ai:sessions:create   ({ bookId, provider, model, title? })     → AiChatSessionRow | null
  * - ai:sessions:delete   ({ id })                                → boolean
  * - ai:sessions:rename   ({ id, title })                         → boolean
  * - ai:messages:list     ({ sessionId })                         → AiChatMessageRow[]
- * - ai:messages:append   ({ sessionId, role, content, status?, usageJson? }) → AiChatMessageRow | null
+ * - ai:messages:append   ({ sessionId, chapterId?, role, content, status?, usageJson? }) → AiChatMessageRow | null
  * 推送（主进程 → 渲染层）：
  * - ai:chat:delta        { requestId, delta }
  * - ai:chat:done         { requestId, usage? }
@@ -286,29 +286,26 @@ export function registerAiIpc(): void {
 
   ipcMain.handle('ai:sessions:list', (_event, input: unknown) => {
     if (!isRecord(input)) return []
-    const { bookId, chapterId } = input
+    const { bookId } = input
     if (!isTextWithin(bookId, MAX_ID_CHARS) || bookId === '') return []
-    if (!isPositiveInt(chapterId)) return []
-    return listAiSessions(bookId, chapterId)
+    return listAiSessions(bookId)
   })
 
   ipcMain.handle('ai:sessions:create', (_event, input: unknown): AiChatSessionRow | null => {
     if (!isRecord(input)) return null
-    const { bookId, chapterId, model, title } = input
+    const { bookId, model, title } = input
     const provider = input.provider
     if (!isTextWithin(bookId, MAX_ID_CHARS) || bookId === '') return null
-    if (!isPositiveInt(chapterId)) return null
     if (!isAiProviderId(provider)) return null
     if (!isTextWithin(model, MAX_ID_CHARS)) return null
     if (title !== undefined && !isTextWithin(title, MAX_ID_CHARS)) return null
 
     return runWrite(
       'ai:sessions:create',
-      { bookId, chapterId, provider, model },
+      { bookId, provider, model },
       () =>
         createAiSession({
           bookId,
-          chapterId,
           provider,
           model,
           ...(title !== undefined ? { title } : {})
@@ -337,8 +334,10 @@ export function registerAiIpc(): void {
 
   ipcMain.handle('ai:messages:append', (_event, input: unknown): AiChatMessageRow | null => {
     if (!isRecord(input)) return null
-    const { sessionId, role, content, status, usageJson } = input
+    const { sessionId, chapterId, role, content, status, usageJson } = input
     if (!isPositiveInt(sessionId)) return null
+    // `chapterId` 是纯标记字段：省略 / null 表示无章聊天；给了就必须是正整数。
+    if (chapterId !== undefined && chapterId !== null && !isPositiveInt(chapterId)) return null
     if (role !== 'system' && role !== 'user' && role !== 'assistant') return null
     if (!isTextWithin(content, MAX_MESSAGE_CHARS)) return null
     if (status !== undefined && status !== 'done' && status !== 'interrupted') return null
@@ -350,15 +349,17 @@ export function registerAiIpc(): void {
       return null
     }
     const safeRole: AiChatRole = role
+    const safeChapterId: number | null = isPositiveInt(chapterId) ? chapterId : null
     const safeStatus: AiMessageStatus | undefined =
       status === 'done' || status === 'interrupted' ? status : undefined
 
     return runWrite(
       'ai:messages:append',
-      { sessionId, role: safeRole, status: safeStatus ?? 'done' },
+      { sessionId, chapterId: safeChapterId, role: safeRole, status: safeStatus ?? 'done' },
       () =>
         appendAiMessage({
           sessionId,
+          chapterId: safeChapterId,
           role: safeRole,
           content,
           ...(safeStatus !== undefined ? { status: safeStatus } : {}),

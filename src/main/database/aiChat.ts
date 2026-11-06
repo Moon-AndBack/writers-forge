@@ -4,8 +4,9 @@ import { getDb } from './index'
  * AI 对话数据层（`ai_chat_sessions` / `ai_chat_messages`，见 `schema/aiChat.ts`）。
  *
  * 职责：
- * - 会话：按「书 + 章」列举、创建、重命名、刷新活跃时间、删除（级联删消息）；
- * - 消息：按会话按 id 升序列举、追加（同一事务内刷新会话 `updated_at`）。
+ * - 会话：按「书」列举（与章解耦）、创建、重命名、刷新活跃时间、删除（级联删消息）；
+ * - 消息：按会话按 id 升序列举、追加（同一事务内刷新会话 `updated_at`）；
+ *   每条消息用可空 `chapter_id` 记录「产生时所在的章」（纯标记，无外键），供回插校验。
  *
  * 约定：
  * - 全部同步（better-sqlite3）；
@@ -26,11 +27,10 @@ export type AiChatRole = 'system' | 'user' | 'assistant'
  */
 export type AiMessageStatus = 'done' | 'interrupted'
 
-/** 会话行。 */
+/** 会话行（归属书，与章无关）。 */
 export interface AiChatSessionRow {
   id: number
   bookId: string
-  chapterId: number
   provider: string
   model: string
   title: string
@@ -38,10 +38,18 @@ export interface AiChatSessionRow {
   updatedAt: string
 }
 
-/** 消息行。 */
+/**
+ * 消息行。
+ *
+ * 回插（替换选中 / 插入到光标后）的允许条件：
+ * `chapterId !== null && chapterId === 当前 chapterId`；
+ * 即无章聊天产生的消息、以及来自其它章的消息都不允许回插。
+ */
 export interface AiChatMessageRow {
   id: number
   sessionId: number
+  /** 消息产生时所在的章；无章聊天 / 历史空值为 `null`。无外键，删章不影响消息。 */
+  chapterId: number | null
   role: AiChatRole
   content: string
   /** 收尾状态：`done`（默认）/ `interrupted`（上游报错中断）。 */
@@ -51,28 +59,33 @@ export interface AiChatMessageRow {
   createdAt: string
 }
 
-/** 创建会话入参（`title` 省略时落库为空串）。 */
+/** 创建会话入参（归属书，与章无关；`title` 省略时落库为空串）。 */
 export interface CreateAiSessionInput {
   bookId: string
-  chapterId: number
   provider: string
   model: string
   title?: string
 }
 
-/** 追加消息入参（`usageJson` / `status` 省略时分别落库为 `null` / `'done'`）。 */
+/**
+ * 追加消息入参（`usageJson` / `status` 省略时分别落库为 `null` / `'done'`）。
+ *
+ * `chapterId` 记录消息产生时所在的章；无章聊天传 `null` / 省略。纯标记字段，
+ * 不校验章是否存在，也不建立外键。
+ */
 export interface AppendAiMessageInput {
   sessionId: number
+  chapterId?: number | null
   role: AiChatRole
   content: string
   status?: AiMessageStatus
   usageJson?: string | null
 }
 
-const SESSION_COLUMNS = `id, book_id AS bookId, chapter_id AS chapterId, provider, model,
+const SESSION_COLUMNS = `id, book_id AS bookId, provider, model,
   title, created_at AS createdAt, updated_at AS updatedAt`
 
-const MESSAGE_COLUMNS = `id, session_id AS sessionId, role, content, status,
+const MESSAGE_COLUMNS = `id, session_id AS sessionId, chapter_id AS chapterId, role, content, status,
   usage_json AS usageJson, created_at AS createdAt`
 
 /** 库内会话行形状（snake_case 已别名，仅列名映射）。 */
@@ -105,6 +118,7 @@ function toAiMessageRow(row: MessageDbRow): AiChatMessageRow {
   return {
     id: row.id,
     sessionId: row.sessionId,
+    chapterId: row.chapterId,
     role: row.role === 'system' || row.role === 'assistant' ? row.role : 'user',
     content: row.content,
     status: row.status === 'interrupted' ? 'interrupted' : 'done',
@@ -113,27 +127,26 @@ function toAiMessageRow(row: MessageDbRow): AiChatMessageRow {
   }
 }
 
-/** 列举某书某章下的会话，按最近活跃倒序（同秒并列按 id 倒序，保证稳定）。 */
-export function listAiSessions(bookId: string, chapterId: number): AiChatSessionRow[] {
+/** 列举某书下的全部会话（与章无关），按最近活跃倒序（同秒并列按 id 倒序，保证稳定）。 */
+export function listAiSessions(bookId: string): AiChatSessionRow[] {
   return getDb()
     .prepare(
       `SELECT ${SESSION_COLUMNS} FROM ai_chat_sessions
-       WHERE book_id = ? AND chapter_id = ?
+       WHERE book_id = ?
        ORDER BY updated_at DESC, id DESC`
     )
-    .all(bookId, chapterId) as AiChatSessionRow[]
+    .all(bookId) as AiChatSessionRow[]
 }
 
-/** 新建会话，返回落库后的行。 */
+/** 新建会话（归属书，与章无关），返回落库后的行。 */
 export function createAiSession(input: CreateAiSessionInput): AiChatSessionRow {
   const result = getDb()
     .prepare(
-      `INSERT INTO ai_chat_sessions (book_id, chapter_id, provider, model, title)
-       VALUES (@bookId, @chapterId, @provider, @model, @title)`
+      `INSERT INTO ai_chat_sessions (book_id, provider, model, title)
+       VALUES (@bookId, @provider, @model, @title)`
     )
     .run({
       bookId: input.bookId,
-      chapterId: input.chapterId,
       provider: input.provider,
       model: input.model,
       title: input.title ?? ''
@@ -164,18 +177,19 @@ export function listAiMessages(sessionId: number): AiChatMessageRow[] {
 /**
  * 追加一条消息并刷新所属会话的 `updated_at`（同一事务），返回落库后的消息行。
  * 会话不存在时由 `session_id` 外键拒绝（`foreign_keys = ON`），抛错且不落库。
- * `status` 省略时落库为 `'done'`（正常完成）。
+ * `status` 省略时落库为 `'done'`（正常完成）；`chapterId` 省略时落库为 `NULL`（无章聊天）。
  */
 export function appendAiMessage(input: AppendAiMessageInput): AiChatMessageRow {
   const db = getDb()
   return db.transaction((): AiChatMessageRow => {
     const result = db
       .prepare(
-        `INSERT INTO ai_chat_messages (session_id, role, content, status, usage_json)
-         VALUES (@sessionId, @role, @content, @status, @usageJson)`
+        `INSERT INTO ai_chat_messages (session_id, chapter_id, role, content, status, usage_json)
+         VALUES (@sessionId, @chapterId, @role, @content, @status, @usageJson)`
       )
       .run({
         sessionId: input.sessionId,
+        chapterId: input.chapterId ?? null,
         role: input.role,
         content: input.content,
         status: input.status ?? 'done',

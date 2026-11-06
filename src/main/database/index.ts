@@ -123,8 +123,8 @@ export function getDb(): Database.Database {
     seedBooksIfEmpty()
     // 章节域：volumes（卷）+ chapters（章），幂等建表（引用 books，须在其后）。
     createChapterSchema(instance)
-    // AI 对话域：会话（按章归属）+ 多轮消息，引用 books / chapters，须在其后；
-    // 会话先于消息建表（消息外键指向会话），幂等建表。
+    // AI 对话域：会话（按书归属，与章解耦）+ 多轮消息，引用 books，须在其后；
+    // 会话先于消息建表（消息外键指向会话），幂等建表；老库旧结构在函数内一次性重建。
     createAiChatSchema(instance)
     // 段落表：正文真源（每行一段，归属章节），幂等建表（引用 chapters，须在其后）。
     createParagraphSchema(instance)
