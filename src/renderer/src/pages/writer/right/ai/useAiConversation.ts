@@ -191,6 +191,7 @@ export function useAiConversation(input: {
     (request: ActiveRequest, usage?: AiUsage): void => {
       activeRequestRef.current = null
       setGenerating(false)
+      setCompressing(false)
 
       patchMessage(request.assistantId, { streaming: false, content: request.content })
       // 所有功能的完整回复都落库（用户消息已在发送时写入）；正常完成即默认状态 `done`。
@@ -203,6 +204,7 @@ export function useAiConversation(input: {
     (request: ActiveRequest, error: AiError): void => {
       activeRequestRef.current = null
       setGenerating(false)
+      setCompressing(false)
       patchMessage(request.assistantId, { streaming: false, error, interrupted: true })
       // 报错同样算「没走完」：已生成的半截回复仍落库，状态记为 `interrupted`，
       // 由气泡按状态渲染结构化标记（不进正文，避免污染回插与后续上下文）。
@@ -236,6 +238,7 @@ export function useAiConversation(input: {
       unsubscribe()
       const request = activeRequestRef.current
       activeRequestRef.current = null
+      setCompressing(false)
       if (request !== null) {
         persistAssistantPartial(request)
         void api.chat.abort(request.requestId).catch(() => undefined)
@@ -364,6 +367,9 @@ export function useAiConversation(input: {
           chatLog.warn('AI 请求启动失败', error)
           handleError(request, UNKNOWN_ERROR)
           return true
+        } finally {
+          // 压缩 / 启动阶段任何退出（抛错、提前 return、拒绝、正常）都复位，避免 UI 卡在「整理中」。
+          setCompressing(false)
         }
       })()
     },
