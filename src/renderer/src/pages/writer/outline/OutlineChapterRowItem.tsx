@@ -3,6 +3,7 @@ import { IconButton } from '../../../components/ui'
 import { GripVerticalIcon, PencilIcon } from '../icons'
 import { TrashIcon } from '../../../components/icons'
 import { outlineItemLabel, type OutlineItemRow } from './outlineTree'
+import TreeRowItem from '../../../components/tree/TreeRowItem'
 
 export interface OutlineChapterRowItemProps {
   item: OutlineItemRow
@@ -61,84 +62,81 @@ export default function OutlineChapterRowItem({
   const isEmpty = item.title.trim() === ''
   // 有拖拽把手 → 操作按钮组右移让位把手（`right: 22px`）；无把手贴右缘（`right: 2px`）。
   const hasGrip = dragHandle !== undefined
-  const classes = [
-    'outline-chapter',
-    active ? 'is-active' : '',
-    dragging ? 'is-dragging' : '',
-    nested ? 'is-nested' : '',
-    hasGrip ? 'has-grip' : ''
-  ]
-    .filter(Boolean)
-    .join(' ')
 
   return (
-    <div
-      ref={registerRow ? (element) => registerRow(item.id, element) : undefined}
-      className={classes}
-      onClick={() => onSelect(item.id)}
-    >
-      <span className="outline-chapter-dot" />
-      {renaming ? (
-        <input
-          className="vol-rename"
-          type="text"
-          value={draftName}
-          autoFocus
-          spellCheck={false}
-          aria-label={t('rename')}
-          onClick={(event) => event.stopPropagation()}
-          onChange={(event) => onDraftNameChange?.(event.target.value)}
-          onBlur={() => onCommitRename?.(item)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault()
-              onCommitRename?.(item)
-            } else if (event.key === 'Escape') {
-              event.preventDefault()
-              onCancelRename?.(item)
-            }
-          }}
-        />
-      ) : (
-        <span className={`outline-chapter-name${isEmpty ? ' is-empty' : ''}`}>
-          {outlineItemLabel(item, t('unnamedChapter'))}
-        </span>
-      )}
-      <span className="outline-chapter-actions" onClick={(event) => event.stopPropagation()}>
-        {onBeginRename && (
+    <TreeRowItem
+      id={item.id}
+      classPrefix="outline-chapter"
+      active={active}
+      dragging={dragging}
+      afterDraggingClasses={[nested ? 'is-nested' : '', hasGrip ? 'has-grip' : '']}
+      registerRow={registerRow}
+      onSelect={onSelect}
+      nameNode={
+        renaming ? (
+          <input
+            className="vol-rename"
+            type="text"
+            value={draftName}
+            autoFocus
+            spellCheck={false}
+            aria-label={t('rename')}
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) => onDraftNameChange?.(event.target.value)}
+            onBlur={() => onCommitRename?.(item)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                onCommitRename?.(item)
+              } else if (event.key === 'Escape') {
+                event.preventDefault()
+                onCancelRename?.(item)
+              }
+            }}
+          />
+        ) : (
+          <span className={`outline-chapter-name${isEmpty ? ' is-empty' : ''}`}>
+            {outlineItemLabel(item, t('unnamedChapter'))}
+          </span>
+        )
+      }
+      actions={
+        <>
+          {onBeginRename && (
+            <IconButton
+              size="sm"
+              className="row-act"
+              label={t('rename')}
+              tooltipPlacement="top"
+              onClick={() => onBeginRename(item)}
+            >
+              <PencilIcon />
+            </IconButton>
+          )}
           <IconButton
             size="sm"
             className="row-act"
-            label={t('rename')}
+            tone="danger"
+            label={t('deleteChapter')}
             tooltipPlacement="top"
-            onClick={() => onBeginRename(item)}
+            onClick={() => onDelete(item)}
           >
-            <PencilIcon />
+            <TrashIcon />
           </IconButton>
-        )}
-        <IconButton
-          size="sm"
-          className="row-act"
-          tone="danger"
-          label={t('deleteChapter')}
-          tooltipPlacement="top"
-          onClick={() => onDelete(item)}
-        >
-          <TrashIcon />
-        </IconButton>
-      </span>
-      {dragHandle && (
-        <span
-          className="outline-chapter-grip"
-          title={t('dragWithinVolume')}
-          onPointerDown={(event) => dragHandle.onPointerDown(event, item)}
-          onPointerMove={dragHandle.onPointerMove}
-          onPointerUp={dragHandle.onPointerUp}
-          onPointerCancel={dragHandle.onPointerCancel}
-        >
-          <GripVerticalIcon />
-        </span>
-      )}
-    </div>
+        </>
+      }
+      grip={
+        dragHandle
+          ? {
+              title: t('dragWithinVolume'),
+              icon: <GripVerticalIcon />,
+              onPointerDown: (event) => dragHandle.onPointerDown(event, item),
+              onPointerMove: dragHandle.onPointerMove,
+              onPointerUp: dragHandle.onPointerUp,
+              onPointerCancel: dragHandle.onPointerCancel
+            }
+          : undefined
+      }
+    />
   )
 }

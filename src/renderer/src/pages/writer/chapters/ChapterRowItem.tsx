@@ -5,6 +5,7 @@ import { IconButton } from '../../../components/ui'
 import { GripVerticalIcon, PinBottomIcon, PinTopIcon } from '../icons'
 import { TrashIcon } from '../../../components/icons'
 import { useChapterLabels } from './useChapterLabels'
+import TreeRowItem from '../../../components/tree/TreeRowItem'
 
 export interface ChapterRowItemProps {
   /** 章行数据。 */
@@ -52,70 +53,76 @@ export default function ChapterRowItem({
   const labels = useChapterLabels()
   const prefix = labels.chapterRowPrefixLabel(chapter)
   const name = chapterNameLabel(chapter)
-  const classes = [
-    'chapter',
-    active ? 'is-active' : '',
-    chapter.status === 'draft' ? 'is-draft' : '',
-    chapter.kind === 'special' ? 'is-special' : '',
-    dragging ? 'is-dragging' : ''
-  ]
-    .filter(Boolean)
-    .join(' ')
 
   return (
     <>
       {dropBefore && <div className="drop-line" aria-hidden="true" />}
-      <div
-        ref={(element) => registerRow(chapter.id, element)}
-        className={classes}
-        onClick={() => onSelect(chapter.id)}
-      >
-        <span className="chapter-dot" />
-        {prefix !== '' && <span className="chapter-prefix">{prefix}</span>}
-        {/* 圆点分隔符：前缀段与名段之间恒显示（前缀段可能为空——回收站口径不适用此处）。 */}
-        <span className="chapter-sep" aria-hidden="true">
-          ●
-        </span>
-        {name !== '' ? (
-          <span className="chapter-name">{name}</span>
-        ) : (
-          <span className="chapter-name chapter-name--empty" />
-        )}
-        {chapter.status === 'draft' && <span className="chapter-draft">{t('status.draft')}</span>}
-        <span className="chapter-actions" onClick={(event) => event.stopPropagation()}>
-          {chapter.kind === 'special' && (
+      <TreeRowItem
+        id={chapter.id}
+        classPrefix="chapter"
+        active={active}
+        dragging={dragging}
+        stateClasses={[
+          chapter.status === 'draft' ? 'is-draft' : '',
+          chapter.kind === 'special' ? 'is-special' : ''
+        ]}
+        registerRow={registerRow}
+        onSelect={onSelect}
+        leading={
+          <>
+            {prefix !== '' && <span className="chapter-prefix">{prefix}</span>}
+            {/* 圆点分隔符：前缀段与名段之间恒显示（前缀段可能为空——回收站口径不适用此处）。 */}
+            <span className="chapter-sep" aria-hidden="true">
+              ●
+            </span>
+          </>
+        }
+        nameNode={
+          name !== '' ? (
+            <span className="chapter-name">{name}</span>
+          ) : (
+            <span className="chapter-name chapter-name--empty" />
+          )
+        }
+        badge={
+          chapter.status === 'draft' ? (
+            <span className="chapter-draft">{t('status.draft')}</span>
+          ) : null
+        }
+        actions={
+          <>
+            {chapter.kind === 'special' && (
+              <IconButton
+                size="sm"
+                className="row-act"
+                label={chapter.pin === 'top' ? t('pinBottom') : t('pinTop')}
+                tooltipPlacement="top"
+                onClick={() => onTogglePin(chapter.id, chapter.pin === 'top' ? 'bottom' : 'top')}
+              >
+                {chapter.pin === 'top' ? <PinBottomIcon /> : <PinTopIcon />}
+              </IconButton>
+            )}
             <IconButton
               size="sm"
               className="row-act"
-              label={chapter.pin === 'top' ? t('pinBottom') : t('pinTop')}
+              tone="danger"
+              label={t('deleteChapter')}
               tooltipPlacement="top"
-              onClick={() => onTogglePin(chapter.id, chapter.pin === 'top' ? 'bottom' : 'top')}
+              onClick={() => onDelete(chapter)}
             >
-              {chapter.pin === 'top' ? <PinBottomIcon /> : <PinTopIcon />}
+              <TrashIcon />
             </IconButton>
-          )}
-          <IconButton
-            size="sm"
-            className="row-act"
-            tone="danger"
-            label={t('deleteChapter')}
-            tooltipPlacement="top"
-            onClick={() => onDelete(chapter)}
-          >
-            <TrashIcon />
-          </IconButton>
-        </span>
-        <span
-          className="chapter-grip"
-          title={t('dragWithinSegment')}
-          onPointerDown={(event) => dragHandle.onPointerDown(event, chapter)}
-          onPointerMove={dragHandle.onPointerMove}
-          onPointerUp={dragHandle.onPointerUp}
-          onPointerCancel={dragHandle.onPointerCancel}
-        >
-          <GripVerticalIcon />
-        </span>
-      </div>
+          </>
+        }
+        grip={{
+          title: t('dragWithinSegment'),
+          icon: <GripVerticalIcon />,
+          onPointerDown: (event) => dragHandle.onPointerDown(event, chapter),
+          onPointerMove: dragHandle.onPointerMove,
+          onPointerUp: dragHandle.onPointerUp,
+          onPointerCancel: dragHandle.onPointerCancel
+        }}
+      />
     </>
   )
 }
