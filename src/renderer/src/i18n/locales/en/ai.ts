@@ -120,6 +120,13 @@ const ai = {
       selectionEmpty: 'No text selected',
       none: 'No context carried'
     },
+    context: {
+      label: 'Context',
+      summary: '{{used}} / {{limit}} ({{percent}})',
+      percent: '{{ratio}}%',
+      unknownModel: 'Unknown model; estimating with {{tokens}}',
+      matchedFrom: 'Matched from {{id}}'
+    },
     builtin: {
       toggle: 'Carry built-in prompt',
       expand: 'Expand',

@@ -117,6 +117,13 @@ const ai = {
       selectionEmpty: '未选中正文',
       none: '未携带上下文'
     },
+    context: {
+      label: '上下文',
+      summary: '{{used}} / {{limit}}（{{percent}}）',
+      percent: '{{ratio}}%',
+      unknownModel: '未知模型 · 按 {{tokens}} 估算',
+      matchedFrom: '匹配自 {{id}}'
+    },
     builtin: {
       toggle: '携带内置提示词',
       expand: '展开',

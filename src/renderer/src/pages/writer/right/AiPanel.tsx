@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Textarea, useToast } from '../../../components/ui'
+import { Textarea, useToast } from '../../../components/ui'
 import { useRichTextEditor } from '../../../components/editor/richTextEditorContext'
 import {
   clearSelectionMirror,
@@ -17,19 +17,15 @@ import type { AiComposeAction } from './ai/functions'
 import { useAiConversation } from './ai/useAiConversation'
 import { useAiSessions } from './ai/useAiSessions'
 import { AiSessionMenu } from './ai/AiSessionMenu'
-import {
-  canApplyMessage,
-  readFullText,
-  readSelectionChars,
-  readTotalChars,
-  toOption
-} from './ai/panelUtils'
+import { canApplyMessage, readFullText, toOption } from './ai/panelUtils'
 import { useAiModels } from './ai/useAiModels'
 import { useBookProfile } from './ai/useBookProfile'
 import { AiControls } from './ai/AiControls'
 import { BuiltinPrompt } from './ai/BuiltinPrompt'
-import { AI_ERROR_TEXT_KEYS } from './ai/aiErrorText'
 import { ChatMessage } from './ai/ChatMessage'
+import { AiComposerStatus } from './ai/AiComposerStatus'
+import { useContextUsage } from './ai/useContextUsage'
+import { useEditorMetrics } from './ai/useEditorMetrics'
 
 /** 功能 → 文案 key（静态映射，避免拼接 key 丢类型）。 */
 const ACTION_LABEL_KEYS = {
@@ -141,62 +137,21 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
   /** 发起请求瞬间的选区快照（回插依据；切章不清空，仅由下一次发送覆盖）。 */
   const selectionRef = useRef<EditorSelectionSnapshot | null>(null)
 
+  /** 编辑器派生的只读指标（选区 / 全章字数、选区文案、焦点），订阅逻辑见 `useEditorMetrics`。 */
+  const { selectionChars, totalChars, selectionText, selectionRange, editorFocused } =
+    useEditorMetrics(editor)
+
   /**
-   * 编辑器字数（选区 / 全章）：只用于面板提示。
-   *
-   * 走 `useSyncExternalStore` 订阅编辑器的 `selectionUpdate` / `update`——面板聚焦在
-   * 输入框时选区仍在编辑器内部状态里，用户回正文改选 / 打字后提示要跟着变；
-   * 不在 effect 里 setState（避免级联渲染）。
-   *
-   * 额外订阅 `focus` / `blur`：选区镜像只在失焦期存在，而 blur 不触发
-   * `selectionUpdate`（选区本身没变），只能靠这两个事件驱动重渲染。
+   * 上下文占用估算（纯展示）：历史消息 + 输入框草稿 + 携带正文。
+   * 窗口值按模型缓存，模型不变不重复 IPC；面板未激活时返回 null。
    */
-  const subscribeEditor = useCallback(
-    (onStoreChange: () => void): (() => void) => {
-      if (!editor || editor.isDestroyed) return () => undefined
-      editor.on('selectionUpdate', onStoreChange)
-      editor.on('update', onStoreChange)
-      editor.on('focus', onStoreChange)
-      editor.on('blur', onStoreChange)
-      return () => {
-        editor.off('selectionUpdate', onStoreChange)
-        editor.off('update', onStoreChange)
-        editor.off('focus', onStoreChange)
-        editor.off('blur', onStoreChange)
-      }
-    },
-    [editor]
-  )
-  /** 选区 range 缓存：`getSnapshot` 必须返回引用稳定的值（每次新建对象会触发无限重渲染）。 */
-  const selectionRangeRef = useRef<{ from: number; to: number } | null>(null)
-  const readSelectionRange = useCallback((): { from: number; to: number } | null => {
-    const snapshot = readEditorSelection(editor)
-    const next =
-      snapshot === null || snapshot.empty ? null : { from: snapshot.from, to: snapshot.to }
-    const prev = selectionRangeRef.current
-    if (prev !== null && next !== null && prev.from === next.from && prev.to === next.to) {
-      return prev
-    }
-    selectionRangeRef.current = next
-    return next
-  }, [editor])
-  const selectionChars = useSyncExternalStore(
-    subscribeEditor,
-    () => readSelectionChars(editor),
-    () => 0
-  )
-  const totalChars = useSyncExternalStore(
-    subscribeEditor,
-    () => readTotalChars(editor),
-    () => 0
-  )
-  /** 当前非空选区（空选区 → null）；镜像饰带与字数提示同源。 */
-  const selectionRange = useSyncExternalStore(subscribeEditor, readSelectionRange, () => null)
-  const editorFocused = useSyncExternalStore(
-    subscribeEditor,
-    () => editor !== null && !editor.isDestroyed && editor.isFocused,
-    () => false
-  )
+  const usage = useContextUsage({
+    model,
+    messages,
+    draft: input,
+    carryContext: carryFull ? readFullText(editor) : carrySelection ? selectionText : '',
+    active
+  })
 
   /**
    * 编辑器失焦但仍有非空选区时，在正文里标出该选区（面板聚焦时 ProseMirror
@@ -347,11 +302,10 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
     )
   }
 
-  const modelErrorText =
-    modelsState.error !== null
-      ? t('panel.model.failed', {
-          message: t(AI_ERROR_TEXT_KEYS[modelsState.error.code])
-        })
+  const modelHint = modelsState.loading
+    ? t('panel.model.loading')
+    : modelOptions.length === 0 && modelsState.error === null
+      ? t('panel.model.empty')
       : null
 
   const canSend =
@@ -443,25 +397,14 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
           onSend={handleSend}
           onAbort={abort}
         />
-        {modelErrorText !== null ? (
-          <div className="ai-panel__error" role="alert">
-            <span>{modelErrorText}</span>
-            <Button
-              size="sm"
-              variant="ghost"
-              loading={modelsState.loading}
-              onClick={modelsState.refresh}
-            >
-              {t('panel.model.refresh')}
-            </Button>
-          </div>
-        ) : null}
-        {modelsState.loading ? (
-          <div className="ai-panel__hint">{t('panel.model.loading')}</div>
-        ) : modelOptions.length === 0 && modelErrorText === null ? (
-          <div className="ai-panel__hint">{t('panel.model.empty')}</div>
-        ) : null}
-        <div className="ai-panel__hint">{carryHint}</div>
+        <AiComposerStatus
+          error={modelsState.error}
+          errorLoading={modelsState.loading}
+          onRefresh={modelsState.refresh}
+          modelHint={modelHint}
+          hint={carryHint}
+          usage={usage}
+        />
       </div>
 
       {toastNode}

@@ -34,6 +34,73 @@
   overflow-wrap: anywhere;
 }
 
+/* ---------- 上下文占用条（ContextMeter） ----------
+   纯展示：已用 / 上限 + 进度条 + 来源说明。进度条常态取 --brand，≥80% 转 --warn，
+   超 100% 转 --danger（阈值在 ContextMeter.tsx 的 WARN_RATIO 定义）。
+   只用颜色 / 描边变化，无 transform、无位移动画（AGENTS §8）。 */
+.ai-context {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 2px;
+}
+
+.ai-context__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+.ai-context__label {
+  flex: none;
+}
+
+.ai-context__value {
+  min-width: 0;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ai-context__bar {
+  position: relative;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--soft);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.ai-context__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+}
+
+.ai-context[data-tone='warn'] .ai-context__fill {
+  background: var(--warn);
+}
+
+.ai-context[data-tone='danger'] .ai-context__fill {
+  background: var(--danger);
+}
+
+.ai-context__note {
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text-mute);
+  overflow-wrap: anywhere;
+}
+
 /* ---------- 会话栏（面板头部） ----------
    窄栏放不下会话侧栏：头部一行「当前会话标题 + 新建 + 会话(N)」，
    完整列表在弹窗里（见 AiSessionMenu）。标题单行省略，按钮不换行。 */
