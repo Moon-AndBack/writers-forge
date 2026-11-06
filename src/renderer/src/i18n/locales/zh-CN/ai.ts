@@ -56,7 +56,7 @@ const ai = {
     window: {
       label: '自定义上下文窗口',
       description:
-        '模型目录匹配不到的模型可手动指定窗口（按模型名保存，范围 1024–10000000 tokens）；保存后占用条与压缩阈值立即按新窗口计算',
+        '模型目录匹配不到的模型可手动指定窗口（按模型名保存，范围 1024–10000000 tokens）；保存后上下文百分比与压缩阈值立即按新窗口计算',
       modelPlaceholder: '模型 ID',
       tokensPlaceholder: 'tokens',
       save: '保存',
@@ -172,6 +172,8 @@ const ai = {
       current: '当前会话',
       draft: '新对话',
       untitled: '会话 {{id}}',
+      selectAria: '当前会话',
+      actions: '会话操作',
       openCount: '会话（{{count}}）',
       new: '新建',
       rename: '重命名',

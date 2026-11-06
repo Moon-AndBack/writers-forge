@@ -4,6 +4,7 @@ import type {
   AiChatRole,
   AiError,
   AiMessageStatus,
+  AiProviderId,
   AiUsage
 } from '../../../../../../preload/types/ai'
 import type { AiComposeInput } from './functions'
@@ -23,6 +24,16 @@ export const chatLog = createLogger('aiChatRuntime')
 
 /** IPC 不可用 / 启动抛错时的兜底错误（脱敏，不含正文）。 */
 export const UNKNOWN_ERROR: AiError = { code: 'unknown', message: '' }
+
+/** 读取「启用自动压缩」开关：读取失败按开启处理（不静默改变既有行为）。 */
+export async function readCompressionEnabled(): Promise<boolean> {
+  try {
+    const enabled = await window.api?.ai?.compression.get()
+    return enabled !== false
+  } catch {
+    return true
+  }
+}
 
 /** 对话消息（`useAiConversation` 的 UI 单元；由本模块统一声明以便纯逻辑复用）。 */
 export interface AiConversationMessage {
@@ -76,6 +87,12 @@ export interface AiConversationState {
   abort: () => void
 }
 
+/** `ensureSession` 的结果：会话 id + 本次是否新建。 */
+export interface EnsuredSession {
+  id: number | null
+  created: boolean
+}
+
 /** 在途请求（流式事件的归位凭据；事件处理只认 requestId）。 */
 export interface ActiveRequest {
   requestId: string
@@ -91,6 +108,15 @@ export interface ActiveRequest {
   estimatedPromptTokens: number
   /** 校准键 `provider/model`（发送前回填；空串 = 未知，不参与校准）。 */
   calibrationKey: string
+  /**
+   * 自动命名素材：仅「本次新建会话」的首轮请求填写；`done` 时据此生成标题
+   * （用户手动改名优先，见 `aiSessionTitle.ts` 的 `renameIfEmpty` 守卫）。
+   */
+  autoTitle?: {
+    provider: AiProviderId
+    model: string
+    firstUserText: string
+  }
   /** 是否已落库（done / 停止 / 出错可能先后触达，靠它保证只写一次）。 */
   persisted?: boolean
 }

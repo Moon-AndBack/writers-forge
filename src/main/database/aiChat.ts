@@ -221,3 +221,19 @@ export function renameAiSession(id: number, title: string): boolean {
     .run(title, id)
   return Number(result.changes) > 0
 }
+
+/**
+ * 仅当标题为空时写入（原子，防止覆盖用户手动改的名）。
+ *
+ * 自动命名专用：`WHERE title = ''` 与写入在同一条 SQL 内完成，
+ * 生成期间用户手动改名后本次写入自然不命中，返回 `false`。
+ */
+export function renameAiSessionIfEmpty(id: number, title: string): boolean {
+  const result = getDb()
+    .prepare(
+      `UPDATE ai_chat_sessions SET title = ?, updated_at = datetime('now')
+       WHERE id = ? AND title = ''`
+    )
+    .run(title, id)
+  return Number(result.changes) > 0
+}

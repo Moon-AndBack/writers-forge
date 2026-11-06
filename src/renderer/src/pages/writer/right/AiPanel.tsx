@@ -16,7 +16,7 @@ import { AI_QUICK_ACTIONS } from './ai/functions'
 import type { AiComposeAction } from './ai/functions'
 import { useAiConversation } from './ai/useAiConversation'
 import { useAiSessions } from './ai/useAiSessions'
-import { AiSessionMenu } from './ai/AiSessionMenu'
+import { AiSessionBar } from './ai/AiSessionBar'
 import { canApplyMessage, readFullText, toOption } from './ai/panelUtils'
 import { useAiModels } from './ai/useAiModels'
 import { useBookProfile } from './ai/useBookProfile'
@@ -62,9 +62,10 @@ export interface AiPanelProps {
  * 模型切换只写本面板的 `modelOverride`（作为 `useAiConversation` 的 `model` 入参），
  * **不写回**全局 AI 配置，避免临时选择污染设置页。
  *
- * 会话：同一本书可保存多条会话（跨章共享，切章不打断生成），头部「当前会话 + 新建 +
- * 会话(N)」管理；默认打开该书最近一条（见 `useAiSessions`），「新建」进入未落库草稿，
- * 首次发送时才创建会话。
+ * 会话：同一本书可保存多条会话（跨章共享，切章不打断生成），头部会话栏一行承载
+ * 「当前会话下拉 + ⋯ 操作 + 新建」（见 `AiSessionBar`）；默认打开该书最近一条
+ * （见 `useAiSessions`），「新建」进入未落库草稿，首次发送时才创建会话；
+ * 新建会话的首轮回复完成后由 AI 自动命名（失败回落首条消息截断）。
  *
  * 选区快照：点「发送」的瞬间读一次 `readEditorSelection(editor)` 存入 `selectionRef`
  * ——回插时用这份 range，不重新读，保证「发起请求时选中的那段」就是被替换 / 插入参照的那段。
@@ -118,6 +119,15 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
     remove: removeSession
   } = useAiSessions({ bookId, chapterId, active })
 
+  const handleNewSession = useCallback((): void => {
+    selectSession(null)
+  }, [selectSession])
+
+  /** 新建会话被 AI 自动命名后刷新列表（不改当前选中，避免抢回用户已切换的会话）。 */
+  const handleSessionTitled = useCallback((): void => {
+    void refreshSessions()
+  }, [refreshSessions])
+
   const { messages, generating, compressing, hydrating, summary, notice, send, abort } =
     useAiConversation({
       bookId,
@@ -125,16 +135,9 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
       active,
       model,
       sessionId: activeSessionId,
-      onSessionCreated: notifySessionCreated
+      onSessionCreated: notifySessionCreated,
+      onSessionTitled: handleSessionTitled
     })
-
-  const handleNewSession = useCallback((): void => {
-    selectSession(null)
-  }, [selectSession])
-
-  const handleOpenSessions = useCallback((): void => {
-    void refreshSessions()
-  }, [refreshSessions])
 
   /** 发起请求瞬间的选区快照（回插依据；切章不清空，仅由下一次发送覆盖）。 */
   const selectionRef = useRef<EditorSelectionSnapshot | null>(null)
@@ -343,14 +346,13 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
 
   return (
     <div className="rp-panel">
-      {/* 会话入口：当前标题 + 新建 + 会话列表（窄栏里用弹窗管理，不挤压对话区） */}
-      <AiSessionMenu
+      {/* 会话栏：一行承载「当前会话下拉 + 操作 + 新建」（见 AiSessionBar） */}
+      <AiSessionBar
         sessions={sessionList}
         activeSessionId={activeSessionId}
         busy={generating}
         onSelect={selectSession}
         onCreate={handleNewSession}
-        onOpen={handleOpenSessions}
         onRename={renameSession}
         onDelete={removeSession}
       />

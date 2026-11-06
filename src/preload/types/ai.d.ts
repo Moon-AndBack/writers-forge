@@ -184,6 +184,11 @@ export interface AiApi {
     create: (input: CreateAiSessionInput) => Promise<AiChatSessionRow | null>
     delete: (id: number) => Promise<boolean>
     rename: (id: number, title: string) => Promise<boolean>
+    /**
+     * 仅当标题为空时写入（自动命名专用）：原子守卫，避免覆盖用户手动改的名。
+     * 未命中（标题已存在 / 会话已删除）返回 false。
+     */
+    renameIfEmpty: (id: number, title: string) => Promise<boolean>
   }
   /** 消息：按会话按写入顺序；追加时 `AppendAiMessageInput.chapterId` 记录来源章（可空）。 */
   messages: {

@@ -18,7 +18,8 @@ import {
   deleteAiSession,
   listAiMessages,
   listAiSessions,
-  renameAiSession
+  renameAiSession,
+  renameAiSessionIfEmpty
 } from '../database/aiChat'
 import type {
   AiChatMessageRow,
@@ -105,6 +106,7 @@ type TestResult = { ok: boolean; latencyMs: number; error?: AiError }
  * - ai:sessions:create   ({ bookId, provider, model, title? })     → AiChatSessionRow | null
  * - ai:sessions:delete   ({ id })                                → boolean
  * - ai:sessions:rename   ({ id, title })                         → boolean
+ * - ai:sessions:renameIfEmpty ({ id, title })                    → boolean（仅标题为空时写入）
  * - ai:messages:list     ({ sessionId })                         → AiChatMessageRow[]
  * - ai:messages:append   ({ sessionId, chapterId?, role, content, status?, usageJson? }) → AiChatMessageRow | null
  * 推送（主进程 → 渲染层）：
@@ -325,6 +327,19 @@ export function registerAiIpc(): void {
     const { id, title } = input
     if (!isTextWithin(title, MAX_ID_CHARS)) return false
     return runWrite('ai:sessions:rename', { id }, () => renameAiSession(id, title), false)
+  })
+
+  // 自动命名专用：空标题守卫在 SQL 内原子完成，不会覆盖用户手动改的名。
+  ipcMain.handle('ai:sessions:renameIfEmpty', (_event, input: unknown) => {
+    if (!isRecord(input) || !isPositiveInt(input.id)) return false
+    const { id, title } = input
+    if (!isTextWithin(title, MAX_ID_CHARS) || title === '') return false
+    return runWrite(
+      'ai:sessions:renameIfEmpty',
+      { id },
+      () => renameAiSessionIfEmpty(id, title),
+      false
+    )
   })
 
   ipcMain.handle('ai:messages:list', (_event, input: unknown) => {

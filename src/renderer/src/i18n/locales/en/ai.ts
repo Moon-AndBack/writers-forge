@@ -56,7 +56,7 @@ const ai = {
     window: {
       label: 'Custom context window',
       description:
-        'Set the window manually for models missing from the catalog (saved per model name, 1024–10000000 tokens); the usage meter and compaction threshold update immediately after saving',
+        'Set the window manually for models missing from the catalog (saved per model name, 1024–10000000 tokens); the context percentage and compaction threshold update immediately after saving',
       modelPlaceholder: 'Model ID',
       tokensPlaceholder: 'tokens',
       save: 'Save',
@@ -173,6 +173,8 @@ const ai = {
       current: 'Current conversation',
       draft: 'New conversation',
       untitled: 'Conversation {{id}}',
+      selectAria: 'Current conversation',
+      actions: 'Conversation actions',
       openCount: 'Conversations ({{count}})',
       new: 'New',
       rename: 'Rename',

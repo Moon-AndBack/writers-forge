@@ -9,29 +9,22 @@ import {
   insertCompactionDivider,
   loadSessionMessages,
   persistAssistantPartial,
+  readCompressionEnabled,
   UNKNOWN_ERROR
 } from './chatRuntime'
 import type {
   ActiveRequest,
   AiContextNotice,
   AiConversationMessage,
-  AiConversationState
+  AiConversationState,
+  EnsuredSession
 } from './chatRuntime'
+import { autoTitleSession } from './aiSessionTitle'
 import { composeMessages, type AiComposeInput } from './functions'
 import { encodeSummaryRow, prepareOutgoingMessages } from './contextSummary'
 import type { SavedSummary } from './contextSummary'
 import { estimateMessages, recordCalibration } from './contextBudget'
 import { resolveContextLimit } from './useContextUsage'
-
-/** 读取「启用自动压缩」开关：读取失败按开启处理（不静默改变既有行为）。 */
-async function readCompressionEnabled(): Promise<boolean> {
-  try {
-    const enabled = await window.api?.ai?.compression.get()
-    return enabled !== false
-  } catch {
-    return true
-  }
-}
 
 export type { AiConversationMessage, AiConversationState }
 
@@ -57,8 +50,10 @@ export function useAiConversation(input: {
   sessionId: number | null
   /** 新会话创建成功后回传（用于刷新会话列表并切到该条）。 */
   onSessionCreated?: (id: number) => void
+  /** 新建会话被自动命名后回传（仅刷新列表，不改变当前选中）。 */
+  onSessionTitled?: () => void
 }): AiConversationState {
-  const { bookId, chapterId, active, model, sessionId, onSessionCreated } = input
+  const { bookId, chapterId, active, model, sessionId, onSessionCreated, onSessionTitled } = input
 
   const [messages, setMessages] = useState<AiConversationMessage[]>([])
   const [generating, setGenerating] = useState(false)
@@ -79,8 +74,8 @@ export function useAiConversation(input: {
   const bookIdRef = useRef(bookId)
   const chapterIdRef = useRef<number | null>(chapterId)
   const activeRequestRef = useRef<ActiveRequest | null>(null)
-  /** 会话创建回调走 ref：send / ensureSession 在异步路径里读最新值，且不拖累依赖。 */
-  const onSessionCreatedRef = useRef(onSessionCreated)
+  /** 会话回调走 ref：异步路径 / 流式回调里读最新值，且不拖累 effect 依赖。 */
+  const sessionCallbacksRef = useRef({ onSessionCreated, onSessionTitled })
 
   // 模型快照：发送 / 建会话都在异步路径里读，用 ref 取最新值。
   useEffect(() => {
@@ -88,8 +83,8 @@ export function useAiConversation(input: {
   }, [model])
 
   useEffect(() => {
-    onSessionCreatedRef.current = onSessionCreated
-  }, [onSessionCreated])
+    sessionCallbacksRef.current = { onSessionCreated, onSessionTitled }
+  }, [onSessionCreated, onSessionTitled])
 
   /* ---------- 消息写入（同步副本 + state 双写） ---------- */
 
@@ -136,14 +131,14 @@ export function useAiConversation(input: {
   }, [])
 
   /** 确保当前书有会话（会话按书归属，与章无关；已有则直接复用）。 */
-  const ensureSession = useCallback(async (): Promise<number | null> => {
+  const ensureSession = useCallback(async (): Promise<EnsuredSession> => {
     const book = bookIdRef.current
     // 只复用「同一本书」的会话：切书后旧 id 必须丢弃，切章则不受影响。
     if (sessionIdRef.current !== null && sessionBookRef.current === book) {
-      return sessionIdRef.current
+      return { id: sessionIdRef.current, created: false }
     }
     const api = window.api?.ai
-    if (!api) return null
+    if (!api) return { id: null, created: false }
     const provider = await resolveProvider()
 
     try {
@@ -155,11 +150,11 @@ export function useAiConversation(input: {
       const id = created?.id ?? null
       sessionIdRef.current = id
       sessionBookRef.current = book
-      if (id !== null) onSessionCreatedRef.current?.(id)
-      return id
+      if (id !== null) sessionCallbacksRef.current.onSessionCreated?.(id)
+      return { id, created: id !== null }
     } catch (error) {
       chatLog.warn('AI 会话创建失败', error)
-      return null
+      return { id: null, created: false }
     }
   }, [resolveProvider])
 
@@ -222,6 +217,7 @@ export function useAiConversation(input: {
       patchMessage(request.assistantId, { streaming: false, content: request.content })
       // 所有功能的完整回复都落库（用户消息已在发送时写入）；正常完成即默认状态 `done`。
       persistAssistantPartial(request, { usage })
+      autoTitleSession(request, sessionCallbacksRef.current.onSessionTitled)
     },
     [patchMessage]
   )
@@ -337,15 +333,20 @@ export function useAiConversation(input: {
 
       return (async (): Promise<boolean> => {
         // 所有请求都要落库，故先确保会话（同时供 opencode 的 x-opencode-session 头）。
-        const sessionId = await ensureSession()
+        const ensured = await ensureSession()
         // 等待期间被中止 / 切书 / 卸载：放弃本次启动（调用方恢复输入）。
         if (activeRequestRef.current !== request) return false
+        const sessionId = ensured.id
         request.sessionId = sessionId
 
         try {
           const provider = await resolveProvider()
           if (activeRequestRef.current !== request) return false
           const modelId = modelRef.current.trim()
+
+          if (ensured.created && sessionId !== null) {
+            request.autoTitle = { provider, model: modelId, firstUserText: userText }
+          }
 
           // 发送前判定：固定部分超窗口 → 拒绝；达 80% → 摘要 / 截断。
           const limitTokens = (await resolveContextLimit(modelId)).tokens

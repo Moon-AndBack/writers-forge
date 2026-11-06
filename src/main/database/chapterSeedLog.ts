@@ -11,10 +11,26 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v116'
+export const CHAPTER_SEED_VERSION = 'v117'
 
 /**
- * 最近版本变更日志（v116；更早版本见上述历史文件）。
+ * 最近版本变更日志（v117；更早版本见上述历史文件）。
+ *
+ * `v117`（AI 会话栏重做与自动命名批）：会话去章化收尾——右栏 AI 会话由「按章隔离」彻底改为
+ * **按书共享**，A 章建立的会话可在 B 章继续使用；切章不再中断在途生成，消息也不清空。
+ * 回插受来源章约束：仅「当前章产出」的 assistant 回复可「替换选中 / 插入到光标后」，
+ * 其它章的回复在气泡上标注来源并禁用回插。面板头部会话区由 Modal 列表（`AiSessionMenu`）
+ * 改造为 `AiSessionBar` 单行软底栏：`Select`（显示当前会话名、直接切换）+ `Dropdown`（⋯
+ * 重命名 / 删除）+「新建」按钮，整行 `--soft-solid` 软底、只过渡颜色与阴影、无 transform；
+ * 旧 Modal 会话列表移除。新增 `aiSessionTitle.ts`：本次新建会话的首轮回复正常完成后，
+ * 异步调用 `ai:chat:complete`（maxTokens 32）生成 6–14 字标题，失败回落到首条消息截断；
+ * fire-and-forget，不阻塞定稿，停止 / 报错不触发。写入走新增的 `ai:sessions:renameIfEmpty`
+ * （`UPDATE ... WHERE id = ? AND title = ''`，原子守卫），用户手动改名后不会被覆盖；
+ * `useAiSessions` / `useAiConversation` 增加刷新回调与 `EnsuredSession.created` 标记。
+ * 教学文案同步（卷二「章节页的左右两栏」、卷四「右栏面板」、卷三右栏页签说明、大纲
+ * 「AI 写作助手」条目：会话按书归属、切章不中断、跨章回插限制、会话栏布局与自动命名；
+ * 原「按章保存」「同一章多条会话」「面板头部会话（N）」等表述已不成立）。另修正 i18n 中残留的「占用条」
+ * 措辞（进度条已在 v116 单行化时移除，改为「上下文百分比」）。
  *
  * `v116`（AI 面板底部状态区单行化批）：右栏 AI 输入区下方的状态区从最多 6 个块（正常 3~4 行、
  * 理论最差约 8 行）压成**一行**——`AiComposerStatus` 重写为「Tag（已选 / 全文字数）+ 状态槽 +
