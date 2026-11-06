@@ -30,6 +30,11 @@ export interface AiConversationMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
+  /**
+   * 消息产生时所在的章（发送瞬间快照）；无章聊天 / 分隔行为 `undefined`。
+   * 回插校验据此判断「是否来自当前章」（见 `panelUtils.canApplyMessage`）。
+   */
+  chapterId?: number | null
   /** 是否正在流式输出。 */
   streaming?: boolean
   /** 错误消息（assistant 气泡内的错误提示）。 */
@@ -110,6 +115,28 @@ export function createLocalId(prefix: string): string {
 }
 
 /**
+ * 构造发送瞬间的乐观消息（user 展示气泡 + assistant 流式占位）。
+ *
+ * `chapterId` 是本次请求的章快照：消息随会话跨章保留，回插时据此判断来源章
+ * （见 `panelUtils.canApplyMessage`）。
+ */
+export function createOptimisticMessages(input: {
+  base: AiConversationMessage[]
+  userText: string
+  assistantId: string
+  chapterId: number | null
+}): AiConversationMessage[] {
+  const { base, userText, assistantId, chapterId } = input
+  return [
+    ...base,
+    ...(userText !== ''
+      ? [{ id: createLocalId('user'), role: 'user' as const, content: userText, chapterId }]
+      : []),
+    { id: assistantId, role: 'assistant' as const, content: '', streaming: true, chapterId }
+  ]
+}
+
+/**
  * 追加消息落库（静默失败）。
  *
  * 用户消息在发送时写、助手回复在 `done` / 用户停止 / 上游报错时写；
@@ -171,8 +198,8 @@ export function persistAssistantPartial(
  * `role = 'system'` 行（摘要由 `appendMessage(sessionId, 'system', ...)` 写入，
  * 带 `covered` 隐藏标记）。其余 system 行一律忽略，避免脏数据渲染成气泡。
  *
- * 会话选择由 `useAiSessions` 负责（默认仍取该章最近一条）；本函数只按 id 读取，
- * 返回 null 表示已被取消（切会话 / 切章 / 卸载）。
+ * 会话选择由 `useAiSessions` 负责（默认取该书最近一条）；本函数只按 id 读取，
+ * 返回 null 表示已被取消（切会话 / 切书 / 卸载）。
  */
 export async function loadSessionMessages(input: {
   api: AiApi
@@ -190,6 +217,7 @@ export async function loadSessionMessages(input: {
       id: String(row.id),
       role: row.role === 'assistant' ? ('assistant' as const) : ('user' as const),
       content: row.content,
+      chapterId: row.chapterId,
       ...(row.status === 'interrupted' ? { interrupted: true } : {})
     }))
 

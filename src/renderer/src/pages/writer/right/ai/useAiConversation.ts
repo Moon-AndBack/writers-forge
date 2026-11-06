@@ -4,6 +4,7 @@ import {
   appendMessage,
   chatLog,
   createLocalId,
+  createOptimisticMessages,
   createRequestId,
   insertCompactionDivider,
   loadSessionMessages,
@@ -38,9 +39,9 @@ export type { AiConversationMessage, AiConversationState }
  * 章节右栏 AI · 会话 + 消息 + 流式状态机（统一输入区口径）。
  *
  * 会话由 `useAiSessions` 选中后经 `sessionId` 传入（默认仍是该书最近一条）；
- * `chapterId` / `sessionId` 变化时中止在途请求（半截回复落库）→ 清空消息 → 重载历史。
- * 会话按书归属、与章解耦：切章不改变会话归属；消息落库时记录**发起时**所在的章，
- * 供回插校验（无章聊天为 null）。
+ * `sessionId` / 书籍变化时中止在途请求（半截回复落库）→ 清空消息 → 重载历史。
+ * 会话按书归属、与章解耦：**切章既不清空消息也不中止在途请求**，会话保持不变；
+ * 消息落库时记录**发起时**所在的章，供回插校验（无章聊天为 null）。
  * **所有请求（润色 / 续写 / 改写 / 翻译 / 自由对话）**
  * 走同一条 `send`：消息进对话列表并落库，流式事件按 `requestId` 过滤。
  *
@@ -69,6 +70,8 @@ export function useAiConversation(input: {
   /** 消息的同步副本：流式回调 / 发送路径都读它，避免闭包拿到过期的 state。 */
   const messagesRef = useRef<AiConversationMessage[]>([])
   const sessionIdRef = useRef<number | null>(null)
+  /** `sessionIdRef` 里那条会话归属的书（切书后据此丢弃旧书会话，见 `ensureSession`）。 */
+  const sessionBookRef = useRef<string | null>(null)
   /** 当前会话摘要的同步副本（发送路径在异步分支里读）。 */
   const summaryRef = useRef<SavedSummary | null>(null)
   const providerRef = useRef<AiProviderId>('deepseek')
@@ -134,10 +137,13 @@ export function useAiConversation(input: {
 
   /** 确保当前书有会话（会话按书归属，与章无关；已有则直接复用）。 */
   const ensureSession = useCallback(async (): Promise<number | null> => {
-    if (sessionIdRef.current !== null) return sessionIdRef.current
+    const book = bookIdRef.current
+    // 只复用「同一本书」的会话：切书后旧 id 必须丢弃，切章则不受影响。
+    if (sessionIdRef.current !== null && sessionBookRef.current === book) {
+      return sessionIdRef.current
+    }
     const api = window.api?.ai
     if (!api) return null
-    const book = bookIdRef.current
     const provider = await resolveProvider()
 
     try {
@@ -148,6 +154,7 @@ export function useAiConversation(input: {
       })
       const id = created?.id ?? null
       sessionIdRef.current = id
+      sessionBookRef.current = book
       if (id !== null) onSessionCreatedRef.current?.(id)
       return id
     } catch (error) {
@@ -161,7 +168,7 @@ export function useAiConversation(input: {
   /**
    * 中止在途请求并摘下它（迟到事件随之被过滤）；`finalize` 为 true 时把流式产物定稿。
    *
-   * 无论中止原因（用户点停止 / 切会话 / 切章 / 卸载），已生成的半截回复都落库，
+   * 无论中止原因（用户点停止 / 切会话 / 切书 / 卸载），已生成的半截回复都落库，
    * 不再静默丢弃（`persistAssistantPartial`）。
    *
    * 状态语义：这里是**本地主动停止**，不是上游异常，落库状态保持 `done`——内容就是模型
@@ -307,13 +314,14 @@ export function useAiConversation(input: {
       // user 气泡只在有展示文本时出现：输入为空时退回面板给的 `display`（如「[润色] 整章正文」），
       // 让「只勾上下文」的轮次在历史里也看得出做了什么；`display` 不进模型消息。
       const userText = compose.input.trim() || compose.display?.trim() || ''
-      applyMessages([
-        ...baseMessages,
-        ...(userText !== ''
-          ? [{ id: createLocalId('user'), role: 'user' as const, content: userText }]
-          : []),
-        { id: assistantId, role: 'assistant' as const, content: '', streaming: true }
-      ])
+      applyMessages(
+        createOptimisticMessages({
+          base: baseMessages,
+          userText,
+          assistantId,
+          chapterId: request.chapterId
+        })
+      )
 
       /** 超预算拒绝：撤掉本轮乐观消息、恢复输入（由调用方按 false 处理）。 */
       const reject = (usedTokens: number, limitTokens: number): false => {
@@ -330,7 +338,7 @@ export function useAiConversation(input: {
       return (async (): Promise<boolean> => {
         // 所有请求都要落库，故先确保会话（同时供 opencode 的 x-opencode-session 头）。
         const sessionId = await ensureSession()
-        // 等待期间被中止 / 切章 / 卸载：放弃本次启动（调用方恢复输入）。
+        // 等待期间被中止 / 切书 / 卸载：放弃本次启动（调用方恢复输入）。
         if (activeRequestRef.current !== request) return false
         request.sessionId = sessionId
 
@@ -416,20 +424,18 @@ export function useAiConversation(input: {
   /* ---------- 章节 / 会话 / 面板切换：清空 + 载入历史 ---------- */
 
   useEffect(() => {
-    const chapterChanged = bookIdRef.current !== bookId || chapterIdRef.current !== chapterId
-    bookIdRef.current = bookId
-    chapterIdRef.current = chapterId
-
+    // 只按「书」判断作用域：切章不重置（消息保留、在途请求不中止、会话不变）。
+    const bookChanged = bookIdRef.current !== bookId
     // 会话由本 hook 的 send 路径新建（内部 ref 已指向该 id）：忽略这次 prop 变化，
     // 否则会在请求刚启动时把在途请求中止掉。其余变化（切换 / 删除 / 新建草稿）都重载。
-    if (!chapterChanged && active && sessionId !== null && sessionIdRef.current === sessionId) {
+    if (!bookChanged && active && sessionId !== null && sessionIdRef.current === sessionId) {
       return undefined
     }
 
-    // 切章 / 切会话 / 开关面板的清理序列：中止在途请求（半截回复落库）→
-    // 同步指向目标会话 → 清空消息。同步执行，避免闪一帧旧内容。
+    // 切书 / 切会话 / 开关面板：中止在途请求（半截回复落库）→ 指向目标会话 → 清空消息。
     stopActive(false)
     sessionIdRef.current = sessionId
+    sessionBookRef.current = bookId
     applyMessages([])
     applySummary(null)
     setNotice(null)
@@ -470,7 +476,14 @@ export function useAiConversation(input: {
     return () => {
       cancelled = true
     }
-  }, [active, bookId, chapterId, sessionId, applyMessages, applySummary, stopActive])
+  }, [active, bookId, sessionId, applyMessages, applySummary, stopActive])
+
+  // ref 同步（无副作用）。必须在主 effect 之后：否则切书时 ref 已被写成新值，
+  // 主 effect 会把 `bookChanged` 误判为 false。切章只更新章快照，不影响消息与请求。
+  useEffect(() => {
+    bookIdRef.current = bookId
+    chapterIdRef.current = chapterId
+  }, [bookId, chapterId])
 
   return {
     messages,

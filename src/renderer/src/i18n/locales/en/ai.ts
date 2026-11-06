@@ -112,6 +112,7 @@ const ai = {
   },
   message: {
     interrupted: 'This reply was interrupted by an error',
+    otherChapter: 'This reply comes from another chapter and cannot be inserted into this chapter',
     compacted: 'Compacted the previous {{rounds}} conversation turns',
     truncated: 'Summary unavailable; earlier {{rounds}} turns were omitted'
   },

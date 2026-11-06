@@ -62,8 +62,9 @@ export interface AiPanelProps {
  * 模型切换只写本面板的 `modelOverride`（作为 `useAiConversation` 的 `model` 入参），
  * **不写回**全局 AI 配置，避免临时选择污染设置页。
  *
- * 会话：同一章可保存多条，头部「当前会话 + 新建 + 会话(N)」管理；默认打开该章最近
- * 一条（见 `useAiSessions`），「新建」进入未落库草稿，首次发送时才创建会话。
+ * 会话：同一本书可保存多条会话（跨章共享，切章不打断生成），头部「当前会话 + 新建 +
+ * 会话(N)」管理；默认打开该书最近一条（见 `useAiSessions`），「新建」进入未落库草稿，
+ * 首次发送时才创建会话。
  *
  * 选区快照：点「发送」的瞬间读一次 `readEditorSelection(editor)` 存入 `selectionRef`
  * ——回插时用这份 range，不重新读，保证「发起请求时选中的那段」就是被替换 / 插入参照的那段。
@@ -371,7 +372,8 @@ export function AiPanel({ bookId, chapterId, active }: AiPanelProps) {
               <ChatMessage
                 key={message.id}
                 message={message}
-                canApply={canApplyMessage(message)}
+                canApply={canApplyMessage(message, chapterId)}
+                fromOtherChapter={message.chapterId != null && message.chapterId !== chapterId}
                 onApplyReplace={handleApplyReplace}
                 onApplyInsert={handleApplyInsert}
               />

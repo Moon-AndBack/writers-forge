@@ -10,12 +10,21 @@ import type { AiConversationMessage } from './chatRuntime'
  */
 
 /**
- * assistant 回复可回插的判定：非流式、无错误、未中断、正文非空（user 消息恒不可回插）。
+ * assistant 回复可回插的判定：**来自当前章**、非流式、无错误、未中断、正文非空
+ * （user 消息恒不可回插）。
  *
- * `interrupted` 的半截回复不允许回插正文档：内容停在句子中间，且这类消息本就带着
+ * 来源章规则：消息必须带 `chapterId` 且等于当前章——无章聊天产生的消息（`null`）
+ * 与其它章的消息都拒绝回插，避免把 A 章的回复写进 B 章正文。
+ *
+ * `interrupted` 的半截回复同样不允许回插正文档：内容停在句子中间，且这类消息本就带着
  * 「未走完」的语义，写进正文只会留下残篇。
  */
-export function canApplyMessage(message: AiConversationMessage): boolean {
+export function canApplyMessage(
+  message: AiConversationMessage,
+  currentChapterId: number | null
+): boolean {
+  if (currentChapterId === null) return false
+  if (message.chapterId == null || message.chapterId !== currentChapterId) return false
   return (
     message.role === 'assistant' &&
     message.streaming !== true &&

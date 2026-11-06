@@ -47,6 +47,8 @@ export interface ChatMessageProps {
   message: AiConversationMessage
   /** 是否显示「替换选中 / 插入到光标后」按钮（仅 assistant 消息、非流式、非错误、未中断时）。 */
   canApply: boolean
+  /** 消息来自其它章（跨章会话）：assistant 气泡上加一条轻量来源提示。 */
+  fromOtherChapter?: boolean
   onApplyReplace: (text: string) => void
   onApplyInsert: (text: string) => void
 }
@@ -62,6 +64,7 @@ export interface ChatMessageProps {
 export function ChatMessage({
   message,
   canApply,
+  fromOtherChapter = false,
   onApplyReplace,
   onApplyInsert
 }: ChatMessageProps) {
@@ -72,6 +75,8 @@ export function ChatMessage({
   const interrupted = message.interrupted === true
   const hasContent = message.content.trim() !== ''
   const showActions = canApply && !isUser && !streaming && error === undefined && hasContent
+  // 来源章提示只挂在 assistant 气泡上：它才是「能不能回插」的对象，user 消息加标记只是噪音。
+  const showForeign = fromOtherChapter && !isUser && hasContent
 
   return (
     <article className={`ai-msg ai-msg--${isUser ? 'user' : 'assistant'}`}>
@@ -100,6 +105,8 @@ export function ChatMessage({
         ) : null}
         {/* 结构化中断标记：来自库内 `status`，与正文无关（正文不含任何中断说明）。 */}
         {interrupted ? <p className="ai-msg__interrupted">{t('message.interrupted')}</p> : null}
+        {/* 来源章提示：跨章会话里其它章的回复不能回插本章正文，给一条轻量说明。 */}
+        {showForeign ? <p className="ai-msg__foreign">{t('message.otherChapter')}</p> : null}
       </div>
       {showActions ? (
         <div className="ai-msg__actions">
