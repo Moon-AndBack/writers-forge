@@ -128,11 +128,41 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
         origin: '',
         description: entryDescription
       }
-      const nextList = [...list, newEntry]
+      // 与 `updateDescription` / `renameTimeline` 同款「磁盘最新列表 → 改 → 写回」：以磁盘为准，
+      // 避免内存列表过期时覆盖其它已落库的条目；磁盘为空时回退内存列表。
+      let base: TimelineEntry[]
+      try {
+        const listRaw = await window.api?.settings.get(listKey)
+        const current = parseTimelineList(listRaw ?? null)
+        base = current.length > 0 ? current : list
+      } catch {
+        return null
+      }
+      const nextList = [...base, newEntry]
+
+      // 顺序固定：先写列表（条目存在才允许被选中），成功后再写 active。
+      try {
+        await window.api?.settings.set(listKey, serializeTimelineList(nextList))
+      } catch {
+        return null
+      }
+      try {
+        await window.api?.settings.set(activeKey, id)
+      } catch {
+        // active 写失败 → **回滚列表**到写入前的基线，保证 active 不会指向不存在的 id；
+        // 若回滚也失败（磁盘异常），active 仍是旧值（本次未写成），列表多出一个未被选中的
+        // 孤儿条目，由 `load()` 的 ensureTimelineList 自愈，不会造成悬空引用。
+        try {
+          await window.api?.settings.set(listKey, serializeTimelineList(base))
+        } catch {
+          // 忽略二次失败：内存态保持原值，不误导 UI。
+        }
+        return null
+      }
+
+      // 两次写入都成功后才同步内存态，避免失败时 UI 出现「已新建并切换」的假象。
       setList(nextList)
       setActiveId(id)
-      await window.api?.settings.set(listKey, serializeTimelineList(nextList))
-      await window.api?.settings.set(activeKey, id)
       return newEntry
     },
     [list, listKey, activeKey]

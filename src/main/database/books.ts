@@ -274,7 +274,14 @@ export function getBook(id: string): BookRow | null {
   return row ? toBook(row) : null
 }
 
-/** 创建书籍：生成 id、补默认值、写默认时间线列表（名 / 起点空串）、写入后回读。 */
+/**
+ * 创建书籍：生成 id、补默认值、写默认时间线列表（名 / 起点空串）、写入后回读。
+ *
+ * 三处写入（books 行 / 23 条预设子类 / 默认时间线 settings）在**同一事务**内完成：
+ * settings 与 books 同库同连接（均走 `getDb()`），故可统一事务；任一步失败整体回滚，
+ * 不会留下「有书但没有预设子类 / 没有时间线」的残书。`ensurePresetSubtypes` 内部自带
+ * 事务，better-sqlite3 会嵌套为 SAVEPOINT，与外层事务兼容。
+ */
 export function createBook(input: CreateBookInput): BookRow {
   const db = getDb()
   const id = input.id && input.id.length > 0 ? input.id : randomUUID()
@@ -283,41 +290,44 @@ export function createBook(input: CreateBookInput): BookRow {
     (item): item is number => Number.isInteger(item) && item > 0
   )
 
-  db.prepare(
-    `INSERT INTO books
-       (id, title, intro, categories, status, channel, lengthType, words, chapters, progress, coverChar, coverColor)
-     VALUES
-       (@id, @title, @intro, @categories, @status, @channel, @lengthType, @words, @chapters, @progress, @coverChar, @coverColor)`
-  ).run({
-    id,
-    title,
-    intro: input.intro ?? '',
-    categories: JSON.stringify(categories),
-    status: coerceStatus(input.status),
-    channel: coerceChannel(input.channel),
-    lengthType: coerceLength(input.lengthType),
-    words: input.words ?? 0,
-    chapters: input.chapters ?? 0,
-    progress: input.progress ?? 0,
-    coverChar: input.coverChar && input.coverChar.length > 0 ? input.coverChar : title.slice(0, 1),
-    coverColor:
-      input.coverColor && input.coverColor.length > 0 ? input.coverColor : DEFAULT_COVER_COLOR
-  })
+  return db.transaction((): BookRow => {
+    db.prepare(
+      `INSERT INTO books
+         (id, title, intro, categories, status, channel, lengthType, words, chapters, progress, coverChar, coverColor)
+       VALUES
+         (@id, @title, @intro, @categories, @status, @channel, @lengthType, @words, @chapters, @progress, @coverChar, @coverColor)`
+    ).run({
+      id,
+      title,
+      intro: input.intro ?? '',
+      categories: JSON.stringify(categories),
+      status: coerceStatus(input.status),
+      channel: coerceChannel(input.channel),
+      lengthType: coerceLength(input.lengthType),
+      words: input.words ?? 0,
+      chapters: input.chapters ?? 0,
+      progress: input.progress ?? 0,
+      coverChar:
+        input.coverChar && input.coverChar.length > 0 ? input.coverChar : title.slice(0, 1),
+      coverColor:
+        input.coverColor && input.coverColor.length > 0 ? input.coverColor : DEFAULT_COVER_COLOR
+    })
 
-  // 新书即时写入 23 条预设子类分类（幂等；分类表真源见 schema/worldSubtypes.ts）。
-  ensurePresetSubtypes(id)
+    // 新书即时写入 23 条预设子类分类（幂等；分类表真源见 schema/worldSubtypes.ts）。
+    ensurePresetSubtypes(id)
 
-  // 新书即有默认时间线：列表 + 选中 id（settings JSON），不再写老键 `timeline:origin:<id>`。
-  setSetting(
-    `timeline:list:${id}`,
-    JSON.stringify([{ id: 'default', name: '', origin: DEFAULT_TIMELINE_ORIGIN }])
-  )
-  setSetting(`timeline:active:${id}`, 'default')
-  const created = getBook(id)
-  if (!created) {
-    throw new Error('Failed to read back created book')
-  }
-  return created
+    // 新书即有默认时间线：列表 + 选中 id（settings JSON），不再写老键 `timeline:origin:<id>`。
+    setSetting(
+      `timeline:list:${id}`,
+      JSON.stringify([{ id: 'default', name: '', origin: DEFAULT_TIMELINE_ORIGIN }])
+    )
+    setSetting(`timeline:active:${id}`, 'default')
+    const created = getBook(id)
+    if (!created) {
+      throw new Error('Failed to read back created book')
+    }
+    return created
+  })()
 }
 
 /** 更新书籍：仅更新补丁中出现的字段，并刷新 updatedAt；不存在返回 null。 */
@@ -349,14 +359,21 @@ export function updateBook(id: string, patch: UpdateBookPatch): BookRow | null {
 
 /** 删除书籍，返回是否命中；封面等域表由外键 ON DELETE CASCADE 联动删除，起点键无 FK 需手动清理。 */
 export function deleteBook(id: string): boolean {
-  // settings 键无 FK：先清该书时间线列表 / 选中键，避免 books 行删除后留下孤儿键。
-  deleteSetting(`timeline:list:${id}`)
-  deleteSetting(`timeline:active:${id}`)
-  // 统一设定库 demo 播种标记同属 settings（无 FK）：删书时一并清掉，
-  // 否则同 id 的书重建后（如教学书重灌）会因残留标记而跳过 demo 播种。
-  deleteSetting(`worldEntities:seeded:${id}`)
-  const result = getDb().prepare('DELETE FROM books WHERE id = ?').run(id)
-  return Number(result.changes) > 0
+  const db = getDb()
+  // settings 与 books 同库同连接，且 settings 键无 FK：主记录删除与三联 settings 清理放进
+  // **同一事务**，顺序为「先删 books（子表按 FK 级联）→ 再清 settings」。任一步失败整体回滚，
+  // 不会出现「settings 已删、书还在」的中间态。
+  // settings 清理保持无条件执行（书不存在时仍顺带清孤儿键），与原实现的返回语义一致。
+  return db.transaction((): boolean => {
+    const result = db.prepare('DELETE FROM books WHERE id = ?').run(id)
+    // settings 键无 FK：清该书时间线列表 / 选中键，避免 books 行删除后留下孤儿键。
+    deleteSetting(`timeline:list:${id}`)
+    deleteSetting(`timeline:active:${id}`)
+    // 统一设定库 demo 播种标记同属 settings（无 FK）：删书时一并清掉，
+    // 否则同 id 的书重建后（如教学书重灌）会因残留标记而跳过 demo 播种。
+    deleteSetting(`worldEntities:seeded:${id}`)
+    return Number(result.changes) > 0
+  })()
 }
 
 /**
