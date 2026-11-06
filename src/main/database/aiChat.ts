@@ -18,6 +18,14 @@ import { getDb } from './index'
 /** 消息角色（与 DDL 的 CHECK 一致）。 */
 export type AiChatRole = 'system' | 'user' | 'assistant'
 
+/**
+ * 消息收尾状态（DDL 默认 `done`，无 CHECK，由本层窄化兜底）。
+ *
+ * - `done`：正常完成（含用户主动停止 —— 停止是本地行为，内容仍是模型完整产出到此为止）；
+ * - `interrupted`：上游报错中断，`content` 只是半截，界面另加结构化标记。
+ */
+export type AiMessageStatus = 'done' | 'interrupted'
+
 /** 会话行。 */
 export interface AiChatSessionRow {
   id: number
@@ -36,6 +44,8 @@ export interface AiChatMessageRow {
   sessionId: number
   role: AiChatRole
   content: string
+  /** 收尾状态：`done`（默认）/ `interrupted`（上游报错中断）。 */
+  status: AiMessageStatus
   /** 模型返回的 token 用量等原样 JSON 文本；无则 `null`。 */
   usageJson: string | null
   createdAt: string
@@ -50,26 +60,28 @@ export interface CreateAiSessionInput {
   title?: string
 }
 
-/** 追加消息入参（`usageJson` 省略时落库为 `null`）。 */
+/** 追加消息入参（`usageJson` / `status` 省略时分别落库为 `null` / `'done'`）。 */
 export interface AppendAiMessageInput {
   sessionId: number
   role: AiChatRole
   content: string
+  status?: AiMessageStatus
   usageJson?: string | null
 }
 
 const SESSION_COLUMNS = `id, book_id AS bookId, chapter_id AS chapterId, provider, model,
   title, created_at AS createdAt, updated_at AS updatedAt`
 
-const MESSAGE_COLUMNS = `id, session_id AS sessionId, role, content,
+const MESSAGE_COLUMNS = `id, session_id AS sessionId, role, content, status,
   usage_json AS usageJson, created_at AS createdAt`
 
 /** 库内会话行形状（snake_case 已别名，仅列名映射）。 */
 type SessionDbRow = AiChatSessionRow
 
-/** 库内消息行形状（`role` 按字符串读入，再做窄化）。 */
-interface MessageDbRow extends Omit<AiChatMessageRow, 'role'> {
+/** 库内消息行形状（`role` / `status` 按字符串读入，再做窄化）。 */
+interface MessageDbRow extends Omit<AiChatMessageRow, 'role' | 'status'> {
   role: string
+  status: string
 }
 
 /** 读取单个会话，不存在返回 `null`（仅供写后回读）。 */
@@ -88,13 +100,14 @@ function readAiMessage(id: number): AiChatMessageRow | null {
   return row ? toAiMessageRow(row) : null
 }
 
-/** 脏数据兜底：未知角色按 `user` 处理（DDL CHECK 保证正常值）。 */
+/** 脏数据兜底：未知角色按 `user`、未知状态按 `done` 处理（DDL 默认值保证正常值）。 */
 function toAiMessageRow(row: MessageDbRow): AiChatMessageRow {
   return {
     id: row.id,
     sessionId: row.sessionId,
     role: row.role === 'system' || row.role === 'assistant' ? row.role : 'user',
     content: row.content,
+    status: row.status === 'interrupted' ? 'interrupted' : 'done',
     usageJson: row.usageJson,
     createdAt: row.createdAt
   }
@@ -151,19 +164,21 @@ export function listAiMessages(sessionId: number): AiChatMessageRow[] {
 /**
  * 追加一条消息并刷新所属会话的 `updated_at`（同一事务），返回落库后的消息行。
  * 会话不存在时由 `session_id` 外键拒绝（`foreign_keys = ON`），抛错且不落库。
+ * `status` 省略时落库为 `'done'`（正常完成）。
  */
 export function appendAiMessage(input: AppendAiMessageInput): AiChatMessageRow {
   const db = getDb()
   return db.transaction((): AiChatMessageRow => {
     const result = db
       .prepare(
-        `INSERT INTO ai_chat_messages (session_id, role, content, usage_json)
-         VALUES (@sessionId, @role, @content, @usageJson)`
+        `INSERT INTO ai_chat_messages (session_id, role, content, status, usage_json)
+         VALUES (@sessionId, @role, @content, @status, @usageJson)`
       )
       .run({
         sessionId: input.sessionId,
         role: input.role,
         content: input.content,
+        status: input.status ?? 'done',
         usageJson: input.usageJson ?? null
       })
 

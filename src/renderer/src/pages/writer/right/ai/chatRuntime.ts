@@ -1,5 +1,5 @@
 import { createLogger } from '@renderer/lib/log'
-import type { AiApi, AiError, AiUsage } from '../../../../../../preload/types/ai'
+import type { AiApi, AiError, AiMessageStatus, AiUsage } from '../../../../../../preload/types/ai'
 import type { AiComposeInput } from './functions'
 
 /**
@@ -26,6 +26,11 @@ export interface AiConversationMessage {
   streaming?: boolean
   /** 错误消息（assistant 气泡内的错误提示）。 */
   error?: AiError
+  /**
+   * 上游报错中断（来自库内 `status = 'interrupted'`）：正文只是半截。
+   * 由落库状态还原，气泡据此显示结构化标记，且禁止回插正文。
+   */
+  interrupted?: boolean
 }
 
 /** `useAiConversation` 的对外状态与动作。 */
@@ -76,14 +81,15 @@ export function createLocalId(prefix: string): string {
 /**
  * 追加消息落库（静默失败）。
  *
- * 用户消息在发送时写、助手完整回复在 `done` 后写；用户中止 / 切会话 / 切章 / 上游报错时，
- * 已生成的半截回复也在此落库（见 `persistAssistantPartial`），写入失败只记日志。
+ * 用户消息在发送时写、助手回复在 `done` / 用户停止 / 上游报错时写；
+ * `status` 缺省为 `done`，只有上游报错中断写 `interrupted`（见 `persistAssistantPartial`）。
+ * 内容一律按原样落库，中断说明属于界面文案，**不进正文**。
  */
 export async function appendMessage(
   sessionId: number,
   role: 'user' | 'assistant',
   content: string,
-  usage?: AiUsage
+  options?: { usage?: AiUsage; status?: AiMessageStatus }
 ): Promise<void> {
   const api = window.api?.ai
   if (!api) return
@@ -92,7 +98,8 @@ export async function appendMessage(
       sessionId,
       role,
       content,
-      ...(usage !== undefined ? { usageJson: JSON.stringify(usage) } : {})
+      ...(options?.status !== undefined ? { status: options.status } : {}),
+      ...(options?.usage !== undefined ? { usageJson: JSON.stringify(options.usage) } : {})
     })
   } catch (error) {
     chatLog.warn('AI 消息落库失败', error)
@@ -103,24 +110,24 @@ export async function appendMessage(
  * 落库「未正常收尾的半截回复」。
  *
  * 用户点「停止」、切换会话 / 章节、关闭或卸载面板时，流式内容已生成的部分不再
- * 静默丢弃；上游报错（`handleError`）也走这里，只是额外带上中断说明后缀，
- * 让重新载入后的消息仍看得出「这条回复没走完」。有会话归属且正文非空才写。
+ * 静默丢弃；上游报错（`handleError`）也走这里，只是状态记为 `interrupted`，
+ * 让重新载入后的消息仍看得出「这条回复没走完」（标记由气泡按状态渲染，不写进正文）。
+ * 有会话归属且正文非空才写。
  *
  * `persisted` 标记保证同一条回复只写一次：例如用户先点停止、随后迟到的事件 / 启动
  * 异常又走到失败分支时，不会重复落库。
  */
 export function persistAssistantPartial(
   request: ActiveRequest,
-  options?: { usage?: AiUsage; suffix?: string }
+  options?: { usage?: AiUsage; status?: AiMessageStatus }
 ): void {
   if (request.persisted === true) return
   if (request.sessionId === null || request.content.trim() === '') return
   request.persisted = true
-  const content =
-    options?.suffix !== undefined && options.suffix !== ''
-      ? `${request.content}${options.suffix}`
-      : request.content
-  void appendMessage(request.sessionId, 'assistant', content, options?.usage)
+  void appendMessage(request.sessionId, 'assistant', request.content, {
+    ...(options?.usage !== undefined ? { usage: options.usage } : {}),
+    ...(options?.status !== undefined ? { status: options.status } : {})
+  })
 }
 
 /**
@@ -143,6 +150,7 @@ export async function loadSessionMessages(input: {
     .map((row) => ({
       id: String(row.id),
       role: row.role === 'assistant' ? 'assistant' : 'user',
-      content: row.content
+      content: row.content,
+      ...(row.status === 'interrupted' ? { interrupted: true } : {})
     }))
 }

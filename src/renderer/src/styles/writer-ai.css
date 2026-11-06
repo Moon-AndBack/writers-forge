@@ -376,6 +376,17 @@
   box-shadow: inset 0 0 0 1px var(--danger);
 }
 
+/* 中断标记：与错误原因并列的小字状态说明（结构化，不写进正文），左侧竖线表意「截断」，
+   只用颜色 / 文字，不做位移或动画（§8）。 */
+.ai-msg__interrupted {
+  margin: 6px 0 0;
+  padding-left: 6px;
+  border-left: 2px solid var(--line);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
 .ai-msg__actions {
   display: flex;
   flex-wrap: wrap;

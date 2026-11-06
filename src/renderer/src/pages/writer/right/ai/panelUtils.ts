@@ -9,12 +9,18 @@ import type { AiConversationMessage } from './chatRuntime'
  * 不持有 React 状态，也不碰请求与落库。
  */
 
-/** assistant 回复可回插的判定：非流式、无错误、正文非空（user 消息恒不可回插）。 */
+/**
+ * assistant 回复可回插的判定：非流式、无错误、未中断、正文非空（user 消息恒不可回插）。
+ *
+ * `interrupted` 的半截回复不允许回插正文档：内容停在句子中间，且这类消息本就带着
+ * 「未走完」的语义，写进正文只会留下残篇。
+ */
 export function canApplyMessage(message: AiConversationMessage): boolean {
   return (
     message.role === 'assistant' &&
     message.streaming !== true &&
     message.error === undefined &&
+    message.interrupted !== true &&
     message.content.trim() !== ''
   )
 }

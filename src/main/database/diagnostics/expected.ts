@@ -286,7 +286,7 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
   },
   {
     name: 'ai_chat_messages',
-    columns: ['id', 'session_id', 'role', 'content', 'usage_json', 'created_at']
+    columns: ['id', 'session_id', 'role', 'content', 'status', 'usage_json', 'created_at']
   },
   // 违禁词库（全局共享词表，无书域 / 实体外键）：见 `schema/cleanWords.ts`
   {

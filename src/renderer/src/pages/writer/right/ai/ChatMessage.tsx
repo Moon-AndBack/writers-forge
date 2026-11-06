@@ -45,7 +45,7 @@ const MD_COMPONENTS: Components = {
 
 export interface ChatMessageProps {
   message: AiConversationMessage
-  /** 是否显示「替换选中 / 插入到光标后」按钮（仅 assistant 消息、非流式、非错误时）。 */
+  /** 是否显示「替换选中 / 插入到光标后」按钮（仅 assistant 消息、非流式、非错误、未中断时）。 */
   canApply: boolean
   onApplyReplace: (text: string) => void
   onApplyInsert: (text: string) => void
@@ -69,6 +69,7 @@ export function ChatMessage({
   const isUser = message.role === 'user'
   const streaming = message.streaming === true
   const error = message.error
+  const interrupted = message.interrupted === true
   const hasContent = message.content.trim() !== ''
   const showActions = canApply && !isUser && !streaming && error === undefined && hasContent
 
@@ -97,6 +98,8 @@ export function ChatMessage({
             {t(AI_ERROR_TEXT_KEYS[error.code])}
           </p>
         ) : null}
+        {/* 结构化中断标记：来自库内 `status`，与正文无关（正文不含任何中断说明）。 */}
+        {interrupted ? <p className="ai-msg__interrupted">{t('message.interrupted')}</p> : null}
       </div>
       {showActions ? (
         <div className="ai-msg__actions">

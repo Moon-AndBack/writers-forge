@@ -13,9 +13,14 @@ import type Database from 'better-sqlite3'
  * - `role` 仅 `system` / `user` / `assistant` 三态，由 SQL CHECK 守卫；
  * - `usage_json` 存模型返回的 token 用量等原样 JSON 文本（可空），结构由上层解释，
  *   本层不解析、不校验；
+ * - `status` 是消息的结构化收尾状态：`done`（正常完成，默认）/ `interrupted`
+ *   （上游报错中断，正文只是半截）。**不把中断说明写进 `content`**——说明属于界面文案，
+ *   写进正文会污染回插与后续上下文；取值不加 SQL CHECK，便于将来扩展（如 `stopped`）；
  * - `updated_at` 在追加消息 / 重命名 / 流式结束（`touchAiSession`）时刷新，供会话按
  *   最近活跃倒序排列；
- * - 幂等建表（`CREATE ... IF NOT EXISTS`），无迁移、无回填。
+ * - 幂等建表（`CREATE ... IF NOT EXISTS`）+ 幂等补列（`PRAGMA table_info` 探测后
+ *   `ADD COLUMN`，对齐 `schema/plot.ts` / `schema/foreshadows.ts` 的 `ensureColumn`），
+ *   老库首次启动自动补 `status`，存量行取默认值 `done`，不改动既有内容。
  */
 export function createAiChatSchema(db: Database.Database): void {
   db.exec(`
@@ -38,11 +43,16 @@ export function createAiChatSchema(db: Database.Database): void {
       session_id INTEGER NOT NULL,
       role TEXT NOT NULL CHECK (role IN ('system', 'user', 'assistant')),
       content TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'done',
       usage_json TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (session_id) REFERENCES ai_chat_sessions(id) ON DELETE CASCADE
     )
   `)
+
+  // 老库（无 `status` 列）幂等补列：`CREATE TABLE IF NOT EXISTS` 不会给已存在的表加列。
+  // `NOT NULL DEFAULT 'done'` 让存量消息全部按「正常完成」解释，不做任何内容清洗。
+  ensureColumn(db, 'ai_chat_messages', 'status', "TEXT NOT NULL DEFAULT 'done'")
 
   // 索引：按书 + 章查会话列表；按会话按 id 升序取消息（主键 id 已在索引尾部，免回表排序）。
   db.exec(`
@@ -53,4 +63,16 @@ export function createAiChatSchema(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_ai_chat_messages_session
       ON ai_chat_messages(session_id, id)
   `)
+}
+
+/** 检测表是否已有某列，缺失才 `ADD COLUMN`（幂等补列，不破坏既有数据；对齐 `schema/plot.ts`）。 */
+function ensureColumn(
+  db: Database.Database,
+  table: string,
+  column: string,
+  definition: string
+): void {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>
+  if (columns.some((item) => item.name === column)) return
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
 }

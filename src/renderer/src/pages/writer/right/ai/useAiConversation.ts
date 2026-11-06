@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import type {
   AiChatMessage,
   AiError,
@@ -42,7 +41,6 @@ export function useAiConversation(input: {
   onSessionCreated?: (id: number) => void
 }): AiConversationState {
   const { bookId, chapterId, active, model, sessionId, onSessionCreated } = input
-  const { t } = useTranslation('ai')
 
   const [messages, setMessages] = useState<AiConversationMessage[]>([])
   const [generating, setGenerating] = useState(false)
@@ -67,17 +65,6 @@ export function useAiConversation(input: {
   useEffect(() => {
     onSessionCreatedRef.current = onSessionCreated
   }, [onSessionCreated])
-
-  /**
-   * 中断说明后缀（`\n\n> 文案`，markdown 引用块，重新载入后仍可见）。
-   *
-   * 用 ref 存最新译文而非让 `handleError` 依赖 `t`：否则切语言会改变回调标识，
-   * 进而重挂流式订阅——重挂的清理会顺带中止在途请求。
-   */
-  const interruptedSuffixRef = useRef('')
-  useEffect(() => {
-    interruptedSuffixRef.current = `\n\n> ${t('message.interrupted')}`
-  }, [t])
 
   /* ---------- 消息写入（同步副本 + state 双写） ---------- */
 
@@ -153,6 +140,9 @@ export function useAiConversation(input: {
    *
    * 无论中止原因（用户点停止 / 切会话 / 切章 / 卸载），已生成的半截回复都落库，
    * 不再静默丢弃（`persistAssistantPartial`）。
+   *
+   * 状态语义：这里是**本地主动停止**，不是上游异常，落库状态保持 `done`——内容就是模型
+   * 已完整产出到此为止的部分，可以正常回插/续用；需要提示「未走完」的只有上游报错中断。
    */
   const stopActive = useCallback(
     (finalize: boolean): void => {
@@ -188,7 +178,7 @@ export function useAiConversation(input: {
       setGenerating(false)
 
       patchMessage(request.assistantId, { streaming: false, content: request.content })
-      // 所有功能的完整回复都落库（用户消息已在发送时写入）。
+      // 所有功能的完整回复都落库（用户消息已在发送时写入）；正常完成即默认状态 `done`。
       persistAssistantPartial(request, { usage })
     },
     [patchMessage]
@@ -198,10 +188,10 @@ export function useAiConversation(input: {
     (request: ActiveRequest, error: AiError): void => {
       activeRequestRef.current = null
       setGenerating(false)
-      patchMessage(request.assistantId, { streaming: false, error })
-      // 报错同样算「没走完」：已生成的半截回复仍落库，并在末尾标记中断，
-      // 不让它比用户主动停止的回复少一截（去重由 `persisted` 保证）。
-      persistAssistantPartial(request, { suffix: interruptedSuffixRef.current })
+      patchMessage(request.assistantId, { streaming: false, error, interrupted: true })
+      // 报错同样算「没走完」：已生成的半截回复仍落库，状态记为 `interrupted`，
+      // 由气泡按状态渲染结构化标记（不进正文，避免污染回插与后续上下文）。
+      persistAssistantPartial(request, { status: 'interrupted' })
     },
     [patchMessage]
   )
@@ -251,11 +241,14 @@ export function useAiConversation(input: {
       const composed = composeMessages(compose)
       if (composed.length === 0) return
 
-      // 自由对话带历史（不含失败 / 空内容消息，system 不落库）；快捷功能只发本次要求。
+      // 自由对话带历史（不含空内容消息；报错中断的半截回复仍带上——它是模型自己的产出，
+      // 丢掉会断掉多轮连贯性，界面已另行标注「因错误中断」，system 不落库）。
       const history: AiChatMessage[] =
         compose.action === 'chat'
           ? messagesRef.current
-              .filter((m) => m.error === undefined && m.content.trim() !== '')
+              .filter(
+                (m) => m.content.trim() !== '' && (m.interrupted === true || m.error === undefined)
+              )
               .map((m): AiChatMessage => ({ role: m.role, content: m.content }))
           : []
       const requestMessages: AiChatMessage[] = [composed[0], ...history, ...composed.slice(1)]

@@ -10,7 +10,12 @@ import {
   listAiSessions,
   renameAiSession
 } from '../database/aiChat'
-import type { AiChatMessageRow, AiChatRole, AiChatSessionRow } from '../database/aiChat'
+import type {
+  AiChatMessageRow,
+  AiChatRole,
+  AiChatSessionRow,
+  AiMessageStatus
+} from '../database/aiChat'
 import { logger } from '../logger'
 import { abortChat, claimChat, sendStreamEvent } from './aiChat'
 import {
@@ -74,7 +79,7 @@ type TestResult = { ok: boolean; latencyMs: number; error?: AiError }
  * - ai:sessions:delete   ({ id })                                → boolean
  * - ai:sessions:rename   ({ id, title })                         → boolean
  * - ai:messages:list     ({ sessionId })                         → AiChatMessageRow[]
- * - ai:messages:append   ({ sessionId, role, content, usageJson? }) → AiChatMessageRow | null
+ * - ai:messages:append   ({ sessionId, role, content, status?, usageJson? }) → AiChatMessageRow | null
  * 推送（主进程 → 渲染层）：
  * - ai:chat:delta        { requestId, delta }
  * - ai:chat:done         { requestId, usage? }
@@ -258,10 +263,11 @@ export function registerAiIpc(): void {
 
   ipcMain.handle('ai:messages:append', (_event, input: unknown): AiChatMessageRow | null => {
     if (!isRecord(input)) return null
-    const { sessionId, role, content, usageJson } = input
+    const { sessionId, role, content, status, usageJson } = input
     if (!isPositiveInt(sessionId)) return null
     if (role !== 'system' && role !== 'user' && role !== 'assistant') return null
     if (!isTextWithin(content, MAX_MESSAGE_CHARS)) return null
+    if (status !== undefined && status !== 'done' && status !== 'interrupted') return null
     if (
       usageJson !== undefined &&
       usageJson !== null &&
@@ -270,15 +276,18 @@ export function registerAiIpc(): void {
       return null
     }
     const safeRole: AiChatRole = role
+    const safeStatus: AiMessageStatus | undefined =
+      status === 'done' || status === 'interrupted' ? status : undefined
 
     return runWrite(
       'ai:messages:append',
-      { sessionId, role: safeRole },
+      { sessionId, role: safeRole, status: safeStatus ?? 'done' },
       () =>
         appendAiMessage({
           sessionId,
           role: safeRole,
           content,
+          ...(safeStatus !== undefined ? { status: safeStatus } : {}),
           ...(usageJson !== undefined ? { usageJson } : {})
         }),
       null

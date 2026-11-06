@@ -23,6 +23,7 @@ import type {
   AiChatMessageRow,
   AiChatRole,
   AiChatSessionRow,
+  AiMessageStatus,
   AppendAiMessageInput,
   CreateAiSessionInput
 } from '../../main/database/aiChat'
@@ -38,6 +39,7 @@ export type {
   AiChatMessageRow,
   AiChatRole,
   AiChatSessionRow,
+  AiMessageStatus,
   AppendAiMessageInput,
   CreateAiSessionInput
 }
