@@ -285,7 +285,8 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
       'content',
       'status',
       'usage_json',
-      'created_at'
+      'created_at',
+      'action'
     ]
   },
   // 违禁词库（全局共享词表，无书域 / 实体外键）：见 `schema/cleanWords.ts`

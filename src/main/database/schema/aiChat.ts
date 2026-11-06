@@ -21,6 +21,9 @@ import type Database from 'better-sqlite3'
  * - `status` 是消息的结构化收尾状态：`done`（正常完成，默认）/ `interrupted`
  *   （上游报错中断，正文只是半截）。**不把中断说明写进 `content`**——说明属于界面文案，
  *   写进正文会污染回插与后续上下文；取值不加 SQL CHECK，便于将来扩展（如 `stopped`）；
+ * - `action` 记录该条回复由哪个功能产生（`polish` / `continue` / `rewrite` /
+ *   `translate` / `chat`），历史消息为 NULL；同样不加 SQL CHECK，未知值由数据层
+ *   窄化为 NULL（见 `database/aiChat.ts` 的 `toAiMessageRow`）；
  * - `updated_at` 在追加消息 / 重命名 / 流式结束（`touchAiSession`）时刷新，供会话按
  *   最近活跃倒序排列；
  * - 幂等建表（`CREATE ... IF NOT EXISTS`）+ 幂等补列（`PRAGMA table_info` 探测后
@@ -97,6 +100,7 @@ export function createAiChatSchema(db: Database.Database): void {
       status TEXT NOT NULL DEFAULT 'done',
       usage_json TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      action TEXT,
       FOREIGN KEY (session_id) REFERENCES ai_chat_sessions(id) ON DELETE CASCADE
     )
   `)
@@ -104,6 +108,10 @@ export function createAiChatSchema(db: Database.Database): void {
   // 老库（无 `status` 列）幂等补列：`CREATE TABLE IF NOT EXISTS` 不会给已存在的表加列。
   // `NOT NULL DEFAULT 'done'` 让存量消息全部按「正常完成」解释，不做任何内容清洗。
   ensureColumn(db, 'ai_chat_messages', 'status', "TEXT NOT NULL DEFAULT 'done'")
+
+  // 老库（无 `action` 列）幂等补列：可空、无默认值，存量消息保持 NULL（不猜历史功能）。
+  // `ADD COLUMN` 语义上追加在表尾，故新表 DDL 也把 `action` 放在 `created_at` 之后。
+  ensureColumn(db, 'ai_chat_messages', 'action', 'TEXT')
 
   // 索引：按书取会话列表（最近活跃倒序）；按会话按 id 升序取消息。
   db.exec(`

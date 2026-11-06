@@ -27,6 +27,24 @@ export type AiChatRole = 'system' | 'user' | 'assistant'
  */
 export type AiMessageStatus = 'done' | 'interrupted'
 
+/**
+ * 消息功能类型：记录该条回复由哪个功能产生（与渲染层 `AiComposeAction` 对齐）。
+ *
+ * 与 `status` 同策略：DDL 不加 CHECK，由本层白名单窄化兜底，便于将来扩展。
+ */
+export type AiMessageAction = 'polish' | 'continue' | 'rewrite' | 'translate' | 'chat'
+
+/** 白名单判定：非枚举值（含库内脏数据）一律视为未知，按 `null` 处理。 */
+export function isAiMessageAction(value: unknown): value is AiMessageAction {
+  return (
+    value === 'polish' ||
+    value === 'continue' ||
+    value === 'rewrite' ||
+    value === 'translate' ||
+    value === 'chat'
+  )
+}
+
 /** 会话行（归属书，与章无关）。 */
 export interface AiChatSessionRow {
   id: number
@@ -54,6 +72,8 @@ export interface AiChatMessageRow {
   content: string
   /** 收尾状态：`done`（默认）/ `interrupted`（上游报错中断）。 */
   status: AiMessageStatus
+  /** 产生该条消息的功能；历史消息 / 未知值为 `null`。 */
+  action: AiMessageAction | null
   /** 模型返回的 token 用量等原样 JSON 文本；无则 `null`。 */
   usageJson: string | null
   createdAt: string
@@ -79,6 +99,8 @@ export interface AppendAiMessageInput {
   role: AiChatRole
   content: string
   status?: AiMessageStatus
+  /** 产生该条消息的功能；省略 / null 表示未知（历史行为）。 */
+  action?: AiMessageAction | null
   usageJson?: string | null
 }
 
@@ -86,15 +108,16 @@ const SESSION_COLUMNS = `id, book_id AS bookId, provider, model,
   title, created_at AS createdAt, updated_at AS updatedAt`
 
 const MESSAGE_COLUMNS = `id, session_id AS sessionId, chapter_id AS chapterId, role, content, status,
-  usage_json AS usageJson, created_at AS createdAt`
+  usage_json AS usageJson, created_at AS createdAt, action`
 
 /** 库内会话行形状（snake_case 已别名，仅列名映射）。 */
 type SessionDbRow = AiChatSessionRow
 
-/** 库内消息行形状（`role` / `status` 按字符串读入，再做窄化）。 */
-interface MessageDbRow extends Omit<AiChatMessageRow, 'role' | 'status'> {
+/** 库内消息行形状（`role` / `status` / `action` 按字符串读入，再做窄化）。 */
+interface MessageDbRow extends Omit<AiChatMessageRow, 'role' | 'status' | 'action'> {
   role: string
   status: string
+  action: string | null
 }
 
 /** 读取单个会话，不存在返回 `null`（仅供写后回读）。 */
@@ -113,7 +136,7 @@ function readAiMessage(id: number): AiChatMessageRow | null {
   return row ? toAiMessageRow(row) : null
 }
 
-/** 脏数据兜底：未知角色按 `user`、未知状态按 `done` 处理（DDL 默认值保证正常值）。 */
+/** 脏数据兜底：未知角色按 `user`、未知状态按 `done`、未知功能类型按 `null` 处理。 */
 function toAiMessageRow(row: MessageDbRow): AiChatMessageRow {
   return {
     id: row.id,
@@ -122,6 +145,7 @@ function toAiMessageRow(row: MessageDbRow): AiChatMessageRow {
     role: row.role === 'system' || row.role === 'assistant' ? row.role : 'user',
     content: row.content,
     status: row.status === 'interrupted' ? 'interrupted' : 'done',
+    action: isAiMessageAction(row.action) ? row.action : null,
     usageJson: row.usageJson,
     createdAt: row.createdAt
   }
@@ -177,15 +201,16 @@ export function listAiMessages(sessionId: number): AiChatMessageRow[] {
 /**
  * 追加一条消息并刷新所属会话的 `updated_at`（同一事务），返回落库后的消息行。
  * 会话不存在时由 `session_id` 外键拒绝（`foreign_keys = ON`），抛错且不落库。
- * `status` 省略时落库为 `'done'`（正常完成）；`chapterId` 省略时落库为 `NULL`（无章聊天）。
+ * `status` 省略时落库为 `'done'`（正常完成）；`chapterId` 省略时落库为 `NULL`（无章聊天）；
+ * `action` 省略时落库为 `NULL`（历史行为 / 未知功能）。
  */
 export function appendAiMessage(input: AppendAiMessageInput): AiChatMessageRow {
   const db = getDb()
   return db.transaction((): AiChatMessageRow => {
     const result = db
       .prepare(
-        `INSERT INTO ai_chat_messages (session_id, chapter_id, role, content, status, usage_json)
-         VALUES (@sessionId, @chapterId, @role, @content, @status, @usageJson)`
+        `INSERT INTO ai_chat_messages (session_id, chapter_id, role, content, status, usage_json, action)
+         VALUES (@sessionId, @chapterId, @role, @content, @status, @usageJson, @action)`
       )
       .run({
         sessionId: input.sessionId,
@@ -193,7 +218,8 @@ export function appendAiMessage(input: AppendAiMessageInput): AiChatMessageRow {
         role: input.role,
         content: input.content,
         status: input.status ?? 'done',
-        usageJson: input.usageJson ?? null
+        usageJson: input.usageJson ?? null,
+        action: input.action ?? null
       })
 
     db.prepare("UPDATE ai_chat_sessions SET updated_at = datetime('now') WHERE id = ?").run(

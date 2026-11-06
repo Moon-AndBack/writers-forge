@@ -3,9 +3,8 @@ import type { AiError, AiProviderId, AiUsage } from '../../../../../../preload/t
 import {
   appendMessage,
   chatLog,
-  createLocalId,
+  createActiveRequest,
   createOptimisticMessages,
-  createRequestId,
   insertCompactionDivider,
   loadSessionMessages,
   persistAssistantPartial,
@@ -290,22 +289,15 @@ export function useAiConversation(input: {
             )
           : []
 
-      const requestId = createRequestId()
-      const assistantId = createLocalId('assistant')
-      const request: ActiveRequest = {
-        requestId,
-        assistantId,
-        content: '',
+      const request = createActiveRequest({
         sessionId: sessionIdRef.current,
         chapterId: chapterIdRef.current,
-        estimatedPromptTokens: 0,
-        calibrationKey: ''
-      }
+        action: compose.action
+      })
       activeRequestRef.current = request
       setNotice(null)
       setGenerating(true)
       setCompressing(false)
-
       const baseMessages = messagesRef.current
       // user 气泡只在有展示文本时出现：输入为空时退回面板给的 `display`（如「[润色] 整章正文」），
       // 让「只勾上下文」的轮次在历史里也看得出做了什么；`display` 不进模型消息。
@@ -314,11 +306,11 @@ export function useAiConversation(input: {
         createOptimisticMessages({
           base: baseMessages,
           userText,
-          assistantId,
-          chapterId: request.chapterId
+          assistantId: request.assistantId,
+          chapterId: request.chapterId,
+          action: compose.action
         })
       )
-
       /** 超预算拒绝：撤掉本轮乐观消息、恢复输入（由调用方按 false 处理）。 */
       const reject = (usedTokens: number, limitTokens: number): false => {
         if (activeRequestRef.current === request) {
@@ -393,11 +385,14 @@ export function useAiConversation(input: {
           }
 
           if (sessionId !== null && userText !== '') {
-            void appendMessage(sessionId, 'user', userText, { chapterId: request.chapterId })
+            void appendMessage(sessionId, 'user', userText, {
+              chapterId: request.chapterId,
+              action: compose.action
+            })
           }
 
           await api.chat.start({
-            requestId,
+            requestId: request.requestId,
             messages: prepared.messages,
             ...(sessionId !== null ? { sessionId: String(sessionId) } : {}),
             provider,

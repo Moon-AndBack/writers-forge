@@ -7,7 +7,7 @@ import type {
   AiProviderId,
   AiUsage
 } from '../../../../../../preload/types/ai'
-import type { AiComposeInput } from './functions'
+import type { AiComposeAction, AiComposeInput } from './functions'
 import { findSummary } from './contextSummary'
 import type { CompactionMarker, SavedSummary } from './contextSummary'
 
@@ -46,6 +46,11 @@ export interface AiConversationMessage {
    * 回插校验据此判断「是否来自当前章」（见 `panelUtils.canApplyMessage`）。
    */
   chapterId?: number | null
+  /**
+   * 产生该条消息的功能（`polish` / `continue` / `rewrite` / `translate` / `chat`）。
+   * 历史消息 / 未知值为 `undefined`；供气泡胶囊与按功能收敛的回插按钮使用。
+   */
+  action?: AiComposeAction
   /** 是否正在流式输出。 */
   streaming?: boolean
   /** 错误消息（assistant 气泡内的错误提示）。 */
@@ -104,6 +109,8 @@ export interface ActiveRequest {
   sessionId: number | null
   /** 发起时所在的章（落库为消息的 `chapterId` 来源标记；无章聊天为 null）。 */
   chapterId: number | null
+  /** 本次请求的功能类型（落库为消息的 `action`）。 */
+  action: AiComposeAction
   /** 发送前对 `prepared.messages` 的 token 估算（校准分母；0 = 尚未计算，不参与校准）。 */
   estimatedPromptTokens: number
   /** 校准键 `provider/model`（发送前回填；空串 = 未知，不参与校准）。 */
@@ -141,24 +148,58 @@ export function createLocalId(prefix: string): string {
 }
 
 /**
+ * 构造一次在途请求（id 生成集中于此，发送路径直接持有句柄）。
+ *
+ * `sessionId` / `chapterId` / `action` 都是发送瞬间快照：异步建会话、切章、切功能
+ * 都不改变本次请求的落库归属（见 `persistAssistantPartial`）。
+ */
+export function createActiveRequest(input: {
+  sessionId: number | null
+  chapterId: number | null
+  action: AiComposeAction
+}): ActiveRequest {
+  return {
+    requestId: createRequestId(),
+    assistantId: createLocalId('assistant'),
+    content: '',
+    sessionId: input.sessionId,
+    chapterId: input.chapterId,
+    action: input.action,
+    estimatedPromptTokens: 0,
+    calibrationKey: ''
+  }
+}
+
+/**
  * 构造发送瞬间的乐观消息（user 展示气泡 + assistant 流式占位）。
  *
  * `chapterId` 是本次请求的章快照：消息随会话跨章保留，回插时据此判断来源章
  * （见 `panelUtils.canApplyMessage`）。
+ * `action` 同时挂在 user 与 assistant 上：user 气泡据此显示「[润色]」胶囊（下方接
+ * 选中内容），assistant 气泡据此收敛回插按钮。
  */
 export function createOptimisticMessages(input: {
   base: AiConversationMessage[]
   userText: string
   assistantId: string
   chapterId: number | null
+  action: AiComposeAction
 }): AiConversationMessage[] {
-  const { base, userText, assistantId, chapterId } = input
+  const { base, userText, assistantId, chapterId, action } = input
   return [
     ...base,
     ...(userText !== ''
-      ? [{ id: createLocalId('user'), role: 'user' as const, content: userText, chapterId }]
+      ? [
+          {
+            id: createLocalId('user'),
+            role: 'user' as const,
+            content: userText,
+            chapterId,
+            action
+          }
+        ]
       : []),
-    { id: assistantId, role: 'assistant' as const, content: '', streaming: true, chapterId }
+    { id: assistantId, role: 'assistant' as const, content: '', streaming: true, chapterId, action }
   ]
 }
 
@@ -168,13 +209,19 @@ export function createOptimisticMessages(input: {
  * 用户消息在发送时写、助手回复在 `done` / 用户停止 / 上游报错时写；
  * `status` 缺省为 `done`，只有上游报错中断写 `interrupted`（见 `persistAssistantPartial`）。
  * `chapterId` 记录消息产生时所在的章（无章聊天为 null），供回插校验。
+ * `action` 记录消息由哪个功能产生（历史行为 / 未知为 null）。
  * 内容一律按原样落库，中断说明属于界面文案，**不进正文**。
  */
 export async function appendMessage(
   sessionId: number,
   role: AiChatRole,
   content: string,
-  options?: { usage?: AiUsage; status?: AiMessageStatus; chapterId?: number | null }
+  options?: {
+    usage?: AiUsage
+    status?: AiMessageStatus
+    chapterId?: number | null
+    action?: AiComposeAction | null
+  }
 ): Promise<void> {
   const api = window.api?.ai
   if (!api) return
@@ -185,6 +232,9 @@ export async function appendMessage(
       role,
       content,
       ...(options?.status !== undefined ? { status: options.status } : {}),
+      ...(options?.action !== undefined && options.action !== null
+        ? { action: options.action }
+        : {}),
       ...(options?.usage !== undefined ? { usageJson: JSON.stringify(options.usage) } : {})
     })
   } catch (error) {
@@ -212,6 +262,7 @@ export function persistAssistantPartial(
   request.persisted = true
   void appendMessage(request.sessionId, 'assistant', request.content, {
     chapterId: request.chapterId,
+    action: request.action,
     ...(options?.usage !== undefined ? { usage: options.usage } : {}),
     ...(options?.status !== undefined ? { status: options.status } : {})
   })
@@ -244,6 +295,7 @@ export async function loadSessionMessages(input: {
       role: row.role === 'assistant' ? ('assistant' as const) : ('user' as const),
       content: row.content,
       chapterId: row.chapterId,
+      ...(row.action !== null ? { action: row.action } : {}),
       ...(row.status === 'interrupted' ? { interrupted: true } : {})
     }))
 

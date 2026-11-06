@@ -26,6 +26,7 @@ import type {
   AiChatMessageRow,
   AiChatRole,
   AiChatSessionRow,
+  AiMessageAction,
   AiMessageStatus,
   AppendAiMessageInput,
   CreateAiSessionInput
@@ -44,6 +45,7 @@ export type {
   AiChatMessageRow,
   AiChatRole,
   AiChatSessionRow,
+  AiMessageAction,
   AiMessageStatus,
   AppendAiMessageInput,
   CreateAiSessionInput,

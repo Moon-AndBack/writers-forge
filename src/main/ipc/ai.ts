@@ -16,6 +16,7 @@ import {
   appendAiMessage,
   createAiSession,
   deleteAiSession,
+  isAiMessageAction,
   listAiMessages,
   listAiSessions,
   renameAiSession,
@@ -25,6 +26,7 @@ import type {
   AiChatMessageRow,
   AiChatRole,
   AiChatSessionRow,
+  AiMessageAction,
   AiMessageStatus
 } from '../database/aiChat'
 import { logger } from '../logger'
@@ -108,7 +110,7 @@ type TestResult = { ok: boolean; latencyMs: number; error?: AiError }
  * - ai:sessions:rename   ({ id, title })                         → boolean
  * - ai:sessions:renameIfEmpty ({ id, title })                    → boolean（仅标题为空时写入）
  * - ai:messages:list     ({ sessionId })                         → AiChatMessageRow[]
- * - ai:messages:append   ({ sessionId, chapterId?, role, content, status?, usageJson? }) → AiChatMessageRow | null
+ * - ai:messages:append   ({ sessionId, chapterId?, role, content, status?, action?, usageJson? }) → AiChatMessageRow | null
  * 推送（主进程 → 渲染层）：
  * - ai:chat:delta        { requestId, delta }
  * - ai:chat:done         { requestId, usage? }
@@ -349,13 +351,15 @@ export function registerAiIpc(): void {
 
   ipcMain.handle('ai:messages:append', (_event, input: unknown): AiChatMessageRow | null => {
     if (!isRecord(input)) return null
-    const { sessionId, chapterId, role, content, status, usageJson } = input
+    const { sessionId, chapterId, role, content, status, action, usageJson } = input
     if (!isPositiveInt(sessionId)) return null
     // `chapterId` 是纯标记字段：省略 / null 表示无章聊天；给了就必须是正整数。
     if (chapterId !== undefined && chapterId !== null && !isPositiveInt(chapterId)) return null
     if (role !== 'system' && role !== 'user' && role !== 'assistant') return null
     if (!isTextWithin(content, MAX_MESSAGE_CHARS)) return null
     if (status !== undefined && status !== 'done' && status !== 'interrupted') return null
+    // `action` 是功能类型标记：省略 / null 表示未知（历史行为）；给了就必须是枚举值之一。
+    if (action !== undefined && action !== null && !isAiMessageAction(action)) return null
     if (
       usageJson !== undefined &&
       usageJson !== null &&
@@ -367,10 +371,17 @@ export function registerAiIpc(): void {
     const safeChapterId: number | null = isPositiveInt(chapterId) ? chapterId : null
     const safeStatus: AiMessageStatus | undefined =
       status === 'done' || status === 'interrupted' ? status : undefined
+    const safeAction: AiMessageAction | null = isAiMessageAction(action) ? action : null
 
     return runWrite(
       'ai:messages:append',
-      { sessionId, chapterId: safeChapterId, role: safeRole, status: safeStatus ?? 'done' },
+      {
+        sessionId,
+        chapterId: safeChapterId,
+        role: safeRole,
+        status: safeStatus ?? 'done',
+        action: safeAction
+      },
       () =>
         appendAiMessage({
           sessionId,
@@ -378,6 +389,7 @@ export function registerAiIpc(): void {
           role: safeRole,
           content,
           ...(safeStatus !== undefined ? { status: safeStatus } : {}),
+          action: safeAction,
           ...(usageJson !== undefined ? { usageJson } : {})
         }),
       null
