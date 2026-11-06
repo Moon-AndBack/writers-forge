@@ -11,10 +11,21 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v110'
+export const CHAPTER_SEED_VERSION = 'v111'
 
 /**
- * 最近版本变更日志（v110；更早版本见上述历史文件）。
+ * 最近版本变更日志（v111；更早版本见上述历史文件）。
+ *
+ * `v111`（选中态文本勾号清理批）：程序内 5 处「选中态对钩字符」全部去掉——活动栏筛选浮窗的
+ * 分类 chip（`ActivityBarFilterPopover`，连 `.act-filter__check` 样式一并删除）、`Select`、
+ * `Combobox`（删共享的 `.wf-select__check` 与样式）、状态栏 `PopupSelect`、书架 `Dropdown`。
+ * 选中态此前已有品牌色文字 / 淡底 / 描边三重标记，勾号属冗余第三重，删除后观感与层级不变。
+ * 其中 `PopupSelect` 与 `Dropdown` **保留空 span 占位**（只删字符、不删节点），避免不同档位
+ * 弹窗与菜单行宽跳动；`Dropdown` 的 `.wf-dropdown__check` 补显式 `width: 12px`，防空 span
+ * 塌陷。编辑器「含表头行」的原生 checkbox 是功能开关、模块栏图标（`moduleIcons.ts` 的
+ * `*Check` 变体）是模块标识，二者均**保留不动**。教学文案同步（「设定档案」卷「筛选当前模块」
+ * 节、「灵感」卷「筛选与搜索（活动栏浮窗）」节，2 处「带勾选标记」→「以品牌色底纹、描边与
+ * 文字色标出」）。
  *
  * `v110`（时间线起点描述切换补存批）：修复「切换时间线丢失未提交起点描述草稿」——起点卡按
  * `bookId:activeTimelineId` 重建（卸载重挂），v109 下线失焦自动保存后该缺口暴露。`Writer.tsx`

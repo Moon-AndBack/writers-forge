@@ -9,7 +9,7 @@
    ============================================================ */
 
 /* ---------- Dropdown 下拉菜单 ----------
-   原型：.st-popup（--pane 面板）/ .st-popup-item（悬停 --soft）/ .check（勾选）。 */
+   原型：.st-popup（--pane 面板）/ .st-popup-item（悬停 --soft）/ .check（勾选占位，仅保留宽度）。 */
 .wf-dropdown {
   position: relative;
   display: inline-flex;
@@ -115,6 +115,7 @@
 
 .wf-dropdown__check {
   flex: none;
+  width: 12px;
   font-size: 12px;
   line-height: 1;
   color: var(--brand);

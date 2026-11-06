@@ -280,11 +280,6 @@ export function Combobox({
                       onClick={() => commit(index)}
                     >
                       <span className="wf-select__option-label">{option.label}</span>
-                      {isSelected && (
-                        <span className="wf-select__check" aria-hidden="true">
-                          ✓
-                        </span>
-                      )}
                     </div>
                   )
                 })

@@ -366,11 +366,6 @@ export default function ActivityBarFilterPopover({
               onClick={() => handlePick(option.value)}
             >
               <span className="act-filter__item-label">{option.label}</span>
-              {selected ? (
-                <span className="act-filter__check" aria-hidden="true">
-                  ✓
-                </span>
-              ) : null}
             </button>
           )
         })}

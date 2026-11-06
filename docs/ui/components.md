@@ -646,7 +646,7 @@ Esc 由 `document` 级监听处理（`closeOnEsc` 可关）。关闭时恢复 `b
 | `onOpenChange` | `(open: boolean) => void`                               | `undefined` | 展开状态变化回调        |
 
 `DropdownItem`：`key: string`、`label?: ReactNode`、`icon?: ReactNode`、`disabled?: boolean`、
-`checked?: boolean`（提供该字段即以 `menuitemcheckbox` 语义渲染并显示 ✓）、`onSelect?: () => void`、
+`checked?: boolean`（提供该字段即以 `menuitemcheckbox` 语义渲染并以品牌色高亮）、`onSelect?: () => void`、
 `separator?: boolean`（渲染分隔线，忽略其余字段）。
 
 **关键类名**：`.wf-dropdown`（`is-open` / `is-disabled`）、`.wf-dropdown__trigger`、

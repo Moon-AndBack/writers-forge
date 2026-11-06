@@ -13,7 +13,7 @@ export interface DropdownItem {
   icon?: ReactNode
   /** 是否禁用 */
   disabled?: boolean
-  /** 勾选态：为 true 时显示 ✓ 并高亮；提供该字段的项以 menuitemcheckbox 语义渲染 */
+  /** 勾选态：为 true 时以品牌色高亮；提供该字段的项以 menuitemcheckbox 语义渲染 */
   checked?: boolean
   /** 选中回调 */
   onSelect?: () => void
@@ -233,9 +233,8 @@ export function Dropdown({
                   </span>
                 ) : null}
                 <span className="wf-dropdown__label">{item.label}</span>
-                <span className="wf-dropdown__check" aria-hidden="true">
-                  ✓
-                </span>
+                {/* 保留空占位（.wf-dropdown__check 宽度），避免选中 / 未选中时行宽跳动。 */}
+                <span className="wf-dropdown__check" aria-hidden="true" />
               </button>
             )
           })}

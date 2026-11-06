@@ -23,7 +23,7 @@ interface PopupSelectProps {
  * 状态栏排版胶囊（`.st-pill-wrap`）：按钮 + 向上弹出面板。
  *
  * 复用 ThemeSwitcherPopover 的开关范式：展开期间 Esc 关闭；
- * 指针按下落在根节点（按钮 + 弹窗）之外时关闭；选中项加 `is-active` 并显示 ✓。
+ * 指针按下落在根节点（按钮 + 弹窗）之外时关闭；选中项加 `is-active` 高亮。
  * 弹窗经条件渲染挂载（`open ? ... : null`），浮层样式见 statusbar-widgets.css。
  */
 export default function PopupSelect({
@@ -86,9 +86,8 @@ export default function PopupSelect({
                 }}
               >
                 {option.label}
-                <span className="check" aria-hidden="true">
-                  ✓
-                </span>
+                {/* 保留空占位（.check 的固定宽度），避免不同档位弹窗宽度跳动。 */}
+                <span className="check" aria-hidden="true" />
               </button>
             )
           })}
