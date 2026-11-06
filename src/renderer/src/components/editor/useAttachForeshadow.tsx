@@ -7,7 +7,11 @@ import ForeshadowAnchorAttachDialog from '../dialogs/ForeshadowAnchorAttachDialo
 import type { AttachForeshadowFailureReason } from '../dialogs/ForeshadowAnchorAttachDialog'
 import { buildAnchor } from './foreshadowAnchor'
 import { resolveParagraphAnchor } from './paragraphAnchor'
-import { refreshForeshadowMarks, type ForeshadowLabelResolver } from './useForeshadowMarks'
+import {
+  notifyForeshadowMarksRefresh,
+  refreshForeshadowMarks,
+  type ForeshadowLabelResolver
+} from './useForeshadowMarks'
 
 /**
  * 正文右键「关联伏笔」的接线（从 `SelectionContextMenu` 抽出，§3 单文件 ≤500 行）：
@@ -80,6 +84,8 @@ export function useAttachForeshadow({
       resolveLabel: resolveForeshadowTargetLabel,
       t
     })
+    // 广播：右栏总览等监听方重新拉取（与「添加 / 回收」同口径，先刷标记后广播）。
+    notifyForeshadowMarksRefresh()
   }, [chapterId, editor, outlineItemId, resolveForeshadowTargetLabel, showToast, t])
 
   const handleFailed = useCallback(

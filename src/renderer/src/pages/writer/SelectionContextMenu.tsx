@@ -12,6 +12,7 @@ import { resolveParagraphAnchor } from '../../components/editor/paragraphAnchor'
 import { useAttachForeshadow } from '../../components/editor/useAttachForeshadow'
 import {
   FORESHADOW_MARKS_REFRESH_EVENT,
+  notifyForeshadowMarksRefresh,
   refreshForeshadowMarks,
   type ForeshadowLabelResolver
 } from '../../components/editor/useForeshadowMarks'
@@ -429,8 +430,9 @@ export function SelectionContextMenu({
               resolveLabel: resolveForeshadowTargetLabel,
               t: tForeshadow
             })
-            // 新伏笔可回收：重算菜单项可点性。
-            void refreshRecoverable()
+            // 广播：右栏总览等监听方重新拉取（与伏笔模块写后通知同口径，先刷标记后广播）。
+            // 本组件「回收伏笔」可点性由该事件监听重算，此处不再重复调 `refreshRecoverable`。
+            notifyForeshadowMarksRefresh()
           }}
           onFailed={() => showToast(tForeshadow('toast.createFailed'))}
         />
@@ -450,7 +452,8 @@ export function SelectionContextMenu({
               resolveLabel: resolveForeshadowTargetLabel,
               t: tForeshadow
             })
-            void refreshRecoverable()
+            // 广播：右栏总览 / 本组件「回收伏笔」可点性等监听方重拉（监听已覆盖重算）。
+            notifyForeshadowMarksRefresh()
           }}
           onFailed={() => showToast(tForeshadow('toast.recoverFailed'))}
         />
