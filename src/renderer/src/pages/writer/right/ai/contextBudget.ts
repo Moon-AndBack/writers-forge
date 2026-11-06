@@ -67,6 +67,90 @@ export function estimateMessages(messages: readonly { content: string }[]): numb
   return total
 }
 
+/* ---------- 估算校准（第 4 步）：真实 usage 修正估算偏差 ---------- */
+
+/**
+ * 校准系数区间：`真实 / 估算` 超出该区间视为异常观测（例如缓存命中的
+ * `prompt_tokens` 只计非缓存部分）并夹取，避免一次异常把系数带崩。
+ */
+const CALIBRATION_MIN = 0.5
+const CALIBRATION_MAX = 3.0
+
+/** EMA 平滑系数：新观测权重 0.3，历史权重 0.7；首次观测直接取比值。 */
+const CALIBRATION_ALPHA = 0.3
+
+/** 校准表：`provider/model`（trim + 小写）→ 真实 / 估算比值。 */
+const calibrationRatios = new Map<string, number>()
+
+function normalizeCalibrationKey(key: string): string {
+  return key.trim().toLowerCase()
+}
+
+function clampRatio(value: number): number {
+  return Math.min(CALIBRATION_MAX, Math.max(CALIBRATION_MIN, value))
+}
+
+/**
+ * 记录一次校准观测。
+ *
+ * 只在估算值与真实值都 > 0 时记录（未返回 usage 的轮次直接跳过）。
+ * 比值先 clamp 到 `[0.5, 3.0]`，再与历史值做 EMA 平滑。
+ */
+export function recordCalibration(key: string, estimated: number, actual: number): void {
+  if (!(estimated > 0) || !(actual > 0)) return
+  const normalized = normalizeCalibrationKey(key)
+  if (normalized === '') return
+
+  const ratio = clampRatio(actual / estimated)
+  const prev = calibrationRatios.get(normalized)
+  calibrationRatios.set(
+    normalized,
+    prev === undefined ? ratio : prev * (1 - CALIBRATION_ALPHA) + ratio * CALIBRATION_ALPHA
+  )
+}
+
+/** 取校准系数（缺省 1 = 不校准）。 */
+export function getCalibration(key: string): number {
+  return calibrationRatios.get(normalizeCalibrationKey(key)) ?? 1
+}
+
+/** 清空校准表（模型 / 目录切换或排障时可用）。 */
+export function resetCalibration(): void {
+  calibrationRatios.clear()
+}
+
+/**
+ * 按模型名取校准系数。
+ *
+ * 记录键是 `provider/model`，而占用条只知道模型名，故取同名模型的观测均值
+ * （同一模型换服务商时，窗口与分词口径通常一致）。
+ */
+export function getModelCalibration(model: string): number {
+  const normalized = normalizeCalibrationKey(model)
+  if (normalized === '') return 1
+  const suffix = `/${normalized}`
+
+  let sum = 0
+  let count = 0
+  for (const [key, value] of calibrationRatios) {
+    if (!key.endsWith(suffix)) continue
+    sum += value
+    count += 1
+  }
+  return count === 0 ? 1 : sum / count
+}
+
+/**
+ * 把原始估算换算成「校准后估算」。
+ *
+ * 只用于**展示**（占用条）：发送决策仍用原始 `estimateMessages`——决策需要稳定、
+ * 可复现的绝对值，而校准系数会随每轮真实用量小幅漂移。
+ */
+export function calibrateForModel(model: string, tokens: number): number {
+  const factor = getModelCalibration(model)
+  return factor === 1 ? tokens : Math.round(tokens * factor)
+}
+
 /** 数字口径：`1_234` → `1.2K`，`1_048_576` → `1M`（占用条与拒绝提示共用）。 */
 export function formatTokenCount(value: number): string {
   const compact = (scaled: number): string => scaled.toFixed(1).replace(/\.0$/, '')
@@ -85,4 +169,6 @@ export interface ContextUsage {
   limitSource: 'override' | 'catalog' | 'baseline' | 'default'
   /** 命中的目录 id（source === 'catalog' 时有值）。 */
   matchedId: string | null
+  /** `usedTokens` 是否已乘校准系数（false = 原始估算，尚无真实观测）。 */
+  calibrated: boolean
 }

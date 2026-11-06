@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ResolvedLimit } from '../../../../../../preload/types/ai'
 import {
   DEFAULT_CONTEXT_WINDOW,
+  calibrateForModel,
   estimateMessages,
   estimateTokens,
   type ContextUsage
@@ -153,18 +154,21 @@ export function useContextUsage({
     // 分隔行不是消息，不参与已用统计（也不占 covered 的计数）。
     const live = messages.filter((message) => message.divider === undefined)
     const visible = covered > 0 ? live.slice(Math.max(0, covered)) : live
-    const usedTokens =
+    const rawTokens =
       estimateMessages(visible) +
       estimateTokens(summaryText) +
       estimateTokens(draft) +
       estimateTokens(carryContext)
+    // 展示「校准后估算」：按最近真实 usage 修正估算偏差（发送决策仍用原始估算）。
+    const usedTokens = calibrateForModel(key, rawTokens)
 
     return {
       usedTokens,
       limitTokens: limit.tokens,
       ratio: limit.tokens > 0 ? usedTokens / limit.tokens : 0,
       limitSource: limit.source,
-      matchedId: limit.matchedId
+      matchedId: limit.matchedId,
+      calibrated: usedTokens !== rawTokens
     }
-  }, [active, cached, messages, covered, summaryText, draft, carryContext])
+  }, [active, cached, key, messages, covered, summaryText, draft, carryContext])
 }

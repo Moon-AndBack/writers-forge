@@ -19,7 +19,18 @@ import type {
 import { composeMessages, type AiComposeInput } from './functions'
 import { encodeSummaryRow, prepareOutgoingMessages } from './contextSummary'
 import type { SavedSummary } from './contextSummary'
+import { estimateMessages, recordCalibration } from './contextBudget'
 import { resolveContextLimit } from './useContextUsage'
+
+/** 读取「启用自动压缩」开关：读取失败按开启处理（不静默改变既有行为）。 */
+async function readCompressionEnabled(): Promise<boolean> {
+  try {
+    const enabled = await window.api?.ai?.compression.get()
+    return enabled !== false
+  } catch {
+    return true
+  }
+}
 
 export type { AiConversationMessage, AiConversationState }
 
@@ -193,6 +204,16 @@ export function useAiConversation(input: {
       setGenerating(false)
       setCompressing(false)
 
+      // 估算校准：真实 prompt_tokens / 本次估算 → 按 provider/model 记 EMA（仅内存）。
+      const actualPromptTokens = usage?.promptTokens
+      if (
+        request.calibrationKey !== '' &&
+        request.estimatedPromptTokens > 0 &&
+        actualPromptTokens !== undefined
+      ) {
+        recordCalibration(request.calibrationKey, request.estimatedPromptTokens, actualPromptTokens)
+      }
+
       patchMessage(request.assistantId, { streaming: false, content: request.content })
       // 所有功能的完整回复都落库（用户消息已在发送时写入）；正常完成即默认状态 `done`。
       persistAssistantPartial(request, { usage })
@@ -274,7 +295,9 @@ export function useAiConversation(input: {
         requestId,
         assistantId,
         content: '',
-        sessionId: sessionIdRef.current
+        sessionId: sessionIdRef.current,
+        estimatedPromptTokens: 0,
+        calibrationKey: ''
       }
       activeRequestRef.current = request
       setNotice(null)
@@ -321,6 +344,10 @@ export function useAiConversation(input: {
           const limitTokens = (await resolveContextLimit(modelId)).tokens
           if (activeRequestRef.current !== request) return false
 
+          // 设置页「启用自动压缩」：关闭时仍截断 / 拒绝，但不额外发摘要请求。
+          const compress = await readCompressionEnabled()
+          if (activeRequestRef.current !== request) return false
+
           if (compose.action === 'chat') setCompressing(true)
           const prepared = await prepareOutgoingMessages({
             composed,
@@ -329,6 +356,7 @@ export function useAiConversation(input: {
             limitTokens,
             provider,
             model: modelId,
+            compress,
             persistSummary: async (covered, text) => {
               if (sessionId === null) return null
               await appendMessage(sessionId, 'system', encodeSummaryRow(covered, text))
@@ -341,6 +369,10 @@ export function useAiConversation(input: {
           if (!prepared.ok) {
             return reject(prepared.usedTokens, prepared.limitTokens)
           }
+
+          // 校准分母：本次实际发出的消息估算值随请求保存，done 时与真实 prompt_tokens 比对。
+          request.estimatedPromptTokens = estimateMessages(prepared.messages)
+          if (modelId !== '') request.calibrationKey = `${provider}/${modelId}`
 
           if (compose.action === 'chat' && prepared.summary) {
             applySummary(prepared.summary)

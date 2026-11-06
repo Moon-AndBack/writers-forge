@@ -14,6 +14,7 @@ import SectionCard from './SectionCard'
 import SettingRow from './SettingRow'
 import AiApiKeyRow from './AiApiKeyRow'
 import AiCatalogRow from './AiCatalogRow'
+import AiCompressionRow from './AiCompressionRow'
 import AiModelRow from './AiModelRow'
 import AiTestRow from './AiTestRow'
 import { UNKNOWN_ERROR, type TestState } from './aiSectionSupport'
@@ -191,6 +192,8 @@ export default function AiSection() {
       />
 
       <AiCatalogRow />
+
+      <AiCompressionRow />
 
       <AiApiKeyRow
         value={apiKey}

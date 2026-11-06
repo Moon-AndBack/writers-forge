@@ -280,6 +280,13 @@ export interface PrepareOutgoingInput {
   limitTokens: number
   provider: AiProviderId
   model: string
+  /**
+   * 是否允许生成新摘要（设置页「启用自动压缩」，缺省 true）。
+   *
+   * 关闭时不发摘要补全：达到 80% 直接按 50% 目标截断（复用已存摘要，免费），
+   * 超预算仍拒绝——不阻断用户，只是不再额外花一次请求。
+   */
+  compress?: boolean
   signal?: AbortSignal
   /** 摘要生成成功后落库；返回 null 表示未能落库（内存摘要仍可用于本次发送）。 */
   persistSummary: (covered: number, text: string) => Promise<SavedSummary | null>
@@ -296,9 +303,10 @@ function countRounds(messages: readonly { role: string }[]): number {
  * 判定链：
  * 1. system + 本轮 user 本身超窗口 → 失败（携带正文超预算即命中此条，不截断正文）；
  * 2. 总占用 < 80% → 原样发送；
- * 3. 已有摘要 → 复用，按 50% 目标从尾部回溯保留 recent（不重复摘要）；
- * 4. 无摘要 → 先保留 recent，把 older 摘要成 system 行；失败则退化为纯截断；
- * 5. 最终条数 ≤ 200 且 ≤ 窗口，否则失败。
+ * 3. 关闭自动压缩（`compress === false`）→ 复用已存摘要 + 纯截断，不发摘要请求；
+ * 4. 已有摘要 → 复用，按 50% 目标从尾部回溯保留 recent（不重复摘要）；
+ * 5. 无摘要 → 先保留 recent，把 older 摘要成 system 行；失败则退化为纯截断；
+ * 6. 最终条数 ≤ 200 且 ≤ 窗口，否则失败。
  */
 export async function prepareOutgoingMessages(input: PrepareOutgoingInput): Promise<CompactResult> {
   const { composed, history, limitTokens, summary, provider, model, signal } = input
@@ -344,7 +352,15 @@ export async function prepareOutgoingMessages(input: PrepareOutgoingInput): Prom
     return finish(full, summary, 'truncated')
   }
 
-  /* ② 已有摘要：复用，不重复摘要；只按目标比例裁 recent。 */
+  /* ② 关闭自动压缩：不复用摘要请求，直接按目标比例纯截断（已存摘要仍免费复用）。 */
+  if (input.compress === false) {
+    const summaryCost = summary ? 4 + estimateTokens(summary.content) : 0
+    const budget = Math.max(0, limitTokens * TARGET_RATIO - fixedTokens - summaryCost)
+    const recent = selectRecent(uncovered, budget, MAX_OUTGOING_MESSAGES - 2)
+    return finish(assemble(summary?.content ?? '', recent), summary, 'truncated')
+  }
+
+  /* ③ 已有摘要：复用，不重复摘要；只按目标比例裁 recent。 */
   if (summary) {
     const summaryCost = 4 + estimateTokens(summary.content)
     const budget = Math.max(0, limitTokens * TARGET_RATIO - fixedTokens - summaryCost)
@@ -352,7 +368,7 @@ export async function prepareOutgoingMessages(input: PrepareOutgoingInput): Prom
     return finish(assemble(summary.content, recent), summary, 'truncated')
   }
 
-  /* ③ 首次压缩：预留摘要空间，保留 recent，把 older 压成摘要。 */
+  /* ④ 首次压缩：预留摘要空间，保留 recent，把 older 压成摘要。 */
   const reserve = Math.min(SUMMARY_RESERVE_TOKENS, Math.floor(limitTokens * 0.15))
   const budget = Math.max(0, limitTokens * TARGET_RATIO - fixedTokens - reserve)
   const recent = selectRecent(uncovered, budget, MAX_OUTGOING_MESSAGES - 2)

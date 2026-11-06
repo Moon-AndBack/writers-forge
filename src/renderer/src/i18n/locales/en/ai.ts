@@ -47,6 +47,26 @@ const ai = {
     idle: 'The catalog has not been fetched yet; the built-in baseline will be used',
     failed: 'Failed to refresh the model catalog: {{message}}'
   },
+  compression: {
+    enabled: {
+      label: 'Enable automatic compaction',
+      description:
+        'When the context reaches 80% of the window, earlier conversation is compacted into a summary before sending; when disabled, usage is still shown and earlier turns are still omitted by budget, but no summary is generated (no extra quota used)'
+    },
+    window: {
+      label: 'Custom context window',
+      description:
+        'Set the window manually for models missing from the catalog (saved per model name, 1024–10000000 tokens); the usage meter and compaction threshold update immediately after saving',
+      modelPlaceholder: 'Model ID',
+      tokensPlaceholder: 'tokens',
+      save: 'Save',
+      remove: 'Delete',
+      empty: 'No custom model windows yet',
+      modelRequired: 'Enter a model ID first',
+      invalidTokens: 'The window must be an integer between 1024 and 10000000',
+      saveFailed: 'Save failed, please retry'
+    }
+  },
   apiKey: {
     label: 'API Key',
     description: 'The key is encrypted by system secure storage and saved locally',
@@ -128,6 +148,7 @@ const ai = {
       percent: '{{ratio}}%',
       unknownModel: 'Unknown model; estimating with {{tokens}}',
       matchedFrom: 'Matched from {{id}}',
+      calibrated: 'Calibrated against the latest actual usage',
       compressing: 'Organizing the context…',
       overBudget: 'This conversation is too long: about {{used}} / {{limit}} (context window)',
       overBudgetHint:

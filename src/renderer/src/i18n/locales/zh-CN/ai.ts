@@ -47,6 +47,26 @@ const ai = {
     idle: '尚未获取目录，将使用内置基线',
     failed: '刷新模型目录失败：{{message}}'
   },
+  compression: {
+    enabled: {
+      label: '启用自动压缩',
+      description:
+        '达到上下文窗口 80% 时，发送前自动把较早对话压成摘要；关闭后仍显示占用、仍按预算省略较早对话，但不再生成摘要（不额外消耗额度）'
+    },
+    window: {
+      label: '自定义上下文窗口',
+      description:
+        '模型目录匹配不到的模型可手动指定窗口（按模型名保存，范围 1024–10000000 tokens）；保存后占用条与压缩阈值立即按新窗口计算',
+      modelPlaceholder: '模型 ID',
+      tokensPlaceholder: 'tokens',
+      save: '保存',
+      remove: '删除',
+      empty: '尚未自定义任何模型窗口',
+      modelRequired: '请先填写模型 ID',
+      invalidTokens: '窗口需为 1024–10000000 之间的整数',
+      saveFailed: '保存失败，请重试'
+    }
+  },
   apiKey: {
     label: 'API Key',
     description: '密钥经系统安全存储加密后保存在本地',
@@ -127,6 +147,7 @@ const ai = {
       percent: '{{ratio}}%',
       unknownModel: '未知模型 · 按 {{tokens}} 估算',
       matchedFrom: '匹配自 {{id}}',
+      calibrated: '已按最近一次真实用量校准',
       compressing: '正在整理上下文…',
       overBudget: '本期对话过长：约 {{used}} / {{limit}}（上下文窗口）',
       overBudgetHint: '建议换用窗口更大的模型、手动填写模型窗口，或减少携带的正文。'

@@ -11,10 +11,26 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v114'
+export const CHAPTER_SEED_VERSION = 'v115'
 
 /**
- * 最近版本变更日志（v114；更早版本见上述历史文件）。
+ * 最近版本变更日志（v115；更早版本见上述历史文件）。
+ *
+ * `v115`（上下文估算校准 + 可配置批）：右栏 AI 的上下文估算增加「真实 usage 校准」——
+ * `useAiConversation.send` 在 `prepared.messages` 组装完成后记录
+ * `estimateMessages` 估算值到 `ActiveRequest.estimatedPromptTokens`（同时快照
+ * `calibrationKey = provider/model`），`handleDone` 用 `usage.prompt_tokens` 与估算求比值，
+ * 经 `contextBudget.recordCalibration` 存入模块级 Map：比值 clamp 到 `[0.5, 3.0]` 后按
+ * EMA（新 0.3 / 旧 0.7，首次直接取观测）平滑，仅估算与真实都 > 0 时记录；`useContextUsage`
+ * 展示时按模型名取同模型系数均值乘到 `usedTokens`（`ContextUsage.calibrated`），占用条行下
+ * 标注「已按最近一次真实用量校准」。发送决策（80% 压缩 / 超预算拒绝）仍用原始估算，避免
+ * 系数漂移导致阈值抖动。设置页「AI 助手」新增「上下文压缩」区：①「启用自动压缩」开关
+ * （settings KV `ai:compression:enabled`，默认 true；因 `ai:` 前缀对 `settings:*` 全屏蔽，
+ * 新增专用 IPC `ai:compression:get|set`，**不改表结构**）——关闭后 `prepareOutgoingMessages`
+ * 跳过摘要补全、按 50% 目标纯截断（已存摘要仍复用），超预算仍拒绝；②「自定义上下文窗口」
+ * 手填模型 ID + tokens（新增只读通道 `ai:catalog:overrides:list` 列出已保存覆写，写入仍走
+ * `ai:catalog:override`，经 `overrideContextLimit` 失效渲染层窗口缓存），已保存项可逐条删除。
+ * 教学文案同步（设置「AI 助手」项数与「上下文压缩」说明、大纲新增「上下文压缩与模型窗口」条）。
  *
  * `v114`（上下文摘要压缩批）：右栏 AI 在发送前按「模型上下文窗口」做预算判定——
  * `estimateMessages([system, 本轮 user])` 本身超窗口则拒绝发送（不截断携带正文）；

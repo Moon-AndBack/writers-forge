@@ -80,6 +80,10 @@ export interface ActiveRequest {
   content: string
   /** 发起时快照的会话 id（落库时按它，不受切章影响）。 */
   sessionId: number | null
+  /** 发送前对 `prepared.messages` 的 token 估算（校准分母；0 = 尚未计算，不参与校准）。 */
+  estimatedPromptTokens: number
+  /** 校准键 `provider/model`（发送前回填；空串 = 未知，不参与校准）。 */
+  calibrationKey: string
   /** 是否已落库（done / 停止 / 出错可能先后触达，靠它保证只写一次）。 */
   persisted?: boolean
 }

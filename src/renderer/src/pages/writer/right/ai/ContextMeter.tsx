@@ -66,6 +66,9 @@ export function ContextMeter({ usage }: { usage: ContextUsage }): ReactElement {
           {t('panel.context.matchedFrom', { id: usage.matchedId })}
         </div>
       ) : null}
+      {usage.calibrated ? (
+        <div className="ai-context__note">{t('panel.context.calibrated')}</div>
+      ) : null}
     </div>
   )
 }

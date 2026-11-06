@@ -152,6 +152,18 @@ export interface AiApi {
     limit: (model: string) => Promise<ResolvedLimit>
     /** `tokens === null` 表示清除覆写；入参非法返回 false。 */
     override: (model: string, tokens: number | null) => Promise<boolean>
+    /** 已保存的手填窗口覆写（键为 trim + 小写的模型名）。 */
+    overrides: () => Promise<Record<string, number>>
+  }
+  /**
+   * 上下文自动压缩开关（存储键 `ai:compression:enabled`，默认开启）。
+   *
+   * `ai:` 前缀的设置键对 `window.api.settings` 全屏蔽，故走 AI 域专用通道。
+   */
+  compression: {
+    get: () => Promise<boolean>
+    /** 写入成功返回 true；入参非布尔返回 false。 */
+    set: (enabled: boolean) => Promise<boolean>
   }
   /** 流式对话：start 立即返回，内容全部走 `onStream`。 */
   chat: {

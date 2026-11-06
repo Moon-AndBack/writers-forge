@@ -129,6 +129,51 @@
   gap: 8px;
 }
 
+/* 「上下文压缩」手填窗口：模型 ID + tokens + 保存，下方列出已保存覆写。
+   纵向块（不参与卡片 hover 动画，无位移 / 缩放，§8）。 */
+.ai-window {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 420px;
+}
+
+/* tokens 输入：比模型 ID 窄，给「保存」留位。 */
+.settings-row__control .settings-control--tokens {
+  width: 96px;
+}
+
+.ai-window__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-window__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.ai-window__model {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-window__tokens {
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}
+
 /* 控件下方 / 说明槽内的状态行（加载、成功、错误、提示）。 */
 .ai-status {
   display: block;

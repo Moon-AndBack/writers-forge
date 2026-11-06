@@ -2,7 +2,13 @@ import { ipcMain } from 'electron'
 import { DEFAULT_CONTEXT_WINDOW, resolveContextLimit } from '../ai/modelMatch'
 import type { ResolvedLimit } from '../ai/modelMatch'
 import { fetchCatalog } from '../ai/catalog'
-import { isCatalogStale, readCatalog, writeCatalog, writeOverride } from '../ai/catalogCache'
+import {
+  isCatalogStale,
+  readCatalog,
+  readOverrides,
+  writeCatalog,
+  writeOverride
+} from '../ai/catalogCache'
 import { toAiError } from '../ai/http'
 import type { AiCatalogMeta, AiError } from '../ai/types'
 import { logger } from '../logger'
@@ -12,9 +18,10 @@ import { MAX_ID_CHARS, isRecord, isTextWithin } from './aiValidate'
  * 模型上下文窗口目录 IPC（通道前缀 `ai:catalog:`）。
  *
  * 通道：
- * - ai:catalog:get      ({ mode?: 'cache' | 'refresh' }) → AiCatalogMeta
- * - ai:catalog:limit    ({ model })                      → ResolvedLimit
- * - ai:catalog:override ({ model, tokens: number | null }) → boolean
+ * - ai:catalog:get            ({ mode?: 'cache' | 'refresh' }) → AiCatalogMeta
+ * - ai:catalog:limit          ({ model })                      → ResolvedLimit
+ * - ai:catalog:override       ({ model, tokens: number | null }) → boolean
+ * - ai:catalog:overrides:list ()                                 → Record<model, tokens>
  *
  * 说明：`ai:` 前缀的 settings 键渲染层不可读写（见 `ipc/settings.ts`），
  * 因此目录能力必须走本组专用通道，不能借 `settings:*`。
@@ -145,4 +152,7 @@ export function registerAiCatalogIpc(): void {
     log.debug('ai:catalog:override 完成', { model, cleared: tokens === null, ok })
     return ok
   })
+
+  // 只读列出已保存的手填窗口（设置页「自定义上下文窗口」）。键为 trim + 小写的模型名。
+  ipcMain.handle('ai:catalog:overrides:list', () => readOverrides())
 }

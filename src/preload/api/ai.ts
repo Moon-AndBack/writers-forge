@@ -115,7 +115,12 @@ export const aiApi = {
   catalog: {
     get: (mode = 'cache') => ipcRenderer.invoke('ai:catalog:get', { mode }),
     limit: (model) => ipcRenderer.invoke('ai:catalog:limit', { model }),
-    override: (model, tokens) => ipcRenderer.invoke('ai:catalog:override', { model, tokens })
+    override: (model, tokens) => ipcRenderer.invoke('ai:catalog:override', { model, tokens }),
+    overrides: () => ipcRenderer.invoke('ai:catalog:overrides:list')
+  },
+  compression: {
+    get: () => ipcRenderer.invoke('ai:compression:get'),
+    set: (enabled) => ipcRenderer.invoke('ai:compression:set', enabled)
   },
   chat: {
     start: (input) => ipcRenderer.invoke('ai:chat:start', input),
