@@ -11,10 +11,32 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v103'
+export const CHAPTER_SEED_VERSION = 'v104'
 
 /**
- * 最近版本变更日志（v103；更早版本见上述历史文件）。
+ * 最近版本变更日志（v104；更早版本见上述历史文件）。
+ *
+ * `v104`（写作页全局快捷键批）：主进程已移除应用菜单（`Menu.setApplicationMenu(null)`），
+ * 菜单加速键不可用，新增渲染层全局快捷键 `useWriterShortcuts`（仅 `Writer` 挂载期间监听
+ * `window` 的 `keydown`）——`Ctrl/Cmd+S` 经 `useFlushAllModules.flushModule` 保存**当前模块**
+ * （章节 / 大纲正文、剧情 / 设定档案 / 伏笔 / 灵感草稿、时间线起点描述，复用既有落盘入口，
+ * 并 `preventDefault()` 阻止「保存网页」）；`Ctrl/Cmd+F` 仅章节 / 大纲响应，复用标题栏
+ * `data-search-toggle` 搜索按钮打开既有查找替换浮窗（浮窗已开时聚焦搜索框）；`Ctrl/Cmd+1..9`
+ * 按 `WRITER_MODULES` 顺序切换活动栏前 9 个模块（走 `useWriterModuleSwitch.handleSwitch`，
+ * 保留未保存草稿守卫；弹窗打开时不响应）。刻意**不接管 Escape**，弹窗 / 搜索浮窗 / 内联改名
+ * 的既有 Esc 处理不变；只匹配单键 `s` / `f` / `1..9` 且要求无 Alt / Shift，不拦截
+ * `Ctrl+C/V/X/Z/Y/A` 与 `Ctrl+Shift+*`，`event.isComposing` 时直接忽略（IME 组字安全）。
+ * 教学文案（卷二「章节写作」的「写正文」章新增「全局快捷键」节、大纲「章节写作」分组新增
+ * 「全局快捷键」条目）同步，键提升让老库也能看到新文案。
+ *
+ * 同批（三栏宽度持久化批）：写作页左右两栏宽度改为跨重启保留——`WorkspaceLayout` 经
+ * `useWorkspaceWidths` 在拖拽结束 / 双击复位后 300ms 防抖写入 settings 键
+ * `workspaceWidths`（`{ left, right }` JSON），启动挂载时读回、逐栏钳制到
+ * 180–480 / 450–850px 后应用，读取失败或非法值回落 300 / 600；窗口变窄只收缩渲染值
+ * （`fitWidthsToViewport`），不覆盖已保存偏好，宽回来后自动还原；关闭 / 卸窗前补写挂起终值。
+ * 上下分栏（章节右栏「大纲」页签的卷纲 / 细纲）比例仍是组件内 state，不落库，只在本次
+ * 运行内保留。教学文案（卷四「实体与面板」的「右栏与界面微调」分隔条说明）同步，键提升
+ * 让老库也能看到新文案。
  *
  * `v103`（删除时间线级联缺陷修复批 + 设置页接线批）：左栏时间线删除新增「剧情线引用」拦截——该时间线下
  * 仍有剧情线时删除按钮禁用，悬停提示「该时间线下还有 N 条剧情线，请先删除或迁移」

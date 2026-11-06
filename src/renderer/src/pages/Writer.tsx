@@ -29,6 +29,7 @@ import { useInspirationBundle } from './writer/inspiration/useInspirationBundle'
 import { usePlotTimelineBundle } from './writer/usePlotTimelineBundle'
 import { useFlushAllModules } from './writer/useFlushAllModules'
 import { useWriterModuleSwitch } from './writer/useWriterModuleSwitch'
+import { useWriterShortcuts } from './writer/useWriterShortcuts'
 import '../styles/writer.css'
 
 export interface WriterProps {
@@ -327,6 +328,14 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
     onSaveFailed: () => showSaveFailed(tCommon('saveFailed'))
   })
   useRegisterUnsavedSwitchGuard(switchGuard.handleSwitch)
+
+  // 写作页全局快捷键（Ctrl+S 保存当前模块 / Ctrl+F 搜索 · 仅章节 · 大纲 / Ctrl+1..9 切模块）。
+  // 应用菜单已移除，菜单加速键不可用，快捷键在此注册；Esc 不接管，仍由弹窗 / 搜索浮窗自理。
+  useWriterShortcuts({
+    active,
+    switchModule: switchGuard.handleSwitch,
+    saveModule: flushModule
+  })
 
   return (
     <section className="app-view writer-view is-active" data-view="writer">

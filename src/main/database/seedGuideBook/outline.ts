@@ -92,6 +92,15 @@ export const GUIDE_OUTLINE: readonly SeedOutlineGroup[] = [
           seedHeading('要点'),
           seedParagraph('章节搜索支持「本章 / 全书」两种范围；替换后正打开的章节自动重载。')
         ])
+      },
+      {
+        title: '全局快捷键',
+        doc: seedOutlineDoc([
+          seedHeading('要点'),
+          seedParagraph(
+            'Ctrl+S 立即保存当前模块（章节 / 大纲正文、剧情 / 设定档案 / 伏笔 / 灵感草稿、时间线起点描述）；Ctrl+F 在章节 / 大纲打开查找替换浮窗，其它模块不响应；Ctrl+1 ~ Ctrl+9 按活动栏顺序切换模块（伏笔 / 灵感没有数字键，当前模块有未保存草稿时先弹保存 / 放弃确认）。Esc 仍由各弹窗与搜索浮窗自行处理。'
+          )
+        ])
       }
     ]
   },

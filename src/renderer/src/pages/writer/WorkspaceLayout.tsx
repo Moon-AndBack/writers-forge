@@ -1,19 +1,19 @@
-import { useState } from 'react'
+import { useRef } from 'react'
 import type { CSSProperties, ReactNode, RefObject } from 'react'
+import { useRightPaneVisibility } from '../../shell/rightPaneVisibility'
+import { useWorkspaceWidths } from '../../shell/useWorkspaceWidths'
+import {
+  RIGHT_DEFAULT,
+  RIGHT_MAX,
+  RIGHT_MIN,
+  SIDE_DEFAULT,
+  SIDE_MAX,
+  SIDE_MIN
+} from '../../shell/workspaceWidths'
 import Splitter from './Splitter'
 
-/* 分隔条 clamp 边界与固定默认宽（宽度仅在本次运行内保留，不落库）。
-   宽度常量集中在本区块，writer.css 的 px 兜底与之同名同值。 */
-const SIDE_MIN = 180
-const SIDE_MAX = 480
-const SIDE_DEFAULT = 300
-const RIGHT_MIN = 450
-const RIGHT_MAX = 850
-/* 右栏默认 600px。断点 ≤1240px 隐藏右栏，故可见最小视口 1241px：悬浮活动栏时
-   中栏约 297px；固定活动栏时仅约 253px，低于 .editor-pane 的 280px 下限，超出部分
-   由 .app-viewport 的 overflow 裁掉（视口 ≥1268px 才完全容纳）。窗口缩放时左右两栏
-   保持像素宽，多出 / 少掉的宽度由中栏（flex: 1）承担。 */
-const RIGHT_DEFAULT = 600
+/* 分隔条 clamp 边界与默认宽集中在 `shell/workspaceWidths`（writer.css 的 px 兜底
+   与之同名同值）：宽度经 `useWorkspaceWidths` 落库到 settings，重启后恢复。 */
 
 export interface WorkspaceLayoutProps {
   /**
@@ -46,8 +46,9 @@ export interface WorkspaceLayoutProps {
  * 真源），`.sidepane` / `.rightpane` 以 `var(--wf-side-width)` / `var(--wf-right-width)`
  * 消费——宽度变更无需重渲染三栏，且不绕过 React（无命令式 DOM 写入）。
  *
- * 初始宽度：左栏固定 300px、右栏固定 600px（中栏 `flex: 1` 自适应），窗口缩放不重算；
- * 用户拖拽后自由，双击分隔条复位到默认值。
+ * 初始宽度：左栏 300px、右栏 600px（中栏 `flex: 1` 自适应）。用户拖拽后经
+ * `useWorkspaceWidths` 防抖落库，下次启动恢复；双击分隔条复位到默认值。
+ * 视口过窄时两栏按比例收缩（只影响渲染值，不覆盖已保存偏好）。
  *
  * 栏内容不在本组件内创建：三栏的 props / 数据全部由页面持有，本组件只负责布局与宽度。
  */
@@ -60,8 +61,14 @@ export function WorkspaceLayout({
   sideRef,
   rightRef
 }: WorkspaceLayoutProps) {
-  const [sideWidth, setSideWidth] = useState(SIDE_DEFAULT)
-  const [rightWidth, setRightWidth] = useState(RIGHT_DEFAULT)
+  const workspaceRef = useRef<HTMLDivElement>(null)
+  // 窄窗断点（≤1240px）下 writer.css 强制隐藏右栏：视口预算按「实际不可见」计算。
+  const { narrow } = useRightPaneVisibility()
+  const { sideWidth, rightWidth, setSideWidth, setRightWidth } = useWorkspaceWidths({
+    containerRef: workspaceRef,
+    leftHidden,
+    rightHidden: rightHidden || narrow
+  })
 
   const style = {
     '--wf-side-width': `${sideWidth}px`,
@@ -69,7 +76,7 @@ export function WorkspaceLayout({
   } as CSSProperties
 
   return (
-    <div className="workspace" style={style}>
+    <div className="workspace" ref={workspaceRef} style={style}>
       {left}
 
       <Splitter
