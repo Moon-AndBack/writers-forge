@@ -14,15 +14,6 @@
   color: var(--text-mute);
 }
 
-/* ============================================================
-   独立时间线只读首段（复用纵线 / 圆点 / 卡片，仅 is-origin 区分）
-   ============================================================ */
-/* 元年说明卡不可点击：壳的 hover / 选中光晕由 `.wf-card--halo` 统一提供，
-   此处只把光标改回默认箭头（卡片视觉规格与其余场景卡一致）。 */
-.timeline-main .plot-row.is-origin .plot-scene-card.is-origin {
-  cursor: default;
-}
-
 /* 中栏内容整体右移：给独立时间线加左侧内衬（纵线随之右移，与圆点保持对齐）。
    注意 `.plot-timeline::before` 为绝对定位、以 padding box 为基准，故其 left 需叠加内衬宽度。 */
 .timeline-main {

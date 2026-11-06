@@ -61,28 +61,38 @@ export interface TimelineRightPanelProps {
   onUpdateDescription: (description: string) => Promise<boolean>
   /** 关闭前统一 flush 入口（起点卡挂载时写入；页面层聚合调用）。 */
   flushRef?: RefObject<(() => Promise<void>) | null>
-  /** 时间线选中场景（只读详情）；null = 未选中（渲染空态）。 */
+  /** 时间线选中场景（只读详情）；null = 未选中场景（originSelected 为 false 时渲染空态）。 */
   scene: PlotSceneRow | null
+  /** 是否选中元年卡：true = 右栏只渲染起点编辑卡。 */
+  originSelected?: boolean
 }
 
-/** 独立时间线右栏内容：起点卡（编辑起点描述 + 保存）+ 选中场景的只读详情卡。 */
+/**
+ * 独立时间线右栏内容：按选中项**只渲染一张卡**——选中起点时渲染起点编辑卡；
+ * 选中场景时渲染该场景的只读详情卡；两者都没选（场景已删 / 显式清空）时由
+ * `TimelineSceneDetail` 的 null 分支渲染现有空态。
+ */
 export function TimelineRightPanel({
   bookId,
   activeTimelineId,
   onUpdateDescription,
   flushRef,
-  scene
+  scene,
+  originSelected = false
 }: TimelineRightPanelProps): ReactElement {
   return (
     <div className="rp-body rp-body--no-head">
-      <TimelineOriginPanel
-        key={`${bookId ?? ''}:${activeTimelineId ?? ''}`}
-        bookId={bookId}
-        activeTimelineId={activeTimelineId}
-        onSaveDescription={onUpdateDescription}
-        flushRef={flushRef}
-      />
-      <TimelineSceneDetail scene={scene} />
+      {originSelected ? (
+        <TimelineOriginPanel
+          key={`${bookId ?? ''}:${activeTimelineId ?? ''}`}
+          bookId={bookId}
+          activeTimelineId={activeTimelineId}
+          onSaveDescription={onUpdateDescription}
+          flushRef={flushRef}
+        />
+      ) : (
+        <TimelineSceneDetail scene={scene} />
+      )}
     </div>
   )
 }

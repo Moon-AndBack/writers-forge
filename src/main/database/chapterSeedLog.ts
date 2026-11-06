@@ -11,10 +11,19 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v106'
+export const CHAPTER_SEED_VERSION = 'v107'
 
 /**
- * 最近版本变更日志（v106；更早版本见上述历史文件）。
+ * 最近版本变更日志（v107；更早版本见上述历史文件）。
+ *
+ * `v107`（时间线元年卡可选批）：独立时间线的选中态由「仅场景 id」升级为
+ * `'origin' | number | null`（`usePlotTimelineBundle`，默认 `'origin'`），元年卡与场景卡
+ * 同款可点击（`active` + `onClick`，`readonly` 保留——它只控制光标不控制可点性）；右栏
+ * `TimelineRightPanel` 从「恒定起点卡 + 场景详情」改为按选中项**只渲染一张卡**（起点 →
+ * 起点编辑卡；场景 → 只读详情；都没选 → 既有空态），未选中起点时起点卡不挂载（flushRef
+ * 为空操作为 null）。切换时间线（`activeTimelineId` 变化）时选中项重置回 `'origin'`；
+ * 切模块不重置。CSS 移除元年卡 `cursor: default` 覆写（与其余只读卡一致）。教学文案同步
+ * （卷三「主时间线：只读聚合」节、大纲「主时间线只读聚合」条目）。
  *
  * `v106`（伏笔搜索与筛选批）：伏笔模块此前只能滚动找，本批把活动栏筛选浮层
  * （`shell/ActivityBarFilterPopover`，`FilterableModule` 增加 `foreshadow`）扩到伏笔域——

@@ -200,11 +200,12 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
      自动展开）收进 usePlotTimelineBundle，与 dossier 的 useDossierBundle 同款透传包。 ---------- */
   // 解构沿用原名，三栏 props 与行为不变。
   const {
-    timelineSelectedSceneId: selectedTimelineSceneId,
+    timelineOriginSelected,
     timelineScene,
     onSelectPlotScene: handleSelectPlotScene,
+    onSelectTimelineOrigin: handleSelectTimelineOrigin,
     onSelectTimelineScene: handleSelectTimelineScene
-  } = usePlotTimelineBundle(plot, rightPaneHidden, showRightPane)
+  } = usePlotTimelineBundle(plot, timeline.activeId, rightPaneHidden, showRightPane)
 
   /* 时间线切换 / 新建是会改变剧情线过滤集的「跨域切换」：本 hook 之外改 `activeId`
      会让右栏表单按 `key={scene.id}` 重挂、草稿静默丢失，因此统一经剧情守卫包一层
@@ -285,7 +286,7 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
      失败不阻断其它，整体恒 resolve（见 `useFlushAllModules`）。 */
   const chapterFlushRef = useRef<(() => Promise<void>) | null>(null)
   const outlineFlushRef = useRef<(() => Promise<void>) | null>(null)
-  // 时间线起点描述：右栏起点卡挂载时写入补存入口（关窗前统一 flush）。
+  // 时间线起点描述：右栏选中起点（起点卡挂载）时写入补存入口（关窗前统一 flush）。
   const timelineFlushRef = useRef<(() => Promise<void>) | null>(null)
   const { flushAll, flushModule } = useFlushAllModules({
     chapterFlushRef,
@@ -419,7 +420,8 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
               onUpdatePlotScene={plot.updateScene}
               onDeletePlotScene={plot.deleteScene}
               onCreatePlotLine={plot.createLine}
-              timelineSelectedSceneId={selectedTimelineSceneId}
+              timelineOriginSelected={timelineOriginSelected}
+              onSelectTimelineOrigin={handleSelectTimelineOrigin}
               onSelectTimelineScene={handleSelectTimelineScene}
               timelineOrigin={timeline.origin}
               timelineDescription={timeline.description}
@@ -460,6 +462,7 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
               activePlotLineId={plot.activeLineId}
               timelines={timeline.list}
               timelineScene={timelineScene}
+              timelineOriginSelected={timelineOriginSelected}
               activeTimelineId={timeline.activeId}
               onUpdateTimelineDescription={timeline.updateDescription}
               timelineFlushRef={timelineFlushRef}

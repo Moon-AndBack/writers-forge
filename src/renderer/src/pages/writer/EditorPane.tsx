@@ -101,8 +101,10 @@ export interface EditorPaneProps {
   onDeletePlotScene?: (id: number) => void
   /** 新建剧情线（三字段弹窗提交；剧情视图标题栏入口落库用）。 */
   onCreatePlotLine?: (name?: string, options?: CreatePlotLineOptions) => Promise<PlotLineRow | null>
-  /** 时间线选中场景 id（页面层持有，与右栏只读详情共享）。 */
-  timelineSelectedSceneId?: number | null
+  /** 是否选中时间线元年卡（页面层持有，与右栏起点编辑共享）。 */
+  timelineOriginSelected?: boolean
+  /** 时间线元年卡选中回调（页面层包装：选中 + 隐藏时自动展开右栏）。 */
+  onSelectTimelineOrigin?: () => void
   /** 时间线场景选中回调（页面层包装：选中 + 隐藏时自动展开右栏）。 */
   onSelectTimelineScene?: (id: number) => void
   /** 当前选中时间线的 origin（中栏显示）。 */
@@ -167,7 +169,8 @@ function EditorPaneComponent({
   onUpdatePlotScene,
   onDeletePlotScene,
   onCreatePlotLine,
-  timelineSelectedSceneId = null,
+  timelineOriginSelected = false,
+  onSelectTimelineOrigin,
   onSelectTimelineScene,
   timelineOrigin,
   timelineDescription,
@@ -374,7 +377,8 @@ function EditorPaneComponent({
         />
       </div>
 
-      {/* 独立时间线视图：一条主时间线只读线（起点默认元年，按书键回读；卡选中进右栏只读详情）。 */}
+      {/* 独立时间线视图：一条主时间线只读线（起点默认元年，按书键回读）。
+          元年卡可点选起点（右栏切到起点编辑卡）；场景卡选中进右栏只读详情。 */}
       <div className={`ep-view${module === 'timeline' ? ' is-active' : ''}`} data-view="timeline">
         <TimelineView
           bookId={bookId}
@@ -382,7 +386,8 @@ function EditorPaneComponent({
           description={timelineDescription}
           activeTimelineId={activeTimelineId}
           onCreateTimeline={onCreateTimeline}
-          selectedSceneId={timelineSelectedSceneId}
+          originSelected={timelineOriginSelected}
+          onSelectOrigin={onSelectTimelineOrigin}
           onSelectScene={onSelectTimelineScene}
         />
       </div>

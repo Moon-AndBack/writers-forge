@@ -35,8 +35,12 @@ export interface TimelineViewProps {
   onCreateTimeline?: (name: string, description?: string) => void | Promise<unknown>
   /** 当前选中场景 id（页面层持有，与右栏只读详情共享；null = 未选中）。 */
   selectedSceneId?: number | null
+  /** 是否选中元年卡（页面层持有，与右栏起点编辑共享）。 */
+  originSelected?: boolean
   /** 场景选中回调（页面层包装：选中 + 隐藏时自动展开右栏）。 */
   onSelectScene?: (id: number) => void
+  /** 元年卡选中回调（页面层包装：选中 + 隐藏时自动展开右栏）。 */
+  onSelectOrigin?: () => void
 }
 
 /**
@@ -46,7 +50,7 @@ export interface TimelineViewProps {
  *   `plot-col-node` / `plot-dot` / `plot-col-content`），卡片统一走通用壳
  *   `EntityStyleCard`（与剧情 / 伏笔 / 设定卡同一套骨架与视觉规格），
  *   不新增全局 token；独立 `is-origin` 类区分首段；
- * - 首段：起点时间 + 元年说明卡 + 人物无；不渲染「＋」缝、不绑定选中；
+ * - 首段：起点时间 + 元年说明卡 + 人物无；不渲染「＋」缝，元年卡可点选起点；
  * - 次段：全书剧情经 `api.plot.listLines/listScenes` 按年分组跨线聚合
  *  （`groupScenesByYear`，同年一排多卡，未定年组沉底），卡可点击选中
  *  （选中态落卡自身 `is-active`，`is-readonly` 保留；选中详情在右栏只读展示，
@@ -62,7 +66,9 @@ export default function TimelineView({
   activeTimelineId = null,
   onCreateTimeline,
   selectedSceneId = null,
-  onSelectScene
+  originSelected = false,
+  onSelectScene,
+  onSelectOrigin
 }: TimelineViewProps) {
   const { t } = useTranslation('timeline')
   const { t: tPlot } = useTranslation('plot')
@@ -220,8 +226,9 @@ export default function TimelineView({
                     {group.absoluteYear === 0 ? (
                       <EntityStyleCard
                         className="plot-scene-card is-origin"
+                        active={originSelected}
                         readonly
-                        cardProps={{ title: originDisplay }}
+                        cardProps={{ title: originDisplay, onClick: () => onSelectOrigin?.() }}
                         head={
                           <h3 className="wf-entity-card__title plot-scene-title">
                             {t('originTitle')}

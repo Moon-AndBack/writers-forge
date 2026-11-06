@@ -76,6 +76,7 @@ export function RightPane({
   plotDraftResetKey = 0,
   onResolvePlotSwitch,
   timelineScene = null,
+  timelineOriginSelected = false,
   activeTimelineId = null,
   onUpdateTimelineDescription,
   timelineFlushRef,
@@ -132,8 +133,10 @@ export function RightPane({
    * 返回是否已切换：保存失败为 `false`（不切换、脏态保留）。
    */
   onResolvePlotSwitch?: (save: boolean) => void | Promise<boolean>
-  /** 时间线选中场景（只读详情）；null = 未选中（渲染空态）。 */
+  /** 时间线选中场景（只读详情）；null = 未选中场景。 */
   timelineScene?: PlotSceneRow | null
+  /** 是否选中时间线元年卡（true = 右栏只显示起点编辑卡；false 时按 `timelineScene` 显示详情 / 空态）。 */
+  timelineOriginSelected?: boolean
   /** 当前选中时间线 id（右栏 origin 面板跟随切换）。 */
   activeTimelineId?: string | null
   /** 写回当前选中时间线的起点描述（右栏「起点」卡保存）。 */
@@ -256,9 +259,9 @@ export function RightPane({
         />
       </div>
 
-      {/* 独立时间线：不设面板头（模块标题由中栏承载）——`.rp-body--no-head` 补顶部内衬，
-          上为当前选中时间线的「起点」卡（可编辑起点描述），下为选中场景的只读详情卡
-          （样式见 writer-timeline.css）。 */}
+      {/* 独立时间线：不设面板头（模块标题由中栏承载）——`.rp-body--no-head` 补顶部内衬。
+          按选中项只显示一张卡：选中起点 →「起点」编辑卡；选中场景 → 该场景只读详情；
+          都没选 → 现有空态（样式见 writer-timeline.css）。 */}
       <div className={`rp-view${module === 'timeline' ? ' is-active' : ''}`} data-view="timeline">
         <TimelineRightPanel
           bookId={bookId}
@@ -266,6 +269,7 @@ export function RightPane({
           onUpdateDescription={onUpdateTimelineDescription}
           flushRef={timelineFlushRef}
           scene={timelineScene}
+          originSelected={timelineOriginSelected}
         />
       </div>
 
