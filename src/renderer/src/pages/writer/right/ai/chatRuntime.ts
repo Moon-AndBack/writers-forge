@@ -46,10 +46,12 @@ export interface ActiveRequest {
   requestId: string
   /** 本次回复的本地消息 id（delta 追加 / done 定稿的目标）。 */
   assistantId: string
-  /** 已累计的完整回复（done 时落库）。 */
+  /** 已累计的完整回复（done / 中止 / 出错时落库）。 */
   content: string
-  /** 发起时快照的会话 id（done 时按它落库，不受切章影响）。 */
+  /** 发起时快照的会话 id（落库时按它，不受切章影响）。 */
   sessionId: number | null
+  /** 是否已落库（done / 停止 / 出错可能先后触达，靠它保证只写一次）。 */
+  persisted?: boolean
 }
 
 /** 本地 id 序号（randomUUID 不可用时兜底）。 */
@@ -74,7 +76,7 @@ export function createLocalId(prefix: string): string {
 /**
  * 追加消息落库（静默失败）。
  *
- * 用户消息在发送时写、助手完整回复在 `done` 后写；用户中止 / 切会话 / 切章时，
+ * 用户消息在发送时写、助手完整回复在 `done` 后写；用户中止 / 切会话 / 切章 / 上游报错时，
  * 已生成的半截回复也在此落库（见 `persistAssistantPartial`），写入失败只记日志。
  */
 export async function appendMessage(
@@ -98,14 +100,27 @@ export async function appendMessage(
 }
 
 /**
- * 落库「中止时的半截回复」。
+ * 落库「未正常收尾的半截回复」。
  *
  * 用户点「停止」、切换会话 / 章节、关闭或卸载面板时，流式内容已生成的部分不再
- * 静默丢弃：有会话归属且正文非空就写一条 assistant 消息（与 `done` 落库同口径）。
+ * 静默丢弃；上游报错（`handleError`）也走这里，只是额外带上中断说明后缀，
+ * 让重新载入后的消息仍看得出「这条回复没走完」。有会话归属且正文非空才写。
+ *
+ * `persisted` 标记保证同一条回复只写一次：例如用户先点停止、随后迟到的事件 / 启动
+ * 异常又走到失败分支时，不会重复落库。
  */
-export function persistAssistantPartial(request: ActiveRequest): void {
+export function persistAssistantPartial(
+  request: ActiveRequest,
+  options?: { usage?: AiUsage; suffix?: string }
+): void {
+  if (request.persisted === true) return
   if (request.sessionId === null || request.content.trim() === '') return
-  void appendMessage(request.sessionId, 'assistant', request.content)
+  request.persisted = true
+  const content =
+    options?.suffix !== undefined && options.suffix !== ''
+      ? `${request.content}${options.suffix}`
+      : request.content
+  void appendMessage(request.sessionId, 'assistant', content, options?.usage)
 }
 
 /**

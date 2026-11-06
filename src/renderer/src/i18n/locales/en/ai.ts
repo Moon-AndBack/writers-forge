@@ -79,6 +79,9 @@ const ai = {
       'Access denied for this model (region restriction or insufficient account permissions); switch models or check your account permissions',
     insufficient_quota: 'Insufficient balance in your provider account; please top up and retry'
   },
+  message: {
+    interrupted: 'This reply was interrupted by an error'
+  },
   panel: {
     model: {
       label: 'Model',

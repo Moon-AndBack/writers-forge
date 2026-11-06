@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type {
   AiChatMessage,
   AiError,
@@ -41,6 +42,7 @@ export function useAiConversation(input: {
   onSessionCreated?: (id: number) => void
 }): AiConversationState {
   const { bookId, chapterId, active, model, sessionId, onSessionCreated } = input
+  const { t } = useTranslation('ai')
 
   const [messages, setMessages] = useState<AiConversationMessage[]>([])
   const [generating, setGenerating] = useState(false)
@@ -65,6 +67,17 @@ export function useAiConversation(input: {
   useEffect(() => {
     onSessionCreatedRef.current = onSessionCreated
   }, [onSessionCreated])
+
+  /**
+   * 中断说明后缀（`\n\n> 文案`，markdown 引用块，重新载入后仍可见）。
+   *
+   * 用 ref 存最新译文而非让 `handleError` 依赖 `t`：否则切语言会改变回调标识，
+   * 进而重挂流式订阅——重挂的清理会顺带中止在途请求。
+   */
+  const interruptedSuffixRef = useRef('')
+  useEffect(() => {
+    interruptedSuffixRef.current = `\n\n> ${t('message.interrupted')}`
+  }, [t])
 
   /* ---------- 消息写入（同步副本 + state 双写） ---------- */
 
@@ -176,9 +189,7 @@ export function useAiConversation(input: {
 
       patchMessage(request.assistantId, { streaming: false, content: request.content })
       // 所有功能的完整回复都落库（用户消息已在发送时写入）。
-      if (request.sessionId !== null && request.content.trim() !== '') {
-        void appendMessage(request.sessionId, 'assistant', request.content, usage)
-      }
+      persistAssistantPartial(request, { usage })
     },
     [patchMessage]
   )
@@ -188,6 +199,9 @@ export function useAiConversation(input: {
       activeRequestRef.current = null
       setGenerating(false)
       patchMessage(request.assistantId, { streaming: false, error })
+      // 报错同样算「没走完」：已生成的半截回复仍落库，并在末尾标记中断，
+      // 不让它比用户主动停止的回复少一截（去重由 `persisted` 保证）。
+      persistAssistantPartial(request, { suffix: interruptedSuffixRef.current })
     },
     [patchMessage]
   )

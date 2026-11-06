@@ -75,6 +75,10 @@ const ai = {
     forbidden: '无权访问该模型（地区限制或账号权限不足），请更换模型或检查账号权限',
     insufficient_quota: '账户余额不足，请充值后重试'
   },
+  message: {
+    /** 上游报错中断时追加到半截回复末尾的说明（随消息落库，重新载入仍可见）。 */
+    interrupted: '此回复因错误中断'
+  },
   panel: {
     model: {
       label: '模型',
