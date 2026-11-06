@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { WriterModule } from '../../shell/activityBar'
 import ChaptersPanel from './chapters/ChaptersPanel'
@@ -9,6 +9,7 @@ import type { OutlineItemRow, OutlineSelection } from './outline/outlineTree'
 import PlotPanel from './plot/PlotPanel'
 import type { PlotLineRow, PlotSceneRow, UpdatePlotLinePatch } from './plot/plotTree'
 import TimelinePanel from './timeline/TimelinePanel'
+import { countPlotLinesByTimeline } from './timeline/timelinePlotCounts'
 import type { TimelineEntry } from './timeline/timelineOrigin'
 
 interface SidePaneProps {
@@ -66,6 +67,8 @@ interface SidePaneProps {
   onCreateOutlineEntryInGroup: (groupId: number) => void
   /** 剧情未删除剧情线（后端顺序：`sortOrder, id`）。 */
   plotLines: PlotLineRow[]
+  /** 全书未删除剧情线（不过滤时间线；用于左栏时间线删除禁用计数）。 */
+  allPlotLines: PlotLineRow[]
   /** 全书未删除剧情场景（用于统计各线节点数）。 */
   plotScenes: PlotSceneRow[]
   /** 当前选中剧情线 id（页面层持有，与中栏 / 右栏共享）。 */
@@ -122,6 +125,7 @@ export function SidePane({
   onReorderOutlineChapter,
   onCreateOutlineEntryInGroup,
   plotLines,
+  allPlotLines,
   plotScenes,
   activePlotLineId,
   onSelectPlotLine,
@@ -135,6 +139,9 @@ export function SidePane({
 }: SidePaneProps) {
   const { t } = useTranslation('writer')
   const classes = `sidepane${autoHidden ? ' is-auto-hidden' : ''}`
+  // 左栏时间线删除禁用：按全书剧情线一次性聚合每条时间线的条数（不逐行发 IPC）。
+  // 数据源自页面层 `plot.allLines`，剧情线增删后自动重算，无需额外刷新时机。
+  const plotLineCounts = useMemo(() => countPlotLinesByTimeline(allPlotLines), [allPlotLines])
   // 章节面板弹窗（新建卷等）挂载引用：仅保证 paneRef 透传（面板内部自持状态）。
   const panelRef = useRef<HTMLDivElement | null>(null)
 
@@ -206,6 +213,7 @@ export function SidePane({
           onSelect={onSelectTimeline}
           onRename={onRenameTimeline}
           onDelete={onDeleteTimeline}
+          plotLineCounts={plotLineCounts}
         />
       </div>
     </aside>

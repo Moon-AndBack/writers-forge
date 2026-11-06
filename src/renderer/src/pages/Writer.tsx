@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../components/ui'
 import { RichTextEditorProvider } from '../components/editor/richTextEditorProvider'
 import type { RichTextEditorSlots } from '../components/editor/richTextEditorContext'
 import { useActivityBar, useRegisterActivityBar } from '../shell/activityBarContext'
+import type { WriterModule } from '../shell/activityBarModules'
 import { useRegisterUnsavedSwitchGuard } from '../shell/unsavedSwitchGuard'
 import { useRegisterBeforeCloseFlush } from '../shell/beforeCloseFlush'
 import { useRightPaneVisibility } from '../shell/rightPaneVisibility'
@@ -36,6 +37,11 @@ export interface WriterProps {
    * 用于透传给编辑器做实体匹配（entities:match 按书隔离）。
    */
   bookId?: string
+  /**
+   * 启动首屏模块（仅由启动重定向经路由 state 传入）：
+   * 挂载后应用一次即丢弃，之后用户切换模块 / 重新进入书籍不受影响。
+   */
+  initialModule?: WriterModule
 }
 
 /**
@@ -48,10 +54,19 @@ export interface WriterProps {
  * - 章节页专属：标题栏按钮组（新建卷弹窗 / 保存 / 撤销 / 重做 / 搜索 / 回收站）、
  *   中栏回收站视图（`ChaptersTrashView`）、卷 / 章的创建与 hover 操作（v2）。
  */
-export default function Writer({ bookId }: WriterProps) {
+export default function Writer({ bookId, initialModule }: WriterProps) {
   // 声明本页需要外壳活动栏（挂载注册、卸载注销）
   useRegisterActivityBar(true)
   const { active, setActive } = useActivityBar()
+
+  // 启动首屏模块：消费一次后清空 ref，避免后续重渲染 / 模块切换被改回。
+  const initialModuleRef = useRef(initialModule)
+  useEffect(() => {
+    const target = initialModuleRef.current
+    if (!target) return
+    initialModuleRef.current = undefined
+    setActive(target)
+  }, [setActive])
 
   // 三栏宽度 state 下沉到 `WorkspaceLayout`（拖拽逐帧只重渲染布局壳，本页与三栏子树不参与）；
   // 本页只持有两栏元素引用，供分隔条在按下时实测起始宽。
@@ -349,6 +364,7 @@ export default function Writer({ bookId }: WriterProps) {
               onReorderOutlineChapter={handleReorderOutlineChapter}
               onCreateOutlineEntryInGroup={handleCreateOutlineEntryInGroup}
               plotLines={plot.lines}
+              allPlotLines={plot.allLines}
               plotScenes={plot.scenes}
               activePlotLineId={plot.activeLineId}
               onSelectPlotLine={plot.selectLine}

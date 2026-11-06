@@ -15,8 +15,10 @@ export interface TimelinePanelProps {
   onSelect: (id: string) => void
   /** 重命名（空名回退默认名；返回是否落库成功）。 */
   onRename: (id: string, name: string) => Promise<boolean>
-  /** 删除（至少保留一条；返回是否落库成功）。 */
+  /** 删除（至少保留一条且该时间线下无剧情线；返回是否落库成功）。 */
   onDelete: (id: string) => Promise<boolean>
+  /** 每条时间线的剧情线条数（`timelineId → count`，无记录视为 0）。 */
+  plotLineCounts: ReadonlyMap<string, number>
 }
 
 export default function TimelinePanel({
@@ -24,7 +26,8 @@ export default function TimelinePanel({
   activeId,
   onSelect,
   onRename,
-  onDelete
+  onDelete,
+  plotLineCounts
 }: TimelinePanelProps) {
   const { t } = useTranslation('timeline')
   // 行内重命名态：正在改名的条目 id + 草稿名（与章节卷改名同款交互）。
@@ -82,8 +85,16 @@ export default function TimelinePanel({
             {timelines.map((entry) => {
               const active = entry.id === activeId
               const renaming = renamingId === entry.id
-              // 至少保留一条：最后一条的删除按钮禁用（workspace 同规则兜底）。
-              const deleteDisabled = timelines.length <= 1
+              // 删除禁用两式：至少保留一条；该时间线下仍有剧情线（需先删除或迁移，
+              // 否则剧情线会因时间线消失而「凭空不见」）。workspace 同规则兜底。
+              const plotLineCount = plotLineCounts.get(entry.id) ?? 0
+              const deleteDisabled = timelines.length <= 1 || plotLineCount > 0
+              let deleteLabel = t('delete')
+              if (plotLineCount > 0) {
+                deleteLabel = t('deleteBlocked', { count: plotLineCount })
+              } else if (deleteDisabled) {
+                deleteLabel = t('deleteLastDisabled')
+              }
               return (
                 <div
                   key={entry.id}
@@ -138,7 +149,7 @@ export default function TimelinePanel({
                       size="sm"
                       className="row-act"
                       tone="danger"
-                      label={deleteDisabled ? t('deleteLastDisabled') : t('delete')}
+                      label={deleteLabel}
                       tooltipPlacement="top"
                       disabled={deleteDisabled}
                       onClick={() => requestDelete(entry)}

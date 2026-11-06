@@ -31,6 +31,8 @@ const timeline = {
   rename: 'Rename',
   delete: 'Delete',
   deleteLastDisabled: 'Keep at least one timeline',
+  deleteBlocked:
+    'This timeline still has {{count}} plot line(s). Delete or move them to another timeline first',
   renameFailed: 'Rename failed. Please try again.',
   deleteFailed: 'Delete failed. Please try again.',
   dialog: {

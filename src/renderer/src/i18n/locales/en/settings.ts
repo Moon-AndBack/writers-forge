@@ -18,14 +18,15 @@ const settings = {
   },
   autoSave: {
     label: 'Auto save',
-    description: 'Automatically save the current chapter every 5 minutes'
+    description:
+      'Save the document automatically while editing; when off, save manually (switching chapters or closing the window still saves)'
   },
   defaultView: {
     label: 'Default view',
     description: 'The page shown by default when the app starts',
-    chapter: 'Last edited chapter',
-    outline: 'Outline view',
-    recent: 'Recent projects'
+    bookshelf: 'Bookshelf',
+    chapter: 'Chapter editor',
+    outline: 'Outline view'
   },
   appearance: {
     title: 'Appearance & theme',

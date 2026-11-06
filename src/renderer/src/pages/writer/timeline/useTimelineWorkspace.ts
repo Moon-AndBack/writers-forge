@@ -7,6 +7,7 @@ import {
   timelineListKey,
   type TimelineEntry
 } from './timelineOrigin'
+import { countPlotLinesByTimeline } from './timelinePlotCounts'
 
 /** 缺省时间线名称：留空，由展示层经 `t('timeline.defaultName')` 兜底（不落库中文默认名）。 */
 const DEFAULT_TIMELINE_NAME = ''
@@ -40,7 +41,9 @@ export interface TimelineWorkspace {
   renameTimeline: (id: string, name: string) => Promise<boolean>
   /**
    * 删除指定时间线：读磁盘最新列表 → 移除目标条目 → 原样写回。
-   * 至少保留一条（删最后一条返回 false）；删的是当前选中项时 active 切到剩余第一条。
+   * 至少保留一条（删最后一条返回 false）；该时间线下仍有剧情线时拒绝删除（返回 false，
+   * 不写库——否则剧情线会因时间线消失而在界面上「凭空不见」）；删的是当前选中项时
+   * active 切到剩余第一条。
    */
   removeTimeline: (id: string) => Promise<boolean>
   /** 重新读取。 */
@@ -187,8 +190,9 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
     [list, listKey]
   )
 
-  // 删除：至少保留一条（删最后一条直接拒绝）；删的是当前选中项时把 active 切到剩余第一条，
-  // 并同步写回 `timeline:active:<bookId>`（被删条目的选中键不会残留）。
+  // 删除：至少保留一条（删最后一条直接拒绝）；写库前兜底查询该时间线是否仍被剧情线引用
+  // （有引用则拒绝，避免绕过 UI 造成剧情线「消失」）；删的是当前选中项时把 active 切到
+  // 剩余第一条，并同步写回 `timeline:active:<bookId>`（被删条目的选中键不会残留）。
   const removeTimeline = useCallback(
     async (id: string): Promise<boolean> => {
       const listRaw = await window.api?.settings.get(listKey)
@@ -196,6 +200,15 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
       const base = current.length > 0 ? current : list
       if (base.length <= 1) return false
       if (!base.some((entry) => entry.id === id)) return false
+      // 兜底与左栏禁用共用同一聚合口径（`countPlotLinesByTimeline`）：此处**实时查询**
+      // 而非读 UI 计数 Map，避免计数过期放行删除；查询失败一律不写库（安全优先）。
+      try {
+        const lines = await window.api?.plot.listLines(bookId)
+        if (!lines) return false
+        if ((countPlotLinesByTimeline(lines).get(id) ?? 0) > 0) return false
+      } catch {
+        return false
+      }
       const nextList = base.filter((entry) => entry.id !== id)
 
       const activeRaw = await window.api?.settings.get(activeKey)
@@ -216,7 +229,7 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
         return false
       }
     },
-    [activeId, activeKey, list, listKey]
+    [activeId, activeKey, bookId, list, listKey]
   )
 
   return {

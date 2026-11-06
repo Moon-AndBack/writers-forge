@@ -28,6 +28,7 @@ const timeline = {
   rename: '重命名',
   delete: '删除',
   deleteLastDisabled: '至少保留一条时间线',
+  deleteBlocked: '该时间线下还有 {{count}} 条剧情线，请先删除或迁移',
   renameFailed: '重命名失败，请重试',
   deleteFailed: '删除失败，请重试',
   dialog: {

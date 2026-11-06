@@ -1,7 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
- * settings 表键值的读写 hook（设置页专用）。
+ * 同键广播表：设置弹窗与消费方（如写作域 `autoSave`）可能同时订阅同一个键。
+ * `useSettingsValue` 写入后广播原始字符串，订阅方据此即时更新，避免设置改完
+ * 需重挂组件才生效。跨窗口同步不在本表范围（`window.api.settings` 无广播通道）。
+ */
+type SettingsListener = (raw: string | null) => void
+const listeners = new Map<string, Set<SettingsListener>>()
+
+function subscribeSetting(key: string, listener: SettingsListener): () => void {
+  const bucket = listeners.get(key) ?? new Set<SettingsListener>()
+  bucket.add(listener)
+  listeners.set(key, bucket)
+  return () => {
+    bucket.delete(listener)
+    if (bucket.size === 0) listeners.delete(key)
+  }
+}
+
+function broadcastSetting(key: string, raw: string | null): void {
+  listeners.get(key)?.forEach((listener) => listener(raw))
+}
+
+/**
+ * settings 表键值的读写 hook（设置页 / 设置消费方共用）。
  *
  * 与既有 Provider（ThemeProvider / RightPaneVisibilityProvider 等）同一范式：
  * 挂载时异步 `settings:get` 恢复、变更时 `settings:set` 落库；无 `window.api`
@@ -43,6 +65,10 @@ export function useSettingsValue<T>(
     if (!api) return undefined
 
     let active = true
+    // 同键变更即时同步（例如设置弹窗切换 autoSave，写作域消费方同步生效）。
+    const unsubscribe = subscribeSetting(key, (raw) => {
+      if (active) setValueState(decodeRef.current(raw))
+    })
     api
       .get(key)
       .then((raw) => {
@@ -54,13 +80,16 @@ export function useSettingsValue<T>(
 
     return () => {
       active = false
+      unsubscribe()
     }
   }, [key])
 
   const setValue = useCallback(
     (next: T): void => {
+      const raw = encodeRef.current(next)
       setValueState(next)
-      void window.api?.settings.set(key, encodeRef.current(next)).catch(() => {})
+      broadcastSetting(key, raw)
+      void window.api?.settings.set(key, raw).catch(() => {})
     },
     [key]
   )

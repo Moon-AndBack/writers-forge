@@ -16,6 +16,11 @@ import i18n, { initI18n } from './i18n'
 import { LocaleProvider } from './i18n/LocaleProvider'
 import { LOCALE_SETTING_KEY, resolveLocale } from './i18n/config'
 import { ACTIVITY_PINNED_SETTING_KEY, DEFAULT_ACTIVITY_PINNED } from './shell/activityPinned'
+import {
+  DEFAULT_VIEW_SETTING_KEY,
+  resolveDefaultView,
+  type DefaultView
+} from './pages/settings/defaultView'
 import './styles/index.css'
 
 /**
@@ -68,6 +73,8 @@ async function bootstrap(): Promise<void> {
   )
   if (normalizedMaterial) initialMaterial = normalizedMaterial
   if (bootSettings[ACTIVITY_PINNED_SETTING_KEY] === 'true') initialActivityPinned = true
+  // 默认打开视图：非法 / 历史值（如已移除的 `recent`）/ 缺省一律回落书架（应用既有首屏）
+  const initialDefaultView: DefaultView = resolveDefaultView(bootSettings[DEFAULT_VIEW_SETTING_KEY])
 
   /* 活动栏固定态在 render 前同步到 body：Provider 的 `useEffect` 晚于首帧绘制，
      若首帧缺这个类，`.writer-view` 会先按悬浮态的 20px 左内边距布局，再在 0.32s
@@ -84,7 +91,10 @@ async function bootstrap(): Promise<void> {
             <ChipColorProvider>
               <WindowMaterialProvider initialMaterial={initialMaterial}>
                 <HashRouter>
-                  <App initialActivityPinned={initialActivityPinned} />
+                  <App
+                    initialActivityPinned={initialActivityPinned}
+                    initialDefaultView={initialDefaultView}
+                  />
                 </HashRouter>
               </WindowMaterialProvider>
             </ChipColorProvider>

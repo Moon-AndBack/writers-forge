@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/core'
 import { createLogger } from '@renderer/lib/log'
 import { useContentSwap } from '../../../components/editor/useContentSwap'
+import { useAutoSaveEnabled } from '../useAutoSaveEnabled'
 import { countCharacters, docToParagraphs, paragraphsToDocJSON } from './docParagraphs'
 import type { DocParagraph } from './docParagraphs'
 
@@ -14,6 +15,8 @@ const log = createLogger('useChapterDoc')
  * 读：`chapterId` 变化 → `chapters:getParagraphs` → 建 doc；
  * 写：doc 变更 → 防抖 800ms → `docToParagraphs` → `chapters:saveParagraphs`，失败 warn
  *     并静默重试一次；切换章节前 flush 立即落盘，避免丢字。
+ *     防抖保存受设置 `autoSave` 控制（见 `useAutoSaveEnabled`）：关闭时编辑只置脏、
+ *     不排定时器，由保存按钮 / 切章 / 切模块 / 关窗 flush 落库。
  *
  * `chapterId` 来源：章节树行 `ChapterRow.id`（正文直接归属章节，`documents` 表已删除）。
  * 字数口径复用 `docParagraphs.countCharacters`（排除标点 / 符号 / 空白），与主进程
@@ -48,6 +51,7 @@ interface UseChapterDocOptions {
  * 并在卸载 / 切章时 flush 挂起的保存。`flush` 供外部（保存按钮 / 快捷键）调用。
  */
 export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
+  const autoSaveEnabled = useAutoSaveEnabled()
   const [status, setStatus] = useState<ChapterDocState['status']>('loading')
   const [charCount, setCharCount] = useState(0)
   // 是否有未落盘变更（与 dirtyRef 同步的展示态，供状态栏消费）
@@ -207,17 +211,28 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
     // markContentSwapped 同样引用稳定（useContentSwap 内 useCallback []），入依赖仅为满足 exhaustive-deps
   }, [editor, chapterId, flush, markContentSwapped])
 
-  // 写链路：doc 变更 → 防抖 800ms 保存
+  // 写链路：doc 变更 → 防抖 800ms 保存（`autoSave` 关闭时只置脏、不排定时器）
   const onUpdate = useCallback((): void => {
     dirtyRef.current = true
     setDirty(true)
     if (editor) setCharCount(countCharacters(docToParagraphs(editor).map((item) => item.text)))
-    if (saveTimerRef.current !== null) window.clearTimeout(saveTimerRef.current)
+    if (saveTimerRef.current !== null) {
+      window.clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = null
+    }
+    if (!autoSaveEnabled) return
     saveTimerRef.current = window.setTimeout(() => {
       saveTimerRef.current = null
       void saveNow()
     }, SAVE_DEBOUNCE_MS)
-  }, [editor, saveNow])
+  }, [editor, saveNow, autoSaveEnabled])
+
+  // 运行中关闭自动保存：清掉已排队的防抖任务（改动仍保留 dirty，等手动 / 安全网 flush）。
+  useEffect(() => {
+    if (autoSaveEnabled || saveTimerRef.current === null) return
+    window.clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = null
+  }, [autoSaveEnabled])
 
   // 卸载兜底：flush 挂起保存
   useEffect(() => {

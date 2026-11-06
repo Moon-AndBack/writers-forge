@@ -1,15 +1,21 @@
-import { Suspense, lazy } from 'react'
-import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
+import { Suspense, lazy, useEffect, useRef } from 'react'
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { DiagnosticsGate } from './diagnostics/DiagnosticsGate'
 import i18n, { ensureWriterNamespaces } from './i18n'
 import { resolveLocale } from './i18n/config'
 import { useOnboarding } from './onboarding/useOnboarding'
 import Bookshelf from './pages/Bookshelf'
+import {
+  isWriterDefaultView,
+  DEFAULT_DEFAULT_VIEW,
+  type DefaultView
+} from './pages/settings/defaultView'
 import { TimelineCardSizeProvider } from './pages/writer/timeline/TimelineCardSizeProvider'
 import { DossierFilterProvider } from './pages/writer/dossier/DossierFilterProvider'
 import { InspirationFilterProvider } from './pages/writer/inspiration/InspirationFilterProvider'
 import { ActivityBar, ActivityBarProvider } from './shell/activityBar'
 import { useActivityBar } from './shell/activityBarContext'
+import type { WriterModule } from './shell/activityBarModules'
 import { ActivityActionsProvider } from './shell/activityActionsProvider'
 import { BeforeCloseFlushBridge } from './shell/beforeCloseFlushBridge'
 import { BeforeCloseFlushProvider } from './shell/beforeCloseFlushProvider'
@@ -116,11 +122,63 @@ function StatusBarLeading() {
 /**
  * 写作页路由包装：从 `/write/:bookId` 读取书籍 id 并传给 `<Writer />`。
  * 无参数（异常路径）时回退渲染书架，与根路由一致。
+ * 启动重定向会随路由 state 传入首屏模块（`chapters` / `outline`），仅本次进入生效；
+ * 用户从书架正常打开书籍时不带 state，仍按外壳默认模块（章节）进入。
  */
 function WriteRoute() {
   const { bookId } = useParams()
+  const { state } = useLocation()
+  const startupModule = (state as { startupModule?: WriterModule } | null)?.startupModule
   if (!bookId) return <Bookshelf />
-  return <Writer bookId={bookId} />
+  return <Writer bookId={bookId} initialModule={startupModule} />
+}
+
+/**
+ * 启动首屏重定向：`defaultView` 为章节 / 大纲时，打开**最近编辑的书**并进入写作页。
+ *
+ * 仅在启动后首次停留在书架（`/`）时尝试一次（`settledRef`），成功后用 `replace`
+ * 换掉当前历史项；用户之后自行返回书架不会被再次强制跳转，不干扰后续导航。
+ * 无书可开 / 读取失败时静默留在书架（兜底）。
+ */
+function StartupViewRedirect({
+  defaultView,
+  enabled
+}: {
+  defaultView: DefaultView
+  enabled: boolean
+}) {
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const settledRef = useRef(false)
+
+  useEffect(() => {
+    if (!enabled || !isWriterDefaultView(defaultView) || pathname !== '/') return undefined
+    if (settledRef.current) return undefined
+
+    let cancelled = false
+    void (async () => {
+      try {
+        const rows = await window.api?.books.list()
+        if (cancelled) return
+        settledRef.current = true
+        // `updatedAt` 为 'YYYY-MM-DD HH:MM:SS.mmm'，字典序即时间序（同书架「最近编辑」）。
+        const latest = [...(rows ?? [])].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]
+        if (!latest) return
+        navigate(`/write/${encodeURIComponent(latest.id)}`, {
+          replace: true,
+          state: { startupModule: defaultView === 'outline' ? 'outline' : 'chapters' }
+        })
+      } catch {
+        if (!cancelled) settledRef.current = true
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [enabled, defaultView, pathname, navigate])
+
+  return null
 }
 
 /**
@@ -129,9 +187,16 @@ function WriteRoute() {
  * （默认光斑渐变；开启 Acrylic 透明效果时切换为四主题纯色 @0.8，透出 DWM 材质）；
  * 页面内容渲染于 .app-viewport。
  * `initialActivityPinned` 由 main.tsx 启动预取（`activityBarPinned`）透传给
- * `ActivityPinnedProvider`，首帧即恢复活动栏固定态、避免闪烁。
+ * `ActivityPinnedProvider`，首帧即恢复活动栏固定态、避免闪烁；
+ * `initialDefaultView` 同样由启动预取（`defaultView`），仅用于首屏重定向。
  */
-export default function App({ initialActivityPinned }: { initialActivityPinned?: boolean }) {
+export default function App({
+  initialActivityPinned,
+  initialDefaultView = DEFAULT_DEFAULT_VIEW
+}: {
+  initialActivityPinned?: boolean
+  initialDefaultView?: DefaultView
+}) {
   // 主题变化时同步系统标题栏 overlay（非 Electron 环境自动跳过）。
   useTitleBarOverlay()
 
@@ -177,6 +242,11 @@ export default function App({ initialActivityPinned }: { initialActivityPinned?:
                               <ActivityBarSlot />
 
                               <main className="app-viewport">
+                                {/* 启动首屏：按 `defaultView` 跳章节 / 大纲；仅启动时尝试一次。 */}
+                                <StartupViewRedirect
+                                  defaultView={initialDefaultView}
+                                  enabled={status === 'done'}
+                                />
                                 {status === 'loading' ? (
                                   <ViewportPlaceholder />
                                 ) : (

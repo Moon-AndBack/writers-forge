@@ -4,6 +4,7 @@ import type { Content } from '@tiptap/core'
 import { createLogger } from '@renderer/lib/log'
 import { sanitizeOutlineContent } from '@renderer/components/editor/imageNode'
 import { useContentSwap, type ContentSwapPhase } from '@renderer/components/editor/useContentSwap'
+import { useAutoSaveEnabled } from '../useAutoSaveEnabled'
 import { countCharacters } from '../chapters/docParagraphs'
 
 /** 大纲正文链路日志（转发至主进程落盘）。 */
@@ -17,7 +18,9 @@ const log = createLogger('outline')
  *     `sanitizeOutlineContent` 归一图片节点**：上传图 `src` 强制为稳定占位串
  *     `wf-image://<id>`、运行时 `blob:` 一律剥离，见 `components/editor/imageNode.ts`）
  *     + 纯文本摘要（`doc.textContent`）→ `outline:saveContent`，失败 warn 并静默重试一次；
- *     切换条目 / 卸载前 flush 立即落盘，避免丢字。
+ *     切换条目 / 卸载前 flush 立即落盘，避免丢字。防抖保存受设置 `autoSave` 控制
+ *     （见 `useAutoSaveEnabled`）：关闭时只置脏、不排定时器，由保存按钮 / 切换条目 /
+ *     切模块 / 关窗 flush 落库。
  *
  * `contentId` 为正文**载体行 id**（`outline_items.id`）：条目 = 条目行 id；
  * 正文卷 / 分组容器 = 各自卷级大纲行（`scope='volume'`）id（由 `useOutlineVolumes` 解析）；
@@ -83,6 +86,7 @@ function parseContentJson(contentJson: string | null): Content {
  * 淡入相位，见 `useContentSwap`），并在切换 `contentId` 与卸载时 flush 挂起的保存。
  */
 export function useOutlineDoc({ contentId, editor }: UseOutlineDocOptions): UseOutlineDocResult {
+  const autoSaveEnabled = useAutoSaveEnabled()
   const [status, setStatus] = useState<OutlineDocStatus>('loading')
   const [charCount, setCharCount] = useState(0)
   // 是否有未落盘变更（与 dirtyRef 同步的展示态）
@@ -207,17 +211,28 @@ export function useOutlineDoc({ contentId, editor }: UseOutlineDocOptions): UseO
     // flush 依赖 editor，且引用稳定（useCallback [saveNow]）；markContentSwapped 亦稳定
   }, [editor, contentId, flush, markContentSwapped])
 
-  // 写链路：doc 变更 → 防抖 800ms 保存
+  // 写链路：doc 变更 → 防抖 800ms 保存（`autoSave` 关闭时只置脏、不排定时器）
   const onUpdate = useCallback((): void => {
     dirtyRef.current = true
     setDirty(true)
     if (editor) setCharCount(countCharacters([editor.state.doc.textContent]))
-    if (saveTimerRef.current !== null) window.clearTimeout(saveTimerRef.current)
+    if (saveTimerRef.current !== null) {
+      window.clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = null
+    }
+    if (!autoSaveEnabled) return
     saveTimerRef.current = window.setTimeout(() => {
       saveTimerRef.current = null
       void saveNow()
     }, SAVE_DEBOUNCE_MS)
-  }, [editor, saveNow])
+  }, [editor, saveNow, autoSaveEnabled])
+
+  // 运行中关闭自动保存：清掉已排队的防抖任务（改动仍保留 dirty，等手动 / 安全网 flush）。
+  useEffect(() => {
+    if (autoSaveEnabled || saveTimerRef.current === null) return
+    window.clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = null
+  }, [autoSaveEnabled])
 
   // 卸载兜底：flush 挂起保存
   useEffect(() => {

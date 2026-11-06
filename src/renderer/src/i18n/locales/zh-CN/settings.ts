@@ -19,14 +19,14 @@ const settings = {
   },
   autoSave: {
     label: '自动保存',
-    description: '每隔 5 分钟自动保存当前章节内容'
+    description: '编辑正文后自动保存；关闭后需手动保存（切换章节或关闭窗口时仍会保存）'
   },
   defaultView: {
     label: '默认打开视图',
     description: '启动软件时默认显示的页面',
-    chapter: '上次编辑的章节',
-    outline: '大纲视图',
-    recent: '最近项目'
+    bookshelf: '书架',
+    chapter: '章节编辑',
+    outline: '大纲视图'
   },
   appearance: {
     title: '外观与主题',
