@@ -110,6 +110,10 @@ const bookshelf = {
       confirm: 'Delete'
     },
     bookDeletedToast: 'Deleted “{{title}}”',
+    bookCreateFailedToast: 'Failed to create “{{title}}”. Please try again.',
+    bookUpdateFailedToast: 'Failed to save “{{title}}”. Please try again.',
+    bookDeleteFailedToast: 'Failed to delete “{{title}}”. Please try again.',
+    bookCoverFailedToast: 'Failed to save the cover. Please try again.',
     thisBookFallback: 'this book'
   },
   wordCount: {

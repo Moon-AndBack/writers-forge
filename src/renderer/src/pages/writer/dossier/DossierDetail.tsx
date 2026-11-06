@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
+import { useToast } from '../../../components/ui'
 import { useModuleLabel } from '../../../shell/activityBarModules'
 import SaveBar from '../SaveBar'
 import {
@@ -65,6 +66,12 @@ export default function DossierDetail({
   saveRef
 }: DossierDetailProps) {
   const { t } = useTranslation('dossier')
+  const { t: tCommon } = useTranslation('common')
+  // 手动保存失败提示（成功由保存条转净态体现，不重复弹 toast）。
+  const { show: showSaveFailed, node: saveFailedToast } = useToast()
+  const handleSaveFailed = useCallback((): void => {
+    showSaveFailed(tCommon('saveFailed'))
+  }, [showSaveFailed, tCommon])
   const moduleLabel = useModuleLabel(module)
 
   // 空态（无选中条目 / 条目被删）= 无草稿：上报净态，避免切走后守卫仍持过期脏标记。
@@ -90,14 +97,18 @@ export default function DossierDetail({
 
   // 按 `detail.id` 重建表单：切条目草稿随之复位（切换前已由守卫保存 / 丢弃）。
   return (
-    <DossierDetailForm
-      key={detail.id}
-      detail={detail}
-      dirty={dirty}
-      onUpdate={onUpdate}
-      onDirtyChange={onDirtyChange}
-      saveRef={saveRef}
-    />
+    <>
+      <DossierDetailForm
+        key={detail.id}
+        detail={detail}
+        dirty={dirty}
+        onUpdate={onUpdate}
+        onDirtyChange={onDirtyChange}
+        saveRef={saveRef}
+        onSaveFailed={handleSaveFailed}
+      />
+      {saveFailedToast}
+    </>
   )
 }
 
@@ -107,6 +118,8 @@ interface DossierDetailFormProps {
   onUpdate: (id: number, patch: DossierUpdatePatch) => Promise<boolean>
   onDirtyChange: (dirty: boolean) => void
   saveRef: RefObject<(() => void | Promise<boolean>) | null>
+  /** 手动保存失败提示（守卫触发的保存失败已由右栏统一提示，此处只覆盖保存条按钮）。 */
+  onSaveFailed: () => void
 }
 
 /** 单条目编辑表单（按 `detail.id` 重建，内部持草稿；手动保存 + 脏态上报）。 */
@@ -115,7 +128,8 @@ function DossierDetailForm({
   dirty,
   onUpdate,
   onDirtyChange,
-  saveRef
+  saveRef,
+  onSaveFailed
 }: DossierDetailFormProps) {
   const [draft, setDraft] = useState<DossierDraft>(() => createDossierDraft(detail))
   // 保存中（写入 promise 未结算）：按钮呈 loading，避免连点重复下发。
@@ -158,6 +172,15 @@ function DossierDetailForm({
       .finally(() => setSaving(false))
   }, [changed, onUpdate, detail.id, patch])
 
+  // 保存条按钮：落库失败（含 rejection）弹提示；成功由保存条转净态体现，不额外提示。
+  const handleManualSave = useCallback((): void => {
+    void Promise.resolve(saveNow())
+      .then((ok) => {
+        if (ok === false) onSaveFailed()
+      })
+      .catch(() => onSaveFailed())
+  }, [saveNow, onSaveFailed])
+
   // 上报脏态 + 注册保存入口。⚠️ 卸载时**不注销** `saveRef`：切模块会先卸载右栏，
   // workspace 的清理阶段仍需取到最后一笔草稿做自动保存兜底（见 `useDossierWorkspace`）。
   useEffect(() => {
@@ -192,7 +215,7 @@ function DossierDetailForm({
         className="dossier-save-bar on-soft"
         dirty={dirty}
         saving={saving}
-        onSave={saveNow}
+        onSave={handleManualSave}
       />
     </>
   )

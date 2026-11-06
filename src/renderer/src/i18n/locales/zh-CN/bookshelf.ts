@@ -113,6 +113,10 @@ const bookshelf = {
       confirm: '删除'
     },
     bookDeletedToast: '已删除《{{title}}》',
+    bookCreateFailedToast: '创建《{{title}}》失败，请重试',
+    bookUpdateFailedToast: '保存《{{title}}》失败，请重试',
+    bookDeleteFailedToast: '删除《{{title}}》失败，请重试',
+    bookCoverFailedToast: '封面保存失败，请重试',
     thisBookFallback: '这本书'
   },
   wordCount: {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
+import { useToast } from '../../../components/ui'
 import SaveBar from '../SaveBar'
 import PlotBodyEditor, { type PlotBodyValue } from './PlotBodyEditor'
 import { type PlotLineRow, type PlotSceneRow, type UpdatePlotScenePatch } from './plotTree'
@@ -68,6 +69,12 @@ export default function PlotEditor({
   saveRef
 }: PlotEditorProps) {
   const { t } = useTranslation('plot')
+  const { t: tCommon } = useTranslation('common')
+  // 手动保存失败提示（成功由保存条转净态体现，不重复弹 toast）。
+  const { show: showSaveFailed, node: saveFailedToast } = useToast()
+  const handleSaveFailed = useCallback((): void => {
+    showSaveFailed(tCommon('saveFailed'))
+  }, [showSaveFailed, tCommon])
   // 空态（无选中节点 / 节点被删）= 无草稿：上报净态，避免切走后守卫仍持过期脏标记。
   const empty = scene === null
   useEffect(() => {
@@ -89,8 +96,10 @@ export default function PlotEditor({
           onUpdateScene={onUpdateScene}
           onDirtyChange={onDirtyChange}
           saveRef={saveRef}
+          onSaveFailed={handleSaveFailed}
         />
       )}
+      {saveFailedToast}
     </>
   )
 }
@@ -102,6 +111,8 @@ interface PlotEditorFormProps {
   onUpdateScene: (id: number, patch: UpdatePlotScenePatch) => void | Promise<boolean>
   onDirtyChange: (dirty: boolean) => void
   saveRef: RefObject<(() => void | Promise<boolean>) | null>
+  /** 手动保存失败提示（守卫触发的保存失败已由右栏统一提示，此处只覆盖保存条按钮）。 */
+  onSaveFailed: () => void
 }
 
 /** 单节点编辑表单（按 `scene.id` 重建，内部持草稿；手动保存 + 脏态上报）。 */
@@ -110,7 +121,8 @@ function PlotEditorForm({
   dirty,
   onUpdateScene,
   onDirtyChange,
-  saveRef
+  saveRef,
+  onSaveFailed
 }: PlotEditorFormProps) {
   // 正文两列（摘要 + 整条 JSON）同持于草稿：编辑侧按「空文档归一为空」产出，保存时同提交。
   const [description, setDescription] = useState(scene.description)
@@ -145,6 +157,13 @@ function PlotEditorForm({
       .finally(() => setSaving(false))
   }, [changed, onUpdateScene, patch, scene.id])
 
+  // 保存条按钮：落库失败弹提示（`saveNow` 失败恒 resolve false）；成功由保存条转净态体现。
+  const handleManualSave = useCallback((): void => {
+    void Promise.resolve(saveNow()).then((ok) => {
+      if (ok === false) onSaveFailed()
+    })
+  }, [saveNow, onSaveFailed])
+
   // 上报脏态（右栏保存按钮 + 切换守卫），并把保存入口交给父层（切换确认「保存」调用）；
   // 卸载时注销入口，避免父层拿到已卸载表单的 `saveNow`。
   useEffect(() => {
@@ -168,7 +187,7 @@ function PlotEditorForm({
 
       {/* 手动保存：无改动禁用；保存中 loading（通用保存条，§9 与设定库右栏同源）；
           保存条为独立底色卡片（`plot-save-bar`），与上方正文卡间距同设定库右栏。 */}
-      <SaveBar className="plot-save-bar" dirty={dirty} saving={saving} onSave={saveNow} />
+      <SaveBar className="plot-save-bar" dirty={dirty} saving={saving} onSave={handleManualSave} />
     </div>
   )
 }

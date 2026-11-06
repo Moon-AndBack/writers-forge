@@ -223,7 +223,7 @@ export default function Bookshelf() {
         await refresh()
       })
       .catch(() => {
-        /* 删除失败静默忽略 */
+        toast.show(t('dialog.bookDeleteFailedToast', { title }))
       })
   }
 
@@ -291,13 +291,13 @@ export default function Bookshelf() {
             await booksApi.cover.set(created.id, values.coverFile.mime, values.coverFile.data)
             setCoverVersion((version) => version + 1)
           } catch {
-            /* 封面写入失败静默忽略 */
+            toast.show(t('dialog.bookCoverFailedToast'))
           }
         }
         await refresh()
       })
       .catch(() => {
-        /* 创建失败静默忽略 */
+        toast.show(t('dialog.bookCreateFailedToast', { title: values.title }))
       })
   }
 
@@ -349,13 +349,13 @@ export default function Bookshelf() {
             coverChanged = true
           }
         } catch {
-          /* 封面写入 / 删除失败静默忽略 */
+          toast.show(t('dialog.bookCoverFailedToast'))
         }
         await refresh()
         if (coverChanged) setCoverVersion((version) => version + 1)
       })
       .catch(() => {
-        /* 更新失败静默忽略 */
+        toast.show(t('dialog.bookUpdateFailedToast', { title: values.title }))
       })
   }
 
