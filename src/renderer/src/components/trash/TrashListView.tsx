@@ -7,8 +7,7 @@
  */
 import type { ReactElement, ReactNode } from 'react'
 import { Button, IconButton } from '../ui'
-import { TrashIcon } from '../icons'
-import { RestoreIcon } from '../../pages/writer/icons'
+import { RestoreIcon, TrashIcon } from '../icons'
 
 /** 回收站行：`name` 为主名，`sub` 为次要行（如原归属卷名）。 */
 export interface TrashRow {

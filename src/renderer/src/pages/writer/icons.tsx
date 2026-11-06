@@ -71,16 +71,6 @@ export function PencilIcon({ width = 15 }: { width?: number }): ReactElement {
   )
 }
 
-/** 还原（逆时针回环）：回收站「还原」。 */
-export function RestoreIcon({ width = 15 }: { width?: number }): ReactElement {
-  return (
-    <svg viewBox="0 0 24 24" strokeWidth="1.9" width={width} height={width} {...stroke}>
-      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
-      <path d="M3 3v5h5" />
-    </svg>
-  )
-}
-
 /** 替换（双向箭头 + 输入）：搜索浮窗「替换」。 */
 export function ReplaceIcon({ width = 14 }: { width?: number }): ReactElement {
   return (

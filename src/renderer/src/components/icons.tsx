@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react'
 
 /**
- * 共享标题栏操作图标（保存 / 撤销 / 重做 / 搜索 / 回收站，stroke 1.9，随 currentColor 着色）。
+ * 共享标题栏操作图标（保存 / 撤销 / 重做 / 搜索 / 回收站 / 还原，stroke 1.9，随 currentColor 着色）。
  *
  * 归属渲染层共享层 `components/`：原位于 `pages/writer/icons`，因跨页面复用
  * （章节 / 大纲操作组及多处删除按钮）且 `components/` 反向引用 `pages/` 会造成
@@ -113,6 +113,25 @@ export function TrashIcon(): ReactElement {
       <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
       <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
       <path d="M10 11v6M14 11v6" />
+    </svg>
+  )
+}
+
+/** 还原（逆时针回环）：回收站「还原」。 */
+export function RestoreIcon({ width = 15 }: { width?: number }): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      width={width}
+      height={width}
+    >
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <path d="M3 3v5h5" />
     </svg>
   )
 }
