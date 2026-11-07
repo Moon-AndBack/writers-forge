@@ -3,14 +3,23 @@ import type { ChangeEvent, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../ui'
 import type { SegmentedOption, SelectOption } from '../ui'
-import type { CleanWordCount, CleanWordRow } from '../../../../preload/types/cleanWords'
+import type {
+  CleanWordCategory,
+  CleanWordCount,
+  CleanWordRow
+} from '../../../../preload/types/cleanWords'
 // 词库改动后令检测词表缓存失效。缓存与失效广播在共享层
 // （`components/editor/cleanWordCache.ts`），页面层扫描插件订阅后重扫。
 import { resetActiveCleanWords } from '../editor/cleanWordCache'
-import { addCleanWords } from './cleanWordActions'
-import { CATEGORIES, CATEGORY_LABEL_KEYS, PAGE_SIZE, isCategory } from './cleanWordsMeta'
+import { addCleanWord } from './cleanWordActions'
+import {
+  CATEGORIES,
+  CATEGORY_LABEL_KEYS,
+  MAX_WORD_CHARS,
+  PAGE_SIZE,
+  isCategory
+} from './cleanWordsMeta'
 import type { CategoryFilter, SourceFilter } from './cleanWordsMeta'
-import { parseImportText } from './cleanWordsImport'
 
 /* ---------- 数据读取 ---------- */
 
@@ -46,24 +55,27 @@ export interface CleanWordsLibrary {
   categoryOptions: SelectOption[]
   filtered: CleanWordRow[]
   visibleRows: CleanWordRow[]
-  importOpen: boolean
-  importText: string
-  importing: boolean
+  /** 单条添加：类别（默认 `other`）/ 内容 / 提交中。 */
+  addCategory: CleanWordCategory
+  addText: string
+  adding: boolean
+  /** 单条添加的类别选项（六类，不含「全部」）。 */
+  addCategoryOptions: SelectOption[]
   handleSourceChange: (value: SourceFilter) => void
   handleCategoryChange: (value: string) => void
   handleQueryChange: (value: string) => void
-  /** 重新取数（失败重试；导入 / 删除后亦复用）。 */
+  /** 重新取数（失败重试；新增 / 删除后亦复用）。 */
   refresh: () => Promise<void>
   loadMore: () => void
   handleRowToggle: (row: CleanWordRow) => (event: ChangeEvent<HTMLInputElement>) => void
   handleDelete: (row: CleanWordRow) => Promise<void>
-  toggleImport: () => void
-  setImportText: (value: string) => void
-  handleImport: () => Promise<void>
+  setAddCategory: (value: string) => void
+  setAddText: (value: string) => void
+  handleAdd: () => Promise<void>
 }
 
 /**
- * 违禁词库弹窗的取数、筛选、分页与词条增删 / 导入动作。`open` 变化时重取一次全量。
+ * 违禁词库弹窗的取数、筛选、分页与词条增删动作。`open` 变化时重取一次全量。
  * `t` 为 `chapters` ns（与弹窗 / 词表同 ns，key 路径沿用原实现）。
  */
 export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
@@ -78,9 +90,9 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
   const [query, setQuery] = useState('')
   const [visible, setVisible] = useState(PAGE_SIZE)
-  const [importOpen, setImportOpen] = useState(false)
-  const [importText, setImportText] = useState('')
-  const [importing, setImporting] = useState(false)
+  const [addCategory, setAddCategoryState] = useState<CleanWordCategory>('other')
+  const [addText, setAddText] = useState('')
+  const [adding, setAdding] = useState(false)
 
   /** 落库取数结果（effect 与事件处理器共用，避免两处重复 setState）。 */
   const applyData = useCallback((result: Awaited<ReturnType<typeof fetchCleanWords>>): void => {
@@ -94,7 +106,7 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
     setLoaded(true)
   }, [])
 
-  /** 重新取数（导入 / 删除后刷新列表与计数）。 */
+  /** 重新取数（新增 / 删除后刷新列表与计数）。 */
   const refresh = useCallback(async (): Promise<void> => {
     applyData(await fetchCleanWords())
   }, [applyData])
@@ -157,6 +169,16 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
     [t]
   )
 
+  /** 单条添加只写具体类别，故不含「全部」项。 */
+  const addCategoryOptions = useMemo<SelectOption[]>(
+    () =>
+      CATEGORIES.map((category) => ({
+        value: category,
+        label: t(CATEGORY_LABEL_KEYS[category])
+      })),
+    [t]
+  )
+
   /** 筛选变化后回到首屏，避免「筛出 3 条却停在第二页」。 */
   const resetPaging = useCallback((): void => setVisible(PAGE_SIZE), [])
 
@@ -215,43 +237,47 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
     [refresh, showToast, t]
   )
 
-  const handleImport = useCallback(async (): Promise<void> => {
-    const { words, invalid } = parseImportText(importText)
-    if (words.length === 0) {
-      showToast(t('cleanWords.importEmpty'))
+  /** 类别下拉：非法值回退 `other`（选项由本地枚举生成，正常不会触发）。 */
+  const setAddCategory = useCallback((value: string): void => {
+    setAddCategoryState(isCategory(value) ? value : 'other')
+  }, [])
+
+  /**
+   * 单条添加：前置校验口径与右键菜单一致（trim 非空 / 无换行 / 2–100 字）。
+   * `addCleanWord` 成功时内部已 `resetActiveCleanWords()`（正文即时重扫），失败未写库故不失效；
+   * 成功（inserted / updated）后 `refresh()` 重取全量，列表与「内置 / 我的」计数一并更新。
+   */
+  const handleAdd = useCallback(async (): Promise<void> => {
+    const word = addText.trim()
+    if (word === '' || /[\r\n]/.test(addText) || word.length < 2 || word.length > MAX_WORD_CHARS) {
       return
     }
-    setImporting(true)
+    setAdding(true)
     try {
-      // 入库动作与右键菜单共用（`addCleanWords` 内含 `resetActiveCleanWords()`）。
-      const result = await addCleanWords(words)
-      if (!result) {
-        showToast(t('cleanWords.importFailed'))
+      const outcome = await addCleanWord(word, addCategory)
+      if (outcome === 'failed') {
+        showToast(t('cleanWords.addFailed'))
         return
       }
-      const skipped = result.skipped + invalid
+      if (outcome === 'exists') {
+        showToast(t('cleanWords.addExists', { word }))
+        return
+      }
       showToast(
-        t('cleanWords.importDone', {
-          inserted: result.inserted,
-          updated: result.updated,
-          skipped
-        })
+        t(outcome === 'inserted' ? 'cleanWords.addDone' : 'cleanWords.addUpdated', { word })
       )
-      setImportText('')
-      setImportOpen(false)
+      setAddText('')
       await refresh()
     } finally {
-      setImporting(false)
+      setAdding(false)
     }
-  }, [importText, refresh, showToast, t])
+  }, [addCategory, addText, refresh, showToast, t])
 
   const handleRowToggle =
     (row: CleanWordRow) =>
     (event: ChangeEvent<HTMLInputElement>): void => {
       void handleToggle(row, event.target.checked)
     }
-
-  const toggleImport = useCallback((): void => setImportOpen((prev) => !prev), [])
 
   return {
     toastNode,
@@ -266,9 +292,10 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
     categoryOptions,
     filtered,
     visibleRows,
-    importOpen,
-    importText,
-    importing,
+    addCategory,
+    addText,
+    adding,
+    addCategoryOptions,
     handleSourceChange,
     handleCategoryChange,
     handleQueryChange,
@@ -276,8 +303,8 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
     loadMore,
     handleRowToggle,
     handleDelete,
-    toggleImport,
-    setImportText,
-    handleImport
+    setAddCategory,
+    setAddText,
+    handleAdd
   }
 }

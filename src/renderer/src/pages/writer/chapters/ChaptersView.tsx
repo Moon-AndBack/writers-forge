@@ -12,6 +12,7 @@ import { HoverCard } from '../entities/HoverCard'
 import { SaveStatus, type ChapterSaveState } from './SaveStatus'
 import ChapterActivityActions from './ChapterActivityActions'
 import ChaptersSearchView from './ChaptersSearchView'
+import CleanWordHoverLayer from './CleanWordHoverLayer'
 import { CleanWordMark } from './proofreadMark'
 import NewVolumeDialog from '../../../components/dialogs/NewVolumeDialog'
 import { SelectionContextMenu } from '../SelectionContextMenu'
@@ -479,6 +480,7 @@ export default function ChaptersView({
       </div>
       {/* 伏笔标记悬停提示（自绘浮层，替代原生 title；pointer-events: none 不挡鼠标）。 */}
       <MarkHoverTip tip={markTip} />
+      <CleanWordHoverLayer editor={editor} />
       <HoverCard
         anchor={hover.anchor}
         onClose={hover.close}

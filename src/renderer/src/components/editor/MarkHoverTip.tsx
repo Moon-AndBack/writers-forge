@@ -6,12 +6,15 @@ import type { MarkHoverState } from './useMarkHover'
 import '../../styles/components/tooltip.css'
 
 export interface MarkHoverTipProps {
-  /** 悬停状态（`useMarkHover` 的返回值）；null = 不渲染。 */
+  /** 悬停状态（`useEditorMarkHover` / `useMarkHover` 的返回值）；null = 不渲染。 */
   tip: MarkHoverState | null
 }
 
 /**
- * 伏笔正文标记的悬停提示：三行结构化浮层，替代浏览器原生 `title` 气泡。
+ * 正文标记的悬停提示：三行结构化浮层，替代浏览器原生 `title` 气泡。
+ *
+ * 内容为通用的 `MarkHoverContent`（`heading` / `status` / `description`），伏笔与
+ * 违禁词等标记共用；本组件只负责排版与定位，不关心内容来源。
  *
  * - 定位复用 `HoverPopupShell`（portal 到 body + fixed + 视口避让 + 滚动 / 缩放跟随），
  *   `placement="above"` + `align="left"`：底边贴标记顶边上方（间隔 10px）、左缘贴锚点左缘；
@@ -25,8 +28,10 @@ export interface MarkHoverTipProps {
  *   也因此第 3 行过长时**不能**内滚，改由 CSS `line-clamp` 截断（见 `tooltip.css`）；
  * - 三行：第 1 行 `伏笔：名字`（强调）、第 2 行状态 / 位置（次要色）、
  *   第 3 行描述（最弱色；空串不渲染）；
- * - 显隐与延迟全由 `useMarkHover` 控制，本组件只在有状态时渲染，不做开合计时；
- * - 内容来自插件 state 条目的 `tip`（`foreshadow` ns，已在数据层组好，无需新增 key）。
+ * - 显隐与延迟全由 `useEditorMarkHover`（伏笔经 `useMarkHover` 薄封装）控制，本组件只在
+ *   有状态时渲染，不做开合计时；
+ * - 内容由调用方在数据层组好（伏笔取插件 state 条目的 `tip`，违禁词取命中词 + 类别），
+ *   本组件不查任何数据源。
  */
 export function MarkHoverTip({ tip }: MarkHoverTipProps): ReactElement | null {
   const nodeRef = useRef<HTMLDivElement | null>(null)

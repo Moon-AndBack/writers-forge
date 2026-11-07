@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from 'react'
 import { Extension } from '@tiptap/core'
 import type { Editor } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
@@ -11,6 +10,7 @@ import {
   loadActiveCleanWords,
   onCleanWordsInvalidated
 } from '../../../components/editor/cleanWordCache'
+import { publishProofreadHits, releaseProofreadHits } from './proofreadHits'
 
 /**
  * 章节正文违禁词标注（**只提示不阻断**）。
@@ -35,8 +35,11 @@ import {
 /** 命中饰带类名（样式见 `styles/writer-ai.css`，四主题经 `--danger` 自适应）。 */
 export const CLEAN_HIT_CLASS = 'wf-clean-hit'
 
-/** 命中词 data 属性名（供后续详情面板 / 悬停取词，本批只写入不消费）。 */
+/** 命中词 data 属性名（供详情面板 / 悬停取词消费）。 */
 export const CLEAN_WORD_ATTR = 'data-clean-word'
+
+/** 命中类别 data 属性名（值为词表类别枚举，如 `sexual`；无类别时不输出）。 */
+export const CLEAN_CATEGORY_ATTR = 'data-clean-category'
 
 /** 违禁词标注插件 key（供外部经 meta 写回 / 清除 DecorationSet）。 */
 export const proofreadKey = new PluginKey<DecorationSet>('cleanWordProofread')
@@ -179,60 +182,24 @@ export function buildProofreadDecorations(doc: PMNode, hits: ProofreadHit[]): De
     const from = Math.max(0, hit.from)
     const to = Math.min(size, hit.to)
     if (to <= from) continue
-    decorations.push(
-      Decoration.inline(from, to, {
-        class: CLEAN_HIT_CLASS,
-        [CLEAN_WORD_ATTR]: hit.word
-      })
-    )
+    // 通用 attrs 袋：类别仅在存在时写入，避免输出 `data-clean-category="undefined"`。
+    const attrs: Record<string, string> = {
+      class: CLEAN_HIT_CLASS,
+      [CLEAN_WORD_ATTR]: hit.word
+    }
+    if (hit.category) attrs[CLEAN_CATEGORY_ATTR] = hit.category
+    decorations.push(Decoration.inline(from, to, attrs))
   }
   return decorations.length === 0 ? DecorationSet.empty : DecorationSet.create(doc, decorations)
 }
 
-/* ---------- 状态栏计数（模块级可订阅 store） ---------- */
+/* ---------- 命中计数 / 分组（store 本体在 `proofreadHits.ts`，本文件逼近 500 行硬上限） ---------- */
 
-/** 当前命中处数（状态栏消费；0 时状态栏不渲染）。 */
-let hitCount = 0
-const countListeners = new Set<() => void>()
-/** 当前「计数拥有者」：多编辑器共用时以最后一次扫描为准，销毁时仅拥有者可清零。 */
-let countOwner: object | null = null
-
-function publishHitCount(owner: object, next: number): void {
-  countOwner = owner
-  if (next === hitCount) return
-  hitCount = next
-  for (const listener of countListeners) listener()
-}
-
-function releaseHitCount(owner: object): void {
-  if (countOwner !== owner) return
-  countOwner = null
-  if (hitCount === 0) return
-  hitCount = 0
-  for (const listener of countListeners) listener()
-}
-
-/** 订阅命中处数变化（`useSyncExternalStore` 用）。 */
-export function subscribeProofreadHitCount(listener: () => void): () => void {
-  countListeners.add(listener)
-  return () => {
-    countListeners.delete(listener)
-  }
-}
-
-/** 读取当前命中处数（快照，`useSyncExternalStore` 用）。 */
-export function getProofreadHitCount(): number {
-  return hitCount
-}
-
-/** 命中处数 hook（状态栏用；0 表示无命中 / 无编辑器）。 */
-export function useProofreadHitCount(): number {
-  return useSyncExternalStore(
-    subscribeProofreadHitCount,
-    getProofreadHitCount,
-    getProofreadHitCount
-  )
-}
+/**
+ * 命中处数 / 词级分组 hook 的**兼容出口**：状态栏等既有消费方仍从本模块导入，
+ * 避免为一处 re-export 改动 UI 层（零 UI 变更）。
+ */
+export { useProofreadHitCount, useProofreadHitGroups } from './proofreadHits'
 
 /* ---------- 写入 / 清除（meta 直写） ---------- */
 
@@ -366,7 +333,7 @@ async function runScan(controller: ProofreadController): Promise<void> {
       }
       const doc = editor.state.doc
       const hits = scanDocForCleanWordHits(doc, words)
-      publishHitCount(controller, hits.length)
+      publishProofreadHits(controller, hits)
       editor.view.dispatch(
         editor.state.tr.setMeta(proofreadKey, buildProofreadDecorations(doc, hits))
       )
@@ -387,7 +354,7 @@ function disposeController(controller: ProofreadController): void {
     window.clearTimeout(controller.timer)
     controller.timer = null
   }
-  releaseHitCount(controller)
+  releaseProofreadHits(controller)
 }
 
 /* ---------- TipTap 扩展 ---------- */

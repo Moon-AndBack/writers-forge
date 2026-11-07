@@ -634,6 +634,8 @@
 /* ============================================================
    违禁词命中标注（.wf-clean-hit）+ 状态栏计数（.wf-clean-count）
    ------------------------------------------------------------------
+   0 态（`is-zero`）与「本章命中清单」弹层样式已迁至 clean-word-hits.css，
+   本文件只保留命中波浪线规则与状态栏胶囊的危险色主态。
    只提示不阻断：命中由 Decoration.inline 铺「波浪下划线」
    （见 chapters/proofreadMark.ts 的 CleanWordMark），不改文档内容、
    不动选区、不拦输入。
@@ -658,7 +660,7 @@
 }
 
 /* 状态栏「N 处违禁词」胶囊：复用 .st-pill-btn 胶囊底，仅把文字色换成 --danger。
-   实际类名为 `.st-pill-btn.wf-clean-count`（见 useChapterStatusBar.tsx），双类
+   实际类名为 `.st-pill-btn.wf-clean-count`（见 CleanWordHitsPill.tsx），双类
    选择器压过 `.st-pill-btn` 的 color；hover / is-open 态单列（各加一个类），
    保证交互态仍是危险色，替代原先的内联 `style={{ color }}`。 */
 .st-pill-btn.wf-clean-count,

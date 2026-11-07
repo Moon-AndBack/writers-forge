@@ -1,0 +1,89 @@
+/* ============================================================
+   违禁词状态栏胶囊（0 态）与「本章命中清单」弹层
+   ------------------------------------------------------------------
+   胶囊底 / 弹层底复用 statusbar-widgets.css 的 `.st-pill-btn` / `.st-popup`，
+   本文件只补 0 态静态外观与清单弹层的宽度 / 滚动 / 行样式。
+   危险色主态留在 writer-ai.css（`.st-pill-btn.wf-clean-count`），本文件
+   不改其基础样式。无 transform（AGENTS §8）。
+   ============================================================ */
+
+/* 0 态：静态文本（span，非按钮），muted 且不可点。
+   前缀 `.statusbar` 把基线提到 (0,4,0)，压过 writer-ai.css 的
+   `.st-pill-btn.wf-clean-count`（0,2,0）；hover 变体 (0,5,0) 再压过其
+   `.st-pill-btn.wf-clean-count:hover:not(:disabled)`（0,4,0），
+   避免静态胶囊被 hover 染回危险色。 */
+.statusbar .st-pill-btn.wf-clean-count.is-zero,
+.statusbar .st-pill-btn.wf-clean-count.is-zero:hover {
+  color: var(--text-mute);
+  cursor: default;
+}
+
+/* 清单弹层：复用 .st-popup 底座（bottom: calc(100% + 8px) / z-index: 900）。
+   胶囊固定在状态栏最左，故把 right: 0 改为 left: 0 向右展开，
+   避免弹层越出窗口左缘。 */
+.st-popup.wf-clean-pop {
+  left: 0;
+  right: auto;
+  width: 260px;
+  max-width: calc(100vw - 32px);
+  padding: 8px;
+}
+
+.wf-clean-pop__title {
+  padding: 2px 8px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-mute);
+}
+
+/* 命中词多时在弹层内部滚动，不撑破状态栏浮层。 */
+.wf-clean-pop__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.wf-clean-pop__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: var(--r-xs);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.wf-clean-pop__row:hover {
+  background: var(--soft-hover-solid);
+}
+
+/* 长词截断显示（完整原文见 title），类别 / 次数不收缩。 */
+.wf-clean-pop__word {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wf-clean-pop__tag {
+  flex: none;
+}
+
+.wf-clean-pop__times {
+  flex: none;
+  margin-left: auto;
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 底部词库出口：与列表以分隔线隔开，沿用 .st-popup-item 的交互态。 */
+.wf-clean-pop__open {
+  margin-top: 6px;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--r-xs) var(--r-xs);
+  color: var(--brand);
+  font-weight: 600;
+}

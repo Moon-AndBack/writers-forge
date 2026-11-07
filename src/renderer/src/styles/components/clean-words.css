@@ -1,58 +1,29 @@
 /* ============================================================
-   违禁词库弹窗（CleanWordsDialog / CleanWordsTable）
+   违禁词库弹窗（CleanWordsDialog / CleanWordsTable / CleanWordAddForm）
    由 components/dialogs/CleanWordsDialog.tsx 直接 import；复用全局 Modal /
-   FormField / Badge / Segmented / Select / Input / Switch / Button，仅补内容
-   排版与词表容器。命名：前缀 cw-；根 .cw-root；分区 .cw-section；元素 __*；
+   Segmented / Select / Input / Switch / Button，仅补内容排版与词表容器。
+   命名：前缀 cw-；根 .cw-root；行 2 .cw-results；行 3 .cw-add；元素 __*；
    状态 is-*。颜色一律取 styles/theme.css 令牌（四主题自适应）；行 hover 只换
    底色，无位移 / 缩放（AGENTS §8）。
    ============================================================ */
 
 /* ---------- 内容列 ---------- */
 .cw-root {
+  /* 三行布局内所有单行控件（Segmented / Select / Input / Button）的统一高度：
+     与 .wf-input--sm / .wf-select--sm 实测一致（6px 上下内边距 + 12px×1.4 行高
+     + 1px 上下描边 = 30.8px，全局 box-sizing: border-box）。 */
+  --cw-control-h: 30.8px;
+
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-/* ---------- 统计行 ---------- */
-.cw-stats {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.cw-stats__toggle {
-  margin-left: auto;
-}
-
-/* ---------- 分区（标题 + 分隔线，不用软底卡片） ---------- */
-.cw-section {
+/* 行 2：计数 + 词表 + 出处，三者间距小于行间距，保持为同一视觉分组。 */
+.cw-results {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-/* 分区标题 13.5/700，层级为「弹窗标题 14 > 分区标题 13.5 > 行标题 12.5」。 */
-.cw-section__title {
-  margin: 0;
-  padding: 0 2px 8px;
-  border-bottom: 1px solid var(--line);
-  font-size: 13.5px;
-  font-weight: 700;
-  line-height: 1.35;
-  color: var(--text);
-}
-
-/* ---------- 导入区 ---------- */
-/* 全局 .wf-field__hint 为 11px；本弹窗把辅助文案统一到 11.5
-   （与 .cw-count / .cw-meta 同级），避免同一弹窗出现两档辅助字号。 */
-.cw-section .wf-field__hint {
-  font-size: 11.5px;
-}
-
-.cw-import__confirm {
-  align-self: flex-end;
 }
 
 /* ---------- 词表筛选 ---------- */
@@ -63,14 +34,21 @@
   gap: 8px;
 }
 
-/* 分段控件 sm 实高 25.4px，低于同排 Select / Input sm 的 30.8px；
-   仅在筛选行补齐（不改 segmented.css 全局档位）。 */
-.cw-filters .wf-seg--sm {
-  height: 30.8px;
+/* 行内控件统一高度：Segmented sm 实高 25.4px、Button sm 为 26px，均低于同排
+   Select / Input sm 的 30.8px。这里用**显式 height**（全局 border-box）对齐，
+   不靠 `align-items: stretch`——Button 走 `min-height`，stretch 无法约束其内容盒。
+   仅作用于 cw- 作用域，不改 segmented.css / form.css / button.css 的全局档位。 */
+.cw-filters > .wf-seg {
+  height: var(--cw-control-h);
 }
 
-.cw-filters .wf-seg--sm .wf-seg__item {
+.cw-filters .wf-seg__item {
   height: 100%;
+}
+
+.cw-filters .wf-select__trigger,
+.cw-filters .wf-input {
+  height: var(--cw-control-h);
 }
 
 /* 类别下拉固定宽；搜索框占用剩余宽度并在窄窗 / 英文文案下收缩。
@@ -90,6 +68,51 @@
   font-size: 11.5px;
   line-height: 1.5;
   color: var(--text-mute);
+}
+
+/* ---------- 行 3：单条添加 ----------
+   与结果区之间用分隔线划开；控件高度同筛选行（--cw-control-h），
+   三件严格等高：Select 触发器 / Input 用显式 height，Button 同时覆盖
+   局部变量 --wf-btn-h（基类用 min-height）。 */
+.cw-add {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.cw-add__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cw-add__category {
+  flex: none;
+  width: 148px;
+}
+
+.cw-add__input {
+  flex: 1 1 140px;
+  min-width: 120px;
+}
+
+.cw-add__row .wf-select__trigger,
+.cw-add__row .wf-input,
+.cw-add__row .wf-btn {
+  height: var(--cw-control-h);
+}
+
+.cw-add__row .wf-btn {
+  --wf-btn-h: var(--cw-control-h);
+}
+
+.cw-add__hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--danger);
 }
 
 /* ---------- 词表容器 ----------
