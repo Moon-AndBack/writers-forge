@@ -1,0 +1,202 @@
+/* ============================================================
+   违禁词库弹窗（CleanWordsDialog / CleanWordsTable）
+   由 components/dialogs/CleanWordsDialog.tsx 直接 import；复用全局 Modal /
+   FormField / Badge / Segmented / Select / Input / Switch / Button，仅补内容
+   排版与词表容器。命名：前缀 cw-；根 .cw-root；分区 .cw-section；元素 __*；
+   状态 is-*。颜色一律取 styles/theme.css 令牌（四主题自适应）；行 hover 只换
+   底色，无位移 / 缩放（AGENTS §8）。
+   ============================================================ */
+
+/* ---------- 内容列 ---------- */
+.cw-root {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---------- 统计行 ---------- */
+.cw-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.cw-stats__toggle {
+  margin-left: auto;
+}
+
+/* ---------- 分区（标题 + 分隔线，不用软底卡片） ---------- */
+.cw-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 分区标题 13.5/700，层级为「弹窗标题 14 > 分区标题 13.5 > 行标题 12.5」。 */
+.cw-section__title {
+  margin: 0;
+  padding: 0 2px 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+/* ---------- 导入区 ---------- */
+/* 全局 .wf-field__hint 为 11px；本弹窗把辅助文案统一到 11.5
+   （与 .cw-count / .cw-meta 同级），避免同一弹窗出现两档辅助字号。 */
+.cw-section .wf-field__hint {
+  font-size: 11.5px;
+}
+
+.cw-import__confirm {
+  align-self: flex-end;
+}
+
+/* ---------- 词表筛选 ---------- */
+.cw-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 分段控件 sm 实高 25.4px，低于同排 Select / Input sm 的 30.8px；
+   仅在筛选行补齐（不改 segmented.css 全局档位）。 */
+.cw-filters .wf-seg--sm {
+  height: 30.8px;
+}
+
+.cw-filters .wf-seg--sm .wf-seg__item {
+  height: 100%;
+}
+
+/* 类别下拉固定宽；搜索框占用剩余宽度并在窄窗 / 英文文案下收缩。
+   原组件内联的 132 / flex 140 / min-width 120 收敛到此。 */
+.cw-filters__category {
+  flex: none;
+  width: 148px;
+}
+
+.cw-filters__search {
+  flex: 1 1 140px;
+  min-width: 120px;
+}
+
+.cw-count {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+/* ---------- 词表容器 ----------
+   软底 + 大圆角替代原 1px 裸边框；不另加描边——软底与弹窗 --pane 已有
+   6% 明度差，再套描边会形成「框中框」。 */
+.cw-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 40vh;
+  padding: 4px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  background: var(--soft-solid);
+  border-radius: var(--r-lg);
+}
+
+/* 行采用四槽 grid：词条（弹性）/ 类别 Tag（固定 88）/ 开关（固定 30）/ 删除（固定 24）。
+   后三列固定宽度，删除按钮的有无（内置词无删除）不再让开关 / Tag 横向漂移。
+   88px 依据：Tag 为 11.5px/500 + 左右各 10px 内边距，实测中文最长「政治」43px、
+   英文最长「Advertising」79.97px，88px 仍余 8px，zh / en 均不截断。
+   开关 sm 轨道 30px、IconButton sm 24px，均取自组件实际尺寸。
+   行 hover：容器已是 --soft-solid（light 下 --soft-hover-solid 与其同值 6%，
+   hover 会完全失效），故改用「软底上的控件」令牌 --control-on-soft
+   （light / sage / honey 10%、dark 14%，恒高于容器底色）。 */
+.cw-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px 30px 24px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: var(--r-xs);
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.cw-row:hover {
+  background: var(--control-on-soft);
+}
+
+/* 行内类别 Tag 的 neutral 底同为 --soft-solid，落在同色容器上会糊平；
+   换高一级的软底控件令牌（hover 档），保证容器底与行 hover 底之上都可见。
+   grid 项默认 stretch 会把 Tag 拉满 88px 列，故改为按内容宽度左对齐。 */
+.cw-row .wf-tag {
+  justify-self: start;
+}
+
+.cw-row .wf-tag--neutral {
+  background: var(--control-on-soft-hover);
+}
+
+/* 列表内仅剩「显示更多」一个 ghost 按钮（删除已换 IconButton，走 --danger
+   hover 底色，不受此规则影响）。ghost 默认 hover 底 --soft-hover-solid 在
+   软底容器上不可见，故本容器内改用高于行 hover 的档位。 */
+.cw-list .wf-btn--ghost:hover:not(:disabled) {
+  background: var(--control-on-soft-hover);
+}
+
+.cw-row__word {
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.cw-row__word.is-off {
+  color: var(--text-mute);
+}
+
+.cw-empty {
+  margin: 0;
+  color: var(--text-mute);
+}
+
+/* 加载态：单行状态提示（不引入 spinner），与列表左对齐。 */
+.cw-loading {
+  margin: 0;
+  padding: 10px 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+/* 空态 / 失败态：EmptyState compact 的 180px 最小高在 640px 宽弹窗内偏高，
+   仅在 cw- 范围内收窄到 120px，不改 empty-state.css 全局。 */
+.cw-empty.placeholder-view {
+  min-height: 120px;
+  padding: 20px 12px;
+}
+
+.cw-more {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0;
+}
+
+/* ---------- 来源说明 ---------- */
+.cw-meta {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cw-row {
+    transition: none;
+  }
+}

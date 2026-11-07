@@ -40,6 +40,8 @@ export interface CleanWordsLibrary {
   sourceFilter: SourceFilter
   categoryFilter: CategoryFilter
   query: string
+  /** 是否有任一筛选生效（区分「真的没有词条」与「筛选无结果」）。 */
+  hasActiveFilter: boolean
   sourceOptions: ReadonlyArray<SegmentedOption<SourceFilter>>
   categoryOptions: SelectOption[]
   filtered: CleanWordRow[]
@@ -50,6 +52,8 @@ export interface CleanWordsLibrary {
   handleSourceChange: (value: SourceFilter) => void
   handleCategoryChange: (value: string) => void
   handleQueryChange: (value: string) => void
+  /** 重新取数（失败重试；导入 / 删除后亦复用）。 */
+  refresh: () => Promise<void>
   loadMore: () => void
   handleRowToggle: (row: CleanWordRow) => (event: ChangeEvent<HTMLInputElement>) => void
   handleDelete: (row: CleanWordRow) => Promise<void>
@@ -130,6 +134,9 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
 
   const visibleRows = useMemo(() => filtered.slice(0, visible), [filtered, visible])
 
+  /** 空态分流用：三项筛选任一非默认即视为「筛选后无结果」。 */
+  const hasActiveFilter = sourceFilter !== 'all' || categoryFilter !== 'all' || query.trim() !== ''
+
   const sourceOptions = useMemo<ReadonlyArray<SegmentedOption<SourceFilter>>>(
     () => [
       { value: 'all' as const, label: t('cleanWords.sourceAll') },
@@ -202,6 +209,7 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
       }
       setRows((prev) => prev.filter((item) => item.id !== row.id))
       resetActiveCleanWords()
+      showToast(t('cleanWords.deleteDone', { word: row.word }))
       void refresh()
     },
     [refresh, showToast, t]
@@ -253,6 +261,7 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
     sourceFilter,
     categoryFilter,
     query,
+    hasActiveFilter,
     sourceOptions,
     categoryOptions,
     filtered,
@@ -263,6 +272,7 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
     handleSourceChange,
     handleCategoryChange,
     handleQueryChange,
+    refresh,
     loadMore,
     handleRowToggle,
     handleDelete,

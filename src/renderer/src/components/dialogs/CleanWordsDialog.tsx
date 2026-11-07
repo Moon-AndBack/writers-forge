@@ -1,7 +1,8 @@
+import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Modal, Tag, Textarea } from '../ui'
+import { Badge, Button, FormField, Modal, Textarea } from '../ui'
 import { BUILTIN_META } from './cleanWordsMeta'
-import { styles } from './cleanWordsStyles'
+import '../../styles/components/clean-words.css'
 import { CleanWordsTable } from './CleanWordsTable'
 import { useCleanWordsLibrary } from './useCleanWordsLibrary'
 
@@ -14,6 +15,9 @@ import { useCleanWordsLibrary } from './useCleanWordsLibrary'
    列表性能：项目无虚拟列表依赖（853 条全量 DOM 约 2.5 万 px 会明显卡顿），故用
    「三重筛选 + 分批渲染」：筛选把候选集压到单类别上限（当前 436 条）以内，再按
    `PAGE_SIZE` 逐批挂载（首屏 ≤80 行），「显示更多」每次追加一页。
+
+   样式：类名前缀 `cw-`，见 styles/components/clean-words.css（分区标题 + 分隔线
+   分组，不用软底卡片）。管理型弹窗无提交动作，故不传 `footer`，关闭入口为头部 ×。
    ============================================================ */
 
 export interface CleanWordsDialogProps {
@@ -27,8 +31,10 @@ export interface CleanWordsDialogProps {
  */
 export function CleanWordsDialog({ open, onClose }: CleanWordsDialogProps) {
   const { t } = useTranslation('chapters')
-  const { t: tCommon } = useTranslation('common')
   const library = useCleanWordsLibrary(open)
+  // 导入多行文本的 id：供 FormField 的 <label htmlFor> 关联（可见标签只作视觉提示，
+  // 读屏名称由 Textarea 独立的 aria-label 提供，不复用「导入 / 收起导入」按钮文案）。
+  const importFieldId = useId()
 
   return (
     <Modal
@@ -37,22 +43,17 @@ export function CleanWordsDialog({ open, onClose }: CleanWordsDialogProps) {
       title={t('cleanWords.dialogTitle')}
       size="lg"
       ariaLabel={t('cleanWords.dialogTitle')}
-      footer={
-        <Button variant="secondary" style={styles.close} onClick={onClose}>
-          {tCommon('close')}
-        </Button>
-      }
     >
       {library.toastNode}
-      <div style={styles.root}>
-        {/* A. 统计 + 导入 */}
-        <div style={styles.statsRow}>
-          <Tag>{t('cleanWords.statsBuiltin', { total: library.totals.builtin })}</Tag>
-          <Tag>{t('cleanWords.statsUser', { total: library.totals.user })}</Tag>
+      <div className="cw-root">
+        {/* A. 统计 + 导入开关 */}
+        <div className="cw-stats">
+          <Badge>{t('cleanWords.statsBuiltin', { total: library.totals.builtin })}</Badge>
+          <Badge>{t('cleanWords.statsUser', { total: library.totals.user })}</Badge>
           <Button
             size="sm"
-            variant={library.importOpen ? 'primary' : 'secondary'}
-            style={{ marginLeft: 'auto' }}
+            variant="secondary"
+            className="cw-stats__toggle"
             onClick={library.toggleImport}
           >
             {library.importOpen ? t('cleanWords.importHide') : t('cleanWords.importToggle')}
@@ -60,51 +61,63 @@ export function CleanWordsDialog({ open, onClose }: CleanWordsDialogProps) {
         </div>
 
         {library.importOpen ? (
-          <div style={styles.importBox}>
-            <Textarea
-              size="sm"
-              rows={6}
-              value={library.importText}
-              aria-label={t('cleanWords.importToggle')}
-              placeholder={t('cleanWords.importPlaceholder')}
-              spellCheck={false}
-              onChange={(event) => library.setImportText(event.target.value)}
-            />
-            <p style={styles.hint}>{t('cleanWords.importHint')}</p>
+          <section className="cw-section">
+            <h2 className="cw-section__title">{t('cleanWords.importSection')}</h2>
+            <FormField
+              label={t('cleanWords.importLabel')}
+              htmlFor={importFieldId}
+              hint={t('cleanWords.importHint')}
+            >
+              <Textarea
+                id={importFieldId}
+                size="sm"
+                rows={6}
+                value={library.importText}
+                aria-label={t('cleanWords.importAria')}
+                placeholder={t('cleanWords.importPlaceholder')}
+                spellCheck={false}
+                onChange={(event) => library.setImportText(event.target.value)}
+              />
+            </FormField>
             <Button
               size="sm"
               variant="primary"
-              style={{ alignSelf: 'flex-end' }}
+              className="cw-import__confirm"
               loading={library.importing}
               disabled={library.importText.trim() === ''}
               onClick={() => void library.handleImport()}
             >
               {t('cleanWords.importConfirm')}
             </Button>
-          </div>
+          </section>
         ) : null}
 
         {/* B. 筛选 + 列表 */}
-        <CleanWordsTable
-          sourceFilter={library.sourceFilter}
-          categoryFilter={library.categoryFilter}
-          query={library.query}
-          sourceOptions={library.sourceOptions}
-          categoryOptions={library.categoryOptions}
-          visibleRows={library.visibleRows}
-          total={library.filtered.length}
-          loaded={library.loaded}
-          failed={library.failed}
-          onSourceChange={library.handleSourceChange}
-          onCategoryChange={library.handleCategoryChange}
-          onQueryChange={library.handleQueryChange}
-          onRowToggle={library.handleRowToggle}
-          onDelete={library.handleDelete}
-          onShowMore={library.loadMore}
-        />
+        <section className="cw-section">
+          <h2 className="cw-section__title">{t('cleanWords.listSection')}</h2>
+          <CleanWordsTable
+            sourceFilter={library.sourceFilter}
+            categoryFilter={library.categoryFilter}
+            query={library.query}
+            hasActiveFilter={library.hasActiveFilter}
+            sourceOptions={library.sourceOptions}
+            categoryOptions={library.categoryOptions}
+            visibleRows={library.visibleRows}
+            total={library.filtered.length}
+            loaded={library.loaded}
+            failed={library.failed}
+            onSourceChange={library.handleSourceChange}
+            onCategoryChange={library.handleCategoryChange}
+            onQueryChange={library.handleQueryChange}
+            onRowToggle={library.handleRowToggle}
+            onDelete={library.handleDelete}
+            onShowMore={library.loadMore}
+            onRetry={() => void library.refresh()}
+          />
+        </section>
 
         {/* C. 内置词表来源 / 许可 / 拉取日期 */}
-        <p style={styles.muted}>
+        <p className="cw-meta">
           {t('cleanWords.metaLine', {
             source: BUILTIN_META.source,
             license: BUILTIN_META.license,
