@@ -36,6 +36,7 @@ const chapters = {
   editor: {
     lastEdited: 'Last edited {{time}}',
     copyAll: 'Copy full text (plain text, title excluded)',
+    copyAllButton: 'Copy full text',
     copyDone: 'Full text copied',
     copyFailed: 'Copy failed, please try again',
     copyEmpty: 'The chapter body is empty, nothing to copy',

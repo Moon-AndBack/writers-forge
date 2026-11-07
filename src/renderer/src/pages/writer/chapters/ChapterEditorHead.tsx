@@ -42,7 +42,8 @@ export interface ChapterEditorHeadProps {
 }
 
 /**
- * 章节编辑头：标题行（`DocTitleRow`）+ 右侧「复制全文」按钮 + 元信息行（`DocMeta`）。
+ * 章节编辑头：标题行（`DocTitleRow`）+ 右侧「复制全文」按钮（文字 + 图标）+ 元信息行
+ * （`DocMeta`）。
  *
  * 位置：按钮放在**标题行右侧**（`.editor-head-title` 内、标题行之后）。DOM 里
  * `.editor-head` 的唯一子 div 是 `.editor-inner`，标题行 `.doc-title-row` 自身 100% 宽、
@@ -81,6 +82,7 @@ export default function ChapterEditorHead({
             onClick={onCopyAll}
             disabled={copyDisabled}
           >
+            <span className="editor-head-copy-label">{t('editor.copyAllButton')}</span>
             <CopyIcon />
           </IconButton>
         </div>

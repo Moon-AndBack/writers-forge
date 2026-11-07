@@ -145,8 +145,33 @@
   min-width: 0;
 }
 
-/* 复制的失败 / 成功提示走通用 Toast；此处仅收敛按钮与标题字号的比例（图标 24 视框）。 */
+/* 「复制全文」按钮：可见文字（左）+ 图标（右）。
+   IconButton（--sm）默认是 24×24 的圆形单图标容器，这里在**调用处**改为自适应宽度的
+   胶囊：高度沿用 --sm 的 24px，保证与 28px 标题行垂直居中不错位；文字 12.5px 与
+   头部元信息同档，不换行、不参与收缩（标题侧 .doc-title-row 已 flex: 1 + min-width: 0，
+   空间不足时只压缩名段输入，不会挤压按钮或导致换行）。
+   图标由 --sm 的 14px 放大到 16px（+2px，仍居中于 24px 高容器），仅作用于本按钮，
+   不改 IconButton 的全局尺寸。 */
 .editor-head .editor-head-copy {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.editor-head .editor-head-copy > svg {
+  width: 16px;
+  height: 16px;
+}
+
+.editor-head .editor-head-copy-label {
   flex: none;
 }
 

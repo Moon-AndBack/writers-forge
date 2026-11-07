@@ -46,6 +46,7 @@ const chapters = {
   editor: {
     lastEdited: '最后编辑 {{time}}',
     copyAll: '复制全文（纯文本，不含标题）',
+    copyAllButton: '复制全文',
     copyDone: '已复制全文',
     copyFailed: '复制失败，请重试',
     copyEmpty: '正文为空，没有可复制的内容',
