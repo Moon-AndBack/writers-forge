@@ -303,10 +303,10 @@
   height: 20px;
   /* 关闭态轨道：中性灰底 + 1px 描边，四主题自适应（纯令牌，无硬编码）。
      目的是让「关」一眼可辨：不依赖品牌色，也不与任何主题底色融掉。
-     描边不用 --line（对底色仅约 1.2–1.6:1，浅色不足），改用 --text-dim 70% 混 --pane：
-     四主题下对底部表面约 3.3:1（light/sage/honey）～5.4:1（dark），满足 WCAG 非文本 ≥3:1。 */
-  background: color-mix(in srgb, var(--text) 14%, var(--pane));
-  border: 1px solid color-mix(in srgb, var(--text-dim) 70%, var(--pane));
+     描边不用 --line（对底色仅约 1.2–1.6:1，浅色不足），改用 --text-dim 80% 混 --pane：
+     四主题下对底部表面约 3.6:1（light/sage/honey）～5.8:1（dark），满足 WCAG 非文本 ≥3:1。 */
+  background: color-mix(in srgb, var(--text) 24%, var(--pane));
+  border: 1px solid color-mix(in srgb, var(--text-dim) 80%, var(--pane));
   box-shadow: inset 0 1px 2px color-mix(in srgb, var(--text) 8%, transparent);
   border-radius: 99px;
   transition:
@@ -329,9 +329,9 @@
     background 0.18s var(--ease);
 }
 .wf-switch:hover .wf-switch__input:not(:disabled):not(:checked) + .wf-switch__track {
-  background: color-mix(in srgb, var(--text) 20%, var(--pane));
+  background: color-mix(in srgb, var(--text) 30%, var(--pane));
   /* hover 加深一档时描边同步加强（保持中性灰，不再低于基础态对比度） */
-  border-color: color-mix(in srgb, var(--text-dim) 85%, var(--pane));
+  border-color: color-mix(in srgb, var(--text-dim) 90%, var(--pane));
 }
 .wf-switch:hover .wf-switch__input:not(:disabled):checked + .wf-switch__track {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent);
@@ -352,7 +352,9 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);
 }
 .wf-switch__input:disabled + .wf-switch__track {
-  background: var(--soft-solid);
+  /* 禁用态：不用 --soft-solid（与分区卡底同值，实测 1.00:1 等同消失），
+     改 --text 10% 混 --pane，在四主题下都比卡片底深/亮一档，仍低于正常关闭态。 */
+  background: color-mix(in srgb, var(--text) 10%, var(--pane));
   border-color: var(--line);
 }
 .wf-switch__label {
