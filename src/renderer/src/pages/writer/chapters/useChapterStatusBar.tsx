@@ -73,7 +73,6 @@ export function useChapterStatusBar({
             <button
               type="button"
               className={`st-pill-btn wf-clean-count${cleanWordsOpen ? ' is-open' : ''}`}
-              style={{ color: 'var(--danger)' }}
               title={tChapters('proofread.hitsTitle')}
               aria-label={tChapters('cleanWords.statusBarAria', { hits: hitCount })}
               aria-pressed={cleanWordsOpen}

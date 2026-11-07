@@ -641,19 +641,28 @@
    与实体高亮共存：`.entity-highlight` 只设 background / color，
    本类只设 text-decoration，两者可叠在同一文本上（互不覆盖）。
 
+   与伏笔标记（`.wf-foreshadow-mark`，同为 text-decoration）**同区间**时：
+   同元素只能有一条 text-decoration，后加载者胜出（foreshadow-mark.css 在
+   writer.css 里排在 writer-ai.css 之后）。故本规则加 `.ProseMirror` 前缀
+   提到 (0,2,0)，稳压伏笔的 (0,1,0)——重叠区间始终显示红色波浪线，不受
+   @import 顺序影响；不重叠的伏笔区间视觉不变。
+
    只取 --danger 主题令牌（四主题各自定义），无 transform（AGENTS §8）。
    thickness / offset 固定：正文 18px 字号下波浪线落在基线下 3px，
    不压下一行、不与实体高亮的浅底边缘打架。
    ============================================================ */
-.wf-clean-hit {
+.ProseMirror .wf-clean-hit {
   text-decoration: underline wavy var(--danger);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
 
-/* 状态栏「N 处违禁词」胶囊：复用 .st-meta 胶囊底，仅把文字色换成 --danger。
-   双类选择器（.st-meta.wf-clean-count）保证压过 .st-meta 的 color，
-   不依赖 writer-ai.css 与 statusbar-widgets.css 的加载先后。 */
-.st-meta.wf-clean-count {
+/* 状态栏「N 处违禁词」胶囊：复用 .st-pill-btn 胶囊底，仅把文字色换成 --danger。
+   实际类名为 `.st-pill-btn.wf-clean-count`（见 useChapterStatusBar.tsx），双类
+   选择器压过 `.st-pill-btn` 的 color；hover / is-open 态单列（各加一个类），
+   保证交互态仍是危险色，替代原先的内联 `style={{ color }}`。 */
+.st-pill-btn.wf-clean-count,
+.st-pill-btn.wf-clean-count:hover:not(:disabled),
+.st-pill-btn.wf-clean-count.is-open {
   color: var(--danger);
 }

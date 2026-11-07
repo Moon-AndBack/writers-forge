@@ -44,6 +44,12 @@ export const proofreadKey = new PluginKey<DecorationSet>('cleanWordProofread')
 /** 停笔多久后重扫（ms）：与实体高亮同频，纯尾沿防抖。 */
 const SCAN_DEBOUNCE_MS = 500
 
+/** 撞上「编辑器未初始化」时的重试间隔（ms）：仅等下一轮宏任务，不改变 500ms 防抖口径。 */
+const INIT_RETRY_MS = 20
+
+/** 未初始化重试上限（次，合计约 400ms）：限次防死循环，超限等后续事务 / 词库广播再触发。 */
+const INIT_RETRY_MAX = 20
+
 /** 违禁词命中（装饰用，`from` / `to` 为**文档绝对 pos**，左闭右开）。 */
 export interface ProofreadHit {
   from: number
@@ -258,6 +264,8 @@ interface ProofreadController {
   pending: boolean
   /** 编辑器已销毁：丢弃一切后续动作。 */
   disposed: boolean
+  /** 「编辑器未初始化」的重试次数（限次防死循环，初始化成功后清零）。 */
+  initRetries: number
   /** 词表快照（载入后常驻）。 */
   words: ActiveCleanWord[] | null
 }
@@ -270,13 +278,17 @@ const activeControllers = new Set<ProofreadController>()
 
 function ensureController(editor: Editor): ProofreadController {
   let controller = controllers.get(editor)
-  if (controller === undefined) {
+  // 插件 view 重建（ProseMirror `updatePluginViews` 先 destroy 旧 view 再建新 view）复用同一
+  // `Editor` 实例：旧控制器已被 dispose，必须视为不存在——否则新 view 拿到死引用（disposed
+  // 会让 requestScan / runScan 直接返回），首扫与事务监听双双空转。
+  if (controller === undefined || controller.disposed) {
     controller = {
       editor,
       timer: null,
       scanning: false,
       pending: false,
       disposed: false,
+      initRetries: 0,
       words: null
     }
     controllers.set(editor, controller)
@@ -285,17 +297,19 @@ function ensureController(editor: Editor): ProofreadController {
   return controller
 }
 
-/** 挂 / 重置尾沿定时器（`immediate` = 结构性替换，0ms 立即扫）。 */
-function requestScan(controller: ProofreadController, immediate = false): void {
+/** 按 `delay` 挂 / 重置定时器（重试与防抖共用；调用处无须先判 `disposed`）。 */
+function scheduleScan(controller: ProofreadController, delay: number): void {
   if (controller.disposed) return
   if (controller.timer !== null) window.clearTimeout(controller.timer)
-  controller.timer = window.setTimeout(
-    () => {
-      controller.timer = null
-      void runScan(controller)
-    },
-    immediate ? 0 : SCAN_DEBOUNCE_MS
-  )
+  controller.timer = window.setTimeout(() => {
+    controller.timer = null
+    void runScan(controller)
+  }, delay)
+}
+
+/** 挂 / 重置尾沿定时器（`immediate` = 结构性替换，0ms 立即扫）。 */
+function requestScan(controller: ProofreadController, immediate = false): void {
+  scheduleScan(controller, immediate ? 0 : SCAN_DEBOUNCE_MS)
 }
 
 // 词库改动 → 共享层广播失效：丢弃各控制器的词表快照并立即重扫（模块级订阅；控制器
@@ -324,7 +338,18 @@ async function runScan(controller: ProofreadController): Promise<void> {
     do {
       controller.pending = false
       const { editor } = controller
-      if (controller.disposed || editor.isDestroyed || !editor.isInitialized) return
+      if (controller.disposed || editor.isDestroyed) return
+      if (!editor.isInitialized) {
+        // TipTap 在 `mount()` 的 `setTimeout(0)` 末尾才置 `isInitialized`，而插件 view 的首扫
+        // 抢先排在更早的 0ms 宏任务上：直接 return 会让首扫永不执行（之后也未必有事务触发）。
+        // 改为短延时限次重排；超限放弃，等下一次事务 / 词库失效广播兜底。
+        if (controller.initRetries < INIT_RETRY_MAX) {
+          controller.initRetries += 1
+          scheduleScan(controller, INIT_RETRY_MS)
+        }
+        return
+      }
+      controller.initRetries = 0
       const epoch = getCleanWordsEpoch()
       const words = controller.words ?? (await loadActiveCleanWords())
       if (controller.disposed || editor.isDestroyed) return
@@ -355,6 +380,9 @@ async function runScan(controller: ProofreadController): Promise<void> {
 function disposeController(controller: ProofreadController): void {
   controller.disposed = true
   activeControllers.delete(controller)
+  // 只回收「仍指向本控制器」的映射：插件 view 重建时新控制器可能已写入同一 editor key，
+  // 无条件 delete 会误删新映射（下次 ensureController 又多建一个）。
+  if (controllers.get(controller.editor) === controller) controllers.delete(controller.editor)
   if (controller.timer !== null) {
     window.clearTimeout(controller.timer)
     controller.timer = null
