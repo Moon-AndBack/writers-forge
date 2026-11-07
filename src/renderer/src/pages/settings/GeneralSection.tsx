@@ -1,7 +1,9 @@
+import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Select, Switch } from '../../components/ui'
 import SectionCard from './SectionCard'
 import SettingRow from './SettingRow'
+import { settingRowDescriptionId } from './settingRowIds'
 import { useLocale } from '../../i18n/context'
 import { useSettingsValue } from './useSettingsValue'
 import { DEFAULT_VIEW_OPTIONS, resolveDefaultView, type DefaultView } from './defaultView'
@@ -40,11 +42,21 @@ export default function GeneralSection() {
     raw === null || raw === '' ? true : raw === 'true'
   )
   const defaultView = useSettingsValue('defaultView', 'bookshelf', resolveDefaultView)
+  const localeId = useId()
+  const autoSaveId = useId()
+  const defaultViewId = useId()
 
   return (
     <SectionCard title={t('general.title')} description={t('general.description')}>
-      <SettingRow label={t('locale.label')} description={t('locale.description')}>
+      <SettingRow
+        controlId={localeId}
+        label={t('locale.label')}
+        description={t('locale.description')}
+      >
         <Select
+          id={localeId}
+          ariaDescribedBy={settingRowDescriptionId(localeId)}
+          size="sm"
           className="settings-control settings-control--select"
           value={locale}
           options={LOCALE_OPTIONS.map((option) => ({
@@ -56,16 +68,30 @@ export default function GeneralSection() {
         />
       </SettingRow>
 
-      <SettingRow label={t('autoSave.label')} description={t('autoSave.description')}>
+      <SettingRow
+        controlId={autoSaveId}
+        label={t('autoSave.label')}
+        description={t('autoSave.description')}
+      >
         <Switch
+          id={autoSaveId}
+          aria-describedby={settingRowDescriptionId(autoSaveId)}
+          size="sm"
           checked={autoSave.value}
           aria-label={t('autoSave.label')}
           onChange={(event) => autoSave.setValue(event.target.checked)}
         />
       </SettingRow>
 
-      <SettingRow label={t('defaultView.label')} description={t('defaultView.description')}>
+      <SettingRow
+        controlId={defaultViewId}
+        label={t('defaultView.label')}
+        description={t('defaultView.description')}
+      >
         <Select
+          id={defaultViewId}
+          ariaDescribedBy={settingRowDescriptionId(defaultViewId)}
+          size="sm"
           className="settings-control settings-control--select"
           value={defaultView.value}
           options={DEFAULT_VIEW_OPTIONS.map((option) => ({

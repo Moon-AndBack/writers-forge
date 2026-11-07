@@ -6,12 +6,13 @@
  * 拆分说明：连接配置状态在 `useAiSettingsConfig`（`draft` 单点持有），模型列表状态在
  * `useAiModelList`，model / apiKey / test 三行渲染在各自的行组件；本文件只做组合。
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Input, Select } from '../../components/ui'
 import type { AiProviderId } from '../../../../preload/types/ai'
 import SectionCard from './SectionCard'
 import SettingRow from './SettingRow'
+import { settingRowDescriptionId } from './settingRowIds'
 import AiApiKeyRow from './AiApiKeyRow'
 import AiCatalogRow from './AiCatalogRow'
 import AiCompressionRow from './AiCompressionRow'
@@ -58,6 +59,8 @@ export default function AiSection() {
   })
 
   const [testState, setTestState] = useState<TestState>({ status: 'idle' })
+  const providerId = useId()
+  const baseUrlId = useId()
 
   // 挂载时拉取一次配置（含掩码视图）；成功后自动拉模型列表。
   useEffect(() => {
@@ -133,6 +136,7 @@ export default function AiSection() {
   return (
     <SectionCard title={t('section.title')} description={t('section.description')}>
       <SettingRow
+        controlId={providerId}
         label={t('provider.label')}
         description={
           <>
@@ -142,6 +146,9 @@ export default function AiSection() {
         }
       >
         <Select
+          id={providerId}
+          ariaDescribedBy={settingRowDescriptionId(providerId)}
+          size="sm"
           className="settings-control settings-control--select"
           value={draft.provider}
           options={[
@@ -155,6 +162,7 @@ export default function AiSection() {
       </SettingRow>
 
       <SettingRow
+        controlId={baseUrlId}
         label={t('baseUrl.label')}
         description={
           <>
@@ -164,6 +172,9 @@ export default function AiSection() {
         }
       >
         <Input
+          id={baseUrlId}
+          aria-describedby={settingRowDescriptionId(baseUrlId)}
+          size="sm"
           className="settings-control settings-control--wide"
           value={draft.baseUrl}
           placeholder={t(isOpencode ? 'baseUrl.placeholderOpencode' : 'baseUrl.placeholder')}

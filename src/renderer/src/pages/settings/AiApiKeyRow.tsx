@@ -4,9 +4,11 @@
  * 只负责渲染：密码输入、保存 / 清除按钮与密钥状态提示。保存 / 清除逻辑在
  * `useAiSettingsConfig`，经 `onSave` / `onClear` 交回页面。
  */
+import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Input } from '../../components/ui'
 import SettingRow from './SettingRow'
+import { settingRowDescriptionId } from './settingRowIds'
 
 export interface AiApiKeyRowProps {
   value: string
@@ -44,6 +46,7 @@ export function AiApiKeyRow({
   onClear
 }: AiApiKeyRowProps) {
   const { t } = useTranslation('ai')
+  const apiKeyControlId = useId()
 
   const keyHint = ((): { text: string; tone: 'ok' | 'warn' } | null => {
     if (encryptionUnavailable) return { text: t('apiKey.encryptionUnavailable'), tone: 'warn' }
@@ -56,6 +59,7 @@ export function AiApiKeyRow({
 
   return (
     <SettingRow
+      controlId={apiKeyControlId}
       label={t('apiKey.label')}
       description={
         <>
@@ -68,7 +72,10 @@ export function AiApiKeyRow({
     >
       <div className="ai-control">
         <Input
+          id={apiKeyControlId}
+          aria-describedby={settingRowDescriptionId(apiKeyControlId)}
           type="password"
+          size="sm"
           className="settings-control settings-control--wide"
           value={value}
           placeholder={

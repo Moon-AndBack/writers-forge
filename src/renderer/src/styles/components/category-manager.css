@@ -56,11 +56,13 @@
   gap: 8px;
   padding: 4px 4px 4px 10px;
   border-radius: var(--r-xs);
-  transition: background 0.15s var(--ease);
+  transition: background var(--dur-fast) var(--ease);
 }
 
+/* hover 用 --soft（半透明叠在卡片 --soft-solid 底上更明显一档）；
+   原先的 --soft-solid 与卡片同值，亮色主题下完全不可见。 */
 .cm-item:hover {
-  background: var(--soft-solid);
+  background: var(--soft);
 }
 
 .cm-item__name {

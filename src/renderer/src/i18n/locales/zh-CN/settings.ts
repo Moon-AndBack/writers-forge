@@ -30,7 +30,7 @@ const settings = {
   },
   appearance: {
     title: '外观与主题',
-    description: '主题模式'
+    description: '界面主题与显示偏好'
   },
   themeMode: {
     label: '主题模式',

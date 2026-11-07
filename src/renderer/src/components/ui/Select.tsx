@@ -28,6 +28,8 @@ export interface SelectProps {
   name?: string
   /** 无可见标签时提供给无障碍 */
   ariaLabel?: string
+  /** 说明文案 id（写入触发按钮的 aria-describedby，供设置行关联行说明） */
+  ariaDescribedBy?: string
   /** 面板为空时的提示文案 */
   emptyText?: string
   className?: string
@@ -53,6 +55,7 @@ export function Select({
   id,
   name,
   ariaLabel,
+  ariaDescribedBy,
   emptyText,
   className
 }: SelectProps) {
@@ -237,6 +240,7 @@ export function Select({
         }
         aria-invalid={invalid ? true : undefined}
         aria-label={ariaLabel}
+        aria-describedby={ariaDescribedBy}
         onClick={() => (open ? closePanel() : openPanel())}
         onKeyDown={handleTriggerKeyDown}
       >

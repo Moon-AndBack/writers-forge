@@ -4,10 +4,12 @@
  * 只负责渲染：列表 / 手填两种模式、刷新与回列表按钮、加载 / 失败 / 空态提示。
  * 状态与落库逻辑在 `useAiModelList`，模型值写回由 `onChange` 交回页面。
  */
+import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Input, Select } from '../../components/ui'
 import type { AiError } from '../../../../preload/types/ai'
 import SettingRow from './SettingRow'
+import { settingRowDescriptionId } from './settingRowIds'
 import { CUSTOM_MODEL_VALUE, ERROR_KEYS, type ModelsState } from './aiSectionSupport'
 import type { ModelMode } from './useAiModelList'
 
@@ -45,6 +47,7 @@ export function AiModelRow({
   onUseList
 }: AiModelRowProps) {
   const { t } = useTranslation('ai')
+  const modelControlId = useId()
 
   const modelErrorText =
     modelsState === 'error'
@@ -58,6 +61,7 @@ export function AiModelRow({
 
   return (
     <SettingRow
+      controlId={modelControlId}
       label={t('model.label')}
       description={
         <>
@@ -79,6 +83,9 @@ export function AiModelRow({
       <div className="ai-control">
         {modelMode === 'custom' ? (
           <Input
+            id={modelControlId}
+            aria-describedby={settingRowDescriptionId(modelControlId)}
+            size="sm"
             className="settings-control settings-control--wide"
             value={value}
             placeholder={t('model.placeholder')}
@@ -97,6 +104,9 @@ export function AiModelRow({
           />
         ) : (
           <Select
+            id={modelControlId}
+            ariaDescribedBy={settingRowDescriptionId(modelControlId)}
+            size="sm"
             className="settings-control settings-control--model"
             value={value}
             options={modelOptions}

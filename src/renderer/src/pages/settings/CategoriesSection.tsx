@@ -186,6 +186,8 @@ export default function CategoriesSection() {
           </p>
         ) : null}
 
+        {/* 空态例外（AGENTS §9）：卡片内单行空态，通用 EmptyState 的 compact 变体仍需
+            180px 最小高度，会撑高设置卡片，故保留纯文本实现。 */}
         {customRows.length === 0 ? (
           <p className="cm-empty">{t('categories.empty')}</p>
         ) : (
@@ -242,6 +244,7 @@ export default function CategoriesSection() {
                       <Button
                         size="sm"
                         variant="ghost"
+                        className="settings-danger-action"
                         aria-label={t('categories.deleteAria', { name: row.name })}
                         onClick={() => handleDelete(row)}
                       >

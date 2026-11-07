@@ -1,9 +1,11 @@
+import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Select } from '../../components/ui'
 import type { ThemeId } from '../../theme/themes'
 import { useTheme } from '../../theme/useTheme'
 import SectionCard from './SectionCard'
 import SettingRow from './SettingRow'
+import { settingRowDescriptionId } from './settingRowIds'
 
 /**
  * 通用设置 · 外观与主题组。
@@ -21,6 +23,7 @@ export default function AppearanceSection() {
   const { t } = useTranslation('theme')
   const { t: tSettings } = useTranslation('settings')
   const { theme, themes, setTheme } = useTheme()
+  const themeModeId = useId()
 
   return (
     <SectionCard
@@ -28,10 +31,14 @@ export default function AppearanceSection() {
       description={tSettings('appearance.description')}
     >
       <SettingRow
+        controlId={themeModeId}
         label={tSettings('themeMode.label')}
         description={tSettings('themeMode.description')}
       >
         <Select
+          id={themeModeId}
+          ariaDescribedBy={settingRowDescriptionId(themeModeId)}
+          size="sm"
           className="settings-control settings-control--select"
           value={theme}
           options={themes.map((item) => ({ value: item.id, label: t(item.labelKey) }))}

@@ -8,12 +8,13 @@
  *   下方列出已保存的覆写，可逐条删除。写入后经 `overrideContextLimit` 失效渲染层
  *   窗口缓存，已打开的 AI 面板占用条立即按新窗口重算。
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Input, Switch } from '../../components/ui'
+import { Button, Input, Switch, useTooltip } from '../../components/ui'
 import { formatTokenCount } from '../writer/right/ai/contextBudget'
 import { overrideContextLimit } from '../writer/right/ai/useContextUsage'
 import SettingRow from './SettingRow'
+import { settingRowDescriptionId } from './settingRowIds'
 
 /** 手填窗口的合法区间（与主进程 `catalogCache` 的 MIN / MAX_CONTEXT_TOKENS 一致）。 */
 const MIN_CONTEXT_TOKENS = 1_024
@@ -31,6 +32,23 @@ function toEntries(record: Record<string, number>): OverrideEntry[] {
     .sort((a, b) => a.model.localeCompare(b.model))
 }
 
+/**
+ * 覆写列表的模型名：超长时 CSS 省略，完整名称改由自绘 Tooltip 展示
+ * （原生 `title` 已移除）。每个列表项各持一个锚点，故单独成组件承载 hook。
+ */
+function ModelName({ name }: { name: string }) {
+  const { anchorRef, anchorProps, tooltip } = useTooltip<HTMLSpanElement>({ content: name })
+
+  return (
+    <>
+      {tooltip}
+      <span ref={anchorRef} {...anchorProps} className="ai-window__model">
+        {name}
+      </span>
+    </>
+  )
+}
+
 export function AiCompressionRow() {
   const { t } = useTranslation('ai')
 
@@ -40,6 +58,8 @@ export function AiCompressionRow() {
   const [busy, setBusy] = useState(false)
   const [overrides, setOverrides] = useState<OverrideEntry[]>([])
   const [error, setError] = useState<string | null>(null)
+  const enabledControlId = useId()
+  const windowControlId = useId()
 
   /** 重新读取已保存覆写（失败保留旧列表，不打扰用户）。 */
   const refreshOverrides = useCallback(async (): Promise<void> => {
@@ -130,10 +150,14 @@ export function AiCompressionRow() {
   return (
     <>
       <SettingRow
+        controlId={enabledControlId}
         label={t('compression.enabled.label')}
         description={t('compression.enabled.description')}
       >
         <Switch
+          id={enabledControlId}
+          aria-describedby={settingRowDescriptionId(enabledControlId)}
+          size="sm"
           checked={enabled}
           aria-label={t('compression.enabled.label')}
           onChange={(event) => handleToggle(event.target.checked)}
@@ -141,6 +165,7 @@ export function AiCompressionRow() {
       </SettingRow>
 
       <SettingRow
+        controlId={windowControlId}
         label={t('compression.window.label')}
         description={
           <>
@@ -156,6 +181,9 @@ export function AiCompressionRow() {
         <div className="ai-window">
           <div className="ai-control">
             <Input
+              id={windowControlId}
+              aria-describedby={settingRowDescriptionId(windowControlId)}
+              size="sm"
               className="settings-control settings-control--wide"
               value={model}
               placeholder={t('compression.window.modelPlaceholder')}
@@ -171,6 +199,7 @@ export function AiCompressionRow() {
               }}
             />
             <Input
+              size="sm"
               className="settings-control settings-control--tokens"
               value={tokens}
               placeholder={t('compression.window.tokensPlaceholder')}
@@ -195,9 +224,7 @@ export function AiCompressionRow() {
             <ul className="ai-window__list">
               {overrides.map((entry) => (
                 <li key={entry.model} className="ai-window__item">
-                  <span className="ai-window__model" title={entry.model}>
-                    {entry.model}
-                  </span>
+                  <ModelName name={entry.model} />
                   <span className="ai-window__tokens">{formatTokenCount(entry.tokens)}</span>
                   <Button
                     size="sm"

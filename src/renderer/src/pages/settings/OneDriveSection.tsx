@@ -11,10 +11,12 @@
  *
  * 状态与 IPC 调用集中在 `useOneDriveBackup`，本文件只负责渲染与事件绑定。
  */
+import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Input, Progress } from '../../components/ui'
 import SectionCard from './SectionCard'
 import SettingRow from './SettingRow'
+import { settingRowDescriptionId } from './settingRowIds'
 import { ERROR_KEYS, NOTICE_KEYS, PHASE_KEYS, formatBytes } from './onedriveSectionSupport'
 import { useOneDriveBackup } from './useOneDriveBackup'
 import '../../styles/components/onedrive-backup.css'
@@ -22,6 +24,7 @@ import '../../styles/components/onedrive-backup.css'
 export default function OneDriveSection() {
   const { t } = useTranslation('onedrive')
   const od = useOneDriveBackup()
+  const clientIdControlId = useId()
 
   const signedIn = od.status?.signedIn === true
   const encryptionBlocked = od.status !== null && !od.status.encryptionAvailable
@@ -62,7 +65,12 @@ export default function OneDriveSection() {
       >
         <div className="od-actions">
           {signedIn ? (
-            <Button size="sm" variant="secondary" onClick={od.handleSignOut}>
+            <Button
+              size="sm"
+              variant="secondary"
+              className="wf-btn--on-soft"
+              onClick={od.handleSignOut}
+            >
               {t('account.signOut')}
             </Button>
           ) : od.signingIn ? (
@@ -145,9 +153,15 @@ export default function OneDriveSection() {
         </p>
       ) : null}
 
-      <SettingRow label={t('clientId.label')} description={t('clientId.description')}>
+      <SettingRow
+        controlId={clientIdControlId}
+        label={t('clientId.label')}
+        description={t('clientId.description')}
+      >
         <div className="od-client">
           <Input
+            id={clientIdControlId}
+            aria-describedby={settingRowDescriptionId(clientIdControlId)}
             size="sm"
             className="od-client__input"
             value={od.draftClientId}

@@ -30,7 +30,7 @@ const settings = {
   },
   appearance: {
     title: 'Appearance & theme',
-    description: 'Theme mode'
+    description: 'Theme and display preferences'
   },
   themeMode: {
     label: 'Theme mode',

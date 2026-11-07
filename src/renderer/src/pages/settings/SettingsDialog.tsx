@@ -28,7 +28,7 @@ export interface SettingsDialogProps {
  * - **不放** `.settings-page` / `.settings-main` 两层容器：滚动统一交给
  *   `.wf-window__body`（`flex:1; min-height:0; overflow-y:auto`），避免嵌套滚动条；
  * - 不传 `footer`：关闭入口在 `Window` 头部（`showClose` 默认 true）；
- * - 遮罩用 `wf-modal__mask--strong` 加强磨砂（`blur(10px) saturate(120%)`）。
+ * - 遮罩沿用全局 `Modal` 默认（`--overlay-mask` + blur(2px)），不再自定义加强磨砂。
  */
 export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const { t } = useTranslation('titlebar')
@@ -41,7 +41,6 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
       ariaLabel={t('settings')}
       size="xl"
       panelClassName="wf-settings-modal"
-      maskClassName="wf-modal__mask--strong"
       coverTitlebar={false}
     >
       <div className="settings-container">
