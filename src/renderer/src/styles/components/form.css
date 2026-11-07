@@ -320,7 +320,8 @@
   left: 1px;
   width: 16px;
   height: 16px;
-  background: var(--pane);
+  /* 关闭/开启态滑块同色（#fff）：暗色主题 --pane 为 #202020，用 --pane 会让两态圆钮明显不同色 */
+  background: #fff;
   border-radius: 50%;
   /* 滑块投影：读作「凸起的钮」；关闭/开启态统一同一投影，保持一致性 */
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
