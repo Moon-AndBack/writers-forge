@@ -30,7 +30,7 @@ export const CLEAN_FLASH_CLASS = 'wf-clean-flash'
 export const cleanWordFlashKey = new PluginKey<DecorationSet>('cleanWordFlash')
 
 /** 闪烁时长（ms）：与 CSS `wf-clean-flash` 动画时长一致，到点清除装饰。 */
-const FLASH_DURATION_MS = 1200
+const FLASH_DURATION_MS = 1800
 
 /** 滚动留白（px）：命中位置距滚动视口上下缘不足该距离时居中，避免贴边。 */
 const SCROLL_MARGIN = 24

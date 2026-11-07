@@ -101,29 +101,33 @@
 /* ============================================================
    命中清单点击 → 正文对应命中短暂闪烁
    ------------------------------------------------------------------
-   装饰由 `chapters/cleanWordFlash.ts` 经 meta 事务写入，1.2s 后清除。
+   装饰由 `chapters/cleanWordFlash.ts` 经 meta 事务写入，1.8s 后清除。
    只改 background，不动 text-decoration（与 `.wf-clean-hit` 波浪线共存），
    不改布局、不用 transform（AGENTS §8）。颜色沿用 --danger：与命中波浪线
-   同源且有「需注意」语义，四主题均定义；深色主题下 32% 红底对比度足够。
+   同源且有「需注意」语义，四主题均定义；深色主题下 55% 红底对比度足够。
+   动画用 linear + 三帧：前 60% 维持 48–55%，后 40% 淡出，避免一开场就变淡。
    ============================================================ */
 .ProseMirror .wf-clean-flash {
   border-radius: 2px;
-  animation: wf-clean-flash 1.2s var(--ease-out) forwards;
+  animation: wf-clean-flash 1.8s linear forwards;
 }
 
 @keyframes wf-clean-flash {
   0% {
-    background: color-mix(in srgb, var(--danger) 32%, transparent);
+    background: color-mix(in srgb, var(--danger) 55%, transparent);
+  }
+  60% {
+    background: color-mix(in srgb, var(--danger) 48%, transparent);
   }
   100% {
     background: transparent;
   }
 }
 
-/* 减动效：不做渐隐，保留常亮底色直到脚本在 1.2s 后清除装饰。 */
+/* 减动效：不做渐隐，保留常亮底色直到脚本在 1.8s 后清除装饰。 */
 @media (prefers-reduced-motion: reduce) {
   .ProseMirror .wf-clean-flash {
     animation: none;
-    background: color-mix(in srgb, var(--danger) 20%, transparent);
+    background: color-mix(in srgb, var(--danger) 40%, transparent);
   }
 }
