@@ -37,7 +37,6 @@ const writer = {
   },
   rightPlot: {
     timelineFilterAria: '按时间线筛选剧情节点',
-    timelineAll: '全部时间线',
     lineFilterAria: '按剧情线筛选剧情节点',
     lineAll: '全部剧情线',
     filterEmpty: '当前筛选下没有剧情节点',

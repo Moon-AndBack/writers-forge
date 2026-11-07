@@ -19,7 +19,7 @@ const log = createLogger('plot')
 export interface PlotWorkspace {
   /** 当前时间线下的未删除剧情线（后端顺序：`sortOrder, id`）。 */
   lines: PlotLineRow[]
-  /** 全书未删除剧情线（不过滤时间线；章节「剧情」页签跨时间线筛选用）。 */
+  /** 全书未删除剧情线（不过滤时间线；右栏剧情页签据此在当前时间线内筛选）。 */
   allLines: PlotLineRow[]
   /** 全书未删除场景（用于左栏节点计数 / 右栏节点编辑 / 只读详情）。 */
   scenes: PlotSceneRow[]

@@ -114,7 +114,7 @@ export function RightPane({
   outlineItems: OutlineItemRow[]
   /** 当前正在编辑的卷 id（章节模块 = 选中章所属卷；大纲模块 = 选中的正文卷）。 */
   activeVolumeId?: number | null
-  /** 全书未删除剧情线（页面层 `plot.allLines`；章节「剧情」页签与大纲模块右栏跨时间线筛选用）。 */
+  /** 全书未删除剧情线（页面层 `plot.allLines`；章节「剧情」页签与大纲模块右栏在当前时间线内筛选用）。 */
   plotAllLines: PlotLineRow[]
   /** 全书剧情场景（页面层 `plot.scenes`）。 */
   plotScenes: PlotSceneRow[]

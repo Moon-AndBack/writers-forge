@@ -12,7 +12,8 @@ import { EntityCardMorePopup } from '../entities/EntityCardMorePopup'
 import type { EntityCardMoreItem } from '../entities/EntityCardMorePopup'
 import { useChipOverflow } from '../../../components/useChipOverflow'
 import { useOverflowPopup } from '../../../components/useOverflowPopup'
-import { plotSceneTitle, type PlotSceneRow } from './plotTree'
+import { plotSceneTitle, type PlotLineRow, type PlotSceneRow } from './plotTree'
+import { PlotSceneHeading } from './PlotSceneHeading'
 import { usePlotBodyEntities } from './usePlotBodyEntities'
 
 interface SceneCardProps {
@@ -33,6 +34,8 @@ interface SceneCardProps {
   onDeleteScene: (id: number) => void
   /** 只读模式（章节右栏剧情页签）：隐藏卡内编辑 / 删除按钮，点击仍只选中。 */
   readonly?: boolean
+  /** 来源剧情线（跨线聚合视图传入时在标题行上方显示线标签；单线视图不传）。 */
+  line?: PlotLineRow | null
   /** 卡片悬停开始（右栏复用正文浮窗；中栏不传，行为不变）。 */
   onHoverStart?: (el: HTMLElement, target: HTMLElement) => void
   /** 卡片悬停结束（配合 `onHoverStart`）。 */
@@ -60,6 +63,7 @@ export function SceneCard({
   charHover,
   onDeleteScene,
   readonly = false,
+  line = null,
   onHoverStart,
   onLeave
 }: SceneCardProps) {
@@ -116,9 +120,11 @@ export function SceneCard({
           onMouseLeave: onLeave
         }}
         head={
-          <h3 className="wf-entity-card__title plot-scene-title">
-            {plotSceneTitle(scene, t('unnamedScene'))}
-          </h3>
+          <PlotSceneHeading
+            title={plotSceneTitle(scene, t('unnamedScene'))}
+            line={line}
+            unnamedLine={t('unnamedLine')}
+          />
         }
         actions={
           showActions ? (

@@ -14,15 +14,13 @@ import {
   timelineListKey
 } from './timelineOrigin'
 import {
-  getPlotLineColorValue,
   groupScenesByYear,
-  normalizePlotLineColor,
-  plotLineLabel,
   plotSceneTitle,
   plotYearLabel,
   type PlotLineRow,
   type PlotSceneRow
 } from '../plot/plotTree'
+import { PlotSceneHeading } from '../plot/PlotSceneHeading'
 
 export interface TimelineViewProps {
   /** 书籍 id（路由参数）；按书读起点键，无书时用裸键兜底。 */
@@ -256,10 +254,6 @@ export default function TimelineView({
                         .split('\n')
                         .map((text) => text.trim())
                         .filter((text) => text !== '')
-                      // 来源线标签：按该线配置色着色（非法 key 归一回退首色）。
-                      const tagColor = line
-                        ? getPlotLineColorValue(normalizePlotLineColor(line.lineColor))
-                        : null
                       return (
                         <EntityStyleCard
                           key={scene.id}
@@ -268,26 +262,11 @@ export default function TimelineView({
                           readonly
                           cardProps={{ onClick: () => onSelectScene?.(scene.id) }}
                           head={
-                            <div className="plot-scene-heading">
-                              {line ? (
-                                <span
-                                  className="plot-line-tag"
-                                  style={
-                                    tagColor
-                                      ? {
-                                          color: tagColor,
-                                          backgroundColor: `${tagColor}1f`
-                                        }
-                                      : undefined
-                                  }
-                                >
-                                  {plotLineLabel(line, tPlot('unnamedLine'))}
-                                </span>
-                              ) : null}
-                              <h3 className="wf-entity-card__title plot-scene-title">
-                                {plotSceneTitle(scene, tPlot('unnamedScene'))}
-                              </h3>
-                            </div>
+                            <PlotSceneHeading
+                              line={line ?? null}
+                              title={plotSceneTitle(scene, tPlot('unnamedScene'))}
+                              unnamedLine={tPlot('unnamedLine')}
+                            />
                           }
                           description={
                             paragraphs.length > 0

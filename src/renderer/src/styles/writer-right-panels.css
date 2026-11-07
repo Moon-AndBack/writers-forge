@@ -133,6 +133,24 @@
   padding-bottom: 10px;
 }
 
+/* ---------- 全线模式年组（与独立时间线模块同构） ---------- */
+/* 年组行复用 `.plot-year-row`：右栏卡宽吃满内容列，多卡纵向单列，组间只留紧凑间距。 */
+.rp-plot-timeline .plot-year-row .plot-col-content {
+  row-gap: 10px;
+}
+
+/* 来源剧情线标签：右栏窄栏内收字号 / 内衬（长线名仍由标签自身省略号截断，
+   不换行、不溢出；无 transform）。 */
+.rp-plot-timeline .plot-line-tag {
+  padding: 1px 7px;
+  font-size: 10px;
+}
+
+/* 标签 + 标题纵向组合：窄栏下压缩间距，避免标题行过高。 */
+.rp-plot-timeline .plot-scene-heading {
+  gap: 4px;
+}
+
 /* 圆点按右栏列宽收小（仍保留空心环 / 选中实心 + 光晕，无位移）。 */
 .rp-plot-timeline .plot-dot {
   width: 13px;

@@ -31,7 +31,6 @@ const writer = {
   },
   rightPlot: {
     timelineFilterAria: 'Filter plot nodes by timeline',
-    timelineAll: 'All timelines',
     lineFilterAria: 'Filter plot nodes by plot line',
     lineAll: 'All plot lines',
     filterEmpty: 'No plot nodes match the current filters',
