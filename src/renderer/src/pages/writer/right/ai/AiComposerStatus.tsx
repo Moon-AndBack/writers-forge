@@ -142,6 +142,8 @@ export function AiComposerStatus({
     })
     if (usage.limitSource === 'default') {
       notes.push(t('panel.context.unknownModel', { tokens: formatTokenCount(usage.limitTokens) }))
+    } else if (usage.limitSource === 'provider') {
+      notes.push(t('panel.context.providerReported'))
     } else if (usage.limitSource === 'catalog' && usage.matchedId !== null) {
       notes.push(t('panel.context.matchedFrom', { id: usage.matchedId }))
     }

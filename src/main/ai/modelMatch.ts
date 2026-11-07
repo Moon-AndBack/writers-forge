@@ -1,14 +1,18 @@
 import { BASELINE_CONTEXT_WINDOWS } from './catalogBaseline'
+import { getProviderBaseUrl } from './config'
 import { readCatalog, readOverrides } from './catalogCache'
+import { readModelCache } from './modelCache'
+import type { AiProviderId } from './types'
 
 /**
  * 模型 → 上下文窗口解析。
  *
  * 匹配优先级（命中即停）：
  * 1. 用户覆写（override）
- * 2. 运行时目录（catalog）：L1 完全相等 → L2 末段相等 → L3 去装饰后末段相等
- * 3. 内置基线（baseline）
- * 4. 默认值（DEFAULT_CONTEXT_WINDOW）
+ * 2. 服务商自报（provider）：模型列表缓存里的精确 id
+ * 3. 运行时目录（catalog）：L1 完全相等 → L2 末段相等 → L3 去装饰后末段相等
+ * 4. 内置基线（baseline）
+ * 5. 默认值（DEFAULT_CONTEXT_WINDOW）
  *
  * 明确禁止：前缀 / 包含 / 编辑距离 / 剥离数字版本段匹配。
  * 反例：`gpt-4` 与 `gpt-4o` 的上下文窗口差 16 倍，任何「包含」或
@@ -26,12 +30,12 @@ export const DEFAULT_CONTEXT_WINDOW = 1_048_576
 
 /** 匹配置信度 / 来源细分。 */
 export type MatchConfidence =
-  'override' | 'exact' | 'suffix' | 'normalized' | 'baseline' | 'default'
+  'override' | 'provider' | 'exact' | 'suffix' | 'normalized' | 'baseline' | 'default'
 
 /** 解析后的上下文窗口限额。 */
 export interface ResolvedLimit {
   tokens: number
-  source: 'override' | 'catalog' | 'baseline' | 'default'
+  source: 'override' | 'provider' | 'catalog' | 'baseline' | 'default'
   confidence: MatchConfidence
   /** 命中的原始 id（便于 UI 显示「匹配自 xxx」），未命中为 null。 */
   matchedId: string | null
@@ -113,8 +117,20 @@ export function matchCatalog(
   return pickUnique(normalized)
 }
 
+/**
+ * 从服务商的模型列表缓存取自报窗口（精确 id：trim + 小写）。
+ *
+ * 不做目录那套末段 / 去装饰模糊匹配——provider 返回的就是当前可选 id。
+ */
+function matchProvider(normalized: string, provider: AiProviderId): number | null {
+  const cached = readModelCache(provider, getProviderBaseUrl(provider))
+  if (!cached) return null
+  const value = cached.contexts[normalized]
+  return typeof value === 'number' && value > 0 ? value : null
+}
+
 /** 解析指定模型的上下文窗口限额。 */
-export function resolveContextLimit(model: string): ResolvedLimit {
+export function resolveContextLimit(model: string, provider?: AiProviderId): ResolvedLimit {
   const trimmed = model.trim()
   const normalized = trimmed.toLowerCase()
 
@@ -126,7 +142,20 @@ export function resolveContextLimit(model: string): ResolvedLimit {
       return { tokens: override, source: 'override', confidence: 'override', matchedId: trimmed }
     }
 
-    // 2. 运行时目录。
+    // 2. 服务商自报（精确 id，仅当调用方给出 provider）。
+    if (provider) {
+      const reported = matchProvider(normalized, provider)
+      if (reported !== null) {
+        return {
+          tokens: reported,
+          source: 'provider',
+          confidence: 'provider',
+          matchedId: normalized
+        }
+      }
+    }
+
+    // 3. 运行时目录。
     const catalog = readCatalog()
     if (catalog) {
       const matched = matchCatalog(normalized, catalog.entries)
@@ -140,7 +169,7 @@ export function resolveContextLimit(model: string): ResolvedLimit {
       }
     }
 
-    // 3. 内置基线。
+    // 4. 内置基线。
     const baseline = BASELINE_CONTEXT_WINDOWS[normalized]
     if (typeof baseline === 'number' && baseline > 0) {
       return {
@@ -152,7 +181,7 @@ export function resolveContextLimit(model: string): ResolvedLimit {
     }
   }
 
-  // 4. 默认值（未知模型 1M 乐观默认）。
+  // 5. 默认值（未知模型 1M 乐观默认）。
   return {
     tokens: DEFAULT_CONTEXT_WINDOW,
     source: 'default',

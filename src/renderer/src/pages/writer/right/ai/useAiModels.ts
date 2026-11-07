@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createLogger } from '@renderer/lib/log'
 import type { AiError, AiProviderId } from '../../../../../../preload/types/ai'
+import { invalidateLimitCache } from './useContextUsage'
 
 /** 模型列表日志（转发至主进程落盘）。 */
 const log = createLogger('useAiModels')
@@ -11,6 +12,8 @@ const UNKNOWN_ERROR: AiError = { code: 'unknown', message: '' }
 export interface AiModelsState {
   /** 模型 ID 列表。 */
   models: string[]
+  /** 当前生效的服务商；配置尚未读到时为 null。 */
+  provider: AiProviderId | null
   /** 当前生效的模型（config.model）。 */
   current: string
   loading: boolean
@@ -31,6 +34,7 @@ export interface AiModelsState {
  */
 export function useAiModels(active: boolean): AiModelsState {
   const [models, setModels] = useState<string[]>([])
+  const [provider, setProvider] = useState<AiProviderId | null>(null)
   const [current, setCurrent] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<AiError | null>(null)
@@ -72,12 +76,13 @@ export function useAiModels(active: boolean): AiModelsState {
         return
       }
 
-      let provider: AiProviderId
+      let providerId: AiProviderId
       try {
         const config = await api.config.get()
         if (!alive()) return
         setCurrent(config.model)
-        provider = config.provider
+        providerId = config.provider
+        setProvider(config.provider)
       } catch (err) {
         if (!alive()) return
         log.warn('AI 配置读取失败', err)
@@ -94,7 +99,7 @@ export function useAiModels(active: boolean): AiModelsState {
       let stale = false
       if (!forced) {
         try {
-          const cached = await api.models.list(provider, 'cache')
+          const cached = await api.models.list(providerId, 'cache')
           if (!alive()) return
           if (cached.ok && (cached.models?.length ?? 0) > 0) {
             hasCache = true
@@ -120,12 +125,14 @@ export function useAiModels(active: boolean): AiModelsState {
       if (!hasCache) setLoading(true)
 
       try {
-        const result = await api.models.list(provider, 'refresh')
+        const result = await api.models.list(providerId, 'refresh')
         if (!alive()) return
 
         const list = result.models ?? []
         if (result.ok) {
           if (list.length > 0 || !hasVisible) applyModels(list)
+          // 模型列表已更新（可能带来新的自报窗口）→ 清空渲染层窗口缓存。
+          invalidateLimitCache()
           setError(null)
         } else if (!silent) {
           // 失败：保留已有列表（不清空），仅在没有任何内容时展示错误。
@@ -151,6 +158,7 @@ export function useAiModels(active: boolean): AiModelsState {
 
   return {
     models,
+    provider,
     current,
     // 面板关闭后不再算「加载中」：effect 已停止，结果不会再来。
     loading: active && loading,

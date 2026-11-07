@@ -144,10 +144,11 @@ export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps
 
   /**
    * 上下文占用估算：未压缩历史 + 已存摘要 + 输入框草稿 + 携带正文。
-   * 窗口值按模型缓存，模型不变不重复 IPC；目录刷新后缓存失效并自动重取。
+   * 窗口值按「服务商 + 模型」缓存；模型 / 服务商不变不重复 IPC，列表刷新后自动失效重取。
    */
   const usage = useContextUsage({
     model,
+    provider: modelsState.provider ?? undefined,
     messages,
     covered: summary?.covered ?? 0,
     summaryText: summary?.content ?? '',

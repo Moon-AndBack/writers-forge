@@ -114,7 +114,11 @@ export const aiApi = {
   test: (provider) => ipcRenderer.invoke('ai:test', { provider }),
   catalog: {
     get: (mode = 'cache') => ipcRenderer.invoke('ai:catalog:get', { mode }),
-    limit: (model) => ipcRenderer.invoke('ai:catalog:limit', { model }),
+    limit: (model, provider) =>
+      ipcRenderer.invoke(
+        'ai:catalog:limit',
+        provider === undefined ? { model } : { model, provider }
+      ),
     override: (model, tokens) => ipcRenderer.invoke('ai:catalog:override', { model, tokens }),
     overrides: () => ipcRenderer.invoke('ai:catalog:overrides:list')
   },

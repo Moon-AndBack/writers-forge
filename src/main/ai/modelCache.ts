@@ -1,12 +1,12 @@
 import { getSetting, setSetting } from '../database/settings'
 import { logger } from '../logger'
-import type { AiModelCacheEntry, AiProviderId } from './types'
+import type { AiModelCacheEntry, AiModelInfo, AiProviderId } from './types'
 
 /**
  * AI 模型列表的本地缓存。
  *
  * 存储：`settings` 表（现成 KV，不改表结构），键 `ai:models:v1:<provider>`，
- * 值为 `{ baseUrl, models, fetchedAt }` 的 JSON 文本。
+ * 值为 `{ baseUrl, models, contexts?, fetchedAt }` 的 JSON 文本。
  *
  * 为什么带 `baseUrl`：DeepSeek 支持自定义中转站，换地址后模型集可能不同，
  * 读取时比对当前 Base URL，不一致即视为无缓存。
@@ -26,6 +26,10 @@ const CACHE_KEY_PREFIX = 'ai:models:v1:'
 /** 模型 ID 长度与条数上限：防止异常上游把 settings 撑爆。 */
 const MAX_MODEL_ID_CHARS = 200
 const MAX_MODELS = 500
+
+/** 自报窗口合理区间：越界值一律丢弃（与目录 / 适配器保持同口径）。 */
+const MIN_CONTEXT_TOKENS = 1_024
+const MAX_CONTEXT_TOKENS = 10_000_000
 
 function cacheKey(provider: AiProviderId): string {
   return `${CACHE_KEY_PREFIX}${provider}`
@@ -51,6 +55,37 @@ function sanitizeModels(value: unknown): string[] {
   return models
 }
 
+/** 有限数字且落在合理区间。 */
+function isValidContextTokens(value: unknown): value is number {
+  return (
+    typeof value === 'number' &&
+    Number.isFinite(value) &&
+    value >= MIN_CONTEXT_TOKENS &&
+    value <= MAX_CONTEXT_TOKENS
+  )
+}
+
+/**
+ * 清洗自报窗口表：键统一 trim + 小写，丢弃非法值，并只保留 `models` 内的 id
+ * （避免旧缓存残留脏键 / 已下线模型）。
+ */
+function sanitizeContexts(value: unknown, models: readonly string[]): Record<string, number> {
+  if (!isRecord(value)) return {}
+
+  const valid = new Set(models.map((id) => id.trim().toLowerCase()))
+  const contexts: Record<string, number> = {}
+  let count = 0
+  for (const [rawId, rawTokens] of Object.entries(value)) {
+    if (count >= MAX_MODELS) break
+    const id = rawId.trim().toLowerCase()
+    if (!id || id.length > MAX_MODEL_ID_CHARS || !valid.has(id)) continue
+    if (!isValidContextTokens(rawTokens)) continue
+    contexts[id] = Math.round(rawTokens)
+    count += 1
+  }
+  return contexts
+}
+
 /** 读取原始缓存项（不校验 baseUrl，供写入时比较新旧顺序）。 */
 function readRawEntry(provider: AiProviderId): AiModelCacheEntry | null {
   const raw = getSetting(cacheKey(provider))
@@ -72,7 +107,7 @@ function readRawEntry(provider: AiProviderId): AiModelCacheEntry | null {
   const models = sanitizeModels(parsed.models)
   if (models.length === 0) return null
 
-  return { baseUrl, models, fetchedAt }
+  return { baseUrl, models, contexts: sanitizeContexts(parsed.contexts, models), fetchedAt }
 }
 
 /**
@@ -83,14 +118,32 @@ function readRawEntry(provider: AiProviderId): AiModelCacheEntry | null {
 export function readModelCache(
   provider: AiProviderId,
   currentBaseUrl: string
-): { models: string[]; fetchedAt: number } | null {
+): { models: string[]; contexts: Record<string, number>; fetchedAt: number } | null {
   const entry = readRawEntry(provider)
   if (!entry) return null
   if (entry.baseUrl !== currentBaseUrl) {
     log.debug('模型缓存 Base URL 不匹配，按未命中处理', { provider })
     return null
   }
-  return { models: entry.models, fetchedAt: entry.fetchedAt }
+  return { models: entry.models, contexts: entry.contexts ?? {}, fetchedAt: entry.fetchedAt }
+}
+
+/**
+ * 从模型信息构建「小写 id → 自报窗口」原始表（同 id 只取首个）。
+ */
+function collectContexts(
+  models: readonly AiModelInfo[],
+  list: readonly string[]
+): Record<string, number> {
+  const raw: Record<string, number> = {}
+  for (const model of models) {
+    const id = model.id.trim().toLowerCase()
+    if (!id || model.contextLength === undefined) continue
+    if (!isValidContextTokens(model.contextLength)) continue
+    if (Object.hasOwn(raw, id)) continue
+    raw[id] = model.contextLength
+  }
+  return sanitizeContexts(raw, list)
 }
 
 /**
@@ -98,15 +151,16 @@ export function readModelCache(
  *
  * - `models` 为空一律不写（避免 401 / 瞬时空结果把缓存打没）；
  * - 仅当 `startedAt` 比已有条目的 `fetchedAt` 更新时才写（并发保护）；
+ * - 同时写入 `models`（ID 数组）与 `contexts`（小写 ID → 自报窗口）；
  * - 返回最终生效的 `fetchedAt`（跳过写入时返回已有条目的），失败返回 null。
  */
 export function writeModelCache(
   provider: AiProviderId,
   baseUrl: string,
-  models: string[],
+  models: AiModelInfo[],
   startedAt: number = Date.now()
 ): number | null {
-  const list = sanitizeModels(models)
+  const list = sanitizeModels(models.map((model) => model.id))
   if (list.length === 0) return null
 
   const fetchedAt = Math.max(1, Math.floor(startedAt))
@@ -116,7 +170,13 @@ export function writeModelCache(
     return existing.fetchedAt
   }
 
-  const payload: AiModelCacheEntry = { baseUrl, models: list, fetchedAt }
+  const contexts = collectContexts(models, list)
+  const payload: AiModelCacheEntry = {
+    baseUrl,
+    models: list,
+    ...(Object.keys(contexts).length > 0 ? { contexts } : {}),
+    fetchedAt
+  }
   try {
     setSetting(cacheKey(provider), JSON.stringify(payload))
   } catch (error) {

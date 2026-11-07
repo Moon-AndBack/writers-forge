@@ -17,6 +17,7 @@ import type {
   AiChatMessage,
   AiError,
   AiListModelsOptions,
+  AiModelInfo,
   AiProviderAdapter,
   AiStreamListener,
   AiUsage,
@@ -113,30 +114,68 @@ function mapStatusError(status: number, detail: string, hasKey: boolean): AiErro
   return undefined
 }
 
-/** 解析 `{ data: [{ id }] }`，去重并保序。 */
-function collectModelIds(payload: unknown): string[] {
+/** 上下文窗口合理区间：与 `catalogCache` 保持同口径，越界值一律忽略。 */
+const MIN_CONTEXT_TOKENS = 1_024
+const MAX_CONTEXT_TOKENS = 10_000_000
+
+/** 有限数字且落在合理区间时取整返回，否则 `undefined`。 */
+function readContextTokens(value: unknown): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined
+  if (value < MIN_CONTEXT_TOKENS || value > MAX_CONTEXT_TOKENS) return undefined
+  return Math.round(value)
+}
+
+/**
+ * 从单条模型载荷里解析自报上下文窗口。
+ *
+ * 优先级（命中即停）：
+ * 1. `limit.input` —— 输入上限，最贴近「能发多少 prompt」（部分模型才有）
+ * 2. `limit.context` —— 总窗口
+ * 3. 顶层 `context_length` / `context_window` / `max_model_len`（vLLM 风格）
+ * 4. `top_provider.context_length`（OpenRouter 风格）
+ */
+function readReportedContext(item: Record<string, unknown>): number | undefined {
+  const limit = isRecord(item.limit) ? item.limit : null
+  const topProvider = isRecord(item.top_provider) ? item.top_provider : null
+  const candidates: unknown[] = [
+    limit?.input,
+    limit?.context,
+    item.context_length,
+    item.context_window,
+    item.max_model_len,
+    topProvider?.context_length
+  ]
+  for (const candidate of candidates) {
+    const tokens = readContextTokens(candidate)
+    if (tokens !== undefined) return tokens
+  }
+  return undefined
+}
+
+/** 解析 `{ data: [{ id, limit? }] }`，去重并保序。 */
+function collectModels(payload: unknown): AiModelInfo[] {
   if (!isRecord(payload) || !Array.isArray(payload.data)) return []
-  const ids: string[] = []
+  const models: AiModelInfo[] = []
   const seen = new Set<string>()
   for (const item of payload.data) {
     if (!isRecord(item)) continue
     const id = item.id
-    if (typeof id === 'string' && id && !seen.has(id)) {
-      seen.add(id)
-      ids.push(id)
-    }
+    if (typeof id !== 'string' || id === '' || seen.has(id)) continue
+    seen.add(id)
+    const contextLength = readReportedContext(item)
+    models.push(contextLength === undefined ? { id } : { id, contextLength })
   }
-  return ids
+  return models
 }
 
 /**
- * 拉取模型 ID 列表（`GET {baseUrl}/v1/models`，动态、不缓存）。
+ * 拉取模型信息列表（`GET {baseUrl}/v1/models`，动态、不缓存）。
  *
  * 说明：**不走** SDK 的 `client.models.list()`——SDK 会拼成 `{baseURL}/models`，
  * 而 opencode 的模型列表在 `/v1/models`、对话在 `/openai/v1/...`，两套前缀不同，
  * 单一 baseURL 无法同时命中，故此处使用原生 `fetch`。
  */
-async function listModels(options: AiListModelsOptions = {}): Promise<string[]> {
+async function listModels(options: AiListModelsOptions = {}): Promise<AiModelInfo[]> {
   const connection = getProviderConnection('opencode')
   const baseUrl = normalizeBaseUrl(connection.baseUrl)
   if (!baseUrl) {
@@ -167,7 +206,7 @@ async function listModels(options: AiListModelsOptions = {}): Promise<string[]> 
       throw new AiFailure(mapped ?? aiErrorFromStatus(response.status))
     }
 
-    return collectModelIds((await response.json()) as unknown)
+    return collectModels((await response.json()) as unknown)
   } catch (error) {
     const aiError =
       error instanceof AiFailure ? error.aiError : toAiError(error, request.timedOut())

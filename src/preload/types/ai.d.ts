@@ -151,7 +151,8 @@ export interface AiApi {
    */
   catalog: {
     get: (mode?: 'cache' | 'refresh') => Promise<AiCatalogMeta>
-    limit: (model: string) => Promise<ResolvedLimit>
+    /** `provider` 缺省时跳过服务商自报层（旧行为）。 */
+    limit: (model: string, provider?: AiProviderId) => Promise<ResolvedLimit>
     /** `tokens === null` 表示清除覆写；入参非法返回 false。 */
     override: (model: string, tokens: number | null) => Promise<boolean>
     /** 已保存的手填窗口覆写（键为 trim + 小写的模型名）。 */

@@ -144,12 +144,25 @@ export interface AiCatalogMeta {
 }
 
 /**
+ * 模型轻量信息：ID + 服务商自报的上下文窗口。
+ *
+ * `contextLength` 缺省表示该模型未上报窗口（或上报值不合法），
+ * 由 `modelMatch` 继续走目录 / 基线 / 默认值。
+ */
+export interface AiModelInfo {
+  id: string
+  contextLength?: number
+}
+
+/**
  * 模型列表缓存条目（settings 表 `ai:models:v1:<provider>` 的值结构）。
  */
 export interface AiModelCacheEntry {
   /** 拉取时使用的 Base URL；与当前配置不一致时缓存视为失效。 */
   baseUrl: string
   models: string[]
+  /** 模型 ID（trim + 小写）→ 服务商自报上下文窗口；旧缓存无此字段。 */
+  contexts?: Record<string, number>
   /** 拉取请求发起时刻（毫秒时间戳）：既用于过期判断，也用于并发写入排序。 */
   fetchedAt: number
 }
@@ -188,8 +201,8 @@ export type ResolvedAiChatOptions = AiChatOptions & { requestId: string }
 /** 服务商适配器接口。 */
 export interface AiProviderAdapter {
   readonly id: AiProviderId
-  /** 动态拉取模型 ID 列表；失败抛结构化错误。 */
-  listModels(options?: AiListModelsOptions): Promise<string[]>
+  /** 动态拉取模型信息列表（含可选的自报窗口）；失败抛结构化错误。 */
+  listModels(options?: AiListModelsOptions): Promise<AiModelInfo[]>
   /**
    * 流式对话。
    *

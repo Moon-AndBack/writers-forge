@@ -343,7 +343,8 @@ export function useAiConversation(input: {
           }
 
           // 发送前判定：固定部分超窗口 → 拒绝；达 80% → 摘要 / 截断。
-          const limitTokens = (await resolveContextLimit(modelId)).tokens
+          // 带 provider：优先采用服务商自报窗口，且与占用条共用同一缓存键。
+          const limitTokens = (await resolveContextLimit(modelId, provider)).tokens
           if (activeRequestRef.current !== request) return false
 
           // 设置页「启用自动压缩」：关闭时仍截断 / 拒绝，但不额外发摘要请求。

@@ -5,6 +5,7 @@ import { logger } from '../../logger'
 import type {
   AiChatMessage,
   AiListModelsOptions,
+  AiModelInfo,
   AiProviderAdapter,
   AiStreamListener,
   AiUsage,
@@ -47,8 +48,8 @@ function toUsage(usage: {
   }
 }
 
-/** 拉取模型 ID 列表（`GET /models`，动态、不缓存）。 */
-async function listModels(options: AiListModelsOptions = {}): Promise<string[]> {
+/** 拉取模型 ID 列表（`GET /models`，动态、不缓存；DeepSeek 不上报窗口）。 */
+async function listModels(options: AiListModelsOptions = {}): Promise<AiModelInfo[]> {
   const { client, timeoutMs } = createAiClient('deepseek', { timeoutMs: options.timeoutMs })
   const request = createRequestSignal(options.signal, timeoutMs)
 
@@ -58,12 +59,12 @@ async function listModels(options: AiListModelsOptions = {}): Promise<string[]> 
       timeout: timeoutMs
     })
 
-    const ids: string[] = []
+    const ids: AiModelInfo[] = []
     const seen = new Set<string>()
     for (const model of page.data) {
       if (typeof model.id === 'string' && model.id && !seen.has(model.id)) {
         seen.add(model.id)
-        ids.push(model.id)
+        ids.push({ id: model.id })
       }
     }
     return ids

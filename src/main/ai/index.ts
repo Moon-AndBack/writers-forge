@@ -7,6 +7,7 @@ import type {
   AiChatMessage,
   AiChatOptions,
   AiListModelsOptions,
+  AiModelInfo,
   AiProviderAdapter,
   AiProviderId,
   AiStreamListener,
@@ -62,14 +63,14 @@ function getAdapter(provider: AiProviderId): AiProviderAdapter {
 }
 
 /**
- * 动态拉取指定服务商的模型 ID 列表。
+ * 动态拉取指定服务商的模型信息列表。
  *
  * 失败时抛 `AiFailure`（携带脱敏 `AiError`），由上层决定如何呈现。
  */
 export async function listModels(
   provider: AiProviderId,
   options: AiListModelsOptions = {}
-): Promise<string[]> {
+): Promise<AiModelInfo[]> {
   return getAdapter(provider).listModels(options)
 }
 

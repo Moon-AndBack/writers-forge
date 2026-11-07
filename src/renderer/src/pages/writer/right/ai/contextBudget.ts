@@ -172,7 +172,7 @@ export interface ContextUsage {
   /** 0..1+（可超 1，表示已超预算）。 */
   ratio: number
   /** 窗口来源，用于 UI 标注「未知 · 按 1M 估算」。 */
-  limitSource: 'override' | 'catalog' | 'baseline' | 'default'
+  limitSource: 'override' | 'provider' | 'catalog' | 'baseline' | 'default'
   /** 命中的目录 id（source === 'catalog' 时有值）。 */
   matchedId: string | null
   /** `usedTokens` 是否已乘校准系数（false = 原始估算，尚无真实观测）。 */

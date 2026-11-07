@@ -12,6 +12,7 @@
  */
 import { useCallback, useRef, useState } from 'react'
 import type { AiError, AiProviderId } from '../../../../preload/types/ai'
+import { invalidateLimitCache } from '../writer/right/ai/useContextUsage'
 import { CUSTOM_MODEL_VALUE, type ModelsState, type PersistConfig } from './aiSectionSupport'
 
 export type ModelMode = 'list' | 'custom'
@@ -93,6 +94,8 @@ export function useAiModelList({
         const list = result.models ?? []
         if (result.ok && list.length > 0) {
           applyModels(list, currentModel)
+          // 新列表可能带来新的自报窗口：清空渲染层窗口缓存，占用条按新窗口重算。
+          invalidateLimitCache()
           return
         }
         if (result.ok) {

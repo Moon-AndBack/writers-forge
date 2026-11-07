@@ -10,7 +10,8 @@ import {
   writeOverride
 } from '../ai/catalogCache'
 import { toAiError } from '../ai/http'
-import type { AiCatalogMeta, AiError } from '../ai/types'
+import { isAiProviderId } from '../ai/types'
+import type { AiCatalogMeta, AiError, AiProviderId } from '../ai/types'
 import { logger } from '../logger'
 import { MAX_ID_CHARS, isRecord, isTextWithin } from './aiValidate'
 
@@ -19,7 +20,7 @@ import { MAX_ID_CHARS, isRecord, isTextWithin } from './aiValidate'
  *
  * 通道：
  * - ai:catalog:get            ({ mode?: 'cache' | 'refresh' }) → AiCatalogMeta
- * - ai:catalog:limit          ({ model })                      → ResolvedLimit
+ * - ai:catalog:limit          ({ model, provider? })           → ResolvedLimit
  * - ai:catalog:override       ({ model, tokens: number | null }) → boolean
  * - ai:catalog:overrides:list ()                                 → Record<model, tokens>
  *
@@ -46,6 +47,15 @@ function readModelInput(input: unknown): string | null {
   if (!isRecord(input) || !isTextWithin(input.model, MAX_ID_CHARS)) return null
   const model = input.model.trim()
   return model === '' ? null : model
+}
+
+/** `ai:catalog:limit` 入参：模型必有，provider 可选（缺省跳过自报层）。 */
+function readLimitInput(input: unknown): { model: string; provider?: AiProviderId } | null {
+  const model = readModelInput(input)
+  if (model === null) return null
+  if (!isRecord(input) || input.provider === undefined) return { model }
+  if (!isAiProviderId(input.provider)) return null
+  return { model, provider: input.provider }
 }
 
 /** 把当前缓存转成元信息（不返回全量条目）。 */
@@ -122,8 +132,8 @@ export function registerAiCatalogIpc(): void {
   })
 
   ipcMain.handle('ai:catalog:limit', (_event, input: unknown): ResolvedLimit => {
-    const model = readModelInput(input)
-    if (model === null) {
+    const parsed = readLimitInput(input)
+    if (parsed === null) {
       log.warn('ai:catalog:limit 入参非法')
       return {
         tokens: DEFAULT_CONTEXT_WINDOW,
@@ -132,7 +142,7 @@ export function registerAiCatalogIpc(): void {
         matchedId: null
       }
     }
-    return resolveContextLimit(model)
+    return resolveContextLimit(parsed.model, parsed.provider)
   })
 
   ipcMain.handle('ai:catalog:override', (_event, input: unknown): boolean => {

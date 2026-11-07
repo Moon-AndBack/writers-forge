@@ -151,6 +151,7 @@ const ai = {
       summary: '{{used}} / {{limit}} ({{percent}})',
       percent: '{{ratio}}%',
       unknownModel: 'Unknown model; estimating with {{tokens}}',
+      providerReported: 'Provided by the model service',
       matchedFrom: 'Matched from {{id}}',
       calibrated: 'Calibrated against the latest actual usage',
       nearLimit: 'Near limit',

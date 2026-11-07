@@ -152,6 +152,7 @@ const ai = {
       summary: '{{used}} / {{limit}}（{{percent}}）',
       percent: '{{ratio}}%',
       unknownModel: '未知模型 · 按 {{tokens}} 估算',
+      providerReported: '由服务商提供',
       matchedFrom: '匹配自 {{id}}',
       calibrated: '已按最近一次真实用量校准',
       nearLimit: '接近上限',

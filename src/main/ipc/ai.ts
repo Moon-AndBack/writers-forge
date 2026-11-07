@@ -176,14 +176,16 @@ export function registerAiIpc(): void {
     const startedAt = Date.now()
     try {
       const models = await listModels(provider, { timeoutMs: PROBE_TIMEOUT_MS })
-      if (models.length === 0) {
+      // 渲染层只消费 id；窗口随缓存落盘，供 `ai:catalog:limit` 的 provider 层使用。
+      const ids = models.map((model) => model.id)
+      if (ids.length === 0) {
         // 空列表不写缓存，避免瞬时异常把已有缓存打没。
         log.warn('ai:models:list 返回空列表，不写缓存', { provider })
-        return { ok: true, models, source: 'network' }
+        return { ok: true, models: ids, source: 'network' }
       }
       const fetchedAt = writeModelCache(provider, baseUrl, models, startedAt) ?? startedAt
-      log.debug('ai:models:list 完成（联网）', { provider, count: models.length })
-      return { ok: true, models, source: 'network', fetchedAt }
+      log.debug('ai:models:list 完成（联网）', { provider, count: ids.length })
+      return { ok: true, models: ids, source: 'network', fetchedAt }
     } catch (error) {
       const aiError = toAiError(error)
       const cached = readModelCache(provider, baseUrl)
