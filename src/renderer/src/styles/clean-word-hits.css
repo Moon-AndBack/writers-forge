@@ -49,14 +49,24 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   padding: 5px 8px;
   border-radius: var(--r-xs);
   font-size: 12px;
   color: var(--text-dim);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
 .wf-clean-pop__row:hover {
   background: var(--soft-hover-solid);
+}
+
+/* 键盘聚焦：沿用书籍卡 / 主题卡的品牌色描边惯例（见 bookshelf.css）。 */
+.wf-clean-pop__row:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: -2px;
 }
 
 /* 长词截断显示（完整原文见 title），类别 / 次数不收缩。 */
@@ -86,4 +96,34 @@
   border-radius: 0 0 var(--r-xs) var(--r-xs);
   color: var(--brand);
   font-weight: 600;
+}
+
+/* ============================================================
+   命中清单点击 → 正文对应命中短暂闪烁
+   ------------------------------------------------------------------
+   装饰由 `chapters/cleanWordFlash.ts` 经 meta 事务写入，1.2s 后清除。
+   只改 background，不动 text-decoration（与 `.wf-clean-hit` 波浪线共存），
+   不改布局、不用 transform（AGENTS §8）。颜色沿用 --danger：与命中波浪线
+   同源且有「需注意」语义，四主题均定义；深色主题下 32% 红底对比度足够。
+   ============================================================ */
+.ProseMirror .wf-clean-flash {
+  border-radius: 2px;
+  animation: wf-clean-flash 1.2s var(--ease-out) forwards;
+}
+
+@keyframes wf-clean-flash {
+  0% {
+    background: color-mix(in srgb, var(--danger) 32%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+/* 减动效：不做渐隐，保留常亮底色直到脚本在 1.2s 后清除装饰。 */
+@media (prefers-reduced-motion: reduce) {
+  .ProseMirror .wf-clean-flash {
+    animation: none;
+    background: color-mix(in srgb, var(--danger) 20%, transparent);
+  }
 }

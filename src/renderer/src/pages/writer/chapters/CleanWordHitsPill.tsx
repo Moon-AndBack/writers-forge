@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Tag } from '../../../components/ui'
 import { CATEGORY_LABEL_KEYS } from '../../../components/dialogs/cleanWordsMeta'
 import { setCleanWordsDialogOpen } from '../../../components/dialogs/cleanWordsDialogStore'
-import { useProofreadHits } from './proofreadHits'
+import { requestCleanWordFlash, useProofreadHits } from './proofreadHits'
 import type { ProofreadHitsSnapshot } from './proofreadHits'
 
 /**
@@ -20,6 +20,7 @@ import type { ProofreadHitsSnapshot } from './proofreadHits'
  *   也不进入 Tab 序列（`disabled` button 仍会被读屏播报为「不可用按钮」）；
  * - `> 0` 渲染按钮，点击向上弹出**本章命中清单**（词 + 类别 + 次数），
  *   Esc / 指针落在根节点外 / 打开词库时关闭；
+ * - 清单每行是按钮：点击请求正文闪烁该词的全部命中，弹层保持打开便于连续核对；
  * - 弹层视觉底座复用 `.st-popup`，`right: 0` 改为 `left: 0`（胶囊在最左，向右展开
  *   才不会越出窗口），样式见 `styles/clean-word-hits.css`；
  * - 全局词库入口保留在弹层底部（`setCleanWordsDialogOpen`），不直接占据胶囊点击。
@@ -91,14 +92,19 @@ export default function CleanWordHitsPill(): ReactElement {
           </div>
           <ul className="wf-clean-pop__list">
             {groups.map((group) => (
-              <li key={`${group.category}:${group.word}`} className="wf-clean-pop__row">
-                <span className="wf-clean-pop__word" title={group.word}>
-                  {group.word}
-                </span>
-                <Tag className="wf-clean-pop__tag">{t(CATEGORY_LABEL_KEYS[group.category])}</Tag>
-                <span className="wf-clean-pop__times">
-                  {t('cleanWords.hitTimes', { count: group.count })}
-                </span>
+              <li key={`${group.category}:${group.word}`}>
+                <button
+                  type="button"
+                  className="wf-clean-pop__row"
+                  title={group.word}
+                  onClick={() => requestCleanWordFlash(group.word)}
+                >
+                  <span className="wf-clean-pop__word">{group.word}</span>
+                  <Tag className="wf-clean-pop__tag">{t(CATEGORY_LABEL_KEYS[group.category])}</Tag>
+                  <span className="wf-clean-pop__times">
+                    {t('cleanWords.hitTimes', { count: group.count })}
+                  </span>
+                </button>
               </li>
             ))}
           </ul>

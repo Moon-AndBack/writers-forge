@@ -146,3 +146,45 @@ export function useProofreadHitGroups(): ProofreadHitGroup[] {
 export function useProofreadHits(): ProofreadHitsSnapshot {
   return useSyncExternalStore(subscribeProofreadHits, getProofreadHits, getProofreadHits)
 }
+
+/* ---------- 闪烁请求（命中清单点击 → 正文 flash 插件消费） ---------- */
+
+/**
+ * 闪烁请求：`seq` 每次自增，作为**一次性信号**——插件只比较序号，
+ * 同一词连续点击也能识别为新请求并重放动画。
+ */
+export interface CleanWordFlashRequest {
+  /** 要闪烁的违禁词原文（与扫描结果的 `hit.word` 精确比对）。 */
+  word: string
+  /** 请求序号（模块级单调递增，不重置）。 */
+  seq: number
+}
+
+/** 最近一次请求；插件读取后只认 `seq`，不消费清空（避免与订阅时序耦合）。 */
+let flashRequest: CleanWordFlashRequest | null = null
+
+/** 请求序号计数器。 */
+let flashSeq = 0
+
+/** 闪烁请求订阅者（flash 插件注册）。 */
+const flashListeners = new Set<() => void>()
+
+/** 请求闪烁某个词在正文中的全部命中位置（清单行点击入口）。 */
+export function requestCleanWordFlash(word: string): void {
+  flashSeq += 1
+  flashRequest = { word, seq: flashSeq }
+  for (const listener of flashListeners) listener()
+}
+
+/** 读取最近一次闪烁请求（无请求时为 null）。 */
+export function getCleanWordFlash(): CleanWordFlashRequest | null {
+  return flashRequest
+}
+
+/** 订阅闪烁请求（返回退订函数）。 */
+export function subscribeCleanWordFlash(listener: () => void): () => void {
+  flashListeners.add(listener)
+  return () => {
+    flashListeners.delete(listener)
+  }
+}

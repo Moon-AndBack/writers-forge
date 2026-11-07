@@ -13,6 +13,7 @@ import { SaveStatus, type ChapterSaveState } from './SaveStatus'
 import ChapterActivityActions from './ChapterActivityActions'
 import ChaptersSearchView from './ChaptersSearchView'
 import CleanWordHoverLayer from './CleanWordHoverLayer'
+import { CleanWordFlash } from './cleanWordFlash'
 import { CleanWordMark } from './proofreadMark'
 import NewVolumeDialog from '../../../components/dialogs/NewVolumeDialog'
 import { SelectionContextMenu } from '../SelectionContextMenu'
@@ -67,6 +68,7 @@ const EDITOR_BASE_EXTENSIONS = [
   DocWordLimit,
   // 违禁词命中标注（波浪下划线，只提示不阻断；词表与扫描调度见 proofreadMark.ts）。
   CleanWordMark,
+  CleanWordFlash,
   // 伏笔正文标记（锚定本章的伏笔区间，虚线下划线 + 悬停名称；数据经 meta 事务写入）。
   ForeshadowMark
 ]
