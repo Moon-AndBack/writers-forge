@@ -45,9 +45,11 @@
   padding: 0 0 6px;
 }
 
-/* ---------- 只读正文（紧凑排版，内部滚动） ----------
-   独立作用域（不复用 `.doc-body` 的中栏版式：那边是 18px + 2em 首行缩进，
-   窄栏里过宽）。字号小于中栏编辑器，行高适中。 */
+/* ---------- 只读正文（内部滚动） ----------
+   `.rp-read` 是三处共用底座（右栏大纲 / 时间线场景详情 / 伏笔只读详情）：
+   基础字号 12.8px / 行高 1.75 保留给后两者。右栏大纲页签改由下方
+   `.rp-outline` 作用域规则跟随程序正文排版（`--doc-zoom` 字号 + `--doc-line`
+   行高 + 2em 首行缩进），不再按窄栏另立一套字号。 */
 .rp-read {
   flex: 1;
   min-height: 0;
@@ -91,6 +93,17 @@
   overflow-wrap: break-word;
 }
 
+/* ---------- 右栏大纲：跟随程序正文排版（仅 `.rp-outline` 作用域） ----------
+   为什么不改上面的基础规则：`.rp-read` 被三处共用——右栏大纲、时间线场景
+   详情、伏笔只读详情；只有大纲页签需要与正文一致。故用 `.rp-outline` 多一级
+   类覆盖（特异性 0,3,0 > 基础规则 0,2,0），时间线 / 伏笔两处的 12.8px / 1.75
+   保持原样。字号随状态栏缩放（`--doc-zoom`）等比变化，行高取 `--doc-line`；
+   字族 / 字距沿用基础规则，同为正文排版令牌。 */
+.rp-outline .rp-read .ProseMirror {
+  font-size: calc(18px * var(--doc-zoom));
+  line-height: var(--doc-line);
+}
+
 /* 只读态不提供任何 hover 反馈（正文 / 标题都不叠底色）。 */
 .rp-read .ProseMirror p:hover,
 .rp-read .ProseMirror h1:hover,
@@ -106,6 +119,13 @@
 .rp-read .ProseMirror p {
   margin: 0 0 0.7em;
   text-indent: 0;
+}
+
+/* 右栏大纲顶层段落首行缩进 2em：与中栏正文 `.doc-body p` 同口径；字号随
+   `--doc-zoom` 缩放，em 同步缩放。列表 / 引用 / 表格内嵌套段落的复位见下方
+   `.rp-outline` 规则（非 `p` 的标题 / 代码块天然不受 text-indent 影响）。 */
+.rp-outline .rp-read .ProseMirror p {
+  text-indent: 2em;
 }
 
 .rp-read .ProseMirror h1,
@@ -175,6 +195,16 @@
 .rp-read .ProseMirror th p,
 .rp-read .ProseMirror td p {
   margin: 0;
+}
+
+/* 右栏大纲嵌套段落复位首行缩进：列表项 / 引用 / 表格单元格内的 `p` 只承担
+   换行，若跟随顶层段落缩进会错位（口径同 writer-outline-blocks.css 的
+   `.ProseMirror li p` 等复位）。特异性 0,3,2 高于上方顶层段落的 0,3,1。 */
+.rp-outline .rp-read .ProseMirror li p,
+.rp-outline .rp-read .ProseMirror blockquote p,
+.rp-outline .rp-read .ProseMirror th p,
+.rp-outline .rp-read .ProseMirror td p {
+  text-indent: 0;
 }
 
 .rp-read .ProseMirror blockquote {
