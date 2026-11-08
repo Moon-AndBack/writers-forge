@@ -32,8 +32,8 @@ export interface EntityHighlightOptions {
   matchOnCreate?: boolean
 }
 
-/** 单条段内匹配（与 preload 的 EntityMatch 结构一致，此处独立声明避免类型耦合）。 */
-interface ParagraphMatch {
+/** 单条文本块内匹配（与 preload 的 EntityMatch 结构一致，此处独立声明避免类型耦合）。 */
+interface TextblockMatch {
   entityId: number
   /** 统一设定库五类（直接复用 preload 类型）。 */
   type: WorldEntityType
@@ -45,31 +45,33 @@ interface ParagraphMatch {
   end: number
 }
 
-/** 段落匹配结果缓存（渲染进程）：按「书 + 词表版本 + 段落文本」命中，未变段落跳过 IPC。 */
-const matchCache = new ParagraphMatchCache<ParagraphMatch[]>()
+/** 文本块匹配结果缓存（渲染进程）：按「书 + 词表版本 + 文本块内容」命中，未变文本块跳过 IPC。 */
+const matchCache = new ParagraphMatchCache<TextblockMatch[]>()
+
+/** 单个待重算文本块：**整块绝对区间** + 文本（供匹配与整块清除）。 */
+interface TextblockTarget {
+  from: number
+  to: number
+  text: string
+}
+
+/** 是否参与实体高亮的文本块：所有 textblock，排除代码块（不在源码上标词）。 */
+function isHighlightableTextblock(node: PMNode): boolean {
+  return node.isTextblock === true && node.type.name !== 'codeBlock'
+}
 
 /**
- * 对单个段落节点构建 inline Decoration。
+ * 对单个文本块构建 inline Decoration。
  *
- * 位置换算：`entities:match` 返回段内 UTF-16 code unit 下标（左闭右开），
- * 加上段落在 doc 中的绝对起始 pos + 1（越过段落开标记）即为 doc 绝对 pos。
- *
- * 缓存：`revision` 非空时按「书 + 版本 + 段落文本」查缓存，命中直接复用（跳过 IPC）；
- * `revision` 为 null（版本获取失败）时绕过缓存，仍走 IPC 匹配。
+ * 位置换算：`entities:matchMany` 返回块内 UTF-16 code unit 下标（左闭右开），
+ * 加上文本块在 doc 中的绝对起始 pos + 1（越过块开标记）即为 doc 绝对 pos。
  */
-async function buildParagraphDecorations(
-  bookId: string,
-  revision: string | null,
-  paragraph: { from: number; text: string }
-): Promise<Decoration[]> {
-  if (paragraph.text === '') return []
-  let matches = revision === null ? undefined : matchCache.get(bookId, revision, paragraph.text)
-  if (matches === undefined) {
-    matches = (await window.api.entities.match(bookId, paragraph.text)) as ParagraphMatch[]
-    if (revision !== null) matchCache.set(bookId, revision, paragraph.text, matches)
-  }
+function buildTextblockDecorations(
+  matches: readonly TextblockMatch[],
+  target: TextblockTarget
+): Decoration[] {
   return matches
-    .filter((match) => match.end > match.start && match.end <= paragraph.text.length)
+    .filter((match) => match.end > match.start && match.end <= target.text.length)
     .map((match) => {
       const chipClass = entityChipClass(match.type, match.presetKey)
       const className = [
@@ -79,32 +81,69 @@ async function buildParagraphDecorations(
       ]
         .filter(Boolean)
         .join(' ')
-      return Decoration.inline(paragraph.from + 1 + match.start, paragraph.from + 1 + match.end, {
+      return Decoration.inline(target.from + 1 + match.start, target.from + 1 + match.end, {
         class: className,
         [ENTITY_ID_ATTR]: String(match.entityId)
       })
     })
 }
 
-/** 单个待重算段落：**整段绝对区间** + 文本（供匹配与整段清除）。 */
-interface ParagraphTarget {
-  from: number
-  to: number
-  text: string
+/**
+ * 批量解析文本块匹配结果：先查缓存，未命中内容合并为**一次** `entities:matchMany` 取回并回填缓存。
+ *
+ * 返回与 `targets` 等长同序的结果数组；返回 `null` 表示批量结果与请求长度不符
+ * （主进程对非法入参返回空数组），调用方按整批失败处理——保留旧装饰、不抽干待办。
+ * `revision` 为 null（版本获取失败）时绕过缓存，仍走批量匹配。
+ */
+async function matchTextblocks(
+  bookId: string,
+  revision: string | null,
+  targets: readonly TextblockTarget[]
+): Promise<TextblockMatch[][] | null> {
+  const results = new Array<TextblockMatch[]>(targets.length)
+  const missingTexts: string[] = []
+  const missingIndexes: number[] = []
+  for (let index = 0; index < targets.length; index += 1) {
+    const text = targets[index].text
+    if (text === '') {
+      results[index] = []
+      continue
+    }
+    const cached = revision === null ? undefined : matchCache.get(bookId, revision, text)
+    if (cached !== undefined) {
+      results[index] = cached
+      continue
+    }
+    missingIndexes.push(index)
+    missingTexts.push(text)
+  }
+  if (missingTexts.length === 0) return results
+
+  const fetched = (await window.api.entities.matchMany(bookId, missingTexts)) as TextblockMatch[][]
+  // 等长同序是批量通道的约定；长度不符说明 IPC 入参校验失败，整批按失败处理。
+  if (fetched.length !== missingTexts.length) return null
+  for (let index = 0; index < fetched.length; index += 1) {
+    const matches = fetched[index]
+    results[missingIndexes[index]] = matches
+    if (revision !== null) matchCache.set(bookId, revision, missingTexts[index], matches)
+  }
+  return results
 }
 
 /**
- * 收集整篇文档中的**全部段落**（整段边界 + 文本）。
+ * 收集整篇文档中的**全部可高亮文本块**（整块边界 + 文本）。
  *
- * 用于**整篇**重匹配场景（`onCreate` 的 `matchOnCreate` 补匹配）：遍历全部段落节点，
- * 返回整段边界，供「按段整段清除 + 重算」。日常编辑走 `collectParagraphTargets`
- * 的脏区域增量路径（只重算变更区间覆盖的段落）。
+ * 用于**整篇**重匹配场景（`onCreate` 的 `matchOnCreate` 补匹配）：遍历标题 / 段落 /
+ * 引用内段落等所有 textblock（排除代码块），返回整块边界，供「按块整块清除 + 重算」。
+ * 日常编辑走 `collectTextblockTargets` 的脏区域增量路径（只重算变更区间覆盖的文本块）。
  */
-function collectAllParagraphs(doc: PMNode): ParagraphTarget[] {
-  const targets: ParagraphTarget[] = []
+function collectAllTextblocks(doc: PMNode): TextblockTarget[] {
+  const targets: TextblockTarget[] = []
   doc.descendants((node, pos) => {
-    if (node.type.name === 'paragraph') {
-      targets.push({ from: pos, to: pos + node.nodeSize, text: node.textContent })
+    if (node.isTextblock) {
+      if (isHighlightableTextblock(node)) {
+        targets.push({ from: pos, to: pos + node.nodeSize, text: node.textContent })
+      }
       return false
     }
     return true
@@ -136,25 +175,25 @@ function mergeRanges(ranges: readonly DocRange[]): DocRange[] {
 }
 
 /**
- * 把待重算区间解析为**当前文档中**需要重算的段落清单（整段区间 + 文本）。
+ * 把待重算区间解析为**当前文档中**需要重算的文本块清单（整块区间 + 文本）。
  *
- * 刷新策略核心：不依赖「段落绝对起点」的精确匹配（删除 / 合并 / 拆分使起点漂移时会失配
- * → 整段被跳过 → 旧装饰残留），而是按**区间**落到段落上：
- * - 区间向两侧各探一位（`from - 1` / `to + 1`）：删除 / 插入落在段边界（合并、拆分）时，
- *   边界两侧的段落都能覆盖（`Fragment.nodesBetween` 只回调与区间相交的节点）；
- * - 纯删除区间折叠为 `from === to`，用 `from + 1` 兜底探一位，避免漏掉删除所在段落；
- * - 同一段落按起点去重（`Map`），返回**整段边界**，供后续「按段整段清除 + 重算」。
+ * 刷新策略核心：不依赖「文本块绝对起点」的精确匹配（删除 / 合并 / 拆分使起点漂移时会失配
+ * → 整块被跳过 → 旧装饰残留），而是按**区间**落到文本块上：
+ * - 区间向两侧各探一位（`from - 1` / `to + 1`）：删除 / 插入落在块边界（合并、拆分）时，
+ *   边界两侧的文本块都能覆盖（`Fragment.nodesBetween` 只回调与区间相交的节点）；
+ * - 纯删除区间折叠为 `from === to`，用 `from + 1` 兜底探一位，避免漏掉删除所在文本块；
+ * - 同一文本块按起点去重（`Map`），返回**整块边界**，供后续「按块整块清除 + 重算」。
  */
-function collectParagraphTargets(doc: PMNode, ranges: readonly DocRange[]): ParagraphTarget[] {
+function collectTextblockTargets(doc: PMNode, ranges: readonly DocRange[]): TextblockTarget[] {
   const docSize = doc.content.size
-  const targets = new Map<number, ParagraphTarget>()
+  const targets = new Map<number, TextblockTarget>()
   for (const range of ranges) {
     const from = Math.max(0, range.from - 1)
     const to = Math.min(docSize, Math.max(range.to, range.from + 1) + 1)
     if (from >= to) continue
     doc.nodesBetween(from, to, (node, pos) => {
-      if (node.type.name === 'paragraph') {
-        if (!targets.has(pos)) {
+      if (node.isTextblock) {
+        if (isHighlightableTextblock(node) && !targets.has(pos)) {
           targets.set(pos, { from: pos, to: pos + node.nodeSize, text: node.textContent })
         }
         return false
@@ -168,13 +207,14 @@ function collectParagraphTargets(doc: PMNode, ranges: readonly DocRange[]): Para
 /**
  * 实体高亮扩展（阶段②）。
  *
- * - 匹配走阶段① IPC `entities:match`（词表为统一设定库主表 name + 别名），按段落调用（段内下标 + 段落绝对 pos 换算）；
+ * - 匹配走阶段① IPC `entities:matchMany`（词表为统一设定库主表 name + 别名），按文本块批量调用
+ *   （一次 IPC 匹配多个未缓存文本块；块内下标 + 块绝对 pos 换算）；仅收集 textblock 并排除代码块；
  * - **脏区域增量重算**：事务变更时用 `tr.mapping` 映射旧 DecorationSet 并**保留**旧装饰
  *   （编辑中不闪断），同时把本次变更区间经 `tr.mapping` 映射后并入待重算集合；**停笔 500ms 后**
- *   只对「变更区间覆盖到的段落（含相邻段，覆盖合并 / 拆分）」整段重算，不再整篇重算；
+ *   只对「变更区间覆盖到的文本块（含相邻块，覆盖合并 / 拆分）」整块重算，不再整篇重算；
  * - **整篇**重算仅用于 `matchOnCreate`（文档以 `content` 直接带入、无变更事务）；
- * - **段落缓存**：按「书 + 词表版本 + 段落文本」缓存匹配结果，未变段落命中缓存、跳过 IPC；
- * - **刷新不变式**：任何曾装饰但当前无匹配的范围**必须**被移除——按目标段落整段区间清除旧装饰
+ * - **文本块缓存**：按「书 + 词表版本 + 文本块内容」缓存匹配结果，未变文本块命中缓存、跳过 IPC；
+ * - **刷新不变式**：任何曾装饰但当前无匹配的范围**必须**被移除——按目标文本块整块区间清除旧装饰
  *   再补新结果；`await` 期间文档变化 / IPC 失败**不抽干待办**（期间事务已把区间映射并入并重置
  *   尾沿定时器），确保删除实体文字后高亮不残留（吸取历史「抽干后丢弃」教训）；
  * - 任务**按 EditorView 隔离**（同页多编辑器共享本扩展时互不抢占）。
@@ -221,8 +261,8 @@ export const EntityHighlight = Extension.create<EntityHighlightOptions, Decorati
             const mapped = oldDecorations.map(tr.mapping, tr.doc)
 
             // 收集本次事务的**变更区间**（新文档坐标）。纯删除会折叠为 `from === to`，
-            // 由 `collectParagraphTargets` 兜底探一位后解析到段落——不依赖段落绝对起点的
-            // 精确匹配（删除 / 合并致起点漂移时会失配 → 整段被跳过 → 旧装饰残留）。
+            // 由 `collectTextblockTargets` 兜底探一位后解析到文本块——不依赖文本块绝对起点的
+            // 精确匹配（删除 / 合并致起点漂移时会失配 → 整块被跳过 → 旧装饰残留）。
             const ranges: DocRange[] = []
             tr.steps.forEach((_step, index) => {
               tr.mapping.maps[index].forEach((_oldStart, _oldEnd, newStart, newEnd) => {
@@ -230,7 +270,7 @@ export const EntityHighlight = Extension.create<EntityHighlightOptions, Decorati
               })
             })
 
-            // 纯尾沿防抖 500ms：把本次变更区间并入待重算，停笔后只重算脏区域段落。
+            // 纯尾沿防抖 500ms：把本次变更区间并入待重算，停笔后只重算脏区域文本块。
             scheduleRematch(getEditor(), options, ranges, tr.mapping)
 
             return mapped
@@ -318,7 +358,7 @@ function scheduleRematch(
 
   const task = ensureTask(view)
 
-  // 既有待重算区间映射到新文档坐标（段落在本次事务中的位移不失配）。
+  // 既有待重算区间映射到新文档坐标（文本块在本次事务中的位移不失配）。
   // 起点取左偏（assoc=-1）、终点取右偏（assoc=1）：只可能把区间**放宽**，不会漏掉脏区域。
   const carried = mapping
     ? task.ranges.map((range) => ({
@@ -345,13 +385,15 @@ function scheduleFullRematch(editor: TiptapEditor, options: EntityHighlightOptio
 }
 
 /**
- * 重匹配到期：对**脏区域**（或整篇，`full`）解析出的段落发起 IPC，返回后**按段增量替换**装饰。
+ * 重匹配到期：对**脏区域**（或整篇，`full`）解析出的文本块发起匹配，返回后**按块增量替换**装饰。
  *
- * - 只重算目标段落；未变段落命中段落缓存（跳过 IPC），其余段落既有高亮保留；
- * - 刷新不变式：目标段落整段区间的旧装饰先清除再补新结果（删除实体文字后高亮必然被清除）；
+ * - 只重算目标文本块；未变文本块命中匹配缓存（跳过 IPC），其余文本块既有高亮保留；
+ * - 未命中缓存的内容合并为**一次** `entities:matchMany`（整篇从 N 次 IPC 降为 1 次）；
+ * - 刷新不变式：目标文本块整块区间的旧装饰先清除再补新结果（删除实体文字后高亮必然被清除）；
  * - await 期间文档可能变化：`view.state.doc` 与快照不是同一对象则丢弃本轮结果——**不抽干待办**
  *   （期间事务已把区间映射并入 `task.ranges` 并重置尾沿定时器），停笔后会再算一次；
- * - IPC 失败：**不抽干待办**，保留旧装饰，等下一次输入 / 尾沿再算（不静默清除高亮）；
+ * - 匹配失败（IPC 异常 / 批量返回长度不符）：**不抽干待办**，保留旧装饰，等下一次输入 / 尾沿
+ *   再算（不静默清除高亮）；
  * - 视图销毁（isDestroyed）后不再 dispatch，静默丢弃本轮结果；
  * - `pending` 为真（执行期间又有触发到期）时循环再跑一轮，确保「最后一次停笔」被覆盖。
  */
@@ -368,9 +410,9 @@ async function runRematch(view: EditorView, bookId: string, task: RematchTask): 
 
       const doc = view.state.doc
       const isFull = task.full
-      const targets = isFull ? collectAllParagraphs(doc) : collectParagraphTargets(doc, task.ranges)
+      const targets = isFull ? collectAllTextblocks(doc) : collectTextblockTargets(doc, task.ranges)
       if (targets.length === 0) {
-        // 无待重算段落：清空待办，避免空转。
+        // 无待重算文本块：清空待办，避免空转。
         task.ranges = []
         task.full = false
         continue
@@ -385,12 +427,13 @@ async function runRematch(view: EditorView, bookId: string, task: RematchTask): 
       }
       if (view.isDestroyed) break
 
-      // 配色只取决于 `match.presetKey`（随 `entities:match` 同步返回），无需任何映射前置。
-      let perParagraph: Decoration[][]
+      // 配色只取决于 `match.presetKey`（随 `entities:matchMany` 同步返回），无需任何映射前置。
+      let perTextblock: TextblockMatch[][]
       try {
-        perParagraph = await Promise.all(
-          targets.map((target) => buildParagraphDecorations(bookId, revision, target))
-        )
+        const matched = await matchTextblocks(bookId, revision, targets)
+        // 长度不符（IPC 入参校验失败）按整批失败处理：保留旧装饰，等待下一次重算。
+        if (matched === null) break
+        perTextblock = matched
       } catch {
         // IPC 失败：不抽干待办，保留旧装饰，下一次输入 / 尾沿会再次重算。
         break
@@ -404,14 +447,14 @@ async function runRematch(view: EditorView, bookId: string, task: RematchTask): 
         continue
       }
 
-      // 按目标段落整段区间增量替换旧装饰（其余段落既有高亮保留）。
+      // 按目标文本块整块区间增量替换旧装饰（其余文本块既有高亮保留）。
       let merged = entityHighlightKey.getState(view.state) ?? DecorationSet.empty
       const fresh: Decoration[] = []
       for (let i = 0; i < targets.length; i += 1) {
         const target = targets[i]
         const found = merged.find(target.from, target.to)
         if (found.length > 0) merged = merged.remove(found)
-        fresh.push(...perParagraph[i])
+        fresh.push(...buildTextblockDecorations(perTextblock[i], target))
       }
       merged = merged.add(newDoc, fresh)
       view.dispatch(view.state.tr.setMeta(entityHighlightKey, { decorations: merged }))

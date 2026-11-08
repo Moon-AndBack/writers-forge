@@ -191,6 +191,7 @@ export default function TimelineView({
       {onCreateTimeline ? <TimelineActivityActions onAdd={() => setCreateOpen(true)} /> : null}
       {createOpen && onCreateTimeline ? (
         <NewTimelineDialog
+          bookId={bookId ?? ''}
           onClose={() => setCreateOpen(false)}
           onSubmit={(name, description) => {
             void onCreateTimeline(name, description)

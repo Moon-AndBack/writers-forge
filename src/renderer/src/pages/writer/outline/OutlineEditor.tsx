@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Editor } from '@tiptap/core'
@@ -26,6 +26,9 @@ import { SelectionContextMenu } from '../SelectionContextMenu'
 import { ForeshadowMark } from '../../../components/editor/foreshadowMarks'
 import { MarkHoverTip } from '../../../components/editor/MarkHoverTip'
 import { useMarkHover } from '../../../components/editor/useMarkHover'
+import { EntityHighlight } from '../entities/entityHighlight'
+import { HoverCard } from '../entities/HoverCard'
+import { useEntityHover } from '../entities/useEntityHover'
 import {
   useForeshadowMarks,
   type ForeshadowLabelResolver
@@ -106,7 +109,7 @@ export interface OutlineEditorProps {
  * - 编辑头与章节视图同款（前缀只读 + 可编辑题名）；题名提交经 `onCommitTitle` 落库；
  * - 回收站视图打开时替代编辑区，操作后经 `onTrashChanged` 通知页面刷新左栏大纲树；
  * - 搜索为**仅当前条目正文**的查找 / 替换（见 `useOutlineSearch`）；
- * - 不接入实体高亮等章节域专属能力。
+ * - 接入实体高亮（`EntityHighlight`，按书匹配）与实体悬停卡，口径与章节正文一致。
  */
 export default function OutlineEditor({
   target,
@@ -125,6 +128,7 @@ export default function OutlineEditor({
   // 「最后编辑」文案复用 `chapters` ns 现有 key（`editor.lastEdited`）——避免语义重复的并列 key（§10 明确允许组件内多次 useTranslation 跨 ns 取用）。
   const { t: tChapters } = useTranslation('chapters')
   const contentId = target?.contentId ?? null
+  const safeBookId = bookId ?? ''
   // 有编辑目标且其正文载体存在时才可编辑；否则正文只读（不落库）。
   const canEdit = target !== null && contentId !== null
   // 伏笔锚点的大纲载体：**仅条目行**（`outline_items.id`，`scope='entry'`）可作为 `outlineItemId`；
@@ -140,8 +144,16 @@ export default function OutlineEditor({
     }
   })
 
+  // ⚠️ EntityHighlight 的 `getBookId` 闭包**必须**捕获当前 `safeBookId`；数组经
+  // `useMemo` 恒等（仅切书重建）。正文经 `useOutlineDoc` 的 `setContent` 载入
+  // （产生 docChanged 事务），故不设 `matchOnCreate`（避免重复整篇匹配）。
+  const editorExtensions = useMemo(
+    () => [...EDITOR_BASE_EXTENSIONS, EntityHighlight.configure({ getBookId: () => safeBookId })],
+    [safeBookId]
+  )
+
   const editor = useEditor({
-    extensions: EDITOR_BASE_EXTENSIONS,
+    extensions: editorExtensions,
     content: EMPTY_RICH_TEXT_CONTENT,
     // 可编辑性走下方 setEditable effect（本处**必须**为字面量 `true`，见 W11 说明）。
     editable: true,
@@ -159,6 +171,8 @@ export default function OutlineEditor({
   useForeshadowMarks(editor, null, outlineItemId, resolveForeshadowTargetLabel)
   // 伏笔标记悬停浮层：事件委托挂在 editor.view.dom（不改 RICH_TEXT_EDITOR_PROPS），切条目即收起。
   const markTip = useMarkHover(editor, contentId)
+  // 实体悬停卡：事件委托挂在 `.editor-scroll`（与伏笔标记的 DOM 监听互不覆盖）。
+  const entityHover = useEntityHover()
 
   const { status, dirty, lastSavedAt, onUpdate, flush, swapPhase } = useOutlineDoc({
     contentId,
@@ -349,7 +363,12 @@ export default function OutlineEditor({
           {/* data-swap-phase 交替两档别名关键帧，令「切换条目 / 载体」后的正文淡入重播
               （相位来自 useOutlineDoc → useContentSwap；null = 首次载入，不挂属性、不淡入）。
               与章节视图共用同一套 CSS（见 writer-editor-doc.css）。 */}
-          <div className="editor-scroll" data-swap-phase={swapPhase ?? undefined}>
+          <div
+            className="editor-scroll"
+            data-swap-phase={swapPhase ?? undefined}
+            onMouseOver={entityHover.onMouseOver}
+            onMouseLeave={entityHover.onMouseLeave}
+          >
             <div className="editor-inner">
               {target === null ? (
                 /* 未选中目标：明确空态，指引从左侧大纲树选择。 */
@@ -399,6 +418,13 @@ export default function OutlineEditor({
       )}
       {/* 伏笔标记悬停提示（自绘浮层，替代原生 title；pointer-events: none 不挡鼠标）。 */}
       <MarkHoverTip tip={markTip} />
+      {/* 实体悬停卡：高亮 span 经 `.editor-scroll` 事件委托定位（portal 定位，不受滚动容器裁剪）。 */}
+      <HoverCard
+        anchor={entityHover.anchor}
+        onClose={entityHover.close}
+        onPointerEnter={entityHover.cancelHide}
+        onPointerLeave={entityHover.onMouseLeave}
+      />
     </>
   )
 }

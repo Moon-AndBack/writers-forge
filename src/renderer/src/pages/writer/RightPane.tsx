@@ -219,6 +219,7 @@ export function RightPane({
         {/* 大纲页签：仅章节模块可见（大纲模块页签集不含 outline，此处恒 hidden，但保持挂载）。 */}
         <div className="rp-tabpanel" hidden={!isChapterView || activeTab !== 'outline'}>
           <OutlineRightPanel
+            bookId={bookId ?? ''}
             volumes={outlineVolumes}
             items={outlineItems}
             activeVolumeId={activeVolumeId}

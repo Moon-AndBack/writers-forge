@@ -11,6 +11,8 @@ import { useRichTextEditor } from '../../../components/editor/richTextEditorCont
 import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
 import { DocWordLimit } from '../docWordLimit'
 import { EntityHighlight } from '../entities/entityHighlight'
+import { HoverCard } from '../entities/HoverCard'
+import { useEntityHover } from '../entities/useEntityHover'
 
 /**
  * 正文扩展**底座**：通用块级富文本（`RICH_TEXT_EXTENSIONS`）+ 单篇字数上限
@@ -50,7 +52,8 @@ export interface DossierBodyEditorProps {
  *   （见 `writer-dossier-split.css`）；**正文区不再自带工具栏**——`editor` 实例与聚焦态
  *   经通用注册表 `useRichTextEditor('dossier')` 注册 / 上报，工具栏由标题栏动作
  *   （`DossierActivityActions`）在聚焦编辑时渲染，与剧情线同一机制；
- * - **实体高亮**：`EntityHighlight` 按书匹配（`matchOnCreate`），口径与章节 / 剧情正文一致。
+ * - **实体高亮**：`EntityHighlight` 按书匹配（`matchOnCreate`），口径与章节 / 剧情正文一致；
+ *   悬停卡经容器事件委托（`useEntityHover`）显示。
  */
 export default function DossierBodyEditor({
   bookId,
@@ -83,6 +86,8 @@ export default function DossierBodyEditor({
     [bookId]
   )
 
+  const entityHover = useEntityHover()
+
   const { editor, isEmpty, containerProps } = useRichTextBodyEditor({
     initialJson,
     extensions,
@@ -95,7 +100,12 @@ export default function DossierBodyEditor({
   })
 
   return (
-    <div className="dossier-body-editor" {...containerProps}>
+    <div
+      className="dossier-body-editor"
+      {...containerProps}
+      onMouseOver={entityHover.onMouseOver}
+      onMouseLeave={entityHover.onMouseLeave}
+    >
       <EditorContent
         editor={editor}
         className={`doc-body${isEmpty ? ' is-empty' : ''}`}
@@ -104,6 +114,12 @@ export default function DossierBodyEditor({
             '--editor-placeholder': toCssString(t('detail.bodyPlaceholder'))
           } as CSSProperties
         }
+      />
+      <HoverCard
+        anchor={entityHover.anchor}
+        onClose={entityHover.close}
+        onPointerEnter={entityHover.cancelHide}
+        onPointerLeave={entityHover.onMouseLeave}
       />
     </div>
   )

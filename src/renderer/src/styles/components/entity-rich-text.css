@@ -1,0 +1,13 @@
+/* ---------- 实体高亮富文本外壳 ----------
+   只做事件委托容器与 hover 卡挂载点，布局上透明传递父级 flex 高度链：
+   - `OutlinePicker` / `TimelineSceneDetail`：`.rp-read` 依赖外层 flex 分配剩余高度；
+   - `TimelineOriginPanel`：`.short-rich-field--fill` 依赖 `.wf-field__control` 的高度链。
+   外壳自身不生成滚动 / 内衬 / 边框，视觉全部由内部组件决定。 */
+
+.entity-rich-text-shell {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}

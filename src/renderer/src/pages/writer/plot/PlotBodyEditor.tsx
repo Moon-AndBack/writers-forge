@@ -9,6 +9,8 @@ import {
 } from '../../../components/editor/useRichTextBodyEditor'
 import { DocWordLimit } from '../docWordLimit'
 import { EntityHighlight } from '../entities/entityHighlight'
+import { HoverCard } from '../entities/HoverCard'
+import { useEntityHover } from '../entities/useEntityHover'
 import { usePlotEditor } from './plotEditorContext'
 
 /**
@@ -55,9 +57,9 @@ export interface PlotBodyEditorProps {
  *   卸载兜底上报「非编辑中」（切场景销毁时浏览器可能不派发 blur）；
  * - **实例共享**：`editor` 经 `plotEditorContext` 注册给标题栏工具栏（聚焦编辑时渲染格式 / 撤销重做），
  *   聚焦态同样经该槽位 `reportEditing` 上提（与设定库正文同一机制）；
- * - **实体高亮**：接入 `EntityHighlight`（按书经 `entities:match` 匹配，输入防抖 300ms），
- *   正文中的实体名 / 别名自动高亮（悬停信息卡仅在剧情卡片侧提供）；匹配口径与章节正文一致
- *   ——仅 `paragraph` 节点参与（标题 / 代码块等块不匹配）；
+ * - **实体高亮**：接入 `EntityHighlight`（按书经 `entities:matchMany` 批量匹配），正文中的
+ *   实体名 / 别名自动高亮；悬停卡经容器事件委托（`useEntityHover`）显示。匹配口径与章节正文
+ *   一致——所有 textblock 参与（标题 / 列表 / 引用等），仅代码块排除；
  * - **不落库**：只改外层草稿（经 `onChange`），由外层「手动保存」按既有 patch 机制提交。
  */
 export default function PlotBodyEditor({ initialJson, onChange }: PlotBodyEditorProps) {
@@ -94,6 +96,8 @@ export default function PlotBodyEditor({ initialJson, onChange }: PlotBodyEditor
     [onChange]
   )
 
+  const entityHover = useEntityHover()
+
   const { editor, isEmpty, containerProps } = useRichTextBodyEditor({
     initialJson,
     extensions,
@@ -106,7 +110,12 @@ export default function PlotBodyEditor({ initialJson, onChange }: PlotBodyEditor
   })
 
   return (
-    <div className="plot-body-editor" {...containerProps}>
+    <div
+      className="plot-body-editor"
+      {...containerProps}
+      onMouseOver={entityHover.onMouseOver}
+      onMouseLeave={entityHover.onMouseLeave}
+    >
       <EditorContent
         editor={editor}
         className={`doc-body${isEmpty ? ' is-empty' : ''}`}
@@ -115,6 +124,12 @@ export default function PlotBodyEditor({ initialJson, onChange }: PlotBodyEditor
             '--editor-placeholder': toCssString(t('editor.contentPlaceholder'))
           } as CSSProperties
         }
+      />
+      <HoverCard
+        anchor={entityHover.anchor}
+        onClose={entityHover.close}
+        onPointerEnter={entityHover.cancelHide}
+        onPointerLeave={entityHover.onMouseLeave}
       />
     </div>
   )

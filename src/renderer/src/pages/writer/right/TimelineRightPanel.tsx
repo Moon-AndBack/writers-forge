@@ -1,14 +1,24 @@
 import type { ReactElement, RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
-import ReadonlyRichText from '../../../components/editor/ReadonlyRichText'
 import type { RichTextBodyValue } from '../../../components/editor/useRichTextBodyEditor'
 import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
+import { EntityReadonlyRichText } from '../entities/EntityReadonlyRichText'
+import { HoverCard } from '../entities/HoverCard'
+import { useEntityHover } from '../entities/useEntityHover'
 import { plotSceneTime, plotSceneTitle, type PlotSceneRow } from '../plot/plotTree'
 import TimelineOriginPanel from '../timeline/TimelineOriginPanel'
 
 /** 独立时间线右栏的选中场景详情卡（只读：卡头标题 + 时间、只读正文）。 */
-function TimelineSceneDetail({ scene }: { scene: PlotSceneRow | null }): ReactElement {
+function TimelineSceneDetail({
+  scene,
+  bookId,
+  hoverCard
+}: {
+  scene: PlotSceneRow | null
+  bookId: string
+  hoverCard: boolean
+}): ReactElement {
   const { t } = useTranslation('plot')
   const { t: tTimeline } = useTranslation('timeline')
   if (scene === null) {
@@ -43,10 +53,13 @@ function TimelineSceneDetail({ scene }: { scene: PlotSceneRow | null }): ReactEl
       {/* 正文区：只读富文本正文（空正文由组件统一显示占位），值块复用共享
           `.wf-readonly-block`（--control-on-soft 底 + 内描边），与伏笔只读详情同口径。 */}
       <div className="timeline-detail__section">
-        <ReadonlyRichText
+        <EntityReadonlyRichText
+          key={bookId}
+          bookId={bookId}
           json={bodyJson}
           emptyText={tTimeline('sceneBodyEmpty')}
           className="wf-readonly-block"
+          hoverCard={hoverCard}
         />
       </div>
     </section>
@@ -81,19 +94,32 @@ export function TimelineRightPanel({
   scene,
   originSelected = false
 }: TimelineRightPanelProps): ReactElement {
+  // 实体悬停卡：起点卡与场景详情共用根容器上的一个控制器（子字段传 `hoverCard={false}`）。
+  const entityHover = useEntityHover()
   return (
-    <div className="rp-body rp-body--no-head">
+    <div
+      className="rp-body rp-body--no-head"
+      onMouseOver={entityHover.onMouseOver}
+      onMouseLeave={entityHover.onMouseLeave}
+    >
       {originSelected ? (
         <TimelineOriginPanel
           key={`${bookId ?? ''}:${activeTimelineId ?? ''}`}
           bookId={bookId}
+          hoverCard={false}
           activeTimelineId={activeTimelineId}
           onSaveDescription={onUpdateDescription}
           flushRef={flushRef}
         />
       ) : (
-        <TimelineSceneDetail scene={scene} />
+        <TimelineSceneDetail scene={scene} bookId={bookId ?? ''} hoverCard={false} />
       )}
+      <HoverCard
+        anchor={entityHover.anchor}
+        onClose={entityHover.close}
+        onPointerEnter={entityHover.cancelHide}
+        onPointerLeave={entityHover.onMouseLeave}
+      />
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactElement } from 'react'
-import ReadonlyRichText from '../../../components/editor/ReadonlyRichText'
+import EntityReadonlyRichText from '../entities/EntityReadonlyRichText'
 import { Select, type SelectOption } from '../../../components/ui'
 import type { OutlinePreview } from './useOutlinePreview'
 
@@ -21,6 +21,10 @@ import type { OutlinePreview } from './useOutlinePreview'
  * `style.flexGrow` 传入（默认各半，可拖动分隔条调节）。
  */
 export interface OutlinePickerProps {
+  /** 归属书 id（只读正文的实体高亮按书匹配）。 */
+  bookId: string
+  /** 是否启用实体悬停卡（默认 `true`；右栏面板统一委托时传 `false`）。 */
+  hoverCard?: boolean
   /** 下拉的无障碍名称（i18n 文案，由调用方取；**不渲染为可见标签**）。 */
   ariaLabel: string
   /** 扁平下拉选项（条目 / 卷已由调用方编码为 `entry:{id}` / `volume:{id}`）。 */
@@ -38,6 +42,8 @@ export interface OutlinePickerProps {
 }
 
 export default function OutlinePicker({
+  bookId,
+  hoverCard = true,
   ariaLabel,
   options,
   value,
@@ -63,7 +69,13 @@ export default function OutlinePicker({
       {preview.status === 'loading' ? (
         <div className="rp-read" aria-busy="true" />
       ) : (
-        <ReadonlyRichText json={preview.contentJson} emptyText={emptyText} />
+        <EntityReadonlyRichText
+          key={bookId}
+          bookId={bookId}
+          json={preview.contentJson}
+          emptyText={emptyText}
+          hoverCard={hoverCard}
+        />
       )}
     </div>
   )

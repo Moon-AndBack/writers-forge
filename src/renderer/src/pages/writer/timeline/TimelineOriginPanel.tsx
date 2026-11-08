@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
-import ShortRichTextField from '../../../components/editor/ShortRichTextField'
 import type { RichTextBodyValue } from '../../../components/editor/useRichTextBodyEditor'
 import { FormField } from '../../../components/ui'
+import EntityShortRichTextField from '../entities/EntityShortRichTextField'
 import SaveBar from '../SaveBar'
 import {
   parseTimelineList,
@@ -19,6 +19,8 @@ const EMPTY_VALUE: RichTextBodyValue = { text: '', json: null }
 export interface TimelineOriginPanelProps {
   /** 书籍 id（路由参数）；按书读取 `timeline:list:<bookId>`。 */
   bookId?: string
+  /** 是否启用实体悬停卡（默认 `true`；右栏面板统一委托时传 `false`）。 */
+  hoverCard?: boolean
   /** 当前选中时间线 id；切换时重新读取对应条目的描述。 */
   activeTimelineId?: string | null
   /** 写回当前选中时间线的起点描述（页面层 `updateDescription`，入参为编辑器归一值）。 */
@@ -44,6 +46,7 @@ export interface TimelineOriginPanelProps {
  */
 export default function TimelineOriginPanel({
   bookId,
+  hoverCard = true,
   activeTimelineId,
   onSaveDescription,
   flushRef
@@ -155,7 +158,9 @@ export default function TimelineOriginPanel({
         {/* 首读完成后再挂字段：`initialJson` 只在挂载时读取一次，必须先拿到归一基线。 */}
         {loaded ? (
           <FormField label={t('originDescLabel')}>
-            <ShortRichTextField
+            <EntityShortRichTextField
+              bookId={bookId ?? ''}
+              hoverCard={hoverCard}
               initialJson={initialJson}
               onChange={(value) => {
                 draftRef.current = value

@@ -7,6 +7,8 @@ import type { VolumeRow } from '../chapters/chapterTree'
 import { useChapterLabels } from '../chapters/useChapterLabels'
 import { outlineItemLabel, type OutlineItemRow } from '../outline/outlineTree'
 import Splitter from '../Splitter'
+import { HoverCard } from '../entities/HoverCard'
+import { useEntityHover } from '../entities/useEntityHover'
 import OutlinePicker from './OutlinePicker'
 import { useOutlinePreview } from './useOutlinePreview'
 
@@ -46,6 +48,8 @@ const PANEL_PADDING_Y = 8 * 2
 const DEFAULT_SPLIT_RATIO = 50
 
 export interface OutlineRightPanelProps {
+  /** 归属书 id（只读正文的实体高亮按书匹配）。 */
+  bookId: string
   /** 大纲页可见卷（`normal` + `group`，页面层与左栏同源）。 */
   volumes: VolumeRow[]
   /** 未删除大纲条目（`scope='entry'`，页面层与左栏同源）。 */
@@ -77,6 +81,7 @@ export interface OutlineRightPanelProps {
  *   故不再经 `buildOutlineTree` 归拢。
  */
 export function OutlineRightPanel({
+  bookId,
   volumes,
   items,
   activeVolumeId = null
@@ -84,6 +89,8 @@ export function OutlineRightPanel({
   const { t } = useTranslation('writer')
   const { t: tOutline } = useTranslation('outline')
   const labels = useChapterLabels()
+  // 实体悬停卡：两个展示区共用一个控制器，根容器统一委托（子字段传 `hoverCard={false}`）。
+  const entityHover = useEntityHover()
 
   // 下拉值（受控）：'' = 尚未选择 / 选中项已失效（渲染期回退到默认项）。
   const [primaryValue, setPrimaryValue] = useState('')
@@ -231,8 +238,15 @@ export function OutlineRightPanel({
   const visibleSplitRatio = Math.min(maxSplitRatio, Math.max(minSplitRatio, splitRatio))
 
   return (
-    <div className="rp-panel rp-outline" ref={rootRef}>
+    <div
+      className="rp-panel rp-outline"
+      ref={rootRef}
+      onMouseOver={entityHover.onMouseOver}
+      onMouseLeave={entityHover.onMouseLeave}
+    >
       <OutlinePicker
+        bookId={bookId}
+        hoverCard={false}
         ariaLabel={t('rightOutline.outlineLabel')}
         options={options}
         value={primaryResolved}
@@ -256,6 +270,8 @@ export function OutlineRightPanel({
             onChange={setSplitRatio}
           />
           <OutlinePicker
+            bookId={bookId}
+            hoverCard={false}
             ariaLabel={t('rightOutline.detailLabel')}
             options={detailOptions}
             value={detailResolved}
@@ -266,6 +282,12 @@ export function OutlineRightPanel({
           />
         </>
       ) : null}
+      <HoverCard
+        anchor={entityHover.anchor}
+        onClose={entityHover.close}
+        onPointerEnter={entityHover.cancelHide}
+        onPointerLeave={entityHover.onMouseLeave}
+      />
     </div>
   )
 }

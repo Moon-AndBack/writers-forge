@@ -31,7 +31,9 @@ export function useEntityHover() {
       clearHideTimer()
       const entityId = Number(span.dataset.entityId)
       if (!Number.isInteger(entityId)) return
-      setAnchor({ rect: span.getBoundingClientRect(), entityId })
+      // 把命中的 span 本体一并交给悬停卡：同实体在多面板 / 多处高亮时按此精确锚定，
+      // 避免 `HoverCard` 全局查询「最近 span」选错（`rect` 仍作滚动失效后的快照兜底）。
+      setAnchor({ rect: span.getBoundingClientRect(), entityId, anchorEl: span })
     },
     [clearHideTimer]
   )
