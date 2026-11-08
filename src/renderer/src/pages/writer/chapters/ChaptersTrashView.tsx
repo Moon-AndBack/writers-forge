@@ -83,12 +83,13 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
 
   const volumes: TrashRow[] = content.volumes.map((volume) => ({
     id: volume.id,
-    name: labels.volumeLabel(volume)
+    name: labels.volumeLabel(volume) || t('trash.detail.untitledVolume')
   }))
   const chapters: TrashRow[] = content.chapters.map((chapter) => ({
     id: chapter.id,
-    name: labels.chapterLabel(chapter),
-    sub: chapter.volumeTitle !== null ? chapter.volumeTitle : t('trash.orphanVolume')
+    name: labels.chapterLabel(chapter) || t('trash.untitledChapter'),
+    sub: chapter.volumeTitle !== null ? chapter.volumeTitle : t('trash.orphanVolume'),
+    parentId: chapter.volumeId
   }))
 
   const requestRestoreVolume = (id: number): void => {
@@ -153,6 +154,7 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
     <TrashListView
       volumes={volumes}
       items={chapters}
+      tree
       loading={loading}
       loadError={loadError}
       onRetry={() => void reload()}

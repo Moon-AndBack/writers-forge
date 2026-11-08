@@ -92,7 +92,8 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
   const items: TrashRow[] = content.items.map((item) => ({
     id: item.id,
     name: outlineItemLabel(item, tOutline('unnamedChapter')),
-    sub: item.volumeTitle !== null ? item.volumeTitle : t('trash.orphanVolume')
+    sub: item.volumeTitle !== null ? item.volumeTitle : t('trash.orphanVolume'),
+    parentId: item.volumeId ?? undefined
   }))
 
   const requestRestoreVolume = (id: number): void => {
@@ -161,6 +162,7 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
     <TrashListView
       volumes={volumes}
       items={items}
+      tree
       loading={loading}
       loadError={loadError}
       onRetry={() => void reload()}

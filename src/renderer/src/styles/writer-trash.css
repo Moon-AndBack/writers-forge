@@ -113,6 +113,29 @@
   text-overflow: ellipsis;
 }
 
+/* ---------- 树形分组（章节 / 大纲回收站） ----------
+   卷行与其回收站章 / 条目同组：组间 8px；子行缩进 26px（对齐
+   `.outline-chapter.is-nested` 的既有先例，不另造缩进档）。 */
+.trash-tree-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.trash-tree-group + .trash-tree-group {
+  margin-top: 8px;
+}
+
+.trash-row.is-nested {
+  padding-left: 26px;
+}
+
+/* 子条目名回落正文侧栏的次文本口径（400 + --text-dim）；
+   选中态由下方 `.trash-row.is-selected .trash-row-name` 的品牌色 600 覆盖。 */
+.trash-row.is-nested .trash-row-name {
+  font-weight: 400;
+  color: var(--text-dim);
+}
+
 /* ---------- 列表 + 详情（可选分栏） ----------
    仅有数据且传入详情区时启用：列表卡 + 8px 分隔条 + 详情卡。列表宽度由
    `TrashSplitLayout` 经 `--trash-list-width` 下发（拖拽后持久化），CSS 只负责

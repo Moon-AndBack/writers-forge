@@ -20,6 +20,8 @@ export interface TrashRow {
   id: number
   name: string
   sub?: string
+  /** 父卷 id（树形模式）：命中 `volumes` 中同 id 的行时，渲染在该卷行下方。 */
+  parentId?: number
 }
 
 /** 选中行所属分组：卷 / 条目（两表 id 可能相同，故以 kind 消歧）。 */
@@ -53,6 +55,11 @@ export interface TrashListViewProps {
   volumes: TrashRow[]
   /** 软删的条目行（主名 + 原归属卷名两行展示）。 */
   items: TrashRow[]
+  /**
+   * 树形模式：父卷也在回收站的条目缩进到该卷行下，其余条目仍留在
+   * `messages.groupItems` 残差分组。缺省 false（伏笔 / 灵感保持平铺分组）。
+   */
+  tree?: boolean
   /** 首帧加载中：显示加载文案并抑制空态闪现。 */
   loading?: boolean
   /** 数据读取失败（无缓存内容时显示错误态与重试入口）。 */
@@ -131,13 +138,14 @@ function RowActions({
   )
 }
 
-/** 单行：卷为单行名，条目为主名 + 次要行；`onSelect` 存在时整行可交互。 */
+/** 单行：卷为单行名，条目为主名 + 次要行（嵌套子行省略次要行）；`onSelect` 存在时整行可交互。 */
 function TrashRowItem({
   row,
   kind,
   selectable,
   selected,
   onSelect,
+  nested = false,
   children
 }: {
   row: TrashRow
@@ -145,14 +153,17 @@ function TrashRowItem({
   selectable: boolean
   selected: boolean
   onSelect?: (selection: TrashSelection) => void
+  /** 树形子行：缩进一级，并省略冗余的原归属副标题。 */
+  nested?: boolean
   children: ReactNode
 }): ReactElement {
-  const className =
+  const baseClassName =
     selectable && selected
       ? 'trash-row is-selectable is-selected'
       : selectable
         ? 'trash-row is-selectable'
         : 'trash-row'
+  const className = nested ? `${baseClassName} is-nested` : baseClassName
 
   const pick = (): void => onSelect?.({ kind, id: row.id })
 
@@ -179,7 +190,7 @@ function TrashRowItem({
       ) : (
         <span className="trash-row-main">
           <span className="trash-row-name">{row.name}</span>
-          <span className="trash-row-sub">{row.sub}</span>
+          {nested ? null : <span className="trash-row-sub">{row.sub}</span>}
         </span>
       )}
       {children}
@@ -190,6 +201,7 @@ function TrashRowItem({
 export function TrashListView({
   volumes,
   items,
+  tree = false,
   loading = false,
   loadError = false,
   onRetry,
@@ -218,6 +230,64 @@ export function TrashListView({
   const isSelected = (kind: TrashSelectionKind, id: number): boolean =>
     selected !== undefined && selected !== null && selected.kind === kind && selected.id === id
 
+  // 树形分组：仅把「父卷也在回收站」的条目挂到卷行下；无匹配父卷的条目
+  // （含大纲 volumeId = null 的独立条目）留在残差分组。条目沿用后端顺序，
+  // 按卷归组后组内顺序不变。非树形模式不参与计算。
+  const childrenByVolume = new Map<number, TrashRow[]>()
+  const residualItems: TrashRow[] = []
+  if (tree) {
+    const deletedVolumeIds = new Set(volumes.map((volume) => volume.id))
+    for (const item of items) {
+      const parentId = item.parentId
+      if (parentId !== undefined && deletedVolumeIds.has(parentId)) {
+        const siblings = childrenByVolume.get(parentId)
+        if (siblings) siblings.push(item)
+        else childrenByVolume.set(parentId, [item])
+      } else {
+        residualItems.push(item)
+      }
+    }
+  }
+
+  const volumeRow = (volume: TrashRow): ReactElement => (
+    <TrashRowItem
+      key={`v-${volume.id}`}
+      row={volume}
+      kind="volume"
+      selectable={selectable}
+      selected={isSelected('volume', volume.id)}
+      onSelect={onSelect}
+    >
+      <RowActions
+        busy={busy}
+        restoreLabel={messages.restoreVolume}
+        purgeLabel={messages.purgeVolume}
+        onRestore={() => onRestoreVolume(volume.id)}
+        onPurge={() => onPurgeVolume(volume.id)}
+      />
+    </TrashRowItem>
+  )
+
+  const itemRow = (item: TrashRow, nested = false): ReactElement => (
+    <TrashRowItem
+      key={`c-${item.id}`}
+      row={item}
+      kind="item"
+      selectable={selectable}
+      selected={isSelected('item', item.id)}
+      onSelect={onSelect}
+      nested={nested}
+    >
+      <RowActions
+        busy={busy}
+        restoreLabel={messages.restoreItem}
+        purgeLabel={messages.purgeItem}
+        onRestore={() => onRestoreItem(item.id)}
+        onPurge={() => onPurgeItem(item.id)}
+      />
+    </TrashRowItem>
+  )
+
   const head = (
     <div className="trash-head">
       <span className="trash-title">{messages.title}</span>
@@ -240,53 +310,40 @@ export function TrashListView({
           <div className="trash-loading">{messages.loadingText}</div>
         ) : isEmpty ? (
           <EmptyState compact title={messages.empty} />
-        ) : (
+        ) : tree ? (
           <>
             {volumes.length > 0 ? (
               <section className="trash-group">
                 <div className="trash-group-title">{messages.groupVolumes}</div>
                 {volumes.map((volume) => (
-                  <TrashRowItem
-                    key={`v-${volume.id}`}
-                    row={volume}
-                    kind="volume"
-                    selectable={selectable}
-                    selected={isSelected('volume', volume.id)}
-                    onSelect={onSelect}
-                  >
-                    <RowActions
-                      busy={busy}
-                      restoreLabel={messages.restoreVolume}
-                      purgeLabel={messages.purgeVolume}
-                      onRestore={() => onRestoreVolume(volume.id)}
-                      onPurge={() => onPurgeVolume(volume.id)}
-                    />
-                  </TrashRowItem>
+                  <div className="trash-tree-group" key={`tv-${volume.id}`}>
+                    {volumeRow(volume)}
+                    {(childrenByVolume.get(volume.id) ?? []).map((item) => itemRow(item, true))}
+                  </div>
                 ))}
+              </section>
+            ) : null}
+
+            {residualItems.length > 0 ? (
+              <section className="trash-group">
+                <div className="trash-group-title">{messages.groupItems}</div>
+                {residualItems.map((item) => itemRow(item))}
+              </section>
+            ) : null}
+          </>
+        ) : (
+          <>
+            {volumes.length > 0 ? (
+              <section className="trash-group">
+                <div className="trash-group-title">{messages.groupVolumes}</div>
+                {volumes.map((volume) => volumeRow(volume))}
               </section>
             ) : null}
 
             {items.length > 0 ? (
               <section className="trash-group">
                 <div className="trash-group-title">{messages.groupItems}</div>
-                {items.map((item) => (
-                  <TrashRowItem
-                    key={`c-${item.id}`}
-                    row={item}
-                    kind="item"
-                    selectable={selectable}
-                    selected={isSelected('item', item.id)}
-                    onSelect={onSelect}
-                  >
-                    <RowActions
-                      busy={busy}
-                      restoreLabel={messages.restoreItem}
-                      purgeLabel={messages.purgeItem}
-                      onRestore={() => onRestoreItem(item.id)}
-                      onPurge={() => onPurgeItem(item.id)}
-                    />
-                  </TrashRowItem>
-                ))}
+                {items.map((item) => itemRow(item))}
               </section>
             ) : null}
           </>

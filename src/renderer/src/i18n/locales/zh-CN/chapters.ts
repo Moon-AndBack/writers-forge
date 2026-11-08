@@ -144,6 +144,7 @@ const chapters = {
     groupVolumes: '卷',
     groupChapters: '章节',
     orphanVolume: '原卷已删除',
+    untitledChapter: '无标题章节',
     restoreVolume: '还原卷',
     purgeVolume: '彻底删除卷',
     restoreChapter: '还原章节',

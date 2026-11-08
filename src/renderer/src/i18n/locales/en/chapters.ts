@@ -134,6 +134,7 @@ const chapters = {
     groupVolumes: 'Volumes',
     groupChapters: 'Chapters',
     orphanVolume: 'Original volume deleted',
+    untitledChapter: 'Untitled chapter',
     restoreVolume: 'Restore volume',
     purgeVolume: 'Delete volume permanently',
     restoreChapter: 'Restore chapter',
