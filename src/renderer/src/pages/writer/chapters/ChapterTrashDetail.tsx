@@ -147,7 +147,12 @@ function ChapterEntryDetail({
       ) : loadState === 'error' ? (
         <div className="trash-detail__hint">
           <div>{t('trash.detail.loadFailed')}</div>
-          <Button variant="ghost" size="sm" className="trash-detail__retry" onClick={retry}>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="trash-detail__retry wf-btn--on-soft"
+            onClick={retry}
+          >
             {t('trash.detail.retry')}
           </Button>
         </div>

@@ -56,7 +56,7 @@
 .trash-group-title {
   margin: 0;
   padding: 4px 2px 8px;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -64,14 +64,15 @@
 }
 
 .trash-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 8px 10px;
   border-radius: var(--r-xs);
   transition:
-    background 0.1s var(--ease),
-    box-shadow 0.1s var(--ease);
+    background var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
 }
 
 .trash-row:hover {
@@ -96,7 +97,9 @@
 .trash-row-name {
   min-width: 0;
   font-size: 12.5px;
-  color: var(--text-dim);
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -112,7 +115,7 @@
 
 /* ---------- 列表 + 详情（可选分栏） ----------
    仅在调用方传入详情区时启用：列表固定宽度（可轻微收缩），详情占剩余宽度并
-   内部滚动。窄中栏下列表最低 140px、详情最低 160px，避免详情被挤成 0 宽；
+   内部滚动。窄中栏下列表最低 200px、详情最低 160px，避免详情被挤成 0 宽；
    总宽不足时由中栏自身滚动兜底，不把任一侧压没。 */
 .trash-view--split .trash-body {
   flex: 1;
@@ -121,8 +124,8 @@
 }
 
 .trash-view--split .trash-scroll {
-  flex: 0 1 clamp(170px, 30%, 260px);
-  min-width: 140px;
+  flex: 0 1 clamp(200px, 34%, 280px);
+  min-width: 200px;
   border-right: 1px solid var(--line);
 }
 
@@ -130,12 +133,24 @@
   padding: 0 12px 32px;
 }
 
+/* 详情卡底座：与右栏详情卡同口径（--soft-solid + --line 细描边 + --r-lg + 14/16 内衬）。 */
 .trash-detail {
   flex: 1 1 0;
   min-width: 160px;
   overflow-y: auto;
   scrollbar-gutter: stable;
-  padding: 14px 20px 32px;
+  padding: 14px 16px;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+/* 详情纵向流：卡头 / 提示 / 正文 / 锚点段之间统一 12px 间距。 */
+.trash-detail__pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
 }
 
 /* 选中行：仅颜色 / 描边 / 阴影反馈，禁止位移或缩放（AGENTS §8）。 */
@@ -144,18 +159,22 @@
 }
 
 .trash-row.is-selectable:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 1px var(--brand);
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: -1px;
 }
 
-.trash-row.is-selected,
+.trash-row.is-selected {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+.trash-row.is-selected .trash-row-name {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* 选中行 hover 回退中性悬停底，避免品牌底与悬停底叠加成第三种颜色。 */
 .trash-row.is-selected:hover {
-  background: color-mix(in srgb, var(--brand) 12%, var(--soft-hover-solid));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent);
-}
-
-.trash-row.is-selected:focus-visible {
-  box-shadow: inset 0 0 0 1px var(--brand);
+  background: var(--soft-hover-solid);
 }
 
 /* ---------- 详情区 ---------- */
@@ -175,14 +194,12 @@
   display: flex;
   flex-direction: column;
   gap: 7px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--line);
 }
 
 .trash-detail__title {
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.45;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
   color: var(--text);
   overflow-wrap: anywhere;
 }
@@ -198,22 +215,20 @@
 
 /* 父项（原卷 / 分组）也在回收站：中性提示，不用危险色。 */
 .trash-detail__notice {
-  margin-top: 10px;
   padding: 6px 9px;
-  border: 1px solid color-mix(in srgb, var(--brand) 35%, transparent);
   border-radius: var(--r-xs);
-  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  background: var(--control-on-soft);
+  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
   font-size: 11px;
   line-height: 1.6;
   color: var(--text-dim);
 }
 
-/* 章节正文：纯文本段落，字号 / 行高 / 首行缩进跟随正文排版令牌
-   （思路同右栏大纲 `.rp-outline`，但使用本域类名，不依赖右栏作用域）。 */
+/* 章节 / 大纲正文：纯文本段落，字号 / 行高 / 首行缩进跟随正文排版令牌
+   （与右栏大纲 `.rp-outline` 同口径，但使用本域类名，不依赖右栏作用域）。 */
 .trash-detail__body {
-  margin-top: 14px;
   font-family: var(--doc-font);
-  font-size: calc(16px * var(--doc-zoom));
+  font-size: calc(18px * var(--doc-zoom));
   line-height: var(--doc-line);
   letter-spacing: var(--doc-letter);
   color: var(--text-dim);
@@ -255,35 +270,67 @@
   overflow: visible;
 }
 
-.trash-detail .trash-detail__rich .ProseMirror {
-  font-size: calc(16px * var(--doc-zoom));
+/* 伏笔描述等只读值块：恢复 `.wf-readonly-block` 的 10 / 12 内衬，
+   字号沿用 `.rp-read` 的右栏详情口径（不跟随正文 18px）。 */
+.trash-detail .trash-detail__rich.wf-readonly-block {
+  padding: 10px 12px;
+}
+
+/* 章节 / 大纲正文跟随正文排版：字号随状态栏缩放（--doc-zoom），行高取 --doc-line。 */
+.trash-detail__body .trash-detail__rich .ProseMirror {
+  font-size: calc(18px * var(--doc-zoom));
   line-height: var(--doc-line);
 }
 
-.trash-detail .trash-detail__rich .ProseMirror p {
+.trash-detail__body .trash-detail__rich .ProseMirror p {
   text-indent: 2em;
 }
 
 /* 列表 / 引用 / 表格内段落只承担换行，复位首行缩进。 */
-.trash-detail .trash-detail__rich .ProseMirror li p,
-.trash-detail .trash-detail__rich .ProseMirror blockquote p,
-.trash-detail .trash-detail__rich .ProseMirror th p,
-.trash-detail .trash-detail__rich .ProseMirror td p {
+.trash-detail__body .trash-detail__rich .ProseMirror li p,
+.trash-detail__body .trash-detail__rich .ProseMirror blockquote p,
+.trash-detail__body .trash-detail__rich .ProseMirror th p,
+.trash-detail__body .trash-detail__rich .ProseMirror td p {
   text-indent: 0;
 }
 
+/* 行尾操作：默认隐藏，hover / 键盘聚焦时浮现在行右缘（同章节 / 大纲列表）。
+   绝对定位不占流内宽度，非 hover 时主名占满整行；共享 `.row-act` 尺寸不变。 */
 .trash-row-actions {
-  flex: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 6px;
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  padding-left: 4px;
+  visibility: hidden;
+  opacity: 0;
+  background: var(--soft-hover-solid);
+  border-radius: var(--r-xs);
+  transition: opacity var(--dur-fast) var(--ease);
 }
 
-/* 空态：居中轻提示。 */
-.trash-empty {
-  padding: 72px 0;
+.trash-row:hover .trash-row-actions,
+.trash-row:focus-within .trash-row-actions {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* hover / 聚焦时主名让位 = 操作组宽 46px + right 6px，避免被按钮覆盖。 */
+.trash-row:hover > .trash-row-name,
+.trash-row:focus-within > .trash-row-name,
+.trash-row:hover > .trash-row-main,
+.trash-row:focus-within > .trash-row-main {
+  margin-right: 52px;
+}
+
+/* 加载态：与伏笔 / 灵感中栏同口径。 */
+.trash-loading {
+  padding: 24px 0;
+  font-size: 12px;
   text-align: center;
-  font-size: 13px;
   color: var(--text-mute);
 }
 

@@ -45,11 +45,12 @@ export interface ChaptersTrashViewProps {
  */
 export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashViewProps) {
   const { t } = useTranslation('chapters')
+  const { t: tCommon } = useTranslation('common')
   const labels = useChapterLabels()
   const confirm = useConfirm()
   // 彻底删除确认前的双埋点伏笔查询（物理删：外键级联整条删除伏笔）。
   const { inspect: inspectForeshadowImpact } = useForeshadowDeleteImpact()
-  const { content, loading, busy, runAction } = useTrashData({
+  const { content, loading, loadError, busy, runAction, reload } = useTrashData({
     bookId,
     initial: EMPTY,
     load: fetchDeleted,
@@ -71,6 +72,7 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
     count: (total) => t('trash.count', { total }),
     purgeAll: t('trash.purgeAll'),
     empty: t('trash.empty'),
+    loadingText: tCommon('loading'),
     groupVolumes: t('trash.groupVolumes'),
     groupItems: t('trash.groupChapters'),
     restoreVolume: t('trash.restoreVolume'),
@@ -152,6 +154,8 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
       volumes={volumes}
       items={chapters}
       loading={loading}
+      loadError={loadError}
+      onRetry={() => void reload()}
       busy={busy}
       messages={messages}
       onRestoreVolume={requestRestoreVolume}

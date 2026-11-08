@@ -43,8 +43,9 @@ export interface InspirationTrashViewProps {
 export default function InspirationTrashView({ bookId, onChanged }: InspirationTrashViewProps) {
   const { t } = useTranslation('inspiration')
   const { t: tChapters } = useTranslation('chapters')
+  const { t: tCommon } = useTranslation('common')
   const confirm = useConfirm()
-  const { content, loading, busy, runAction } = useTrashData({
+  const { content, loading, loadError, busy, runAction, reload } = useTrashData({
     bookId,
     initial: EMPTY,
     load: fetchDeleted,
@@ -68,6 +69,7 @@ export default function InspirationTrashView({ bookId, onChanged }: InspirationT
     count: (total) => tChapters('trash.count', { total }),
     purgeAll: tChapters('trash.purgeAll'),
     empty: tChapters('trash.empty'),
+    loadingText: tCommon('loading'),
     groupVolumes: tChapters('trash.groupVolumes'),
     groupItems: t('trash.groupItems'),
     restoreVolume: tChapters('trash.restoreVolume'),
@@ -120,6 +122,8 @@ export default function InspirationTrashView({ bookId, onChanged }: InspirationT
       volumes={EMPTY_VOLUMES}
       items={items}
       loading={loading}
+      loadError={loadError}
+      onRetry={() => void reload()}
       busy={busy}
       messages={messages}
       onRestoreVolume={() => undefined}

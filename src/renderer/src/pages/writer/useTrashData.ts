@@ -27,8 +27,10 @@ export interface UseTrashDataOptions<T> {
 export interface UseTrashDataResult<T> {
   /** 当前回收站内容。 */
   content: T
-  /** 首帧加载中（仅用于抑制空态闪现）。 */
+  /** 首帧加载中（用于展示加载文案并抑制空态闪现）。 */
   loading: boolean
+  /** 最近一次读取是否失败（无缓存内容时由视图显示错误态与重试入口）。 */
+  loadError: boolean
   /** 写操作进行中（按钮禁用 + 操作门禁）。 */
   busy: boolean
   /** 执行一次写操作：成功后**先刷新本视图、再**通知调用方。 */
@@ -46,6 +48,7 @@ export function useTrashData<T>({
 }: UseTrashDataOptions<T>): UseTrashDataResult<T> {
   const [content, setContent] = useState<T>(initial)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const log = useMemo(() => createLogger(logger), [logger])
@@ -70,7 +73,9 @@ export function useTrashData<T>({
       const next = await loadRef.current(bookId)
       if (requestId !== requestIdRef.current) return
       setContent(next)
+      setLoadError(false)
     } catch (error) {
+      if (requestId === requestIdRef.current) setLoadError(true)
       log.warn('回收站加载失败', error)
     } finally {
       if (requestId === requestIdRef.current) setLoading(false)
@@ -88,8 +93,12 @@ export function useTrashData<T>({
     void (async () => {
       try {
         const next = await loadRef.current(bookId)
-        if (active) setContent(next)
+        if (active) {
+          setContent(next)
+          setLoadError(false)
+        }
       } catch (error) {
+        if (active) setLoadError(true)
         log.warn('回收站加载失败', error)
       } finally {
         if (active) setLoading(false)
@@ -119,7 +128,7 @@ export function useTrashData<T>({
     [busy, reload, log]
   )
 
-  return { content, loading, busy, runAction, reload }
+  return { content, loading, loadError, busy, runAction, reload }
 }
 
 export default useTrashData

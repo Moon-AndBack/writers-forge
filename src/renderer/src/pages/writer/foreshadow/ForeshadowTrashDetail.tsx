@@ -48,19 +48,17 @@ function AnchorExcerpt({
   emptyText: string
 }): ReactElement {
   return (
-    <div className="trash-detail__body">
-      <div className="foreshadow-anchor-card">
-        <div className="foreshadow-anchor-card__head">
-          <div className="foreshadow-anchor-card__label">{label}</div>
-        </div>
-        {quote.trim() === '' ? (
-          <div className="foreshadow-anchor-card__row">
-            <span className="foreshadow-anchor-card__target is-empty">{emptyText}</span>
-          </div>
-        ) : (
-          <blockquote className="foreshadow-anchor-card__quote">{quote}</blockquote>
-        )}
+    <div className="foreshadow-anchor-card">
+      <div className="foreshadow-anchor-card__head">
+        <div className="foreshadow-anchor-card__label">{label}</div>
       </div>
+      {quote.trim() === '' ? (
+        <div className="foreshadow-anchor-card__row">
+          <span className="foreshadow-anchor-card__target is-empty">{emptyText}</span>
+        </div>
+      ) : (
+        <blockquote className="foreshadow-anchor-card__quote">{quote}</blockquote>
+      )}
     </div>
   )
 }
@@ -104,15 +102,13 @@ export function ForeshadowTrashDetail({ row }: ForeshadowTrashDetailProps): Reac
         </div>
       </header>
 
-      <div className="trash-detail__body">
-        <div className="foreshadow-detail__section">
-          <div className="foreshadow-detail__label">{t('field.description')}</div>
-          <ReadonlyRichText
-            json={descriptionJson}
-            emptyText={t('detail.descriptionEmpty')}
-            className="trash-detail__rich"
-          />
-        </div>
+      <div className="foreshadow-detail__section">
+        <div className="foreshadow-detail__label">{t('field.description')}</div>
+        <ReadonlyRichText
+          json={descriptionJson}
+          emptyText={t('detail.descriptionEmpty')}
+          className="trash-detail__rich wf-readonly-block"
+        />
       </div>
 
       <AnchorExcerpt
@@ -138,11 +134,9 @@ export function ForeshadowTrashDetail({ row }: ForeshadowTrashDetailProps): Reac
       />
 
       {row.recoveryNote.trim() === '' ? null : (
-        <div className="trash-detail__body">
-          <div className="foreshadow-detail__section">
-            <div className="foreshadow-detail__label">{t('detail.recoverNote')}</div>
-            <p className="foreshadow-anchor-card__note-text">{row.recoveryNote}</p>
-          </div>
+        <div className="foreshadow-detail__section">
+          <div className="foreshadow-detail__label">{t('detail.recoverNote')}</div>
+          <p className="foreshadow-anchor-card__note-text">{row.recoveryNote}</p>
         </div>
       )}
     </div>

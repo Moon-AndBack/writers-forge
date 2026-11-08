@@ -43,34 +43,30 @@ export function InspirationTrashDetail({ row }: InspirationTrashDetailProps): Re
       </header>
 
       {row.tags.length === 0 ? null : (
-        <div className="trash-detail__body">
-          <div className="inspiration-readonly__section">
-            <div className="inspiration-readonly__label">{t('field.tags')}</div>
-            <div
-              className="inspiration-readonly__tags wf-readonly-block"
-              role="group"
-              aria-label={t('field.tags')}
-            >
-              {row.tags.map((tag, index) => (
-                <Tag key={`${tag}-${index}`} tone="neutral" className="inspiration-card__tag">
-                  {tag}
-                </Tag>
-              ))}
-            </div>
+        <div className="inspiration-readonly__section">
+          <div className="inspiration-readonly__label">{t('field.tags')}</div>
+          <div
+            className="inspiration-readonly__tags wf-readonly-block"
+            role="group"
+            aria-label={t('field.tags')}
+          >
+            {row.tags.map((tag, index) => (
+              <Tag key={`${tag}-${index}`} tone="neutral" className="inspiration-card__tag">
+                {tag}
+              </Tag>
+            ))}
           </div>
         </div>
       )}
 
-      <div className="trash-detail__body">
-        <div className="inspiration-readonly__section">
-          <div className="inspiration-readonly__label">{t('field.content')}</div>
-          <div className="inspiration-readonly__content wf-readonly-block">
-            {content.trim() === '' ? (
-              <span className="inspiration-readonly__empty">{t('field.contentEmpty')}</span>
-            ) : (
-              content
-            )}
-          </div>
+      <div className="inspiration-readonly__section">
+        <div className="inspiration-readonly__label">{t('field.content')}</div>
+        <div className="inspiration-readonly__content wf-readonly-block">
+          {content.trim() === '' ? (
+            <span className="inspiration-readonly__empty">{t('field.contentEmpty')}</span>
+          ) : (
+            content
+          )}
         </div>
       </div>
     </div>

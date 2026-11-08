@@ -11,6 +11,8 @@
 import type { KeyboardEvent, ReactElement, ReactNode } from 'react'
 import { Button, IconButton } from '../ui'
 import { RestoreIcon, TrashIcon } from '../icons'
+import { EmptyState } from '../EmptyState'
+import { LoadErrorState } from '../LoadErrorState'
 
 /** 回收站行：`name` 为主名，`sub` 为次要行（如原归属卷名）。 */
 export interface TrashRow {
@@ -33,7 +35,10 @@ export interface TrashListViewMessages {
   title: string
   count: (total: number) => string
   purgeAll: string
+  /** 空态标题（复用 `chapters.trash.empty`）。 */
   empty: string
+  /** 首帧 / 重试加载中的提示文案（复用 `common.loading`）。 */
+  loadingText: string
   groupVolumes: string
   groupItems: string
   restoreVolume: string
@@ -47,8 +52,12 @@ export interface TrashListViewProps {
   volumes: TrashRow[]
   /** 软删的条目行（主名 + 原归属卷名两行展示）。 */
   items: TrashRow[]
-  /** 首帧加载中：抑制空态闪现（等价原 `!loading && total === 0` 口径）。 */
+  /** 首帧加载中：显示加载文案并抑制空态闪现。 */
   loading?: boolean
+  /** 数据读取失败（无缓存内容时显示错误态与重试入口）。 */
+  loadError?: boolean
+  /** 错误态重试回调（`loadError` 为 true 时展示）。 */
+  onRetry?: () => void
   /** 写操作进行中：禁用全部操作按钮。 */
   busy: boolean
   messages: TrashListViewMessages
@@ -181,6 +190,8 @@ export function TrashListView({
   volumes,
   items,
   loading = false,
+  loadError = false,
+  onRetry,
   busy,
   messages,
   onRestoreVolume,
@@ -198,9 +209,10 @@ export function TrashListView({
   const isEmpty = !loading && total === 0
   const selectable = onSelect !== undefined
   // 详情区（含未选中空态）存在即启用分栏；两者都不传时保持旧单列结构。
-  // 回收站为空时回到旧单列空态，避免同时出现「回收站为空」与「选择条目」两处空提示。
+  // 首帧 / 回收站为空时回到单列：loading 期间 total 仍为 0，不能用 `!isEmpty`
+  // 判断，否则会先渲染「选择条目」详情空态、再闪成有数据的双栏。
   const detailEnabled = detail !== undefined || detailEmpty !== undefined
-  const split = detailEnabled && !isEmpty
+  const split = detailEnabled && total > 0
 
   const isSelected = (kind: TrashSelectionKind, id: number): boolean =>
     selected !== undefined && selected !== null && selected.kind === kind && selected.id === id
@@ -221,8 +233,12 @@ export function TrashListView({
   const list = (
     <div className="trash-scroll">
       <div className="trash-inner">
-        {isEmpty ? (
-          <div className="trash-empty">{messages.empty}</div>
+        {loadError && total === 0 ? (
+          <LoadErrorState compact onRetry={() => onRetry?.()} />
+        ) : loading && total === 0 ? (
+          <div className="trash-loading">{messages.loadingText}</div>
+        ) : isEmpty ? (
+          <EmptyState compact title={messages.empty} />
         ) : (
           <>
             {volumes.length > 0 ? (
