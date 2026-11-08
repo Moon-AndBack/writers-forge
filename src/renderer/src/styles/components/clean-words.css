@@ -71,15 +71,35 @@
 }
 
 /* ---------- 行 3：单条添加 ----------
-   与结果区之间用分隔线划开；控件高度同筛选行（--cw-control-h），
-   三件严格等高：Select 触发器 / Input 用显式 height，Button 同时覆盖
+   与结果区之间用左右渐隐分隔线划开（伪元素实现，与弹窗底栏
+   .wf-window__footer::before 同色同几何：两端透明、20%–80% 实色，
+   颜色取自 .wf-window 的 --wf-window-fade-line）；
+   控件高度同筛选行（--cw-control-h），三件严格等高：
+   Select 触发器 / Input 用显式 height，Button 同时覆盖
    局部变量 --wf-btn-h（基类用 min-height）。 */
 .cw-add {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 6px;
   padding-top: 14px;
-  border-top: 1px solid var(--line);
+}
+
+/* 分隔线不参与 flex 布局：绝对定位覆盖在 padding-top 之上，几何不变。 */
+.cw-add::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--wf-window-fade-line) 20%,
+    var(--wf-window-fade-line) 80%,
+    transparent
+  );
 }
 
 .cw-add__row {
