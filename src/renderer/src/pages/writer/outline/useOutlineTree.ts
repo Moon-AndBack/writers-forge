@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createLogger } from '@renderer/lib/log'
+import { notifyTrashChanged } from '../trashRefresh'
 import type { OutlineItemRow } from './outlineTree'
 import type { VolumeRow } from '../chapters/chapterTree'
 
@@ -145,8 +146,11 @@ export function useOutlineTree(bookId: string): OutlineTree {
       const api = window.api?.outline
       if (!api) return
       try {
-        await api.delete(id)
+        const ok = await api.delete(id)
+        if (!ok) return
         await reload()
+        // 回收站可能正打开：通知其重新拉取（视图条件挂载，自身不会感知本次删除）。
+        notifyTrashChanged()
       } catch (error) {
         log.warn('删除大纲条目失败', error)
       }

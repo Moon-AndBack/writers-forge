@@ -14,6 +14,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLogger } from '@renderer/lib/log'
+import { notifyTrashChanged } from '../trashRefresh'
 import type { WriterModule } from '../../../shell/activityBarModules'
 import { useUnsavedGuard } from '../../../shell/useUnsavedGuard'
 import { useInspirationFilters } from './inspirationFilterContext'
@@ -227,6 +228,8 @@ export function useInspirationBundle(
         )
         setSelectedId((prev) => (prev === id ? null : prev))
         void refreshTags()
+        // 回收站可能正打开：通知其重新拉取。
+        notifyTrashChanged()
         return true
       } catch (error) {
         log.warn('灵感删除失败', error)

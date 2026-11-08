@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLogger } from '@renderer/lib/log'
+import { subscribeTrashChanged } from './trashRefresh'
 
 /** 回收站数据 hook 的入参。 */
 export interface UseTrashDataOptions<T> {
@@ -59,16 +60,26 @@ export function useTrashData<T>({
     onChangedRef.current = onChanged
   })
 
+  // 请求序号：初始加载返回前若又触发 reload（如左栏删除广播），
+  // 旧请求后到会覆盖新结果；只采用最后一次发起的请求。
+  const requestIdRef = useRef(0)
+
   const reload = useCallback(async (): Promise<void> => {
+    const requestId = ++requestIdRef.current
     try {
       const next = await loadRef.current(bookId)
+      if (requestId !== requestIdRef.current) return
       setContent(next)
     } catch (error) {
       log.warn('回收站加载失败', error)
     } finally {
-      setLoading(false)
+      if (requestId === requestIdRef.current) setLoading(false)
     }
   }, [bookId, log])
+
+  // 外部软删除（章节 / 大纲左栏、伏笔 / 灵感列表）成功后重新拉取：
+  // 回收站视图是条件挂载，挂载后不再走初始加载，需借模块级通知感知数据变化。
+  useEffect(() => subscribeTrashChanged(() => void reload()), [reload])
 
   // 初始 / bookId 变化加载：异步拉取后再 setState（与 useChapterTree 同范式，
   // 不在 effect 体内同步 setState）。

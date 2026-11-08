@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createLogger } from '@renderer/lib/log'
+import { notifyTrashChanged } from '../trashRefresh'
 import type { CreateVolumeInput, VolumeRow } from '../chapters/chapterTree'
 
 /** 共享卷源加载 / 写操作日志（转发至主进程落盘）。 */
@@ -118,8 +119,11 @@ export function useVolumes(bookId: string): VolumesStore {
       const api = window.api?.chapters
       if (!api) return
       try {
-        await api.deleteVolume(id)
+        const ok = await api.deleteVolume(id)
+        if (!ok) return
         await reload()
+        // 回收站可能正打开：通知其重新拉取（卷 + 其下章 / 条目均被软删）。
+        notifyTrashChanged()
       } catch (error) {
         log.warn('删除卷失败', error)
       }
