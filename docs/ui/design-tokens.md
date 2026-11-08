@@ -10,7 +10,7 @@
 
 ## 1. 单一真源与文件结构
 
-全部颜色、圆角、字体、动效时长、层级与光斑令牌**只在** `theme.css` 声明，其他样式一律 `var(--x)` 取用。组件样式不定义同名令牌，也不写主题色字面量。
+`theme.css` 是**主题 / 语义令牌**的单一真源（颜色、圆角、字体、动效、层级、光斑）；其他样式一律 `var(--x)` 取用，组件样式不得重定义同名主题令牌。注意：领域色板 / 组件局部变量不在本文件范围内——`chip-pill-tokens.css`（29 条胶囊色板）、`entity-highlight-tokens.css`（8 条实体基色）、`theme-switcher.css`（28 条 `--mini-*` 预览镜像）各自定义领域令牌；`shell.css`、`window.css`、`clean-words.css`、`writer-ai.css` 等另有局部变量。字号 / 间距 / 控件高度 / 选中态等视觉规则不在本文件，见 [`design-language.md`](./design-language.md)。
 
 | 区块         | 选择器                        | 行号    | 声明数  | 作用                                                 |
 | ------------ | ----------------------------- | ------- | ------- | ---------------------------------------------------- |
@@ -74,7 +74,7 @@
 | `--desk-solid-alpha` | `70%`                                      | 材质开启时 `--desk-solid` 的保留不透明度                           |
 | `--selection-bg`     | `brand 22%` + transparent                  | 全局 `::selection` 底色，随当前主题 `--brand` 变化                 |
 
-分组计数：排版 5、圆角 3、字体 3、动效 5、层级 3、光斑 3、材质 1、选区 1，共 **24** 条。层级令牌只维护相对序（悬停卡 < 浮窗 < 嵌套卡 < tooltip < 模态 1000+），使用处不写字面量 `z-index`；注释明确本组光斑仅 light / sage / honey 生效——dark 由 `shell.css` 的 `[data-theme='dark'] .shell` 整体替换为无光斑的斜切色带，**四主题块均不覆写** `--desk-spot-*`。
+分组计数：排版 5、圆角 3、字体 3、动效 5、层级 3、光斑 3、材质 1、选区 1，共 **24** 条。层级令牌只覆盖 970–972 三档（悬停卡 < 浮窗 < 嵌套卡），仅 `entity-highlight.css` / `writer-right-panels.css` 引用；其余层级仍是字面量：60（下拉 / 主题面板）、100 / 101（活动栏）、900（状态栏弹窗）、940（格式工具条）、980（活动筛选）、990（tooltip）、1000（Modal）、1040（Select / Combobox）、1100（Toast），另有 1–20 的局部层叠。目标档位与收敛计划见 `design-language.md` §6.2。注释明确本组光斑仅 light / sage / honey 生效——dark 由 `shell.css` 的 `[data-theme='dark'] .shell` 整体替换为无光斑的斜切色带，**四主题块均不覆写** `--desk-spot-*`。
 
 ---
 
@@ -110,7 +110,7 @@
 | `--desk-glow-1/2/3` | 紫 / 蓝 / 白，α≈0.04 | **无**    | 绿系，α≈0.03 | 金系，α≈0.03 |
 | `--pane`            | `#ffffff`            | `#202020` | `#fcfffc`    | `#fffef9`    |
 
-- `.shell` 桌面底 = 三层 radial 光斑 + `linear-gradient(150deg, --desk-1, --desk-2 45%, --desk-3)`（`shell.css:30-34`）；dark 由 `[data-theme='dark'] .shell` 覆盖为 4 层不透明色带（`#1c1c2b` / `#161616` / `#19202b`），**这是全库唯一允许写主题色字面量的例外**。
+- `.shell` 桌面底 = 三层 radial 光斑 + `linear-gradient(150deg, --desk-1, --desk-2 45%, --desk-3)`（`shell.css:30-34`）；dark 由 `[data-theme='dark'] .shell` 覆盖为 4 层不透明色带（`#1c1c2b` / `#161616` / `#19202b`）。**这不是全库唯一例外**：书籍封面 / 状态胶囊固定色（`bookshelf.css:245-271`）、主题预览镜像（`theme-switcher.css:153-199`）、品牌标（`shell.css:142-145`）、头像白字、滚动条、胶囊预设色板、固定态活动栏磨砂等均已登记在 `design-language.md` 的「例外登记表」。
 - `--desk-solid` 在 light / sage / honey 恒等于各自 `--desk-2`，dark 单独定为 `#161616`。窗口底色由主进程按材质写死（acrylic 开 → `#00000000`，关 → `#f3f3f3`），不随主题变化；原 `--win-rgb` 无任何消费，已删除。`--pane` 是左右栏 / 面板 / 编辑区的不透明底（约 150 处，频次最高）。原先作为左右栏底色契约保留的 `--win-surface` 已无消费点，已于本次清理删除。
 
 ### 4.3 交互底色与控件底色
@@ -126,7 +126,7 @@
 | `--control-on-soft` / `-hover`              | 10% / 14%               | 14% / 19% | 10% / 14%           | 10% / 14%            |
 | `--control-on-soft-line`                    | 37%                     | 22%       | 37%                 | 37%                  |
 
-- 半透明组中**只有 `--soft` 仍有消费点**（`writer-ai.css` 3 处）；`--soft-hover`、`--soft-press`、`--pill-bg`、`--pill-bg-hover` 早已被 `-solid` 取代、无任何消费点，已于本次清理从四主题块删除，新代码不要使用。light / sage / honey 的 `--soft-solid` **刻意加深到 6%**（左栏分区容器卡口径，全库共享），故 light 的 `--soft-solid` 与 `--soft-hover-solid` 同值，这是有意为之。
+- 半透明组中**只有 `--soft` 仍有消费点**（`writer-ai.css` 3 处 + `components/category-manager.css` 1 处）；`--soft-hover`、`--soft-press`、`--pill-bg`、`--pill-bg-hover` 早已被 `-solid` 取代、无任何消费点，已于本次清理从四主题块删除，新代码不要使用。light / sage / honey 的 `--soft-solid` **刻意加深到 6%**（左栏分区容器卡口径，全库共享），故 light 的 `--soft-solid` 与 `--soft-hover-solid` 同值，这是有意为之。
 - 混色分两派：light / dark 用 `var(--text)`（dark 下白字混入 = 提亮）；sage / honey 固定用本主题基色 `rgb(20,60,30)` / `rgb(80,60,10)` 以保住绿调 / 暖黄调，改用 `--text` 会掉色相。
 - **控件 on-soft 的方向相反**：light 下 `--text` 为深色，10% 混入使控件**更深**；dark 下为白色，14% 混入使控件**更亮**。统一取向是「控件底接近卡片底，边界靠 `--control-on-soft-line`」：浅色系约 1.07–1.09:1 + 37% 描边（对控件底 1.9–2.25:1），dark 约 1.34:1 + 22% 白描边。微调只需改这三行比例，且四套主题各自显式定义，不依赖 `:root` 继承。
 
@@ -262,14 +262,14 @@ resolved === 当前 dataset.theme → flushSync 只提交状态，不启动过�
 
 ## 9. 使用规约
 
-1. **禁止硬编码颜色**。颜色、`box-shadow` 的 rgba、`::selection`、遮罩、渐变一律取令牌。唯一例外是 `shell.css:67-83` 的 dark 色带（渐变色标无法由令牌组合），新增例外须在注释登记理由。
+1. **禁止硬编码颜色**。颜色、`box-shadow` 的 rgba、`::selection`、遮罩、渐变一律取令牌。现有例外（dark 色带、书籍封面 / 状态胶囊、主题预览镜像、品牌标、头像白字、滚动条、胶囊预设色板、固定态活动栏磨砂等）逐条登记在 `design-language.md` 的「例外登记表」；新增例外须同时登记并写 `/* 例外：… */` 注释。
 2. **不得给主题令牌挂 `transition`**。`--dur-*` 只服务交互（hover / 展开 / 拖拽 / 显隐）与进出场；仅由 `data-theme` 引起的 `color` / `background` / `box-shadow` 过渡一律删除。主题整体由 View Transition 淡化，CSS 再过渡会出现「一部分渐变、一部分硬跳」。
 3. **新增令牌必须四套主题齐全**。主题相关令牌在 light / dark / sage / honey 四块**各自显式声明**（尤其 `--control-on-soft*`，注释明确要求不依赖 `:root` 继承）；主题无关才放 `:root`。只加一侧会让某主题悄悄沿用亮色值。
 4. **不得跨主题推导**。dark 的 `--desk-2/3`、`--pane`、阴影、选区透明度与 light 语义不同（§4.6），复制 light 比例再调亮度必然出错。
 5. **不透明优先**：组件填充用 `--*-solid`，否则 Acrylic 下材质从组件内部透出。
-6. **字号 / 行高 / 缩放走 `--doc-*`**，时长走 `--dur-*`，缓动走 `--ease` / `--ease-out`，层级走 `--z-*`；禁止裸 `0.2s`、`ease-in-out`、字面量 `z-index`。
+6. **字号 / 行高 / 缩放走 `--doc-*`**，时长走 `--dur-*`，缓动走 `--ease` / `--ease-out`；层级优先走 `--z-*`（当前仅 970–972 已令牌化，其余待收敛，新代码不得再写裸 `z-index`）。禁止裸 `0.2s`、`ease-in-out`、字面量 `z-index`。
 7. **语义色不改语义**：`--ok` / `--warn` / `--danger` 只表达状态，不当品牌强调；`--brand` 会被系统强调色覆盖，不要当固定色画插画。
 8. **兼容层令牌禁止新增使用**（`--bg` / `--fg`；同组原 `--accent` / `--border` 已随本次清理删除）。
 9. 改令牌后核对四套主题的正文 / 次要文字 / 控件描边 / 选区对比度，并在 Acrylic 开、关两种状态下各看一遍；若涉及主题或外观描述，同步教学书种子（`seedGuideBook/`）。
 
-最后核对：2026-11-01
+最后核对：2026-11-09

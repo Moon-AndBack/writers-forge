@@ -101,10 +101,96 @@ src/
 - **发布检查**：发布前将「教学书种子是否已随本批功能 / 变更更新」作为检查项核对；教学内容与实现不一致视同缺陷。
 - **幂等边界**：种子重灌由 `src/main/database/chapterSeed.ts` 的 `MIGRATION_KEY` 常量（settings 键，当前值见该常量）守卫（只执行一次，不因用户删书重灌）；更换重灌键可强制老库重灌。
 
-## 8. UI 交互约束
+## 8. UI 设计规范（视觉系统）
 
-- **卡片组件禁用「弹起」动画**：卡片（书籍卡、主题卡及今后新增的卡片类组件）在鼠标移入 / hover 时**不得**使用位移或缩放（`transform: translate / scale / rotate` 等）；hover 反馈仅允许**颜色 / 描边 / 阴影**变化。
-- 卡片 hover 统一采用**边缘光晕**效果（与书籍卡 `bookshelf.css` 的 `.book-card:hover` 一致，即品牌色描边环 + 外发光增强投影），`transition` 只过渡 `box-shadow` / `border-color` / `background` / `color` 等属性，不得包含 `transform`。
+> 详细取值、代表位置、例外与历史债务见 [`docs/ui/design-language.md`](docs/ui/design-language.md)。本节为可判定的硬性约束：**MUST** = 硬性，**SHOULD** = 建议。
+
+### 8.1 单一真源与配色
+
+- **MUST** 颜色、动效时长、缓动只从 `src/renderer/src/styles/theme.css` 的 `--*` 令牌取用；圆角主档用 `--r-xs`（4）/ `--r-lg`（8）；阴影优先用 `--sh-*` / `--panel-ring`。新增不得写颜色 / 时长 / 缓动 / 圆角字面量；卡片光晕公式（§8.8）与已登记例外除外。
+- **MUST** 组件填充用不透明 `--*-solid`（或 `--pane` / `--control-on-soft`）；`--soft` 等半透明档只允许用于确需透出下层的浮层，不得用于卡片 / 控件主体。
+- **MUST** 任何字面量例外必须同时满足：① 在 `design-language.md` 的「例外登记表」登记；② 在代码处用 `/* 例外：… */` 注明；③ 不扩大使用范围。
+- **MUST** Acrylic 材质下，承载正文 / 控件的表面必须保持 alpha = 1；固定态活动栏的轻微磨砂是唯一已登记例外。
+- **SHOULD** 语义色只表达状态：`--ok` / `--warn` / `--danger` 不作品牌强调；`--brand` 可被系统强调色覆盖，不作固定插画色。
+
+### 8.2 表面层级
+
+- **MUST** 按五层组织：L0 桌面 `.shell`（`--desk-*`）→ L1 栏 / 编辑区（`--pane`）→ L2 分区（`--soft-solid`，内衬 6px，圆角 `--r-lg`）→ L3 卡片（`--soft-solid`，内衬 14×16，`--r-lg`，`--sh-xs` / `--sh-sm`）→ L4 控件 / 只读块（`--control-on-soft` + `--control-on-soft-line` 内描边，只读块 10×12、输入类 9×12）。浮层独立于五层，用 `--pane` + `--sh-float` / `--sh-popup`。
+- **MUST** 同色软底不得再套同色软底卡；需要再分层时改用 `--control-on-soft`、`--pane`，或仅用描边 / 间距分区。
+- **MUST** 内衬固定：栏内衬 8px、分区内衬 6px、卡片 14×16px、弹窗 body 4×20×16px（上 / 左右 / 下）；不得在同类容器另立内衬。
+- **SHOULD** 层级优先用底色 + 间距 / 描边表达，不用阴影堆叠制造伪层级。
+
+### 8.3 排版
+
+- **MUST** 界面字号只允许：10 / 10.5 / 11 / 11.5 / 12 / 12.5 / 13 / 13.5 / 14 / 15；特殊档 9.5 / 12.8 / 20 / 22 / 28 仅限已登记位置；正文用 `calc(18px * var(--doc-zoom))`。
+- **MUST** 不得新增 16px 或其他中间档；新字号需求先复用白名单，确需新增时同步更新 `design-language.md` 白名单并说明用途。
+- **MUST** 正文容器（编辑器 / 右栏大纲 / 回收站详情）使用 `--doc-font` + `calc(18px * var(--doc-zoom))` + `--doc-line` + `--doc-letter`；右栏只读通用底座用 12.8px / 1.75。
+- **MUST** 文本层级：`--text` 主文本；`--text-dim` 次级 / 只读正文；`--text-mute` 元信息 / 占位 / 禁用提示。不得用 `opacity` 代替 `--text-mute`。
+- **SHOULD** 字重只用 400 / 500 / 600 / 700：400 正文；500 控件标签 / 分段项；600 卡片标题 / 选中行主名 / 小节标签；700 页面标题 / 大数字 / 强调。
+
+### 8.4 控件与间距
+
+- **MUST** 同一行（工具栏、筛选栏、表单行、弹窗底栏）的控件必须等高；以最高控件对齐，不得用 `align-items: center` 掩盖高度差。
+- **MUST** 控件高度统一三档：**md 38 / sm 30 / lg 44**（px）。现有 32 / 26 / 40、30.8 / 25.4 / 31 等值属于待收敛债务，新代码不得再引用。
+- **MUST** 禁止再写局部控件高度魔法值（如 `--cw-control-h`、`--ai-ctl-h`）；统一由组件尺寸档位或 `--wf-*` 共享变量提供。
+- **MUST** 间距以 4px 为基准网格，默认节奏 8px；允许的既有半档仅限分区内衬 6、列表行 10、卡片内衬 14×16；新增间距优先 4 / 8 / 12 / 16 / 20 / 24 / 32。
+
+### 8.5 列表行与选中态
+
+- **MUST** 树 / 导航行内衬 9×10、数据行 8×10、行内 gap 10、圆角 `--r-xs`；同类行不得另立内衬。
+- **MUST** 选中态统一公式：`background: color-mix(in srgb, var(--brand) 12%, var(--pane))`（行位于 `--soft-solid` 卡内时混 `--soft-solid`）；主名 `color: var(--brand)` + `font-weight: 600`；状态点转 `--brand`。
+- **MUST** 选中行 hover 回落 `--soft-hover-solid`（卡内用 `--control-on-soft`），不得在品牌底上叠加第二层品牌色。
+- **MUST** 禁止整行加粗、左侧色条、下划线等第二套选中语言；禁止只换文字色不换底（或反之）的不完整选中态。
+- **MUST** 行操作按钮 22×22，绝对定位右缘，`visibility` + `opacity` 在 `:hover` / `:focus-within` 浮现；主名用 `margin-right` 让位（现有 48 / 52 / 72 / 95），不得用 `padding` 让位。
+- **MUST** 行 hover 仅过渡背景色，时长用 `--dur-fast`。
+
+### 8.6 状态呈现
+
+- **MUST** 无数据时的判定顺序固定：loading → error → empty → content；loading 必须先于 error / empty，error 必须先于 empty。
+- **MUST** 已有数据时，读取错误不得替换已展示内容；错误以行内提示 / 重试条呈现，保留旧数据。
+- **MUST** 空态一律用 `EmptyState`（紧凑 180px / 常规 260px），错误态一律用 `LoadErrorState`（danger 标题 + 重试）；禁止用空态冒充错误，或自写第二套空态 / 错误态。
+- **SHOULD** 300ms 内可完成的读取不闪现 loading；超过 300ms 再展示加载文案 / 骨架。
+
+### 8.7 浮层与弹窗
+
+- **MUST** 对话框一律组合 `Modal + Window`（`Window` 负责面板 / 标题 / 底栏），不得直接写遮罩 + 面板。
+- **MUST** 弹窗宽度只用 360 / 480 / 640 / 880 四档（`Window` 的 sm / md / lg / xl）；底栏按钮 `min-width: 104px`。
+- **MUST** 浮层层级只允许使用 `--z-*` 令牌；目标档位：下拉 60 / 状态栏 900 / 格式工具条 940 / tooltip 990 / modal 1000 / select 1040 / toast 1100。当前仅 `--z-hover-card`(970) / `--z-popover`(971) / `--z-popover-nested`(972) 已令牌化，其余字面量待收敛，新代码不得再写裸 `z-index`。
+- **SHOULD** 新增浮层落在既有档位之间；不得抢占更高层级，也不得用 `z-index: 9999` 兜底。
+
+### 8.8 动效与卡片 hover
+
+- **MUST** 卡片（书籍卡、主题卡及今后新增的卡片类组件）在鼠标移入 / hover 时**不得**使用位移或缩放（`transform: translate / scale / rotate` 等）；hover 反馈仅允许**颜色 / 描边 / 阴影**变化。
+- **MUST** 卡片 hover 统一采用**边缘光晕**：`0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent)` + `0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent)` + `var(--sh-sm)` + `var(--panel-ring)`；选中加强为 `0 0 0 2px color-mix(in srgb, var(--brand) 30%, transparent)` + `0 0 26px -8px color-mix(in srgb, var(--brand) 55%, transparent)` + 基础阴影。
+- **MUST** 卡片 hover 的 `transition` 只过渡 `box-shadow` / `border-color` / `background` / `color` 等属性，不得包含 `transform`。
+- **MUST** 动效时长只用 `--dur-fast` / `--dur-base` / `--dur-slow`，缓动只用 `--ease` / `--ease-out`；禁止裸 `0.1s` / `0.2s` / `180ms` 等字面量。
+- **MUST** 功能性 `transform`（Modal 进出场、折叠箭头、Switch 滑块、按钮按压）允许，但必须包在 `@media (prefers-reduced-motion: reduce)` 的关闭分支内。
+- **SHOULD** 入场位移统一 8px（`wf-enter-up` / `wf-exit-down`），不得另造 6px / 10px 等位移量。
+
+### 8.9 分隔线与装饰
+
+- **MUST** 窗口内渐隐分隔线用 `var(--wf-window-fade-line)`，窗口外用 `var(--line)`；几何固定 1px 高、伪元素、`linear-gradient(to right, transparent, <line> 20%, <line> 80%, transparent)`。
+- **MUST** 实线分隔一律 `1px solid var(--line)`；不得用背景块模拟可访问的分隔语义。
+- **SHOULD** 装饰性渐隐 / 光斑不得承载状态信息；状态必须同时有文本或图标。
+
+### 8.10 禁止清单与交付自检
+
+- **MUST NOT** 以下 12 条：
+
+  1. 卡片 / 行 hover 使用 `transform` 位移或缩放；
+  2. 硬编码颜色（`#hex`、`rgb()`、`hsl()`）或裸阴影色值；
+  3. 新增白名单外的字号档（尤其 16px）；
+  4. 新增局部控件高度魔法值或第四档高度；
+  5. 自造第二套选中态（左侧色条 / 下划线 / 整行加粗）；
+  6. 裸 `z-index`、裸时长、裸缓动；
+  7. 复制整份组件做平行实现（应走 props / 插槽 / CSS 变量）；
+  8. 用 `--soft` 等半透明令牌填充卡片 / 控件主体；
+  9. 给仅由主题令牌引起的 `color` / `background` / `box-shadow` 挂 `transition`；
+  10. 滥用 `backdrop-filter`（仅窗口材质、Modal 遮罩、固定态活动栏允许）；
+  11. 用空态冒充错误，或错误态替换已有内容；
+  12. 覆盖共享组件样式而不写 `/* 例外：… */` 注释与登记。
+
+- **MUST** 交付前逐条自检：① 颜色 / 圆角 / 阴影 / 时长 / 缓动全部走令牌；② 控件高度落在 38 / 30 / 44；③ 同一行控件等高；④ 列表行内衬与选中态符合 §8.5；⑤ 三态顺序 loading → error → empty；⑥ 卡片 hover 无 `transform`；⑦ 对话框走 `Modal + Window` 且浮层 z 层级用令牌；⑧ 新增字面量例外已登记；⑨ 新增 / 修改文案已走 `t()`（§10）；⑩ 组件复用而非复制（§9）。
 
 ## 9. 组件通用化约束
 

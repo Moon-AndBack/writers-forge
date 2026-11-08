@@ -1,8 +1,11 @@
 # 通用 UI 组件库
 
-> 本文档描述 `src/renderer/src/components/ui/` 下的 29 项通用 UI（27 个组件 + 2 个钩子），
+> 本文档描述 `src/renderer/src/components/ui/` 下的 **23 项**通用 UI（21 个组件 + 2 个钩子），
 > 是渲染层组件选型与用法的一手参考。所有 props 类型、默认值、类名均来自源码与本目录 CSS，
 > 不包含 `components/editor/` 等业务域组件。
+>
+> 本页已于 2026-11-09 按 `index.ts` 与目录清单校正：删除已不存在的 8 个组件详解，
+> 补入 `EntityStyleCard` / `Splitter`；目录另有 `useSplitter.ts`（Splitter 内部 hook，不进 barrel）。
 
 **适用范围**：所有渲染层页面 / 组件（`pages/`、`shell/`、`diagnostics/` 等）。
 
@@ -23,16 +26,16 @@
 ```
 src/renderer/src/components/ui/
   index.ts                 # barrel 聚合出口（只转发具名导出）
-  Accordion.tsx  Avatar.tsx  Badge.tsx  Button.tsx  Card.tsx
-  Checkbox.tsx   ChipInput.tsx  ColorSwatchPicker.tsx  Combobox.tsx
-  Divider.tsx    Drawer.tsx  Dropdown.tsx  FormField.tsx  IconButton.tsx
-  Input.tsx      ListItem.tsx  Modal.tsx  Progress.tsx  Radio.tsx
-  SearchInput.tsx  Segmented.tsx  Select.tsx  Stepper.tsx  Switch.tsx
-  Tag.tsx        Textarea.tsx  Toast.tsx  Tooltip.tsx  Window.tsx
+  Badge.tsx  Button.tsx  Card.tsx  ChipInput.tsx  ColorSwatchPicker.tsx
+  Combobox.tsx  Dropdown.tsx  EntityStyleCard.tsx  FormField.tsx  IconButton.tsx
+  Input.tsx  Modal.tsx  Progress.tsx  SearchInput.tsx  Segmented.tsx  Select.tsx
+  Splitter.tsx  Switch.tsx  Tag.tsx  Textarea.tsx  Toast.tsx  Tooltip.tsx
+  Window.tsx  useSplitter.ts
 ```
 
-- 目录内共 **30 个文件**：29 个实现文件 + `index.ts`。
-- 29 个实现文件对应 **29 项导出**：27 个组件 + 2 个钩子（`useToast` / `useTooltip`）。
+- 目录内共 **25 个文件**：23 个实现模块 + `index.ts` + `useSplitter.ts`。
+- 23 个实现模块对应 **23 项导出**：21 个组件 + 2 个钩子（`useToast` / `useTooltip`）。
+- `useSplitter.ts` 是 `Splitter` 的内部拖拽 hook，不由 barrel 转发，不计入 23 项。
 - 一个文件即一个组件（或钩子），不把多个组件堆进同一文件。
 
 ### 1.2 barrel 导出（`index.ts`）
@@ -40,9 +43,8 @@ src/renderer/src/components/ui/
 `index.ts` 用 `export *` 逐个转发实现模块的**具名导出**（组件 + 其 props 类型）：
 
 ```ts
-export * from './Accordion'
-export * from './Avatar'
-// … 共 29 行
+export * from './Badge'
+// … 共 23 行
 ```
 
 因此推荐的统一导入方式是**从桶文件按需取具名导出**：
@@ -54,11 +56,9 @@ import type { DropdownItem } from '../../components/ui'
 
 需要同时取类型时，值导入与类型导入分两行（`verbatimModuleSyntax` 口径）。
 
-> **注意：桶文件注释已过时。**
-> `index.ts` 顶部注释写「已核对 **26 个组件** 的 props 类型名互不冲突」，这是早期版本留下的
-> 数字；当前实际是 **29 项（27 组件 + 2 钩子）**，目录含 `index.ts` 共 30 个文件。
-> 该注释本身不影响行为（29 个模块的 props 类型名确实互不冲突），但引用旧文档 / 旧注释时
-> 不要按「26 个」计数。以本文档的 29 项口径为准。
+> **桶文件注释口径**：`index.ts` 顶部写「已核对 23 个组件的 props 类型名互不冲突」，
+> 数字 23 与实际模块数一致；严格分类为 21 个组件 + 2 个钩子。本页按 23 项口径计数。
+> `useSplitter` 不在桶文件中，需要时从 `./useSplitter` 直接引入。
 
 `export *` 的副作用与边界：
 
@@ -68,35 +68,33 @@ import type { DropdownItem } from '../../components/ui'
 
 ### 1.3 默认导出与具名导出的差异（重要）
 
-29 项中 **22 项有 `export default`，7 项只有具名导出**：
+23 项中 **18 项有 `export default`，5 项只有具名导出**：
 
 | 无默认导出（只能具名引入） | 文件           |
 | -------------------------- | -------------- |
 | `Input`                    | `Input.tsx`    |
 | `Textarea`                 | `Textarea.tsx` |
 | `Select`                   | `Select.tsx`   |
-| `Checkbox`                 | `Checkbox.tsx` |
-| `Radio`                    | `Radio.tsx`    |
 | `Switch`                   | `Switch.tsx`   |
 | `Combobox`                 | `Combobox.tsx` |
 
-对这 7 个写 `import Input from './Input'` 会直接报错（模块无默认导出）。
+对这 5 个写 `import Input from './Input'` 会直接报错（模块无默认导出）。
 
-**统一规则：一律用具名导入。** 具名导入对 29 项全部有效，且与桶文件一致，不必记忆差异：
+**统一规则：一律用具名导入。** 具名导入对 23 项全部有效，且与桶文件一致，不必记忆差异：
 
 ```tsx
 import { Input, Select } from '@renderer/components/ui' // ✅ 全部可用
 import Input from './Input' // ❌ Input 无默认导出
 ```
 
-其余 22 项的默认导出仅为兼容历史调用点存在，新代码不再使用。
+其余 18 项的默认导出仅为兼容历史调用点存在，新代码不再使用。
 
 > 两个钩子文件也带默认导出（`Toast.tsx` 默认导出 `useToast`、`Tooltip.tsx` 默认导出
-> `useTooltip`），但它们属于上述 22 项之内，同样不推荐默认导入。
+> `useTooltip`），但它们属于上述 18 项之内，同样不推荐默认导入。
 
 ### 1.4 样式自动引入
 
-**调用方不需要 import 任何 CSS。** 每个实现文件在顶部自行引入所需样式表：
+**调用方不需要 import 任何 CSS。** 大多数实现文件在顶部自行引入所需样式表；`EntityStyleCard` / `Splitter` 是例外——前者由 `styles/index.css` 全局引入 `entity-card.css`，后者由 `pages/Writer.tsx` 引入 `styles/writer.css`。
 
 ```ts
 import '../../styles/components/button.css'
@@ -104,24 +102,26 @@ import '../../styles/components/button.css'
 
 共享样式表的情况（多个组件共用一个 CSS，重复 import 会被打包器去重）：
 
-| 样式文件             | 行数 | 服务的组件                                                                                             |
-| -------------------- | ---- | ------------------------------------------------------------------------------------------------------ |
-| `button.css`         | 188  | Button                                                                                                 |
-| `icon-button.css`    | 97   | IconButton                                                                                             |
-| `surface.css`        | 426  | Card / Tag / Badge / Divider / Avatar / Progress（首行 `@import './modal.css'`）                       |
-| `modal.css`          | 97   | Modal（经 `surface.css` 转发引入）                                                                     |
-| `overlay.css`        | 287  | Drawer / Dropdown                                                                                      |
-| `form.css`           | 413  | Input / Textarea / Checkbox / Radio / Switch / Select / Combobox（首行 `@import './form-select.css'`） |
-| `form-select.css`    | 186  | Select / Combobox（经 `form.css` 转发引入）                                                            |
-| `form-extras.css`    | 404  | SearchInput / ChipInput / FormField / Stepper                                                          |
-| `display-extras.css` | 257  | Accordion / ListItem / ColorSwatchPicker                                                               |
-| `segmented.css`      | 119  | Segmented                                                                                              |
-| `toast.css`          | 57   | useToast                                                                                               |
-| `tooltip.css`        | 47   | useTooltip                                                                                             |
-| `window.css`         | 128  | Window（Modal 面板复用其结构）                                                                         |
+| 样式文件             | 行数 | 服务的组件                                                                                                                  |
+| -------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------- |
+| `button.css`         | 183  | Button                                                                                                                      |
+| `icon-button.css`    | 82   | IconButton                                                                                                                  |
+| `surface.css`        | 379  | Card / Tag / Badge / Progress（首行 `@import './modal.css'`；另含已移除 Avatar / Divider 的残留规则）                       |
+| `modal.css`          | 86   | Modal（经 `surface.css` 转发引入）                                                                                          |
+| `overlay.css`        | 256  | Dropdown（另含已移除 Drawer 的残留规则）                                                                                    |
+| `form.css`           | 408  | Input / Textarea / Switch / Select / Combobox（首行 `@import './form-select.css'`；另含已移除 Checkbox / Radio 的残留规则） |
+| `form-select.css`    | 180  | Select / Combobox（经 `form.css` 转发引入）                                                                                 |
+| `form-extras.css`    | 446  | SearchInput / ChipInput / FormField（另含已移除 Stepper 的残留规则）                                                        |
+| `display-extras.css` | 223  | ColorSwatchPicker（另含已移除 Accordion / ListItem 的残留规则）                                                             |
+| `segmented.css`      | 105  | Segmented                                                                                                                   |
+| `toast.css`          | 52   | useToast                                                                                                                    |
+| `tooltip.css`        | 93   | useTooltip                                                                                                                  |
+| `window.css`         | 114  | Window（Modal 面板复用其结构）                                                                                              |
+| `entity-card.css`    | 129  | EntityStyleCard（由 `styles/index.css` 全局引入，组件自身不 import）                                                        |
 
-`styles/components/` 目录共 19 个 CSS（含 `category-manager.css`、`editor-format.css` 等业务域样式，
-不由 `components/ui/` 引入），合计 3,520 行左右。
+`styles/components/` 目录共 **27 个 CSS**（含 `category-manager.css`、`editor-format.css` 等业务域样式，
+不由 `components/ui/` 引入），合计约 3,946 行。`Splitter` 的样式在 `styles/writer.css`（由
+`pages/Writer.tsx:34` 引入），不在 `components/`；在写作页之外复用时需先把样式迁到组件层。
 
 层叠顺序由「谁先 import」决定：`surface.css` 主动 `@import './modal.css'`、`form.css` 主动
 `@import './form-select.css'`，是为了让被拆出的样式仍保持原有的先后次序（同特异性覆盖规则依赖于此）。
@@ -150,14 +150,14 @@ import { Button } from '@renderer/components/ui'
 | -------------------- | ------------------ | ---------------------------------------------------------------------- |
 | `wf-block`           | 根节点             | `.wf-btn`、`.wf-card`、`.wf-select`                                    |
 | `wf-block__element`  | 内部元素           | `.wf-card__body`、`.wf-select__option`                                 |
-| `wf-block--modifier` | 变体（props 映射） | `.wf-btn--primary`、`.wf-avatar--lg`                                   |
+| `wf-block--modifier` | 变体（props 映射） | `.wf-btn--primary`、`.wf-card--halo`                                   |
 | `is-state`           | 运行期状态         | `.is-active`、`.is-open`、`.is-disabled`、`.is-invalid`、`.is-closing` |
 
 约定：
 
 - 变体类由 props 计算得出（`variant` → `wf-btn--primary`），调用方不需要手写；
 - 状态类只由组件内部根据状态追加；
-- `className` 一律合并到**根节点**（`SearchInput` 例外，见 3.20；`Card` / `Window` 另有
+- `className` 一律合并到**根节点**（`SearchInput` 例外，见 3.13；`Card` / `Window` 另有
   `bodyClassName` 作用于内容容器）；
 - 颜色只取 `styles/theme.css` 令牌或 `color-mix` 派生，四主题（light / dark / sage / honey）通用，
   **禁止在组件里硬编码品牌色**；
@@ -169,13 +169,13 @@ import { Button } from '@renderer/components/ui'
 1. **卡片类禁止「弹起」动画**（`AGENTS.md` §8）：hover 只允许颜色 / 描边 / 阴影变化，
    不得出现 `transform: translate / scale / rotate`。`Card`、`ColorSwatchPicker`、`Segmented`
    等均已遵守。
-2. **浮层一律 `createPortal` 到 `document.body`**：Modal、Drawer、Dropdown 之外的
+2. **浮层一律 `createPortal` 到 `document.body`**：Modal、Dropdown 之外的
    Select / Combobox 面板、Tooltip、Toast 都走 portal + 固定定位，以逃逸 `overflow` 裁剪。
-3. **层序固定**：Tooltip `990` < Modal / Drawer `1000` < Select / Combobox 面板 `1040` < Toast `1100`。
+3. **层序固定**：Tooltip `990` < Modal `1000` < Select / Combobox 面板 `1040` < Toast `1100`。
    新增浮层请落在既有档位内，不要抢占更高层级。
 4. **文案全部走 `t()`**（`AGENTS.md` §10）：组件内置文案（关闭 / 移除 / 清除 / 暂无选项 / 占位符等）
    已接入 `common` 命名空间（`close`、`remove`、`clear`、`noOptions`、`selectPlaceholder`、
-   `chipPlaceholder`、`removeTag`、`stepperLabel`、`stepperDecrease`、`stepperIncrease`、`stepperEdit`），
+   `chipPlaceholder`、`removeTag`）；`stepper*` 键为已移除 Stepper 的历史遗留，待清理。
    调用方传入的文案同样必须走 `t()`。
 5. **禁用优先用原生 `disabled`**：除 Card / Window 这类纯容器外，交互组件的禁用态都映射到原生属性，
    键盘与读屏行为由浏览器保证。
@@ -184,40 +184,34 @@ import { Button } from '@renderer/components/ui'
 
 ## 2. 总览表
 
-| #   | 组件 / 钩子       | 导入名              | 一句话用途                                | 默认导出           |
-| --- | ----------------- | ------------------- | ----------------------------------------- | ------------------ |
-| 1   | Accordion         | `Accordion`         | 折叠面板，受控 / 非受控展开               | ✅                 |
-| 2   | Avatar            | `Avatar`            | 头像，图片或姓名首字                      | ✅                 |
-| 3   | Badge             | `Badge`             | 状态标签 / 计数徽标                       | ✅                 |
-| 4   | Button            | `Button`            | 通用按钮（4 变体 3 尺寸，支持 loading）   | ✅                 |
-| 5   | Card              | `Card`              | 面板容器，含标题区 / 页脚                 | ✅                 |
-| 6   | Checkbox          | `Checkbox`          | 复选框（带标签）                          | ❌ 仅具名          |
-| 7   | ChipInput         | `ChipInput`         | 受控标签输入（回车 / 逗号新增）           | ✅                 |
-| 8   | ColorSwatchPicker | `ColorSwatchPicker` | 色板选择（radiogroup 语义）               | ✅                 |
-| 9   | Combobox          | `Combobox`          | 可搜索下拉组合框                          | ❌ 仅具名          |
-| 10  | Divider           | `Divider`           | 水平 / 垂直分隔线                         | ✅                 |
-| 11  | Drawer            | `Drawer`            | 侧边抽屉浮层                              | ✅                 |
-| 12  | Dropdown          | `Dropdown`          | 下拉菜单（含分隔线 / 勾选项）             | ✅                 |
-| 13  | FormField         | `FormField`         | 字段容器：label / hint / error / required | ✅                 |
-| 14  | IconButton        | `IconButton`        | 圆形图标按钮（自带 tooltip）              | ✅                 |
-| 15  | Input             | `Input`             | 单行文本输入                              | ❌ 仅具名          |
-| 16  | ListItem          | `ListItem`          | 列表行（头像 / 标题 / 副标题 / 附加）     | ✅                 |
-| 17  | Modal             | `Modal`             | 模态弹窗（焦点陷阱 / 嵌套栈）             | ✅                 |
-| 18  | Progress          | `Progress`          | 进度条                                    | ✅                 |
-| 19  | Radio             | `Radio`             | 单选按钮（带标签）                        | ❌ 仅具名          |
-| 20  | SearchInput       | `SearchInput`       | 搜索框（前置图标 + 清除按钮）             | ✅                 |
-| 21  | Segmented         | `Segmented<T>`      | 分段控件 / 标签切换                       | ✅                 |
-| 22  | Select            | `Select`            | 下拉选择（自绘面板）                      | ❌ 仅具名          |
-| 23  | Stepper           | `Stepper`           | 步进器（− / 值 / +）                      | ✅                 |
-| 24  | Switch            | `Switch`            | 开关（`role="switch"`）                   | ❌ 仅具名          |
-| 25  | Tag               | `Tag`               | 标签，可关闭 / 可带操作                   | ✅                 |
-| 26  | Textarea          | `Textarea`          | 多行文本输入                              | ❌ 仅具名          |
-| 27  | Toast             | `useToast`          | 命令式轻提示（钩子）                      | ✅（默认导出钩子） |
-| 28  | Tooltip           | `useTooltip`        | 自绘 tooltip（钩子）                      | ✅（默认导出钩子） |
-| 29  | Window            | `Window`            | 窗口框架：标题 / 内容 / 底部操作区        | ✅                 |
+| 组件 / 钩子       | 导入名              | 一句话用途                                | 默认导出           |
+| ----------------- | ------------------- | ----------------------------------------- | ------------------ |
+| Badge             | `Badge`             | 状态标签 / 计数徽标                       | ✅                 |
+| Button            | `Button`            | 通用按钮（4 变体 3 尺寸，支持 loading）   | ✅                 |
+| Card              | `Card`              | 面板容器，含标题区 / 页脚                 | ✅                 |
+| ChipInput         | `ChipInput`         | 受控标签输入（回车 / 逗号新增）           | ✅                 |
+| ColorSwatchPicker | `ColorSwatchPicker` | 色板选择（radiogroup 语义）               | ✅                 |
+| Combobox          | `Combobox`          | 可搜索下拉组合框                          | ❌ 仅具名          |
+| Dropdown          | `Dropdown`          | 下拉菜单（含分隔线 / 勾选项）             | ✅                 |
+| FormField         | `FormField`         | 字段容器：label / hint / error / required | ✅                 |
+| IconButton        | `IconButton`        | 圆形图标按钮（自带 tooltip）              | ✅                 |
+| Input             | `Input`             | 单行文本输入                              | ❌ 仅具名          |
+| Modal             | `Modal`             | 模态弹窗（焦点陷阱 / 嵌套栈）             | ✅                 |
+| Progress          | `Progress`          | 进度条                                    | ✅                 |
+| SearchInput       | `SearchInput`       | 搜索框（前置图标 + 清除按钮）             | ✅                 |
+| Segmented         | `Segmented<T>`      | 分段控件 / 标签切换                       | ✅                 |
+| Select            | `Select`            | 下拉选择（自绘面板）                      | ❌ 仅具名          |
+| Switch            | `Switch`            | 开关（`role="switch"`）                   | ❌ 仅具名          |
+| Tag               | `Tag`               | 标签，可关闭 / 可带操作                   | ✅                 |
+| Textarea          | `Textarea`          | 多行文本输入                              | ❌ 仅具名          |
+| Toast             | `useToast`          | 命令式轻提示（钩子）                      | ✅（默认导出钩子） |
+| Tooltip           | `useTooltip`        | 自绘 tooltip（钩子）                      | ✅（默认导出钩子） |
+| Window            | `Window`            | 窗口框架：标题 / 内容 / 底部操作区        | ✅                 |
+| EntityStyleCard   | `EntityStyleCard`   | 实体样式卡壳（剧情 / 伏笔 / 设定共用）    | ✅                 |
+| Splitter          | `Splitter`          | 分栏拖拽分隔条（8px，键盘可达）           | ✅                 |
 
-统计口径：29 项 = 27 组件 + 2 钩子；有默认导出 22 项，**无默认导出 7 项**
-（第 6、9、15、19、22、24、26 项，即 Checkbox / Combobox / Input / Radio / Select / Switch / Textarea）。
+统计口径：**23 项 = 21 个组件 + 2 个钩子**；有默认导出 **18 项**，**无默认导出 5 项**
+（Combobox / Input / Select / Switch / Textarea）。`useSplitter` 是 `Splitter` 的内部 hook，不计入本表。
 
 ---
 
@@ -226,81 +220,7 @@ import { Button } from '@renderer/components/ui'
 每节结构固定：**用途** → **Props**（名称 / 类型 / 默认值 / 说明，均取自源码）→ **关键类名** →
 **键盘与无障碍** → **示例**。类型里用 `/` 分隔字面量联合（如 `'sm' / 'md' / 'lg'`）。
 
-### 3.1 Accordion
-
-**用途**：折叠面板，一屏内收纳多组可展开内容（卷 → 章、帮助条目、设置分组）。
-支持**非受控**（`defaultOpenKeys` / `item.defaultOpen`）与**受控**（`openKeys` + `onToggle`）两种模式；
-`openKeys !== undefined` 即进入受控模式，此时组件不再自行改内部状态。
-
-**Props**
-
-| 名称              | 类型                                   | 默认值      | 说明                                  |
-| ----------------- | -------------------------------------- | ----------- | ------------------------------------- |
-| `items`           | `ReadonlyArray<AccordionItemData>`     | 必填        | 面板项列表                            |
-| `openKeys`        | `ReadonlyArray<string>`                | `undefined` | 受控展开的 key 列表；提供后即受控模式 |
-| `defaultOpenKeys` | `ReadonlyArray<string>`                | `undefined` | 非受控模式的初始展开项                |
-| `onToggle`        | `(key: string, open: boolean) => void` | `undefined` | 展开 / 收起回调，受控与非受控都会触发 |
-| `multiple`        | `boolean`                              | `true`      | 是否可同时展开多项（仅非受控生效）    |
-| `className`       | `string`                               | `undefined` | 合并到根节点类名                      |
-| `'aria-label'`    | `string`                               | `undefined` | 面板组无障碍名称                      |
-
-`AccordionItemData`：`key: string`（唯一标识）、`title: ReactNode`、`content: ReactNode`、
-`defaultOpen?: boolean`（非受控默认展开）、`disabled?: boolean`。
-
-**关键类名**：`.wf-accordion`、`.wf-accordion__item`（`is-open` / `is-disabled`）、
-`.wf-accordion__head`、`.wf-accordion__arrow`（展开时旋转 90°）、`.wf-accordion__title`、
-`.wf-accordion__body`（`grid-template-rows: 0fr → 1fr` 高度过渡）、`.wf-accordion__body-inner`、
-`.wf-accordion__content`。
-
-**键盘与无障碍**：标题是原生 `<button>`，Enter / Space 切换；`disabled` 项直接用 `disabled` 属性
-（不可聚焦）。`aria-expanded` + `aria-controls` 指向内容区，内容区为 `role="region"` 并由标题
-`aria-labelledby` 命名。折叠中的内容**仍在 DOM 内**，靠 grid 行高 + `overflow: hidden` 裁切——
-注意 `overflow` 裁切**不会**把内部元素移出 Tab 序列：折叠区里若放可聚焦控件，键盘用户会 Tab 进
-「看不见」的区域。因此折叠内容应以文本为主，含交互元素时改用条件渲染方案。
-
-**示例**
-
-```tsx
-<Accordion
-  aria-label={t('help.sections')}
-  defaultOpenKeys={['install']}
-  items={[
-    { key: 'install', title: t('help.install'), content: <p>…</p> },
-    { key: 'backup', title: t('help.backup'), content: <p>…</p> }
-  ]}
-/>
-```
-
-### 3.2 Avatar
-
-**用途**：头像位。提供 `src` 时渲染 `<img>`，否则渲染 `children`（通常放姓名首字）；
-尺寸 / 色调 / 形状由 props 决定。常用于 `ListItem` 的 `avatar` 槽。
-
-**Props**（继承 `HTMLAttributes<HTMLSpanElement>`）
-
-| 名称       | 类型                                             | 默认值      | 说明                                       |
-| ---------- | ------------------------------------------------ | ----------- | ------------------------------------------ |
-| `src`      | `string`                                         | `undefined` | 图片地址；提供后渲染 `img`                 |
-| `alt`      | `string`                                         | `undefined` | 图片替代文本，`img` 上缺省为空串（装饰性） |
-| `size`     | `'sm' / 'md' / 'lg'`                             | `'sm'`      | 尺寸：28 / 40 / 72 px                      |
-| `tone`     | `'brand' / 'ok' / 'warn' / 'danger' / 'neutral'` | `'brand'`   | 底色色调                                   |
-| `shape`    | `'rounded' / 'circle'`                           | `'rounded'` | 圆角矩形或圆形                             |
-| `children` | `ReactNode`                                      | `undefined` | 无 `src` 时显示的内容（首字 / 图标）       |
-
-**关键类名**：`.wf-avatar`、`.wf-avatar--sm/md/lg`、`.wf-avatar--brand/ok/warn/danger/neutral`、
-`.wf-avatar--circle`、`.wf-avatar__img`。
-
-**键盘与无障碍**：纯展示元素，不可聚焦。`src` 存在而 `alt` 缺省时 `alt=""`，读屏会跳过——
-**有信息量的头像必须显式传 `alt`**；纯装饰头像保持空 `alt`，由相邻文本承担语义。
-
-**示例**
-
-```tsx
-<Avatar size="md" tone="ok" shape="circle">作</Avatar>
-<Avatar src={coverUrl} alt={t('book.coverAlt', { title })} size="lg" />
-```
-
-### 3.3 Badge
+### 3.1 Badge
 
 **用途**：状态标签（`dot` + 文案）或计数徽标（`count`）。`count` 优先于 `children`，
 超过 `max` 显示 `${max}+`。常用于书籍卡状态、未读计数。
@@ -328,7 +248,7 @@ import { Button } from '@renderer/components/ui'
 <Badge tone="danger" count={128} max={99} />
 ```
 
-### 3.4 Button
+### 3.2 Button
 
 **用途**：通用按钮。透传原生 `<button>` 属性并支持 `ref` 转发；`loading` 时展示指示器、
 置为禁用并标 `aria-busy`。
@@ -360,7 +280,7 @@ import { Button } from '@renderer/components/ui'
 <Button variant="ghost" iconOnly aria-label={t('action.more')}><MoreIcon /></Button>
 ```
 
-### 3.5 Card
+### 3.3 Card
 
 **用途**：面板容器，可选标题区（`title` / `subtitle` / `extra`）与页脚（`footer`）。
 `soft` 变体为更轻的柔和底，`interactive` 为可点击卡片增加 hover 光晕。
@@ -382,7 +302,7 @@ import { Button } from '@renderer/components/ui'
 （外部追加的光晕变体）、`.wf-card__head/__titles/__title/__subtitle/__extra/__body/__footer`。
 
 **键盘与无障碍**：纯布局容器，无 role、不可聚焦。`interactive` **只加样式**，不提供 `tabIndex`、
-`role` 或键盘处理——可点击卡片必须把点击语义交给内部控件（整行可点用 `ListItem` 的 `onClick`），
+`role` 或键盘处理——可点击卡片必须把点击语义交给内部控件（如内部 `Button`），
 或由调用方补 `role="button"` + `tabIndex={0}` + Enter/Space 处理。
 另注意 CSS 给出 `min-height: 120px; max-height: 240px`，内容超长时自行在 `bodyClassName` 指定
 滚动或改用 `Window` / 自定义容器。
@@ -405,42 +325,7 @@ import { Button } from '@renderer/components/ui'
 </Card>
 ```
 
-### 3.6 Checkbox
-
-**用途**：带标签的复选框。原生 `<input type="checkbox">` 视觉隐藏（1px 透明、不可点），
-由 `.wf-checkbox__box` 自绘方框 + 勾号；`label` 包裹使点击文字即可切换。
-
-> **无默认导出**，只能 `import { Checkbox } from '...'`。
-
-**Props**（继承 `Omit<InputHTMLAttributes<HTMLInputElement>, 'type' / 'size'>`）
-
-| 名称                                      | 类型                 | 默认值            | 说明                                        |
-| ----------------------------------------- | -------------------- | ----------------- | ------------------------------------------- |
-| `label`                                   | `ReactNode`          | `undefined`       | 标签文本；省略则为纯控件                    |
-| `size`                                    | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 控件尺寸；仅 `sm` / `lg` 输出修饰类         |
-| `invalid`                                 | `boolean`            | `false`           | 错误态：附加 `is-invalid` 与 `aria-invalid` |
-| `checked` / `defaultChecked` / `onChange` | 原生                 | —                 | 受控 / 非受控均支持                         |
-| `disabled`                                | `boolean`            | `undefined`       | 原生禁用，额外附加 `is-disabled`            |
-
-**关键类名**：`.wf-checkbox`、`.wf-checkbox--sm/lg`、`.wf-checkbox.is-disabled`、
-`.wf-checkbox.is-invalid`、`.wf-checkbox__input`（视觉隐藏）、`.wf-checkbox__box`、
-`.wf-checkbox__tick`、`.wf-checkbox__label`。
-
-**键盘与无障碍**：原生 checkbox，Space 切换，Tab 可达；`label` 包裹保证点击区域与可访问名称。
-省略 `label` 时必须传 `aria-label`。`invalid` 映射为 `aria-invalid`，错误文案由外层
-`FormField` 的 `error` 提供（两者需配合 `aria-describedby`，见 3.13）。
-
-**示例**
-
-```tsx
-<Checkbox
-  label={t('settings.autoSave')}
-  checked={autoSave}
-  onChange={(e) => setAutoSave(e.target.checked)}
-/>
-```
-
-### 3.7 ChipInput
+### 3.4 ChipInput
 
 **用途**：受控标签输入。回车 / 逗号提交当前草稿，`Backspace` 在空输入时删除最后一项，
 粘贴含换行或逗号的文本会批量拆分；重复标签自动忽略，达到 `max` 后不再新增。
@@ -475,7 +360,7 @@ import { Button } from '@renderer/components/ui'
 </FormField>
 ```
 
-### 3.8 ColorSwatchPicker
+### 3.5 ColorSwatchPicker
 
 **用途**：色板选择。选项可传纯色字符串或 `{ value, css, ring }` 对象；缺省使用一组由主题令牌
 派生的 6 色（brand 渐变 / brand-2 / ok / warn / danger / neutral），随主题切换。
@@ -513,7 +398,7 @@ roving `tabIndex`（仅选中项可 Tab 进入）。方向键（←↑ / →↓�
 />
 ```
 
-### 3.9 Combobox
+### 3.6 Combobox
 
 **用途**：可搜索的下拉组合框。输入框即触发器，聚焦时展示全量候选，输入后按 `label`
 做**不区分大小写的包含匹配**。视觉复用 `Select` 的 `.wf-select` 系列类，面板 portal 到 body
@@ -556,80 +441,7 @@ roving `tabIndex`（仅选中项可 Tab 进入）。方向键（←↑ / →↓�
 />
 ```
 
-### 3.10 Divider
-
-**用途**：分隔线。水平线撑满宽度，垂直线在 flex 容器内 `align-self: stretch`
-（最小高度 16px）。
-
-**Props**（继承 `HTMLAttributes<HTMLDivElement>`）
-
-| 名称          | 类型                        | 默认值         | 说明 |
-| ------------- | --------------------------- | -------------- | ---- |
-| `orientation` | `'horizontal' / 'vertical'` | `'horizontal'` | 方向 |
-
-**关键类名**：`.wf-divider`、`.wf-divider--horizontal`、`.wf-divider--vertical`。
-
-**键盘与无障碍**：`role="separator"` + `aria-orientation`，不可聚焦。
-垂直线必须放在 `display: flex` 的父容器里，否则 `align-self: stretch` 无高度可撑。
-
-**示例**
-
-```tsx
-<div className="toolbar">
-  <Button variant="ghost">{t('action.edit')}</Button>
-  <Divider orientation="vertical" />
-  <Button variant="ghost">{t('action.delete')}</Button>
-</div>
-```
-
-### 3.11 Drawer
-
-**用途**：侧边抽屉。遮罩 + 从左侧 / 右侧滑入的面板，面板含可选标题区、内容区与页脚。
-经 `createPortal` 挂到 `body`，打开时锁定 `body` 滚动并把焦点移到面板。
-
-**Props**
-
-| 名称             | 类型               | 默认值                    | 说明                                            |
-| ---------------- | ------------------ | ------------------------- | ----------------------------------------------- |
-| `open`           | `boolean`          | 必填                      | 是否显示                                        |
-| `onClose`        | `() => void`       | 必填                      | 关闭回调（遮罩 / Esc / 关闭按钮）               |
-| `side`           | `'left' / 'right'` | `'right'`                 | 滑出方向                                        |
-| `size`           | `number / string`  | `undefined`（样式 400px） | 面板宽度，数字按 px；CSS 另限 `max-width: 90vw` |
-| `title`          | `ReactNode`        | `undefined`               | 标题，提供后渲染头部                            |
-| `footer`         | `ReactNode`        | `undefined`               | 底部内容                                        |
-| `closeOnMask`    | `boolean`          | `true`                    | 点击遮罩是否关闭                                |
-| `closeOnEsc`     | `boolean`          | `true`                    | Esc 是否关闭                                    |
-| `showClose`      | `boolean`          | `true`                    | 是否显示关闭按钮                                |
-| `closeLabel`     | `string`           | `t('common.close')`       | 关闭按钮无障碍标签                              |
-| `ariaLabel`      | `string`           | `undefined`               | 对话框无障碍名称（无可见标题时用）              |
-| `panelClassName` | `string`           | `undefined`               | 透传到面板的类名                                |
-
-**关键类名**：`.wf-drawer`、`.wf-drawer__mask`、`.wf-drawer__panel`、
-`.wf-drawer__panel--left/right`、`.wf-drawer__head/__title/__close/__body/__foot`。
-
-**键盘与无障碍**：面板 `role="dialog"` + `aria-modal="true"` + `tabIndex={-1}`，打开后立即获得焦点；
-Esc 由 `document` 级监听处理（`closeOnEsc` 可关）。关闭时恢复 `body` 滚动。
-**注意：Drawer 没有 Tab 焦点陷阱**（与 `Modal` 不同），Tab 仍可移出面板进入背景；
-需要严格模态键盘语义时请用 `Modal`，或在抽屉内容里自行约束焦点。
-
-**示例**
-
-```tsx
-<Drawer
-  open={open}
-  onClose={() => setOpen(false)}
-  title={t('chapter.detail')}
-  footer={
-    <Button variant="primary" onClick={save}>
-      {t('action.save')}
-    </Button>
-  }
->
-  …
-</Drawer>
-```
-
-### 3.12 Dropdown
+### 3.7 Dropdown
 
 **用途**：下拉菜单。触发器可为节点或渲染函数（函数收到 `{ open }` 以切换箭头 / 高亮），
 菜单项支持图标、禁用、勾选态与分隔线。点击组件外部关闭。
@@ -677,7 +489,7 @@ Enter / Space 打开或提交、Esc 关闭、Tab 关闭。仅键盘导航时把�
 />
 ```
 
-### 3.13 FormField
+### 3.8 FormField
 
 **用途**：字段容器。统一 `label` / 必填星号 / 控件区 / `hint` 或 `error` 的布局与间距，
 包裹任意表单控件（Input、Select、ChipInput、ColorSwatchPicker…）。`error` 存在时进入错误态并优先于 `hint`。
@@ -722,7 +534,7 @@ Enter / Space 打开或提交、Esc 关闭、Tab 关闭。仅键盘导航时把�
 </FormField>
 ```
 
-### 3.14 IconButton
+### 3.9 IconButton
 
 **用途**：圆形图标按钮，承载单个图标。自带**自绘 tooltip**（hover / focus 显示，带延迟与
 视口避让），并把原生 `title` 属性剥离，避免系统气泡与自绘浮层重复提示。
@@ -761,7 +573,7 @@ tooltip 通过 `aria-describedby` 关联（仅在有文案时）。`title` 被�
 </IconButton>
 ```
 
-### 3.15 Input
+### 3.10 Input
 
 **用途**：单行文本输入。透传原生 `<input>` 属性，`size` 是控件尺寸（不是原生字符宽度），
 `invalid` 同时写 `aria-invalid` 与 `is-invalid` 类。
@@ -796,46 +608,7 @@ tooltip 通过 `aria-describedby` 关联（仅在有文案时）。`title` 被�
 />
 ```
 
-### 3.16 ListItem
-
-**用途**：列表行。左侧头像位、主 / 副标题、右侧附加内容；可选中、可禁用，提供 `onClick`
-时整行可聚焦并支持键盘激活。
-
-**Props**（继承 `Omit<HTMLAttributes<HTMLDivElement>, 'title' / 'onClick'>`）
-
-| 名称       | 类型                                              | 默认值      | 说明                                  |
-| ---------- | ------------------------------------------------- | ----------- | ------------------------------------- |
-| `avatar`   | `ReactNode`                                       | `undefined` | 左侧头像位（常放 `Avatar`）           |
-| `title`    | `ReactNode`                                       | `undefined` | 主标题                                |
-| `subtitle` | `ReactNode`                                       | `undefined` | 副标题                                |
-| `extra`    | `ReactNode`                                       | `undefined` | 右侧附加内容（`Tag` / `Badge`）       |
-| `active`   | `boolean`                                         | `false`     | 选中态（`is-active`）                 |
-| `disabled` | `boolean`                                         | `false`     | 禁用态（`is-disabled`，点击被阻止）   |
-| `onClick`  | `(event: SyntheticEvent<HTMLDivElement>) => void` | `undefined` | 点击回调；提供后整行可聚焦 + 键盘激活 |
-| `children` | `ReactNode`                                       | `undefined` | 追加到正文区（标题 / 副标题之后）     |
-
-**关键类名**：`.wf-listitem`（`is-active` / `is-disabled`）、`.wf-listitem__avatar`、
-`.wf-listitem__body`、`.wf-listitem__title`、`.wf-listitem__subtitle`、`.wf-listitem__extra`。
-
-**键盘与无障碍**：有 `onClick` 且未禁用时渲染 `role="button"` + `tabIndex={0}`，
-Enter / Space 激活（阻止默认滚动）；禁用时 `aria-disabled="true"` 且点击被 `preventDefault`。
-`active` **只加类、不写 `aria-selected` / `aria-current`**——若用于列表选择语义，
-调用方需自行补 `aria-current` 或把行放进 `role="listbox"` 容器并管理 `aria-selected`。
-
-**示例**
-
-```tsx
-<ListItem
-  avatar={<Avatar size="sm">{chapter.title.slice(0, 1)}</Avatar>}
-  title={chapter.title}
-  subtitle={t('chapter.words', { count: chapter.words })}
-  extra={<Tag tone={chapter.done ? 'ok' : 'neutral'}>{chapter.statusLabel}</Tag>}
-  active={chapter.id === currentId}
-  onClick={() => select(chapter.id)}
-/>
-```
-
-### 3.17 Modal
+### 3.11 Modal
 
 **用途**：模态弹窗。遮罩 + 面板（面板复用 `Window` 结构），支持嵌套（模块级弹窗栈）、
 Tab 焦点陷阱、背景 `inert`、`body` 滚动锁、退场动画（关闭时先播完动画再卸载）。
@@ -890,7 +663,7 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
 </Modal>
 ```
 
-### 3.18 Progress
+### 3.12 Progress
 
 **用途**：进度条。轨道为柔和底、填充为品牌渐变（或语义色）；只支持确定进度，
 无 indeterminate 模式。
@@ -923,50 +696,7 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
 />
 ```
 
-### 3.19 Radio
-
-**用途**：带标签的单选按钮。原生 `<input type="radio">` 视觉隐藏，自绘圆点 + 选中内环；
-同一 `name` 的一组 Radio 构成互斥选择。
-
-> **无默认导出**，只能 `import { Radio } from '...'`。
-
-**Props**（继承 `Omit<InputHTMLAttributes<HTMLInputElement>, 'type' / 'size'>`）
-
-| 名称                                      | 类型                 | 默认值            | 说明                                  |
-| ----------------------------------------- | -------------------- | ----------------- | ------------------------------------- |
-| `label`                                   | `ReactNode`          | `undefined`       | 标签文本；省略则为纯控件              |
-| `size`                                    | `'sm' / 'md' / 'lg'` | 不传（等同 `md`） | 控件尺寸                              |
-| `invalid`                                 | `boolean`            | `false`           | 错误态：`aria-invalid` + `is-invalid` |
-| `name`                                    | 原生                 | `undefined`       | **分组必需**，同组同名                |
-| `checked` / `defaultChecked` / `onChange` | 原生                 | —                 | 受控 / 非受控均支持                   |
-
-**关键类名**：`.wf-radio`、`.wf-radio--sm/lg`、`.wf-radio.is-disabled`、`.wf-radio.is-invalid`、
-`.wf-radio__input`（视觉隐藏）、`.wf-radio__dot`（`::after` 画选中内环）、`.wf-radio__label`。
-
-**键盘与无障碍**：原生 radio，同组内方向键切换、Tab 只进入选中项（浏览器行为）；
-`label` 包裹提供可访问名称。省略 `label` 时必须以 `aria-label` 补名称。
-分组语义依赖 `name`（或外层 `role="radiogroup"` + `aria-label`）。
-
-**示例**
-
-```tsx
-<FormField label={t('book.visibility')}>
-  <Radio
-    name="visibility"
-    label={t('book.private')}
-    checked={v === 'private'}
-    onChange={() => setV('private')}
-  />
-  <Radio
-    name="visibility"
-    label={t('book.public')}
-    checked={v === 'public'}
-    onChange={() => setV('public')}
-  />
-</FormField>
-```
-
-### 3.20 SearchInput
+### 3.13 SearchInput
 
 **用途**：搜索框。前置图标（默认放大镜）+ 原生 `type="search"` 输入 + 可选清除按钮。
 受控 / 非受控都支持，转发 `ref`。
@@ -999,7 +729,7 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
 />
 ```
 
-### 3.21 Segmented
+### 3.14 Segmented
 
 **用途**：分段控件 / 标签切换。一组互斥 `<button>`，选中项带 `is-active`。
 泛型 `<T extends string>` 让 `value` / `onChange` 保持字面量联合类型。
@@ -1036,7 +766,7 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
 />
 ```
 
-### 3.22 Select
+### 3.15 Select
 
 **用途**：下拉选择。触发器是原生 `<button>`，面板 portal 到 body 并 `position: fixed`
 （逃逸 `overflow` 裁剪），支持禁用项、空态、隐藏 input 参与表单提交。
@@ -1082,50 +812,7 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 />
 ```
 
-### 3.23 Stepper
-
-**用途**：步进器（− / 值 / +）。受控数值控件，支持上下界、步长、小数精度与可编辑模式。
-
-**Props**
-
-| 名称        | 类型                        | 默认值                     | 说明                                     |
-| ----------- | --------------------------- | -------------------------- | ---------------------------------------- |
-| `value`     | `number`                    | 必填                       | 当前值（受控）                           |
-| `onChange`  | `(value: number) => void`   | 必填                       | 变化回调，回传已夹取到 `[min, max]` 的值 |
-| `min`       | `number`                    | `undefined`                | 下界（含）                               |
-| `max`       | `number`                    | `undefined`                | 上界（含）                               |
-| `step`      | `number`                    | `1`                        | 步长                                     |
-| `precision` | `number`                    | 按 `step` 推断小数位       | 小数精度，避免浮点误差                   |
-| `disabled`  | `boolean`                   | `false`                    | 禁用整个控件                             |
-| `editable`  | `boolean`                   | `false`                    | 值是否可点击进入编辑                     |
-| `format`    | `(value: number) => string` | `String(value)`            | 展示格式化                               |
-| `ariaLabel` | `string`                    | `undefined`                | 控件组无障碍名称                         |
-| `label`     | `string`                    | `t('common.stepperLabel')` | 用于拼接按钮文案（「数值增加」等）       |
-| `className` | `string`                    | `undefined`                | 合并到根节点                             |
-
-**关键类名**：`.wf-stepper`、`.wf-stepper.is-disabled`、`.wf-stepper__btn`、
-`.wf-stepper__value`（`.is-editable`）、`.wf-stepper__input`。
-
-**键盘与无障碍**：`role="group"` + `aria-label`；两个按钮是原生 `<button>`，
-文案为 `t('common.stepperDecrease', { label })` / `t('common.stepperIncrease', { label })`，
-到达 `min` / `max` 时对应按钮 `disabled`。`editable` 时值渲染为按钮，Enter / Space 进入编辑；
-编辑框 Enter 提交、Esc 取消、失焦提交（非法数值忽略）。**不响应 ↑↓ 键**。
-
-**示例**
-
-```tsx
-<Stepper
-  value={dailyGoal}
-  onChange={setDailyGoal}
-  min={100}
-  max={5000}
-  step={100}
-  format={(v) => `${v} ${t('unit.words')}`}
-  ariaLabel={t('settings.dailyGoal')}
-/>
-```
-
-### 3.24 Switch
+### 3.16 Switch
 
 **用途**：开关。原生 `<input type="checkbox" role="switch">` 视觉隐藏，自绘轨道 + 滑块。
 
@@ -1158,7 +845,7 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 />
 ```
 
-### 3.25 Tag
+### 3.17 Tag
 
 **用途**：标签。可关闭（`onClose` 渲染 × 按钮）、可带附加操作（`action`），5 种色调。
 
@@ -1188,7 +875,7 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 </Tag>
 ```
 
-### 3.26 Textarea
+### 3.18 Textarea
 
 **用途**：多行文本输入。透传原生 `<textarea>` 属性，默认 `resize: vertical`、最小高度 82px。
 
@@ -1219,7 +906,7 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 />
 ```
 
-### 3.27 Toast（`useToast` 钩子）
+### 3.19 Toast（`useToast` 钩子）
 
 **用途**：命令式轻提示。调用 `show(message)` 弹出一条短提示，默认 2.6s 后淡出。
 具体形态与约束见 [§4.1](#41-为什么-toast--tooltip-不是组件)。
@@ -1249,7 +936,7 @@ return (
 )
 ```
 
-### 3.28 Tooltip（`useTooltip` 钩子）
+### 3.20 Tooltip（`useTooltip` 钩子）
 
 **用途**：自绘 tooltip。hover / focus 显示、离开 / 失焦隐藏，带显示 / 隐藏延迟，
 浮层按视口空间四方向自动避让。`IconButton` 内部即用它。
@@ -1291,7 +978,7 @@ return (
 )
 ```
 
-### 3.29 Window
+### 3.21 Window
 
 **用途**：窗口框架。标题区 + 可滚动内容区 + 底部操作区（带左右渐隐分隔线）。
 `Modal` 的面板与欢迎页共用它，保证浮层与引导卡片外观一致；也可单独用作大卡片。
@@ -1335,9 +1022,96 @@ return (
 
 ---
 
+### 3.22 EntityStyleCard
+
+**用途**：通用「实体样式卡」壳，剧情卡 / 伏笔卡 / 设定档案卡共用。只承载**结构与公共视觉规格**（根布局、标题行、次级胶囊行、描述区、元信息区、底部胶囊区、浮层槽位），不含域业务逻辑。
+
+**Props**
+
+| 名称                   | 类型                                                              | 默认值      | 说明                                                |
+| ---------------------- | ----------------------------------------------------------------- | ----------- | --------------------------------------------------- |
+| `head`                 | `ReactNode`                                                       | 必填        | 标题行：标题 + 徽章，由调用方组合                   |
+| `actions`              | `ReactNode`                                                       | `undefined` | 操作按钮区，放入 `<IconButton size="sm">` 即可      |
+| `meta`                 | `ReactNode`                                                       | `undefined` | 次级胶囊行（如别名）                                |
+| `description`          | `ReactNode`                                                       | `undefined` | 描述区内容；行数由调用方类控制                      |
+| `descriptionClassName` | `string`                                                          | `undefined` | 追加到描述容器的类名（域内裁剪行数 / 缩进）         |
+| `info`                 | `ReactNode`                                                       | `undefined` | 元信息区（如伏笔位置行）                            |
+| `chips`                | `ReactNode`                                                       | `undefined` | 底部胶囊区内容（关系 / 实体）                       |
+| `chipsRef`             | `Ref<HTMLDivElement>`                                             | `undefined` | 底部胶囊容器 ref（`useChipOverflow` 测量用）        |
+| `chipsClassName`       | `string`                                                          | `undefined` | 追加到底部胶囊容器的类名                            |
+| `chipsProps`           | `Omit<HTMLAttributes<HTMLDivElement>, 'className' \| 'children'>` | `{}`        | 透传到底部胶囊容器的属性                            |
+| `popup`                | `ReactNode`                                                       | `undefined` | 浮层（如「+N」弹窗），portal 组件放这里不影响文档流 |
+| `active`               | `boolean`                                                         | `false`     | 选中态：根元素追加 `is-active`，由光晕底座接管      |
+| `readonly`             | `boolean`                                                         | `false`     | 只读变体：不暗示可点击（光标为默认箭头）            |
+| `compact`              | `boolean`                                                         | `false`     | 紧凑变体：只落类名钩子，尺寸由域内样式覆写          |
+| `className`            | `string`                                                          | `undefined` | 追加到根 `<article>` 的域语义类名                   |
+| `cardProps`            | `Omit<HTMLAttributes<HTMLElement>, 'className' \| 'children'>`    | `{}`        | 透传到根 `<article>` 的交互 / 无障碍属性            |
+
+**关键类名**：`.wf-card--halo.wf-entity-card`（根）、`.is-active`、`.wf-entity-card--readonly`、`.wf-entity-card--compact`、`.wf-entity-card__head/__actions/__meta/__desc/__info/__chips`。
+
+**键盘与无障碍**：根节点是 `<article>`，本身不带 `role` / `tabIndex` / 键盘处理；`active` 只加类，不写 `aria-selected`。整卡可点击时由调用方通过 `cardProps` 传 `role="button"`、`tabIndex={0}`、`onClick` / `onKeyDown`，或把点击语义交给内部控件。`actions` 内的删除按钮应传 `tone="danger"`，编辑 / 关联等用默认 tone。
+
+**样式边界**：`entity-card.css` 由 `styles/index.css:25` 全局引入，组件自身不 import；`.wf-entity-card.wf-card--halo` 取消通用卡 `max-height: 240px` 上限（`entity-card.css:41-45`），hover / 选中光晕复用 `.wf-card--halo`，无 `transform`。
+
+**示例**
+
+```tsx
+<EntityStyleCard
+  head={<h3 className="wf-entity-card__title">{name}</h3>}
+  actions={
+    <IconButton size="sm" label={t('action.edit')}>
+      <EditIcon />
+    </IconButton>
+  }
+  description={description}
+  chips={relations}
+  active={selected}
+/>
+```
+
+### 3.23 Splitter
+
+**用途**：分栏拖拽分隔条（命中区 8px；vertical → `cursor: col-resize`，horizontal → `row-resize`）。hover / 拖拽 / 键盘聚焦时中央浮现品牌色圆条；双击恢复默认值。
+
+**Props**
+
+| 名称             | 类型                                     | 默认值       | 说明                                                             |
+| ---------------- | ---------------------------------------- | ------------ | ---------------------------------------------------------------- |
+| `orientation`    | `'vertical' \| 'horizontal'`             | `'vertical'` | 分隔条方向，决定拖拽轴、光标与变体类名                           |
+| `side`           | `'left' \| 'right' \| 'top' \| 'bottom'` | 必填         | 目标所在侧；vertical 用 left / right，horizontal 用 top / bottom |
+| `targetRef`      | `RefObject<HTMLElement \| null>`         | 必填         | 被测量 / 被拖拽的目标栏或容器                                    |
+| `min`            | `number`                                 | 必填         | 受控值下限                                                       |
+| `max`            | `number`                                 | 必填         | 受控值上限                                                       |
+| `value`          | `number`                                 | 必填         | 当前值（受控）                                                   |
+| `defaultValue`   | `number`                                 | 必填         | 双击恢复的默认值                                                 |
+| `onChange`       | `(value: number) => void`                | 必填         | 值变更回调                                                       |
+| `hidden`         | `boolean`                                | `false`      | 隐藏（尺寸归零 + `pointer-events: none`）                        |
+| `unit`           | `'px' \| 'percent'`                      | `'px'`       | percent 时 100 = 容器在拖拽轴上的实测尺寸                        |
+| `keyboardStepPx` | `number`                                 | `16`         | 方向键每次调整的像素数（按 `unit` 折算）                         |
+
+**关键类名**：`.splitter`、`.splitter-left/right`（vertical）、`.splitter-horizontal`（horizontal）、`.is-hidden`、`.is-dragging`；拖拽期间 `body` 挂 `is-resizing`（上下分栏另挂 `is-resizing-y`）。
+
+**键盘与无障碍**：`role="separator"` + `aria-orientation` + `aria-valuemin/max/now`；percent 模式带 `aria-valuetext`。聚焦后左右键（vertical）/ 上下键（horizontal）调整，每步默认 16px，`clamp` 到 `[min, max]`；双击恢复 `defaultValue`。`hidden` 时 `aria-hidden`、`aria-disabled`、`tabIndex={-1}` 同时生效。
+
+**样式边界**：样式在 `styles/writer.css:64-133`（`.splitter*`），由 `pages/Writer.tsx:34` 全局引入，组件自身不 import；在写作页之外复用前需先把样式迁到组件层。
+
+**示例**
+
+```tsx
+<Splitter
+  side="right"
+  targetRef={rightPaneRef}
+  min={320}
+  max={720}
+  value={rightWidth}
+  defaultValue={600}
+  onChange={setRightWidth}
+/>
+```
+
 ## 4. 钩子形态：Toast 与 Tooltip
 
-29 项里有 2 项不是组件，而是**返回「节点 + 控制器」的钩子**：`useToast` 与 `useTooltip`。
+23 项里有 2 项不是组件，而是**返回「节点 + 控制器」的钩子**：`useToast` 与 `useTooltip`。
 这也是全库唯一偏离「组件 + props」形态的地方（`useTooltip` 自 `IconButton` 内复用，
 `useToast` 与 `pages/writer/chapters/useConfirm` 的命令式风格保持一致）。
 
@@ -1417,7 +1191,7 @@ const { anchorRef, anchorProps, tooltip } = useTooltip<HTMLButtonElement>({
 
 - 都经 `createPortal` 挂到 `document.body`，使用 `position: fixed` 与视口坐标；
   因此在 `transform` 祖先内也能正确定位。
-- 层序：Tooltip `990` < Modal / Drawer `1000` < Select / Combobox 面板 `1040` < Toast `1100`。
+- 层序：Tooltip `990` < Modal `1000` < Select / Combobox 面板 `1040` < Toast `1100`。
   Toast 永远在最上层，Tooltip 不会盖住 Modal——这是有意的：模态打开时不应再出现游离提示。
 - 动画只用 opacity（Toast）与「先隐藏后定位」（Tooltip 的 `is-ready`），不做位移 / 缩放（§8）。
 
@@ -1473,8 +1247,7 @@ const { anchorRef, anchorProps, tooltip } = useTooltip<HTMLButtonElement>({
 | Toast 不显示                           | 忘了渲染 `toast.node`              | 在 `return` 顶层渲染一次                                                |
 | Tooltip 不显示                         | 没挂 `anchorRef` 或 `content` 为空 | 同时渲染 `tooltip` 并挂 ref                                             |
 | 下拉菜单键盘进不去                     | `trigger` 传了纯文本               | 传 `Button` / `IconButton` 等可聚焦控件                                 |
-| 卡片点击无键盘支持                     | `Card interactive` 只加样式        | 用 `ListItem onClick` 或自行补 role / tabIndex                          |
-| 弹窗里 Tab 跑到背景                    | 用了 `Drawer`（无焦点陷阱）        | 改用 `Modal`                                                            |
+| 卡片点击无键盘支持                     | `Card interactive` 只加样式        | 把点击语义交给内部 `Button`，或自行补 role / tabIndex                   |
 | Select 面板被裁切                      | 自建绝对定位面板                   | 用组件自带 portal 面板，勿在下拉内套 `overflow: hidden`                 |
 | 表单错误读屏不播报                     | 未关联 `aria-describedby`          | 传 `htmlFor`，并在控件上用 `aria-describedby="&lt;id&gt;-message"` 关联 |
 | 输入框标签缺失                         | `Input` / `Textarea` 不带标签      | 用 `FormField` 包裹                                                     |
@@ -1486,11 +1259,14 @@ const { anchorRef, anchorProps, tooltip } = useTooltip<HTMLButtonElement>({
 
 ### 6.1 待办 / 已知偏差
 
-- `components/ui/index.ts` 顶部注释仍写「26 个组件」，应为 29 项（27 组件 + 2 钩子）。
-  本次仅记录，不改源码；下次触碰该文件时顺手修正。
-- `Drawer` 缺少 Tab 焦点陷阱，与 `Modal` 的模态语义不一致（§3.11 已标注）。
-- `Card interactive`、`ListItem active` 只提供视觉，不提供选择 / 按钮语义，需调用方补齐。
+- `components/ui/index.ts` 顶部注释写「已核对 23 个组件」，与实际 23 个模块数一致；严格口径为
+  21 个组件 + 2 个钩子，无需再改数字。
+- `Card interactive` 只提供视觉，不提供按钮语义，需调用方补齐。
+- 已移除的 Accordion / Avatar / Checkbox / Divider / Drawer / ListItem / Radio / Stepper 仍有
+  CSS 残留（`surface.css`、`display-extras.css`、`overlay.css`、`form.css`、`form-extras.css`），
+  组件层无 TSX 调用点；清理计划见 `design-language.md` §10。
+- `common` 命名空间的 `stepper*` 键为已移除 Stepper 的历史遗留，待清理。
 
 ---
 
-最后核对：2026-10-31
+最后核对：2026-11-09

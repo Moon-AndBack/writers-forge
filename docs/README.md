@@ -27,7 +27,8 @@
 | [`architecture/database.md`](./architecture/database.md)               | 连接单例、建表装配、迁移、种子、诊断                                  |
 | [`architecture/ipc-preload.md`](./architecture/ipc-preload.md)         | 148 个 IPC 通道、5 个主→渲染事件、preload 20 个命名空间               |
 | [`ui/window.md`](./ui/window.md)                                       | 窗口创建、尺寸持久化、材质（仅 acrylic / none）、自绘标题栏、宽度磁吸 |
-| [`ui/components.md`](./ui/components.md)                               | `components/ui/` 下 29 个通用组件与钩子的 API                         |
+| [`ui/components.md`](./ui/components.md)                               | `components/ui/` 下 23 项通用组件与钩子的 API                         |
+| [`ui/design-language.md`](./ui/design-language.md)                     | 表面层级、排版、间距、控件高度、选中态、三态、浮层、动效、例外与债务  |
 | [`ui/design-tokens.md`](./ui/design-tokens.md)                         | `styles/theme.css` 令牌体系与四套主题                                 |
 | [`conventions/i18n.md`](./conventions/i18n.md)                         | 19 个命名空间、zh-CN 真源、类型校验、双语同步                         |
 | [`specs/database/table-layers.md`](./specs/database/table-layers.md)   | 49 张表的分层规范                                                     |
@@ -46,8 +47,9 @@
 
 1. [`ui/window.md`](./ui/window.md) — 窗口外壳、标题栏与尺寸行为
 2. [`ui/components.md`](./ui/components.md) — 复用现有通用组件，避免平行实现
-3. [`ui/design-tokens.md`](./ui/design-tokens.md) — 令牌与主题的取用方式
-4. [`conventions/i18n.md`](./conventions/i18n.md) — 新文案的落位与双语同步
+3. [`ui/design-language.md`](./ui/design-language.md) — 表面层级、控件高度、选中态与三态等视觉规则
+4. [`ui/design-tokens.md`](./ui/design-tokens.md) — 令牌与主题的取用方式
+5. [`conventions/i18n.md`](./conventions/i18n.md) — 新文案的落位与双语同步
 
 **数据与集成**（改表结构、接外部服务）
 
@@ -70,6 +72,7 @@
 - **教学书种子须随功能同步**：新增功能或不兼容变更（数据结构、按钮位置 / 快捷键 / 流程变化）必须同步 `seedGuideBook/`（必要时含 `entitySeed.ts`），教学内容与实际交互不一致视同缺陷（§7.5）。
 - **DDL 变更须双写**：任何建表 / 改表都须同步 `src/main/database/diagnostics/expected.ts` 的结构清单与 [`specs/database/table-layers.md`](./specs/database/table-layers.md)，漏写会被结构自检判为问题。
 - **卡片 hover 禁用位移 / 缩放**：卡片类组件只允许颜色、描边、阴影变化，统一使用边缘光晕，`transition` 不得包含 `transform`（§8）。
+- **视觉系统按 §8 与 `design-language.md`**：颜色 / 圆角 / 阴影 / 时长 / 缓动只取 `theme.css` 令牌；控件高度统一 md 38 / sm 30 / lg 44；选中态、三态、浮层层级与例外登记按 [`ui/design-language.md`](./ui/design-language.md) 执行。
 
 ## 常用命令
 
@@ -99,4 +102,4 @@
 
 `build/` 整体不入库（见 `.gitignore`），需先执行 `npm run icon` 生成图标：否则开发态窗口图标缺失，`npm run build:win` 也会因缺少 `build/icon.ico` 失败。安装依赖、镜像配置与更多环境说明见仓库根目录 [`README.md`](../README.md)。
 
-最后核对：2026-10-31
+最后核对：2026-11-09
