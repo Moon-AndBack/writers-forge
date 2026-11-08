@@ -40,7 +40,10 @@ export interface ChapterWorkspace {
   handleToggleTrash: () => void
   /** 编辑头章节名落库（字段直映射）。 */
   handleRenameChapter: (id: number, patch: RenameChapterPatch) => void
-  /** 回收站还原 / 彻底删除 / 清空后：刷新章节树。 */
+  /**
+   * 回收站还原 / 彻底删除 / 清空后：刷新章节树。
+   * 页面层可传 `onTrashChanged` 追加刷新共用数据（共享卷池 / 挂卷大纲行）。
+   */
   handleTrashChanged: () => void
   /** 正文替换（单条 / 全部）后：刷新章节树。 */
   handleContentChanged: () => void
@@ -49,8 +52,10 @@ export interface ChapterWorkspace {
 /**
  * 章节域装配：章节树接库（仅章，卷读写已剥离至共享卷源）+ 选中 / 回收站态 +
  * 章节动作（左栏 hover / 标题栏按钮组 / 回收站共享）。
+ *
+ * `onTrashChanged` 为页面层附加刷新入口（回收站还原 / 物理删除同时影响共享卷池与挂卷大纲行）。
  */
-export function useChapterWorkspace(bookId: string): ChapterWorkspace {
+export function useChapterWorkspace(bookId: string, onTrashChanged?: () => void): ChapterWorkspace {
   // 章节树接库：仅章（卷读写已剥离至共享卷源）+ 状态切换（两态）+ 增删改 / pin / 重排（v2）。
   const {
     chapters,
@@ -157,10 +162,12 @@ export function useChapterWorkspace(bookId: string): ChapterWorkspace {
     [renameChapter]
   )
 
-  // 回收站还原 / 彻底删除 / 清空后：刷新章节树。
+  // 回收站还原 / 彻底删除 / 清空后：刷新章节树，并执行页面层附加刷新
+  // （卷行还原 / 物理删除会同时影响两侧卷列表与挂卷大纲行）。
   const handleTrashChanged = useCallback((): void => {
     void reload()
-  }, [reload])
+    onTrashChanged?.()
+  }, [reload, onTrashChanged])
 
   // 正文替换（单条 / 全部）后：刷新章节树（章名 / 排序等元信息随后端更新）。
   const handleContentChanged = useCallback((): void => {

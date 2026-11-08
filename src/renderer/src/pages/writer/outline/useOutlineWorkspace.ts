@@ -26,7 +26,7 @@ export interface OutlineWorkspace {
   reloadOutlineVolumes: () => Promise<void>
   /** 选中大纲编辑目标（左栏行点击 → 中栏编辑）。 */
   handleOpenOutlineTarget: (selection: OutlineSelection) => void
-  /** 大纲回收站还原 / 彻底删除 / 清空后：刷新条目树与可见卷。 */
+  /** 大纲回收站还原 / 彻底删除 / 清空后：刷新条目树、可见卷与章节侧共享卷列表。 */
   handleOutlineTrashChanged: () => void
   /** 大纲卷 / 分组重命名（走共享卷通道）：成功后重取大纲侧卷。 */
   handleRenameOutlineVolume: (id: number, title: string) => void
@@ -51,12 +51,14 @@ export interface OutlineWorkspace {
 /**
  * 大纲域装配：条目树接库 + 大纲卷源（含分组容器）+ 选中 / 动作回调。
  *
- * `renameVolume` / `deleteVolume` 为页面层共享卷源的写入口（稳定引用，来自 `useVolumes`）。
+ * `renameVolume` / `deleteVolume` 为页面层共享卷源的写入口（稳定引用，来自 `useVolumes`）；
+ * `reloadVolumeList` 为共享卷列表刷新入口（回收站还原 / 物理删除都会改变 `volumes` 表行）。
  */
 export function useOutlineWorkspace(
   bookId: string,
   renameVolume: (id: number, title: string) => Promise<void>,
-  deleteVolume: (id: number) => Promise<void>
+  deleteVolume: (id: number) => Promise<void>,
+  reloadVolumeList: () => Promise<void>
 ): OutlineWorkspace {
   // 大纲树接库：条目 CRUD（卷读写见 `useVolumes` / `useOutlineVolumes`）。
   const {
@@ -105,11 +107,13 @@ export function useOutlineWorkspace(
     setSelectedOutlineTarget(selection)
   }, [])
 
-  // 大纲回收站还原 / 彻底删除 / 清空后：刷新大纲条目树与可见卷（卷还原后需重取卷纲载体）。
+  // 大纲回收站还原 / 彻底删除 / 清空后：刷新大纲条目树与可见卷（卷还原后需重取卷纲载体），
+  // 并刷新章节侧共享卷列表（卷池两域共用：还原 / 物理删卷都会改变 `volumes` 表行）。
   const handleOutlineTrashChanged = useCallback((): void => {
     void reloadOutline()
     void reloadOutlineVolumes()
-  }, [reloadOutline, reloadOutlineVolumes])
+    void reloadVolumeList()
+  }, [reloadOutline, reloadOutlineVolumes, reloadVolumeList])
 
   // 大纲卷 / 分组重命名（走共享卷通道）：成功后重取大纲侧卷（编号 / 顺序可能变化）。
   const handleRenameOutlineVolume = useCallback(

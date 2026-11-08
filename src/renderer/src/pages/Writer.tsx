@@ -77,29 +77,10 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
 
   // 共享卷源：章节 / 大纲两域唯一卷读写入口（两页同源渲染，写后同步可见）。
   // 读章节页可见卷（`normal`+`custom`）；大纲页另经 `useOutlineVolumes` 取（含 `group`、排除 `custom`）。
-  const { volumes, createVolume, renameVolume, deleteVolume } = useVolumes(bookId ?? '')
-
-  // 章节域装配（章树 + 选中 / 回收站态 + 章节动作）：集中于 useChapterWorkspace。
-  const {
-    chapters,
-    setStatus,
-    trashOpen,
-    activeChapterId,
-    activeChapter,
-    isVolumeFull,
-    handleSelectChapter,
-    handleCreateChapter,
-    handleDeleteChapter,
-    handleSetChapterPin,
-    handleReorderChapter,
-    handleToggleTrash,
-    handleRenameChapter,
-    handleTrashChanged,
-    handleContentChanged
-  } = useChapterWorkspace(bookId ?? '')
+  const { volumes, createVolume, renameVolume, deleteVolume, reload } = useVolumes(bookId ?? '')
 
   // 大纲域装配（条目树 + 大纲卷源 + 选中派生 + 大纲动作）：集中于 useOutlineWorkspace；
-  // 卷写入口沿用页面层共享卷源（`renameVolume` / `deleteVolume`）。
+  // 卷写入口沿用页面层共享卷源；回收站操作另刷新共享卷列表（`reload`）。
   const {
     outlineItems,
     outlineVolumes,
@@ -117,7 +98,26 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
     handleRenameOutlineItem,
     handleDeleteOutlineChapter,
     handleReorderOutlineChapter
-  } = useOutlineWorkspace(bookId ?? '', renameVolume, deleteVolume)
+  } = useOutlineWorkspace(bookId ?? '', renameVolume, deleteVolume, reload)
+
+  // 章节域装配（章树 + 选中 / 回收站态 + 章节动作）：集中于 useChapterWorkspace；回收站回调另同步卷池。
+  const {
+    chapters,
+    setStatus,
+    trashOpen,
+    activeChapterId,
+    activeChapter,
+    isVolumeFull,
+    handleSelectChapter,
+    handleCreateChapter,
+    handleDeleteChapter,
+    handleSetChapterPin,
+    handleReorderChapter,
+    handleToggleTrash,
+    handleRenameChapter,
+    handleTrashChanged,
+    handleContentChanged
+  } = useChapterWorkspace(bookId ?? '', handleOutlineTrashChanged)
 
   // 剧情树接库：剧情线 / 场景节点 + 增删改（仅 CRUD，无拖拽）。
   // 装配态（数据 + 选中 + 回调）集中于 usePlotWorkspace，避免页面层堆积。
