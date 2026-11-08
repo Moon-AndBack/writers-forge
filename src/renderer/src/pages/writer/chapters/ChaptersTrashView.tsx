@@ -1,9 +1,15 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TrashListView } from '../../../components/trash/TrashListView'
-import type { TrashListViewMessages, TrashRow } from '../../../components/trash/TrashListView'
+import type {
+  TrashListViewMessages,
+  TrashRow,
+  TrashSelection
+} from '../../../components/trash/TrashListView'
 import { useTrashData } from '../useTrashData'
 import { useChapterLabels } from './useChapterLabels'
 import { useConfirm } from './useConfirm'
+import { ChapterTrashDetail } from './ChapterTrashDetail'
 import {
   useForeshadowDeleteImpact,
   withDeleteImpactWarning
@@ -50,6 +56,15 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
     onChanged,
     logger: 'ChaptersTrashView'
   })
+  // 选中行（卷 / 章）；列表刷新后行已不在回收站时自动失效，不残留旧详情。
+  const [selection, setSelection] = useState<TrashSelection | null>(null)
+  const activeSelection =
+    selection !== null &&
+    (selection.kind === 'volume'
+      ? content.volumes.some((row) => row.id === selection.id)
+      : content.chapters.some((row) => row.id === selection.id))
+      ? selection
+      : null
 
   const messages: TrashListViewMessages = {
     title: t('trash.title'),
@@ -144,6 +159,18 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
       onRestoreItem={requestRestoreChapter}
       onPurgeItem={requestPurgeChapter}
       onPurgeAll={requestPurgeAll}
+      selected={activeSelection}
+      onSelect={(next) => setSelection(next)}
+      detail={
+        activeSelection !== null ? (
+          <ChapterTrashDetail
+            key={`${activeSelection.kind}-${activeSelection.id}`}
+            selection={activeSelection}
+            content={content}
+          />
+        ) : undefined
+      }
+      detailEmpty={<div className="trash-detail__empty">{t('trash.detail.empty')}</div>}
       footer={confirm.node}
     />
   )

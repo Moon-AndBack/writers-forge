@@ -139,6 +139,11 @@ const foreshadow = {
     groupItems: '伏笔',
     restoreItem: '还原伏笔',
     purgeItem: '彻底删除伏笔',
+    detail: {
+      createdAt: '创建时间 {{time}}',
+      updatedAt: '更新时间 {{time}}',
+      noExcerpt: '（无原文摘录）'
+    },
     dialog: {
       purge: {
         title: '彻底删除伏笔',

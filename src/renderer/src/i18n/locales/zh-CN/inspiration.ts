@@ -60,6 +60,10 @@ const inspiration = {
     groupItems: '灵感',
     restoreItem: '还原灵感',
     purgeItem: '彻底删除灵感',
+    detail: {
+      createdAt: '创建时间 {{time}}',
+      updatedAt: '更新时间 {{time}}'
+    },
     dialog: {
       purge: {
         title: '彻底删除灵感',

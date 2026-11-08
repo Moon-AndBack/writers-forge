@@ -32,3 +32,16 @@ export function formatRelativeTime(value: string | null, now: number = Date.now(
   if (diff < 30 * DAY) return `${Math.floor(diff / DAY)} 天前`
   return normalized.slice(0, 10)
 }
+
+/**
+ * 绝对时间：把后端 SQLite UTC 文本格式化为当前语言的本地日期时间。
+ * 与 `formatRelativeTime` 共用「补 `T` / `Z` 按 UTC 解析」口径；非法 / 空值回退空串。
+ * `locale` 传 `resolveLocale()` 规整后的档位即可。
+ */
+export function formatDateTime(value: string | null, locale: string): string {
+  if (!value) return ''
+  const normalized = value.includes('T') ? value : `${value.replace(' ', 'T')}Z`
+  const time = Date.parse(normalized)
+  if (Number.isNaN(time)) return ''
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(time)
+}

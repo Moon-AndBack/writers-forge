@@ -24,6 +24,7 @@ import type {
   ChapterStatus,
   CreateVolumeInput,
   RenameChapterPatch,
+  VolumeKind,
   VolumeRow
 } from '../../../../../main/database/chapters'
 
@@ -33,6 +34,7 @@ export type {
   ChapterStatus,
   CreateVolumeInput,
   RenameChapterPatch,
+  VolumeKind,
   VolumeRow
 }
 
@@ -184,6 +186,16 @@ export function volumeLabel(
 export const STATUS_LABELS: Record<ChapterStatus, 'status.draft' | 'status.done'> = {
   draft: 'status.draft',
   done: 'status.done'
+}
+
+/** 卷类型标签 key（三态）→ `chapters.trash.detail.volumeKind*`（回收站详情共用）。 */
+export const VOLUME_KIND_LABELS: Record<
+  VolumeKind,
+  'trash.detail.volumeKindNormal' | 'trash.detail.volumeKindCustom' | 'trash.detail.volumeKindGroup'
+> = {
+  normal: 'trash.detail.volumeKindNormal',
+  custom: 'trash.detail.volumeKindCustom',
+  group: 'trash.detail.volumeKindGroup'
 }
 
 /**

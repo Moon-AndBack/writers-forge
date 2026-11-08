@@ -1,6 +1,11 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TrashListView } from '../../../components/trash/TrashListView'
-import type { TrashListViewMessages, TrashRow } from '../../../components/trash/TrashListView'
+import type {
+  TrashListViewMessages,
+  TrashRow,
+  TrashSelection
+} from '../../../components/trash/TrashListView'
 import { useTrashData } from '../useTrashData'
 import { useConfirm } from '../chapters/useConfirm'
 import { useChapterLabels } from '../chapters/useChapterLabels'
@@ -9,6 +14,7 @@ import {
   withDeleteImpactWarning
 } from '../foreshadow/useForeshadowDeleteImpact'
 import { outlineItemLabel } from './outlineTree'
+import { OutlineTrashDetail } from './OutlineTrashDetail'
 
 /** 回收站内容：**直接从 preload `Api` 派生**，消除渲染层平行定义。 */
 type DeletedContent = Awaited<ReturnType<Window['api']['outline']['listDeleted']>>
@@ -54,6 +60,15 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
     onChanged,
     logger: 'OutlineTrashView'
   })
+  // 选中行（卷 / 条目）；列表刷新后行已不在回收站时自动失效，不残留旧详情。
+  const [selection, setSelection] = useState<TrashSelection | null>(null)
+  const activeSelection =
+    selection !== null &&
+    (selection.kind === 'volume'
+      ? content.volumes.some((row) => row.id === selection.id)
+      : content.items.some((row) => row.id === selection.id))
+      ? selection
+      : null
 
   const messages: TrashListViewMessages = {
     title: t('trash.title'),
@@ -152,6 +167,14 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
       onRestoreItem={requestRestoreItem}
       onPurgeItem={requestPurgeItem}
       onPurgeAll={requestPurgeAll}
+      selected={activeSelection}
+      onSelect={(next) => setSelection(next)}
+      detail={
+        activeSelection !== null ? (
+          <OutlineTrashDetail selection={activeSelection} content={content} />
+        ) : undefined
+      }
+      detailEmpty={<div className="trash-detail__empty">{t('trash.detail.empty')}</div>}
       footer={confirm.node}
     />
   )

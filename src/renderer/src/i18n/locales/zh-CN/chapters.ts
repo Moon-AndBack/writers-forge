@@ -147,7 +147,27 @@ const chapters = {
     restoreVolume: '还原卷',
     purgeVolume: '彻底删除卷',
     restoreChapter: '还原章节',
-    purgeChapter: '彻底删除章节'
+    purgeChapter: '彻底删除章节',
+    detail: {
+      empty: '选择左侧条目查看详情',
+      deletedAt: '删除时间 {{time}}',
+      wordCount: '{{value}} 字',
+      status: '状态 {{status}}',
+      originalVolume: '原卷 {{name}}',
+      volumeInTrash: '原卷也在回收站',
+      loading: '正在加载正文…',
+      loadFailed: '正文加载失败',
+      retry: '重试',
+      noContent: '（无正文）',
+      volumeKind: '类型 {{kind}}',
+      volumeKindNormal: '正文卷',
+      volumeKindCustom: '自定义卷',
+      volumeKindGroup: '分组',
+      deletedChapters: '含 {{value}} 个回收站章节',
+      deletedItems: '含 {{value}} 个回收站条目',
+      standalone: '独立条目',
+      untitledVolume: '未命名卷'
+    }
   },
   newVolumeDialog: {
     title: '新建卷',

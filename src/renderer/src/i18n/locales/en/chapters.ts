@@ -137,7 +137,27 @@ const chapters = {
     restoreVolume: 'Restore volume',
     purgeVolume: 'Delete volume permanently',
     restoreChapter: 'Restore chapter',
-    purgeChapter: 'Delete chapter permanently'
+    purgeChapter: 'Delete chapter permanently',
+    detail: {
+      empty: 'Select an item on the left to view details',
+      deletedAt: 'Deleted {{time}}',
+      wordCount: '{{value}} chars',
+      status: 'Status {{status}}',
+      originalVolume: 'Volume {{name}}',
+      volumeInTrash: 'The original volume is also in the trash',
+      loading: 'Loading content…',
+      loadFailed: 'Failed to load content',
+      retry: 'Retry',
+      noContent: '(No content)',
+      volumeKind: 'Type {{kind}}',
+      volumeKindNormal: 'Body volume',
+      volumeKindCustom: 'Custom volume',
+      volumeKindGroup: 'Group',
+      deletedChapters: '{{value}} chapters in trash',
+      deletedItems: '{{value}} entries in trash',
+      standalone: 'Standalone entry',
+      untitledVolume: 'Untitled volume'
+    }
   },
   newVolumeDialog: {
     title: 'New Volume',

@@ -59,6 +59,10 @@ const inspiration = {
     groupItems: 'Inspirations',
     restoreItem: 'Restore inspiration',
     purgeItem: 'Delete inspiration permanently',
+    detail: {
+      createdAt: 'Created {{time}}',
+      updatedAt: 'Updated {{time}}'
+    },
     dialog: {
       purge: {
         title: 'Delete inspiration permanently',

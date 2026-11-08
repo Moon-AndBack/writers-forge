@@ -69,7 +69,9 @@
   gap: 10px;
   padding: 8px 10px;
   border-radius: var(--r-xs);
-  transition: background 0.1s var(--ease);
+  transition:
+    background 0.1s var(--ease),
+    box-shadow 0.1s var(--ease);
 }
 
 .trash-row:hover {
@@ -106,6 +108,168 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ---------- 列表 + 详情（可选分栏） ----------
+   仅在调用方传入详情区时启用：列表固定宽度（可轻微收缩），详情占剩余宽度并
+   内部滚动。窄中栏下列表最低 140px、详情最低 160px，避免详情被挤成 0 宽；
+   总宽不足时由中栏自身滚动兜底，不把任一侧压没。 */
+.trash-view--split .trash-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.trash-view--split .trash-scroll {
+  flex: 0 1 clamp(170px, 30%, 260px);
+  min-width: 140px;
+  border-right: 1px solid var(--line);
+}
+
+.trash-view--split .trash-inner {
+  padding: 0 12px 32px;
+}
+
+.trash-detail {
+  flex: 1 1 0;
+  min-width: 160px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding: 14px 20px 32px;
+}
+
+/* 选中行：仅颜色 / 描边 / 阴影反馈，禁止位移或缩放（AGENTS §8）。 */
+.trash-row.is-selectable {
+  cursor: pointer;
+}
+
+.trash-row.is-selectable:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--brand);
+}
+
+.trash-row.is-selected,
+.trash-row.is-selected:hover {
+  background: color-mix(in srgb, var(--brand) 12%, var(--soft-hover-solid));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent);
+}
+
+.trash-row.is-selected:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--brand);
+}
+
+/* ---------- 详情区 ---------- */
+.trash-detail__empty {
+  display: flex;
+  min-height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  text-align: center;
+  color: var(--text-mute);
+}
+
+.trash-detail__head {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.trash-detail__title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.trash-detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-mute);
+}
+
+/* 父项（原卷 / 分组）也在回收站：中性提示，不用危险色。 */
+.trash-detail__notice {
+  margin-top: 10px;
+  padding: 6px 9px;
+  border: 1px solid color-mix(in srgb, var(--brand) 35%, transparent);
+  border-radius: var(--r-xs);
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* 章节正文：纯文本段落，字号 / 行高 / 首行缩进跟随正文排版令牌
+   （思路同右栏大纲 `.rp-outline`，但使用本域类名，不依赖右栏作用域）。 */
+.trash-detail__body {
+  margin-top: 14px;
+  font-family: var(--doc-font);
+  font-size: calc(16px * var(--doc-zoom));
+  line-height: var(--doc-line);
+  letter-spacing: var(--doc-letter);
+  color: var(--text-dim);
+  overflow-wrap: break-word;
+}
+
+.trash-detail__para {
+  margin: 0 0 0.7em;
+  text-indent: 2em;
+  white-space: pre-wrap;
+}
+
+/* 空段落保留一个行高，维持原文空行 / 块序。 */
+.trash-detail__para:empty::before {
+  content: '\00a0';
+}
+
+.trash-detail__para:last-child {
+  margin-bottom: 0;
+}
+
+.trash-detail__hint {
+  padding: 28px 0;
+  font-size: 11.5px;
+  line-height: 1.7;
+  text-align: center;
+  color: var(--text-mute);
+}
+
+.trash-detail__retry {
+  margin-top: 10px;
+}
+
+/* 大纲条目正文：复用 ReadonlyRichText（`.rp-read`），仅覆盖本详情区的内衬与排版。 */
+.trash-detail .trash-detail__rich {
+  flex: none;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.trash-detail .trash-detail__rich .ProseMirror {
+  font-size: calc(16px * var(--doc-zoom));
+  line-height: var(--doc-line);
+}
+
+.trash-detail .trash-detail__rich .ProseMirror p {
+  text-indent: 2em;
+}
+
+/* 列表 / 引用 / 表格内段落只承担换行，复位首行缩进。 */
+.trash-detail .trash-detail__rich .ProseMirror li p,
+.trash-detail .trash-detail__rich .ProseMirror blockquote p,
+.trash-detail .trash-detail__rich .ProseMirror th p,
+.trash-detail .trash-detail__rich .ProseMirror td p {
+  text-indent: 0;
 }
 
 .trash-row-actions {

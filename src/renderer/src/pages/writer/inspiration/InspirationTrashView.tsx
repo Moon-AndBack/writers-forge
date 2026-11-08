@@ -1,8 +1,14 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TrashListView } from '../../../components/trash/TrashListView'
-import type { TrashListViewMessages, TrashRow } from '../../../components/trash/TrashListView'
+import type {
+  TrashListViewMessages,
+  TrashRow,
+  TrashSelection
+} from '../../../components/trash/TrashListView'
 import { useTrashData } from '../useTrashData'
 import { useConfirm } from '../chapters/useConfirm'
+import { InspirationTrashDetail } from './InspirationTrashDetail'
 
 /** 回收站内容：**直接从 preload `Api` 派生**，消除渲染层平行定义。 */
 type DeletedContent = Awaited<ReturnType<Window['api']['inspiration']['listDeleted']>>
@@ -45,6 +51,16 @@ export default function InspirationTrashView({ bookId, onChanged }: InspirationT
     onChanged,
     logger: 'InspirationTrashView'
   })
+  // 选中行；列表刷新后行已不在回收站时由 `activeSelection` 自动失效，不残留旧详情。
+  const [selection, setSelection] = useState<TrashSelection | null>(null)
+  const activeSelection =
+    selection !== null &&
+    selection.kind === 'item' &&
+    content.some((row) => row.id === selection.id)
+      ? selection
+      : null
+  const activeRow =
+    activeSelection === null ? null : (content.find((row) => row.id === activeSelection.id) ?? null)
 
   const messages: TrashListViewMessages = {
     title: t('trash.title'),
@@ -111,6 +127,14 @@ export default function InspirationTrashView({ bookId, onChanged }: InspirationT
       onRestoreItem={requestRestore}
       onPurgeItem={requestPurge}
       onPurgeAll={requestPurgeAll}
+      selected={activeSelection}
+      onSelect={(next) => setSelection(next)}
+      detail={
+        activeRow === null ? undefined : (
+          <InspirationTrashDetail key={activeRow.id} row={activeRow} />
+        )
+      }
+      detailEmpty={<div className="trash-detail__empty">{tChapters('trash.detail.empty')}</div>}
       footer={confirm.node}
     />
   )

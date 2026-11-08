@@ -129,6 +129,11 @@ const foreshadow = {
     groupItems: 'Foreshadowing',
     restoreItem: 'Restore foreshadowing',
     purgeItem: 'Delete foreshadowing permanently',
+    detail: {
+      createdAt: 'Created {{time}}',
+      updatedAt: 'Updated {{time}}',
+      noExcerpt: '(No source excerpt)'
+    },
     dialog: {
       purge: {
         title: 'Delete foreshadowing permanently',
