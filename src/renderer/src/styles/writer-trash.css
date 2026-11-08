@@ -114,23 +114,50 @@
 }
 
 /* ---------- 列表 + 详情（可选分栏） ----------
-   仅在调用方传入详情区时启用：列表固定宽度（可轻微收缩），详情占剩余宽度并
-   内部滚动。窄中栏下列表最低 200px、详情最低 160px，避免详情被挤成 0 宽；
-   总宽不足时由中栏自身滚动兜底，不把任一侧压没。 */
+   仅有数据且传入详情区时启用：列表卡 + 8px 分隔条 + 详情卡。列表宽度由
+   `TrashSplitLayout` 经 `--trash-list-width` 下发（拖拽后持久化），CSS 只负责
+   卡片外壳与窄中栏兜底：列表 max-width 让出「分隔条 8 + 详情下限 160 + 余量 8」，
+   详情 flex 吃掉剩余宽度；外框 overflow:hidden 保证 1241px 窗口下详情不被挤没。 */
 .trash-view--split .trash-body {
   flex: 1;
   min-height: 0;
   display: flex;
+  overflow: hidden;
+  padding: 20px clamp(12px, 6%, 28px) 24px;
 }
 
-.trash-view--split .trash-scroll {
-  flex: 0 1 clamp(200px, 34%, 280px);
-  min-width: 200px;
-  border-right: 1px solid var(--line);
+/* 列表卡：与详情卡同款外壳（--soft-solid + --line 细描边 + --r-lg）。
+   box-shadow 取最轻一档 --sh-xs，在软底上仅压出卡片边界，不抢详情卡视觉。 */
+.trash-list-card {
+  flex: none;
+  width: var(--trash-list-width, 260px);
+  max-width: calc(100% - 176px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-xs);
 }
 
+/* 分栏内衬：列表卡内滚动区左右 10px、底部 16px；上缘由 head 的 12px 承担，
+   与详情卡的 14 / 16 内衬对齐。 */
 .trash-view--split .trash-inner {
-  padding: 0 12px 32px;
+  padding: 0 10px 16px;
+}
+
+/* 分栏头部收进列表卡：12 / 8 内衬；列表卡最窄 200px 时标题 / 计数 / 清空
+   换行，清空按钮靠右落在第二行。 */
+.trash-view--split .trash-head {
+  padding: 12px 12px 8px;
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.trash-view--split .trash-head > button {
+  margin-left: auto;
 }
 
 /* 详情卡底座：与右栏详情卡同口径（--soft-solid + --line 细描边 + --r-lg + 14/16 内衬）。 */
@@ -175,6 +202,29 @@
 /* 选中行 hover 回退中性悬停底，避免品牌底与悬停底叠加成第三种颜色。 */
 .trash-row.is-selected:hover {
   background: var(--soft-hover-solid);
+}
+
+/* ---------- 分栏列表卡上的行状态 ----------
+   卡片底是 --soft-solid（亮色 6%），沿用 --soft-hover-solid（亮色同为 6%）
+   会完全不可见，故分栏内改用「软底上的控件」令牌 --control-on-soft
+   （亮色 10% / 暗色 14%，与 form.css / clean-words.css 同口径）。
+   单列不在卡片内，保持上方全局规则原视觉。 */
+.trash-view--split .trash-row:hover {
+  background: var(--control-on-soft);
+}
+
+.trash-view--split .trash-row.is-selected {
+  background: color-mix(in srgb, var(--brand) 12%, var(--soft-solid));
+}
+
+/* 选中行 hover 回退中性悬停底，避免品牌底与悬停底叠加成第三种颜色。 */
+.trash-view--split .trash-row.is-selected:hover {
+  background: var(--control-on-soft);
+}
+
+/* 行尾操作组悬浮在行右缘，底色同步换软底控件令牌，避免与行 hover 分层。 */
+.trash-view--split .trash-row-actions {
+  background: var(--control-on-soft);
 }
 
 /* ---------- 详情区 ---------- */

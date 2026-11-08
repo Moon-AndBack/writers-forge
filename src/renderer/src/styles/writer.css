@@ -384,7 +384,9 @@ body.is-resizing .splitter {
   .rightpane {
     display: none;
   }
-  .splitter.splitter-right {
+  /* 仅隐藏三栏外壳的直接子级分隔条；回收站等嵌套分栏拥有自己的 8px 分隔条，
+     不受三栏断点影响（否则窄窗下回收站分隔条会被误隐藏）。 */
+  .workspace > .splitter.splitter-right {
     display: none;
   }
 }
@@ -393,7 +395,8 @@ body.is-resizing .splitter {
   .sidepane {
     display: none;
   }
-  .splitter.splitter-left {
+  /* 同上：只命中 `.workspace` 的直接子级，回收站分隔条保持可用。 */
+  .workspace > .splitter.splitter-left {
     display: none;
   }
   .writer-view {

@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 
 /**
- * 分隔条拖拽期间挂在 `document.body` 上的类（见 `pages/writer/useSplitter.ts`）。
+ * 分隔条拖拽期间挂在 `document.body` 上的类（见 `components/ui/useSplitter.ts`）。
  * 左右分栏与上下分栏都会挂它（上下分栏另加 `is-resizing-y`），此处只要「是否在拖拽」。
  */
 const RESIZING_CLASS = 'is-resizing'

@@ -1,18 +1,19 @@
 /**
- * 回收站列表（章节 / 大纲共用，§9 唯一实现）。
+ * 回收站列表（章节 / 大纲 / 伏笔 / 灵感共用，§9 唯一实现）。
  *
  * 纯展示：不依赖 i18n，文案由调用方经 `t()` 取用后传入（对齐 `EmptyState` 约定）。
- * 旧单列路径（不传新增的可选 props）的 DOM 结构与 `.trash-*` 类名与改造前逐字一致，
  * 样式直接复用 `styles/writer-trash.css`。
  *
- * 「列表 + 详情」为可选能力：不传 `selected` / `onSelect` / `detail` / `detailEmpty`
- * 时保持旧单列行为与 DOM 完全不变（伏笔 / 灵感回收站即此路径）。
+ * 「列表 + 详情」为可选能力：传入 `detail` / `detailEmpty` 且存在数据时，经
+ * `TrashSplitLayout` 渲染「列表卡 + 分隔条 + 详情卡」两栏（宽度可拖拽并持久化）；
+ * 未传详情区或首帧 / 空态 / 错误态时保持单列，head + 列表的 DOM 与改造前一致。
  */
 import type { KeyboardEvent, ReactElement, ReactNode } from 'react'
 import { Button, IconButton } from '../ui'
 import { RestoreIcon, TrashIcon } from '../icons'
 import { EmptyState } from '../EmptyState'
 import { LoadErrorState } from '../LoadErrorState'
+import { TrashSplitLayout } from './TrashSplitLayout'
 
 /** 回收站行：`name` 为主名，`sub` 为次要行（如原归属卷名）。 */
 export interface TrashRow {
@@ -296,14 +297,21 @@ export function TrashListView({
 
   return (
     <div className={split ? 'trash-view trash-view--split' : 'trash-view'}>
-      {head}
       {split ? (
-        <div className="trash-body">
-          {list}
-          <aside className="trash-detail">{detail ?? detailEmpty}</aside>
-        </div>
+        <TrashSplitLayout
+          list={
+            <>
+              {head}
+              {list}
+            </>
+          }
+          detail={detail ?? detailEmpty}
+        />
       ) : (
-        list
+        <>
+          {head}
+          {list}
+        </>
       )}
       {footer}
     </div>

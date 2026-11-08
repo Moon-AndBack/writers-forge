@@ -10,7 +10,7 @@ import {
   SIDE_MAX,
   SIDE_MIN
 } from '../../shell/workspaceWidths'
-import Splitter from './Splitter'
+import Splitter from '../../components/ui/Splitter'
 
 /* 分隔条 clamp 边界与默认宽集中在 `shell/workspaceWidths`（writer.css 的 px 兜底
    与之同名同值）：宽度经 `useWorkspaceWidths` 落库到 settings，重启后恢复。 */
