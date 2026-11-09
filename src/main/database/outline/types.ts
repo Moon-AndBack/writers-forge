@@ -123,9 +123,17 @@ export interface DeletedOutlineItemRow extends OutlineItemRow {
   volumeTitle: string | null
 }
 
-/** 大纲回收站内容：被软删的卷与条目（条目含原归属卷名）。 */
+/**
+ * 回收站中的卷行：附带该卷卷纲行（`scope='volume'`）的正文 JSON。
+ * 卷纲行缺失（旧数据 / 异常）或空正文时为 `null`。
+ */
+export interface DeletedOutlineVolumeRow extends VolumeRow {
+  contentJson: string | null
+}
+
+/** 大纲回收站内容：被软删的卷与条目（卷含卷纲正文，条目含原归属卷名）。 */
 export interface DeletedOutlineContent {
-  volumes: VolumeRow[]
+  volumes: DeletedOutlineVolumeRow[]
   items: DeletedOutlineItemRow[]
 }
 

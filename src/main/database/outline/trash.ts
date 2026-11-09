@@ -24,7 +24,12 @@ const TRASH_VOLUME_ORDER_SQL = `CASE kind WHEN 'group' THEN 0 WHEN 'normal' THEN
 
 /* ---------- 回收站：查询 ---------- */
 
-/** 列出某书回收站内容：软删的卷与条目（条目含原归属卷名段 `volumeTitle`）。 */
+/**
+ * 列出某书回收站内容：软删的卷与条目（卷含卷纲正文，条目含原归属卷名段 `volumeTitle`）。
+ *
+ * 卷纲正文：一次批量取出全部软删卷的 `scope='volume'` 行，避免逐卷 N+1；
+ * 卷纲行缺失（旧数据 / 异常）时该卷 `contentJson` 为 `null`。
+ */
 export function listDeletedOutline(bookId: string): DeletedOutlineContent {
   const db = getDb()
   const volumes = (
@@ -36,6 +41,22 @@ export function listDeletedOutline(bookId: string): DeletedOutlineContent {
       )
       .all(bookId) as VolumeDbRow[]
   ).map(toVolume)
+
+  const volumeContent = new Map<number, string | null>()
+  if (volumes.length > 0) {
+    const placeholders = volumes.map(() => '?').join(', ')
+    const rows = db
+      .prepare(
+        `SELECT volume_id AS volumeId, content_json AS contentJson
+         FROM outline_items
+         WHERE volume_id IN (${placeholders}) AND scope = 'volume' AND deleted_at IS NOT NULL`
+      )
+      .all(...volumes.map((volume) => volume.id)) as Array<{
+      volumeId: number
+      contentJson: string | null
+    }>
+    for (const row of rows) volumeContent.set(row.volumeId, row.contentJson)
+  }
 
   const items = (
     db
@@ -49,7 +70,13 @@ export function listDeletedOutline(bookId: string): DeletedOutlineContent {
       .all(bookId) as Array<OutlineItemDbRow & { volumeTitle: string | null }>
   ).map((row) => ({ ...toOutlineItem(row), volumeTitle: row.volumeTitle }))
 
-  return { volumes, items }
+  return {
+    volumes: volumes.map((volume) => ({
+      ...volume,
+      contentJson: volumeContent.get(volume.id) ?? null
+    })),
+    items
+  }
 }
 
 /* ---------- 回收站：还原 ---------- */

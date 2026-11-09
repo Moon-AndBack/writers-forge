@@ -5,7 +5,8 @@
  * `ReadonlyRichText` 只读渲染，无需额外 IPC 与二次加载。
  * 这里刻意不使用 `EntityReadonlyRichText`：回收站预览不需要设定实体高亮，
  * 避免为整篇正文建立实体词表匹配的开销。
- * 卷 / 分组详情的卷纲正文（`scope='volume'` 行）本批不做，仅展示元信息。
+ * 卷 / 分组详情的卷纲正文（`scope='volume'` 行）同样随 `outline:listDeleted`
+ * 的卷对象 `contentJson` 返回，与条目详情共用同一只读渲染链路。
  */
 import type { ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -20,13 +21,13 @@ import { formatDateTime } from '../../../lib/relativeTime'
 import type {
   DeletedOutlineContent,
   DeletedOutlineItemRow,
-  OutlineVolumeRow
+  DeletedOutlineVolumeRow
 } from '../../../../../main/database/outline'
 
 export interface OutlineTrashDetailProps {
   /** 当前选中项（卷 / 条目）。 */
   selection: TrashSelection
-  /** 回收站内容（条目已含 `contentJson` 与原归属卷名）。 */
+  /** 回收站内容（卷含卷纲正文，条目已含 `contentJson` 与原归属卷名）。 */
   content: DeletedOutlineContent
 }
 
@@ -46,12 +47,12 @@ export function OutlineTrashDetail({ selection, content }: OutlineTrashDetailPro
   return <OutlineItemDetail item={item} content={content} />
 }
 
-/** 卷 / 分组详情：名称、kind、其下软删条目数、删除时间（不含卷纲正文）。 */
+/** 卷 / 分组详情：名称、kind、其下软删条目数、删除时间 + 只读卷纲正文。 */
 function OutlineVolumeDetail({
   volume,
   itemCount
 }: {
-  volume: OutlineVolumeRow
+  volume: DeletedOutlineVolumeRow
   itemCount: number
 }): ReactElement {
   const { t, i18n } = useTranslation('chapters')
@@ -71,6 +72,14 @@ function OutlineVolumeDetail({
           <span>{t('trash.detail.deletedAt', { time: deletedAt })}</span>
         </div>
       </header>
+
+      <div className="trash-detail__body">
+        <ReadonlyRichText
+          json={volume.contentJson}
+          emptyText={t('trash.detail.noContent')}
+          className="trash-detail__rich"
+        />
+      </div>
     </div>
   )
 }

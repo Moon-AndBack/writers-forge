@@ -9,6 +9,7 @@
 import type {
   DeletedOutlineContent,
   DeletedOutlineItemRow,
+  DeletedOutlineVolumeRow,
   OutlineItemRow,
   OutlineKind,
   OutlinePurgeCounts,
@@ -19,6 +20,7 @@ import type {
 export type {
   DeletedOutlineContent,
   DeletedOutlineItemRow,
+  DeletedOutlineVolumeRow,
   OutlineItemRow,
   OutlineKind,
   OutlinePurgeCounts,

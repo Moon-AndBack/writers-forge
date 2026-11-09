@@ -22,6 +22,7 @@
 export type {
   DeletedOutlineContent,
   DeletedOutlineItemRow,
+  DeletedOutlineVolumeRow,
   OutlineItemDbRow,
   OutlineItemRow,
   OutlineKind,
