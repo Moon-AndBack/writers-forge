@@ -16,7 +16,8 @@ const ai = {
     description: 'Choose the platform that offers model access',
     deepseek: 'DeepSeek',
     opencode: 'OpenCode Go',
-    opencodeHint: 'OpenCode Go uses an OpenAI-compatible API'
+    opencodeHint: 'OpenCode Go uses an OpenAI-compatible API',
+    modelHint: 'Choose the model in the AI panel on the right of the writing page'
   },
   baseUrl: {
     label: 'Base URL',
@@ -121,12 +122,13 @@ const ai = {
   panel: {
     model: {
       label: 'Model',
-      aria: 'Switch model (affects this panel only)',
+      aria: 'Switch model (your choice is remembered for next time)',
       loading: 'Fetching model list…',
       empty: 'No models found; the default model will be used',
       refresh: 'Refresh',
       refreshAria: 'Refresh model list',
-      failed: 'Failed to fetch models: {{message}}'
+      failed: 'Failed to fetch models: {{message}}',
+      saveFailed: 'Failed to save the model selection. Please retry.'
     },
     action: {
       label: 'Action',

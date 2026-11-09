@@ -4,9 +4,10 @@ import type { SelectOption } from '../../../../components/ui'
 import type { AiComposeAction } from './functions'
 
 export interface AiControlsProps {
-  /** 本面板生效的模型（全局当前或临时覆盖）。 */
+  /** 本面板生效的模型（全局当前模型；切换后写回配置）。 */
   model: string
   modelOptions: SelectOption[]
+  /** 请求切换模型（写回全局配置，失败由调用方提示）。 */
   onModelChange: (value: string) => void
   /** 当前功能（含自由对话）。 */
   action: AiComposeAction

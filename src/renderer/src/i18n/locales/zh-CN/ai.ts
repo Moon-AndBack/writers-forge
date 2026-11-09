@@ -16,7 +16,8 @@ const ai = {
     description: '选择提供模型服务的平台',
     deepseek: 'DeepSeek',
     opencode: 'OpenCode Go',
-    opencodeHint: 'OpenCode Go 使用 OpenAI 兼容接口'
+    opencodeHint: 'OpenCode Go 使用 OpenAI 兼容接口',
+    modelHint: '模型在写作页右栏的 AI 面板中选择'
   },
   baseUrl: {
     label: 'Base URL',
@@ -122,12 +123,13 @@ const ai = {
   panel: {
     model: {
       label: '模型',
-      aria: '切换模型（仅对本面板生效）',
+      aria: '切换模型（会被记住，下次打开沿用）',
       loading: '正在获取模型列表…',
       empty: '未获取到模型，将使用默认模型',
       refresh: '刷新',
       refreshAria: '刷新模型列表',
-      failed: '获取模型失败：{{message}}'
+      failed: '获取模型失败：{{message}}',
+      saveFailed: '模型切换保存失败，请重试'
     },
     action: {
       label: '功能',

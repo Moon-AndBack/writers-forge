@@ -3,8 +3,8 @@
  *
  * 单点持有 `draft`（provider / baseUrl / model 三者共用一份 state）、`config` 与
  * `apiKey`；负责落库（`persistConfig` / `flushConnection`）与密钥保存 / 清除。
- * 挂载取配置在页面侧完成，取到后调用 `hydrate` 填充状态（模型列表由
- * `useAiModelList` 负责）。
+ * 挂载取配置在页面侧完成，取到后调用 `hydrate` 填充状态；当前模型由写作页右栏
+ * AI 面板维护，本 hook 落库连接字段时不写 `model`（避免覆盖面板的选择）。
  */
 import { useCallback, useMemo, useState } from 'react'
 import type { Dispatch, ReactNode, SetStateAction } from 'react'
@@ -27,9 +27,9 @@ export interface AiSettingsConfigController {
   setApiKey: Dispatch<SetStateAction<string>>
   savingKey: boolean
   clearingKey: boolean
-  /** 共享落库函数（`useAiModelList` 亦复用同一实例）。 */
+  /** 共享落库函数（`aiSectionSupport.createPersistConfig` 的唯一实例）。 */
   persistConfig: PersistConfig
-  /** 把草稿中的连接字段落库（测试 / 刷新前调用，保证读到最新输入）。 */
+  /** 把草稿中的连接字段落库（测试前调用，保证读到最新输入）；不写模型。 */
   flushConnection: () => Promise<void>
   handleSaveKey: () => void
   handleClearKey: () => void
@@ -67,8 +67,7 @@ export function useAiSettingsConfig(): AiSettingsConfigController {
   const flushConnection = useCallback(async (): Promise<void> => {
     await persistConfig({
       provider: draft.provider,
-      baseUrl: draft.baseUrl.trim(),
-      model: draft.model.trim()
+      baseUrl: draft.baseUrl.trim()
     })
   }, [draft, persistConfig])
 

@@ -55,8 +55,9 @@ export interface AiPanelProps {
  * 气泡口径：胶囊显示功能名；输入为空时正文顶替为「完整选中文本 / 卷名 · 章名」，
  * 输入与携带内容同时存在时另挂 `attach` 预览（分隔线后 3 行折叠，不落库）。
  *
- * 模型切换只写本面板的 `modelOverride`（作为 `useAiConversation` 的 `model` 入参），
- * **不写回**全局 AI 配置，避免临时选择污染设置页。
+ * 模型：面板模型即全局当前模型（按服务商存于 `ai:<provider>:model`）。切换成功后
+ * 写回配置并广播（见 `useAiModels.selectModel` / `aiConfigSync`）；设置页改服务商 /
+ * 模型也会经事件同步回面板，避免拿旧服务商的模型名发送。
  *
  * 会话：同一本书可保存多条会话（跨章共享，切章不打断生成），头部会话栏一行承载
  * 「当前会话下拉 + ⋯ 操作 + 新建」（见 `AiSessionBar`）；默认打开该书最近一条
@@ -71,12 +72,11 @@ export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps
   const { show: showToast, node: toastNode } = useToast()
   const { editor } = useRichTextEditor('chapter')
 
-  /* ---------- 模型（仅本面板） ---------- */
+  /* ---------- 模型（写回全局配置） ---------- */
 
   const modelsState = useAiModels(active)
-  /** 面板内临时选择：null = 跟随全局配置的当前模型。 */
-  const [modelOverride, setModelOverride] = useState<string | null>(null)
-  const model = modelOverride ?? modelsState.current
+  const { selectModel } = modelsState
+  const model = modelsState.current
 
   const modelOptions = useMemo(() => {
     if (model !== '' && !modelsState.models.includes(model)) {
@@ -84,6 +84,16 @@ export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps
     }
     return modelsState.models.map(toOption)
   }, [model, modelsState.models])
+
+  /** 切换模型：写回全局配置；失败回退旧值并提示。 */
+  const handleModelChange = useCallback(
+    (value: string): void => {
+      void selectModel(value).then((saved) => {
+        if (!saved) showToast(t('panel.model.saveFailed'))
+      })
+    },
+    [selectModel, showToast, t]
+  )
 
   /* ---------- 输入 / 功能 / 上下文勾选 ---------- */
 
@@ -407,7 +417,7 @@ export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps
         <AiControls
           model={model}
           modelOptions={modelOptions}
-          onModelChange={setModelOverride}
+          onModelChange={handleModelChange}
           action={action}
           actionOptions={actionOptions}
           onActionChange={setAction}

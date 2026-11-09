@@ -1,10 +1,11 @@
 /**
  * 设置页 · AI 配置分区（数据只走 `window.api.ai`，不使用 useSettingsValue）。
- * 服务商 / Base URL / 模型随改随存；模型动态拉取，失败 / 为空自动切到手填。
+ * 只配置连接（服务商 / Base URL / 密钥）与目录、压缩；当前模型由写作页右栏 AI
+ * 面板选择并写回 `ai:<provider>:model`，设置页不再提供模型选择。
  * 各服务商（DeepSeek / opencode）连接类控件一律可用；安全存储不可用时不保存密钥。
  *
- * 拆分说明：连接配置状态在 `useAiSettingsConfig`（`draft` 单点持有），模型列表状态在
- * `useAiModelList`，model / apiKey / test 三行渲染在各自的行组件；本文件只做组合。
+ * 拆分说明：连接配置状态在 `useAiSettingsConfig`（`draft` 单点持有），apiKey / test
+ * 两行渲染在各自的行组件，目录与压缩行自持状态；本文件只做组合。
  */
 import { useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -16,10 +17,8 @@ import { settingRowDescriptionId } from './settingRowIds'
 import AiApiKeyRow from './AiApiKeyRow'
 import AiCatalogRow from './AiCatalogRow'
 import AiCompressionRow from './AiCompressionRow'
-import AiModelRow from './AiModelRow'
 import AiTestRow from './AiTestRow'
 import { UNKNOWN_ERROR, type TestState } from './aiSectionSupport'
-import { useAiModelList } from './useAiModelList'
 import { useAiSettingsConfig } from './useAiSettingsConfig'
 
 export default function AiSection() {
@@ -40,29 +39,11 @@ export default function AiSection() {
     hydrate
   } = useAiSettingsConfig()
 
-  const {
-    models,
-    modelsState,
-    modelsError,
-    modelMode,
-    loadModels,
-    handleRefreshModels,
-    handleModelSelect,
-    commitModel,
-    resetModelMode
-  } = useAiModelList({
-    provider: draft.provider,
-    model: draft.model,
-    persistedModel: config?.model ?? null,
-    persistConfig,
-    onModelChange: (model) => setDraft((current) => ({ ...current, model }))
-  })
-
   const [testState, setTestState] = useState<TestState>({ status: 'idle' })
   const providerId = useId()
   const baseUrlId = useId()
 
-  // 挂载时拉取一次配置（含掩码视图）；成功后自动拉模型列表。
+  // 挂载时拉取一次配置（含掩码视图），成功后填充草稿。
   useEffect(() => {
     const api = window.api?.ai
     if (!api) return undefined
@@ -72,7 +53,6 @@ export default function AiSection() {
       .then((view) => {
         if (!active) return
         hydrate(view)
-        void loadModels(view.provider, view.model)
       })
       .catch(() => {
         /* 读取失败保持禁用态，不额外打扰用户 */
@@ -80,14 +60,13 @@ export default function AiSection() {
     return () => {
       active = false
     }
-  }, [hydrate, loadModels])
+  }, [hydrate])
 
   const handleProviderChange = (value: string): void => {
     const provider: AiProviderId = value === 'opencode' ? 'opencode' : 'deepseek'
     if (provider === draft.provider) return
     setDraft((current) => ({ ...current, provider }))
     setTestState({ status: 'idle' })
-    resetModelMode()
     void (async () => {
       const next = await persistConfig({ provider })
       if (!next) {
@@ -98,7 +77,6 @@ export default function AiSection() {
       }
       setDraft({ provider: next.provider, baseUrl: next.baseUrl, model: next.model })
       setApiKey('')
-      await loadModels(next.provider, next.model)
     })()
   }
 
@@ -141,6 +119,7 @@ export default function AiSection() {
         description={
           <>
             {t('provider.description')}
+            <span className="ai-status">{t('provider.modelHint')}</span>
             {isOpencode ? <span className="ai-status">{t('provider.opencodeHint')}</span> : null}
           </>
         }
@@ -187,20 +166,6 @@ export default function AiSection() {
           onBlur={commitBaseUrl}
         />
       </SettingRow>
-
-      <AiModelRow
-        value={draft.model}
-        models={models}
-        modelsState={modelsState}
-        modelsError={modelsError}
-        modelMode={modelMode}
-        disabled={connectionDisabled}
-        onChange={(model) => setDraft((current) => ({ ...current, model }))}
-        onSelect={handleModelSelect}
-        onCommit={commitModel}
-        onRefresh={handleRefreshModels}
-        onUseList={resetModelMode}
-      />
 
       <AiCatalogRow />
 

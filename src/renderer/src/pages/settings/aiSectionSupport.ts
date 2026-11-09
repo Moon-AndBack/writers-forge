@@ -10,6 +10,7 @@ import type {
   AiError,
   AiProviderId
 } from '../../../../preload/types/ai'
+import { notifyAiConfigChanged } from '../writer/right/ai/aiConfigSync'
 
 type AiErrorCode = AiError['code']
 
@@ -74,6 +75,8 @@ export function createPersistConfig(deps: {
     try {
       const result = await api.config.set(patch)
       deps.setConfig(result.config)
+      // 落库成功：广播给已挂载的 AI 面板，令其重读服务商 / 当前模型。
+      notifyAiConfigChanged()
       return result.config
     } catch {
       deps.onError()
