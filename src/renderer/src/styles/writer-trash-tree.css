@@ -186,21 +186,11 @@
 
 /* ---------- 操作组 ----------
    右缘 2px（回收站无拖拽把手，贴行右缘）；按钮 22×22 来自共享 `.row-act`。
-   分栏卡内底色继续用 --control-on-soft；选中行与选中底同色，hover 回落控件底。 */
+   容器不设底色：行名称已用 margin-right 让位，不需要背景遮挡文字。 */
 .trash-tree-group .trash-row-actions,
 .trash-tree-residual .trash-row-actions {
   right: 2px;
   gap: 1px;
-}
-
-.trash-view--split .trash-tree-group .trash-row.is-selected .trash-row-actions,
-.trash-view--split .trash-tree-residual .trash-row.is-selected .trash-row-actions {
-  background: color-mix(in srgb, var(--brand) 12%, var(--soft-solid));
-}
-
-.trash-view--split .trash-tree-group .trash-row.is-selected:hover .trash-row-actions,
-.trash-view--split .trash-tree-residual .trash-row.is-selected:hover .trash-row-actions {
-  background: var(--control-on-soft);
 }
 
 /* ---------- 子行折叠 ----------

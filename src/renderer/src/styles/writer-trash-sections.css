@@ -94,8 +94,3 @@
 .trash-view--sections .trash-row.is-selected:hover {
   background: var(--control-on-soft);
 }
-
-/* 行尾操作组同步换软底控件令牌，避免与行 hover 分层。 */
-.trash-view--sections .trash-row-actions {
-  background: var(--control-on-soft);
-}

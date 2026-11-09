@@ -226,11 +226,6 @@
   background: var(--control-on-soft);
 }
 
-/* 行尾操作组悬浮在行右缘，底色同步换软底控件令牌，避免与行 hover 分层。 */
-.trash-view--split .trash-row-actions {
-  background: var(--control-on-soft);
-}
-
 /* ---------- 详情区 ---------- */
 .trash-detail__empty {
   display: flex;
@@ -361,7 +356,6 @@
   padding-left: 4px;
   visibility: hidden;
   opacity: 0;
-  background: var(--soft-hover-solid);
   border-radius: var(--r-xs);
   transition: opacity var(--dur-fast) var(--ease);
 }
