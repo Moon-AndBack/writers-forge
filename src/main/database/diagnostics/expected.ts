@@ -112,7 +112,8 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
       'sort_order',
       'created_at',
       'updated_at',
-      'deleted_at'
+      'deleted_at',
+      'is_unfiled'
     ]
   },
   {
@@ -374,14 +375,15 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
 
 /**
  * 设计命名索引清单（`sqlite_autoindex_*` 由 SQLite 自动生成，不在此列、自检时过滤）。
- * 计数：本文件静态清单 43（含违禁词库 2 + 伏笔 3 + 灵感 2）+ `./expectedWorldSubtypes` 1
+ * 计数：本文件静态清单 44（含违禁词库 2 + 伏笔 3 + 灵感 2）+ `./expectedWorldSubtypes` 1
  * + `./expectedWorldPowers` 0 + `./expectedItemFactionSubtypes` 1（`world_custom`）
- * = **45**。
+ * = **46**。
  */
 export const EXPECTED_INDEXES: readonly string[] = [
-  // schema/chapters.ts（6）
+  // schema/chapters.ts（7，含 1 个部分唯一索引）
   'idx_volumes_book',
   'idx_volumes_trash',
+  'idx_volumes_unfiled',
   'idx_chapters_book',
   'idx_chapters_volume',
   'idx_chapters_trash',

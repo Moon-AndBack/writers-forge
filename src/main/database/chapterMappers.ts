@@ -32,6 +32,7 @@ export function toVolume(row: VolumeDbRow): VolumeRow {
     id: row.id,
     bookId: row.bookId,
     kind: coerceVolumeKind(row.kind),
+    isUnfiled: row.is_unfiled === 1,
     title: row.title,
     sortOrder: row.sortOrder,
     numberIndex: 0,

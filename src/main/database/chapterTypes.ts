@@ -13,7 +13,8 @@ export type ChapterPin = 'top' | 'bottom'
 
 /**
  * 卷判别：`normal` = 正文卷（参与「卷X」自动编号、章节页与大纲页均可见）、
- * `custom` = 自定义卷（整名不编号、章节页可见、大纲页**不可见**）、
+ * `custom` = 自定义卷（整名不编号、章节页可见、大纲页**不可见**；
+ * 系统「未分卷」卷也借用此 kind，由 `VolumeRow.isUnfiled` 区分）、
  * `group` = 分组容器（**仅大纲页可见**，章节页不可见，其下不能挂章节）。
  *
  * 可见性口径统一由 `CHAPTER_VISIBLE_VOLUME_KINDS` / `OUTLINE_VISIBLE_VOLUME_KINDS` 表达。
@@ -38,6 +39,12 @@ export interface VolumeRow {
   bookId: string
   /** 卷判别（见 `VolumeKind`）。 */
   kind: VolumeKind
+  /**
+   * 系统「未分卷」卷标记（每书至多一条，`kind` 借用 `'custom'`）。
+   * `true` 时此卷为回收站还原 / 拖拽的兜底容器：不可改名 / 删除 / 重排 / 还原 / 彻底删除，
+   * 也不允许直接在其下建章（只承接还原与移入的章）。
+   */
+  isUnfiled: boolean
   /**
    * 卷名段（库内只存用户可见名；「卷X」编号**不落库**，由渲染层按 `kind='normal'` 的
    * `numberIndex` 动态拼出；`kind='custom'` 时此处即完整整名）。
@@ -96,7 +103,8 @@ export interface CreateVolumeInput {
 }
 
 /**
- * 创建章入参（`volumeId` 必填，运行时校验正整数——未分卷语义已移除）。
+ * 创建章入参（`volumeId` 必填，运行时校验正整数——用户可选的「未分卷」目标已移除；
+ * 系统「未分卷」卷不接受直接建章，只承接还原与移入）。
  * `kind='special'` 时须同时给 `specialPrefix` + 非空 `title`（两段齐全）。
  */
 export interface CreateChapterInput {
@@ -141,6 +149,8 @@ export interface VolumeDbRow {
   createdAt: string
   updatedAt: string
   deletedAt: string | null
+  /** 系统「未分卷」卷标记（0 / 1）。 */
+  is_unfiled: number
 }
 
 /** 章表数据库行（snake_case 直映）。 */
@@ -161,7 +171,7 @@ export interface ChapterDbRow {
 
 /** 卷列 SQL 片段（AS 别名对齐 `VolumeDbRow`），供卷 / 回收站查询复用。 */
 export const VOLUME_COLUMNS =
-  'id, book_id AS bookId, kind, title, sort_order AS sortOrder, created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt'
+  'id, book_id AS bookId, kind, title, sort_order AS sortOrder, created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt, is_unfiled'
 
 /** 章列 SQL 片段（AS 别名对齐 `ChapterDbRow`），供章 / 回收站查询复用。 */
 export const CHAPTER_COLUMNS =

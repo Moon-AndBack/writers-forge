@@ -19,6 +19,11 @@ import type Database from 'better-sqlite3'
  *   保证子行的 `book_id` 与父卷 `book_id` 严格同书（跨书挂载被外键拒绝）；
  * - **`chapters.volume_id` NOT NULL**：每章必属一卷，外键 `ON DELETE CASCADE`
  *   （卷被物理删除时其下章物理删除；常规删卷走软删除，不触发）；
+ * - **系统「未分卷」卷**：每书至多一条 `is_unfiled = 1` 的卷（部分唯一索引
+ *   `idx_volumes_unfiled` 强制），借用 `kind='custom'`（不参与编号、章节页可见、
+ *   大纲页不可见），`title` 恒空串（展示名「未分卷」由渲染层给）；系统卷不可改名 /
+ *   删除 / 重排 / 还原 / 彻底删除，也不允许直接建章，只承接回收站还原与拖拽移入的章。
+ *   老库由 `ensureColumn` 幂等补列，存量卷默认 `0`；
  * - **章名拆列**：`title` 存**名段**（普通章 = 自定义名，可空），`special_prefix` 存特殊章
  *   前段（如「序章」「楔子」「番外」，用户自由文本），普通章恒 NULL；显示名由渲染层拼接；
  * - `chapters.kind`：`normal` = 普通章（参与「第X章」编号）、`special` = 特殊章（前段由
@@ -42,10 +47,15 @@ export function createChapterSchema(db: Database.Database): void {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       deleted_at TEXT,
+      is_unfiled INTEGER NOT NULL DEFAULT 0,
       UNIQUE (book_id, id),
       FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
     )
   `)
+
+  // 老库（无 `is_unfiled` 列）幂等补列：`CREATE TABLE IF NOT EXISTS` 不会给已存在的表加列。
+  // 存量卷全部按普通卷解释（默认 0），不清洗任何数据。
+  ensureColumn(db, 'volumes', 'is_unfiled', 'INTEGER NOT NULL DEFAULT 0')
   db.exec(`
     CREATE TABLE IF NOT EXISTS chapters (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,6 +85,11 @@ export function createChapterSchema(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_volumes_trash
       ON volumes(book_id, kind, sort_order) WHERE deleted_at IS NOT NULL
   `)
+  // 每书至多一条系统「未分卷」卷（含回收站态也算，确保系统卷唯一且不可被复制）。
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_volumes_unfiled
+      ON volumes(book_id) WHERE is_unfiled = 1
+  `)
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_chapters_book
       ON chapters(book_id, volume_id, sort_order, id) WHERE deleted_at IS NULL
@@ -92,4 +107,16 @@ export function createChapterSchema(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_chapters_live
       ON chapters(book_id, status) WHERE deleted_at IS NULL
   `)
+}
+
+/** 检测表是否已有某列，缺失才 `ADD COLUMN`（幂等补列，不破坏既有数据；对齐 `schema/plot.ts`）。 */
+function ensureColumn(
+  db: Database.Database,
+  table: string,
+  column: string,
+  definition: string
+): void {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>
+  if (columns.some((item) => item.name === column)) return
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
 }

@@ -20,9 +20,12 @@ export function reorderVolume(id: number, targetIndex: number): boolean {
   const db = getDb()
   return db.transaction((): boolean => {
     const row = db
-      .prepare('SELECT book_id AS bookId, kind FROM volumes WHERE id = ? AND deleted_at IS NULL')
-      .get(id) as { bookId: string; kind: string } | undefined
-    if (!row) return false
+      .prepare(
+        'SELECT book_id AS bookId, kind, is_unfiled AS isUnfiled FROM volumes WHERE id = ? AND deleted_at IS NULL'
+      )
+      .get(id) as { bookId: string; kind: string; isUnfiled: number } | undefined
+    // 系统「未分卷」卷固定置底，不参与常规卷拖拽排序。
+    if (!row || row.isUnfiled === 1) return false
 
     // 序号空间按 kind 分离：仅取同 kind 的卷参与重排。
     const ids = (
@@ -101,11 +104,13 @@ export function reorderChapter(id: number, targetIndex: number): boolean {
 }
 
 /**
- * 将章移动到指定卷末尾（`volumeId` 必填，未分卷语义已移除）；重排源 / 目标两组；不存在返回 false。
+ * 将章移动到指定卷末尾（`volumeId` 必填，用户可选「未分卷」已移除；系统「未分卷」卷可作为
+ * 目标）；重排源 / 目标两组；不存在返回 false。
  *
  * 应用层守卫（复合外键只保证同书、**不校验卷 kind**，故须在此拦截）：
  * - **分组容器卷（`kind='group'`）下不可挂章**（仅大纲页可见，章节页不认）；
- * - **特殊章不可移入自定义卷（`kind='custom'`）**。
+ * - **特殊章不可移入自定义卷（`kind='custom'`）**——系统「未分卷」卷例外：它借用
+ *   `custom` 语义但作为回收站还原 / 拖拽兜底容器，特殊章必须能落入（故按 `is_unfiled` 放行）。
  */
 export function moveChapter(id: number, volumeId: number): boolean {
   const db = getDb()
@@ -116,11 +121,13 @@ export function moveChapter(id: number, volumeId: number): boolean {
     if (!row) return false
     if (typeof volumeId !== 'number' || !Number.isInteger(volumeId) || volumeId <= 0) return false
     const target = db
-      .prepare('SELECT id, kind FROM volumes WHERE id = ? AND book_id = ? AND deleted_at IS NULL')
-      .get(volumeId, row.bookId) as { id: number; kind: string } | undefined
+      .prepare(
+        'SELECT id, kind, is_unfiled AS isUnfiled FROM volumes WHERE id = ? AND book_id = ? AND deleted_at IS NULL'
+      )
+      .get(volumeId, row.bookId) as { id: number; kind: string; isUnfiled: number } | undefined
     if (!target) return false
     if (target.kind === 'group') return false
-    if (row.kind === 'special' && target.kind === 'custom') return false
+    if (row.kind === 'special' && target.kind === 'custom' && target.isUnfiled !== 1) return false
 
     const order = nextChapterSortOrder(row.bookId, target.id)
     db.prepare(

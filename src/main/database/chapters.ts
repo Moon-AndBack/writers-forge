@@ -121,7 +121,8 @@ function resolveChapterFields(
  * `pin`（特殊章置顶 / 置底）：特殊章缺省 `'top'`（应用层默认），普通章恒 `null`。
  *
  * 校验（非法一律抛错，事务回滚）：
- * - `volumeId` 必填（未分卷语义已移除）；
+ * - `volumeId` 必填（用户可选的「未分卷」已移除）；
+ * - **系统「未分卷」卷（`is_unfiled=1`）下不可直接建章**（只承接回收站还原与拖拽移入）；
  * - **分组容器卷（`kind='group'`）下不可挂章**（守卫 1：复合外键只保证同书、不校验卷 kind）；
  * - 特殊章（`kind='special'`）须有前段 + 名段两段（守卫 3）；**自定义卷（`kind='custom'`）
  *   内禁止特殊章**（守卫 2）；
@@ -131,13 +132,19 @@ export function createChapter(bookId: string, input: CreateChapterInput): Chapte
   const db = getDb()
   const volumeId = input.volumeId
   if (typeof volumeId !== 'number' || !Number.isInteger(volumeId) || volumeId <= 0) {
-    throw new Error('createChapter: volumeId 必填（未分卷语义已移除）')
+    throw new Error('createChapter: volumeId 必填（用户可选未分卷已移除）')
   }
   const volume = db
-    .prepare('SELECT kind FROM volumes WHERE id = ? AND book_id = ? AND deleted_at IS NULL')
-    .get(volumeId, bookId) as { kind: string } | undefined
+    .prepare(
+      'SELECT kind, is_unfiled AS isUnfiled FROM volumes WHERE id = ? AND book_id = ? AND deleted_at IS NULL'
+    )
+    .get(volumeId, bookId) as { kind: string; isUnfiled: number } | undefined
   if (!volume) throw new Error(`createChapter: 卷不存在（volumeId=${volumeId}）`)
   const volumeKind = coerceVolumeKind(volume.kind)
+  // 守卫 0：系统「未分卷」卷是还原 / 移入的兜底容器，不允许直接建章。
+  if (volume.isUnfiled === 1) {
+    throw new Error('createChapter: 未分卷卷仅承接还原与移入章节，不允许直接新建')
+  }
   // 守卫 1：分组容器卷仅大纲页可见，其下不能挂章。
   if (volumeKind === 'group') throw new Error('createChapter: 分组容器卷下不允许挂章节')
 

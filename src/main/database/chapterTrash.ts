@@ -1,21 +1,9 @@
 import { getDb } from './index'
-import {
-  CHAPTER_SELECT,
-  VOLUME_SELECT,
-  toChapter,
-  toVolume,
-  type ChapterRow,
-  type VolumeRow
-} from './chapters'
-import {
-  PIN_RANK_SQL,
-  nextChapterSortOrder,
-  nextVolumeSortOrder,
-  renumberChaptersInGroup
-} from './chapterGroups'
-import { VOLUME_DISPLAY_ORDER_SQL } from './chapterOrdering'
+import { CHAPTER_SELECT, toChapter, type ChapterRow } from './chapters'
+import { nextChapterSortOrder, nextVolumeSortOrder, renumberChaptersInGroup } from './chapterGroups'
+import { ensureUnfiledVolume } from './volumes'
 import { renumberOutlineItemsInGroup } from './outline/shared'
-import type { ChapterDbRow, VolumeDbRow } from './chapterTypes'
+import type { ChapterDbRow } from './chapterTypes'
 
 /**
  * 章节域**回收站**（软删除的卷 / 章）：查询、还原、彻底删除。
@@ -28,59 +16,67 @@ import type { ChapterDbRow, VolumeDbRow } from './chapterTypes'
  * 追加到分组末尾；彻底删除 = 物理 `DELETE`，**段落随外键 `ON DELETE CASCADE` 清理**
  * （`documents` 表已删除，故无任何关联文档需要手工删）。
  *
- * v2 说明：`volume_id` 非空（未分卷语义移除），回收站章的「原归属卷」即其当前
- * `volume_id` 指向的卷；还原保持原卷归属（卷仍在回收站时章还原后仍在该卷分组，
- * 展示层按卷的删除态归拢）。回收站**不按卷 kind 过滤**——全部 kind 一视同仁可见可还原。
+ * v2 说明：`volume_id` 非空（用户可选「未分卷」已移除），回收站章的「原归属卷」即其当前
+ * `volume_id` 指向的卷。还原章的目标卷：**原卷未删且非分组容器 → 原卷末尾**；否则
+ * （父卷软删 / 缺失 / 分组容器异常数据）→ 系统「未分卷」卷末尾（`ensureUnfiledVolume` 兜底），
+ * 避免活章挂在软删卷下成为左栏不可见的幽灵活章。
+ * 回收站**不按卷 kind 过滤**——全部 kind 一视同仁可见可还原。
+ *
+ * 第三批起，**章节回收站只列章、不列卷**：软删卷只在大纲回收站管理。卷的还原 / 彻底删除
+ * 函数（`restoreVolume` / `purgeVolume`）与 IPC 仍保留（大纲侧可能复用），但章节 UI 不再调用；
+ * 章节回收站的「清空」也只物理删除软删章，不触碰卷与大纲条目。
  */
 
-/** 回收站中的卷行（= `VolumeRow`，`deletedAt` 非 null）。 */
-export type DeletedVolumeRow = VolumeRow
-
-/** 回收站中的章行：`volumeTitle` 为其**原归属**卷名段（供渲染「某某卷下的某某章」）。 */
+/** 回收站中的章行：原归属卷信息（供平铺列表与详情判断还原去向）。 */
 export interface DeletedChapterRow extends ChapterRow {
+  /** 原归属卷名段；卷缺失时为 null。 */
   volumeTitle: string | null
+  /** 原归属卷是否也在回收站（软删）。 */
+  volumeInTrash: boolean
+  /** 原归属卷是否系统「未分卷」卷。 */
+  volumeIsUnfiled: boolean
 }
 
-/** 回收站内容：被软删的卷与章。 */
+/** 章节回收站内容：仅被软删的章（已删除的卷只在大纲回收站管理）。 */
 export interface DeletedContent {
-  volumes: DeletedVolumeRow[]
   chapters: DeletedChapterRow[]
 }
 
-/** 清空回收站的清除计数。 */
+/** 清空章节回收站的清除计数。 */
 export interface PurgeCounts {
-  volumes: number
   chapters: number
 }
 
 interface DeletedChapterJoinRow extends ChapterDbRow {
   volumeTitle: string | null
+  volumeDeletedAt: string | null
+  volumeIsUnfiled: number | null
 }
 
-/** 列出某书回收站内容：软删的卷（按展示序，自定义卷置顶）与章（含原归属卷名段，组内按 pin 段序）。 */
+/**
+ * 列出某书章节回收站内容：软删的章（含原归属卷名与卷状态），
+ * 按 `deleted_at DESC, id DESC`（最近删除优先，与伏笔 / 灵感回收站同口径）。
+ */
 export function listDeleted(bookId: string): DeletedContent {
-  const db = getDb()
-  const volumes = (
-    db
-      .prepare(
-        `SELECT ${VOLUME_SELECT} FROM volumes WHERE book_id = ? AND deleted_at IS NOT NULL
-         ORDER BY ${VOLUME_DISPLAY_ORDER_SQL}`
-      )
-      .all(bookId) as VolumeDbRow[]
-  ).map(toVolume)
-
   const chapters = (
-    db
+    getDb()
       .prepare(
         `SELECT ${CHAPTER_SELECT},
-           (SELECT v.title FROM volumes v WHERE v.id = chapters.volume_id) AS volumeTitle
+           (SELECT v.title FROM volumes v WHERE v.id = chapters.volume_id) AS volumeTitle,
+           (SELECT v.deleted_at FROM volumes v WHERE v.id = chapters.volume_id) AS volumeDeletedAt,
+           (SELECT v.is_unfiled FROM volumes v WHERE v.id = chapters.volume_id) AS volumeIsUnfiled
          FROM chapters WHERE book_id = ? AND deleted_at IS NOT NULL
-         ORDER BY volume_id, ${PIN_RANK_SQL}, sort_order, id`
+         ORDER BY deleted_at DESC, id DESC`
       )
       .all(bookId) as DeletedChapterJoinRow[]
-  ).map((row) => ({ ...toChapter(row), volumeTitle: row.volumeTitle }))
+  ).map((row) => ({
+    ...toChapter(row),
+    volumeTitle: row.volumeTitle,
+    volumeInTrash: row.volumeDeletedAt !== null,
+    volumeIsUnfiled: row.volumeIsUnfiled === 1
+  }))
 
-  return { volumes, chapters }
+  return { chapters }
 }
 
 /**
@@ -94,9 +90,13 @@ export function restoreVolume(id: number): boolean {
   const db = getDb()
   return db.transaction((): boolean => {
     const row = db
-      .prepare('SELECT book_id AS bookId, kind, deleted_at AS deletedAt FROM volumes WHERE id = ?')
-      .get(id) as { bookId: string; kind: string; deletedAt: string | null } | undefined
-    if (!row || row.deletedAt === null) return false
+      .prepare(
+        'SELECT book_id AS bookId, kind, deleted_at AS deletedAt, is_unfiled AS isUnfiled FROM volumes WHERE id = ?'
+      )
+      .get(id) as
+      { bookId: string; kind: string; deletedAt: string | null; isUnfiled: number } | undefined
+    // 系统「未分卷」卷不经回收站流转（防御异常数据被还原到常规卷序）。
+    if (!row || row.deletedAt === null || row.isUnfiled === 1) return false
 
     db.prepare('UPDATE volumes SET deleted_at = NULL, sort_order = ? WHERE id = ?').run(
       nextVolumeSortOrder(row.bookId, row.kind),
@@ -114,22 +114,48 @@ export function restoreVolume(id: number): boolean {
   })()
 }
 
-/** 还原章：置回未删除、追加到所属卷末尾并重排（卷 = 其当前 `volume_id`）。 */
+/**
+ * 还原章：置回未删除并追加到目标卷末尾，随后重排目标组（源组不同则一并重排）。
+ *
+ * 目标卷判定：
+ * - 父卷存在、`deleted_at IS NULL` 且 `kind !== 'group'` → **原卷**；
+ * - 否则（父卷软删 / 缺失 / 分组容器异常数据）→ 系统「未分卷」卷（幂等确保存在）。
+ *
+ * 「末尾」沿用 `nextChapterSortOrder` + `PIN_RANK_SQL` 语义：普通章落到普通段末尾，
+ * 特殊章落到其 pin 段末尾（`top` / `bottom` / 无 pin 段），不破坏既有 pin 规则。
+ */
 export function restoreChapter(id: number): boolean {
   const db = getDb()
   return db.transaction((): boolean => {
     const row = db
       .prepare(
-        'SELECT book_id AS bookId, volume_id AS volumeId, deleted_at AS deletedAt FROM chapters WHERE id = ?'
+        `SELECT c.book_id AS bookId, c.volume_id AS volumeId, c.deleted_at AS deletedAt,
+                v.id AS parentId, v.deleted_at AS parentDeletedAt, v.kind AS parentKind
+         FROM chapters c LEFT JOIN volumes v ON v.id = c.volume_id
+         WHERE c.id = ?`
       )
-      .get(id) as { bookId: string; volumeId: number; deletedAt: string | null } | undefined
+      .get(id) as
+      | {
+          bookId: string
+          volumeId: number
+          deletedAt: string | null
+          parentId: number | null
+          parentDeletedAt: string | null
+          parentKind: string | null
+        }
+      | undefined
     if (!row || row.deletedAt === null) return false
 
-    db.prepare('UPDATE chapters SET deleted_at = NULL, sort_order = ? WHERE id = ?').run(
-      nextChapterSortOrder(row.bookId, row.volumeId),
-      id
-    )
-    renumberChaptersInGroup(row.bookId, row.volumeId)
+    const parentUsable =
+      row.parentId !== null && row.parentDeletedAt === null && row.parentKind !== 'group'
+    const targetVolumeId = parentUsable ? row.volumeId : ensureUnfiledVolume(row.bookId)
+
+    db.prepare(
+      `UPDATE chapters SET deleted_at = NULL, volume_id = ?, sort_order = ? WHERE id = ?`
+    ).run(targetVolumeId, nextChapterSortOrder(row.bookId, targetVolumeId), id)
+    renumberChaptersInGroup(row.bookId, targetVolumeId)
+    // 源卷 !== 目标卷时重排源组，关闭旧活章留下的 sortOrder 空洞。
+    if (row.volumeId !== targetVolumeId) renumberChaptersInGroup(row.bookId, row.volumeId)
     return true
   })()
 }
@@ -142,9 +168,11 @@ export function restoreChapter(id: number): boolean {
 export function purgeVolume(id: number): boolean {
   const db = getDb()
   return db.transaction((): boolean => {
-    const row = db.prepare('SELECT deleted_at AS deletedAt FROM volumes WHERE id = ?').get(id) as
-      { deletedAt: string | null } | undefined
-    if (!row || row.deletedAt === null) return false
+    const row = db
+      .prepare('SELECT deleted_at AS deletedAt, is_unfiled AS isUnfiled FROM volumes WHERE id = ?')
+      .get(id) as { deletedAt: string | null; isUnfiled: number } | undefined
+    // 系统「未分卷」卷不可物理删除（其下可能仍有活章 / 待还原章）。
+    if (!row || row.deletedAt === null || row.isUnfiled === 1) return false
 
     db.prepare('DELETE FROM outline_items WHERE volume_id = ?').run(id)
     db.prepare('DELETE FROM chapters WHERE volume_id = ?').run(id)
@@ -170,27 +198,10 @@ export function purgeChapter(id: number): boolean {
   })()
 }
 
-/** 清空某书回收站：彻底删除全部软删卷（含其下章与挂卷大纲条目）与残留软删章。 */
+/** 清空某书章节回收站：只物理删除全部软删章（段落随外键 CASCADE），不动软删卷与大纲条目。 */
 export function purgeAllDeleted(bookId: string): PurgeCounts {
-  const db = getDb()
-  return db.transaction((): PurgeCounts => {
-    const volumeIds = (
-      db
-        .prepare('SELECT id FROM volumes WHERE book_id = ? AND deleted_at IS NOT NULL')
-        .all(bookId) as Array<{ id: number }>
-    ).map((item) => item.id)
-    for (const volumeId of volumeIds) {
-      db.prepare('DELETE FROM outline_items WHERE volume_id = ?').run(volumeId)
-      db.prepare('DELETE FROM chapters WHERE volume_id = ?').run(volumeId)
-      db.prepare('DELETE FROM volumes WHERE id = ?').run(volumeId)
-    }
-
-    const chapters = db
-      .prepare('SELECT id FROM chapters WHERE book_id = ? AND deleted_at IS NOT NULL')
-      .all(bookId) as Array<{ id: number }>
-    for (const chapter of chapters) {
-      db.prepare('DELETE FROM chapters WHERE id = ?').run(chapter.id)
-    }
-    return { volumes: volumeIds.length, chapters: chapters.length }
-  })()
+  const result = getDb()
+    .prepare('DELETE FROM chapters WHERE book_id = ? AND deleted_at IS NOT NULL')
+    .run(bookId)
+  return { chapters: result.changes }
 }

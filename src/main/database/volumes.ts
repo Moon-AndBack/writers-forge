@@ -42,9 +42,9 @@ export function withVolumeNumberIndex(volume: VolumeRow): VolumeRow {
 
 /**
  * 列出某书全部**未删除**卷（章节页口径：排除仅大纲页可见的分组容器 `kind='group'`）。
- * 排序：自定义卷置顶在前，各段内按 `sortOrder`、id；返回时附动态 `numberIndex`
- * （仅 `normal` 卷编号 `1..n`，`custom` 恒 0）。大纲页另由 `outline/` 域按
- * `OUTLINE_VISIBLE_VOLUME_KINDS` 取（排除 `custom`、含 `group`）。
+ * 排序：自定义卷置顶在前、系统「未分卷」卷固定置底，各段内按 `sortOrder`、id；
+ * 返回时附动态 `numberIndex`（仅 `normal` 卷编号 `1..n`，`custom` 恒 0）。大纲页另由
+ * `outline/` 域按 `OUTLINE_VISIBLE_VOLUME_KINDS` 取（排除 `custom`、含 `group`）。
  */
 export function listVolumes(bookId: string): VolumeRow[] {
   const kinds = CHAPTER_VISIBLE_VOLUME_KINDS.map((kind) => `'${kind}'`).join(', ')
@@ -74,6 +74,61 @@ function insertVolumeOutlineRow(volumeId: number, bookId: string): void {
        VALUES (@bookId, @volumeId, 'entry', 'volume', '', 0, '')`
     )
     .run({ bookId, volumeId })
+}
+
+/**
+ * 确保某书存在唯一的系统「未分卷」卷，返回其 id。幂等：重复调用不会重复创建。
+ *
+ * - 不存在则创建：`kind='custom'`（借用自定义卷语义：不参与「卷X」编号、章节页可见、
+ *   大纲页不可见）、`title=''`（展示名「未分卷」由渲染层给）、`is_unfiled=1`、
+ *   `sort_order` 落在 `custom` 段末尾（章节页展示序另由 `VOLUME_DISPLAY_ORDER_SQL` 置底）；
+ * - **同事务建卷纲行**（`scope='volume'`），保持「每卷必有卷纲行」不变式；
+ * - 已存在但被软删（异常数据 / 旧版本遗留）时防御性恢复卷及其卷纲行，不新建第二条；
+ * - 卷纲行缺失（外力破坏）时补插，保持不变式。
+ *
+ * 调用方：幽灵活章升级迁移、后续批次的回收站还原兜底。
+ */
+export function ensureUnfiledVolume(bookId: string): number {
+  const db = getDb()
+  return db.transaction((): number => {
+    const existing = db
+      .prepare(
+        'SELECT id, deleted_at AS deletedAt FROM volumes WHERE book_id = ? AND is_unfiled = 1 ORDER BY id LIMIT 1'
+      )
+      .get(bookId) as { id: number; deletedAt: string | null } | undefined
+
+    if (existing) {
+      if (existing.deletedAt !== null) {
+        db.prepare(`UPDATE volumes SET deleted_at = NULL, updated_at = ${NOW} WHERE id = ?`).run(
+          existing.id
+        )
+      }
+      const outline = db
+        .prepare(
+          `SELECT id, deleted_at AS deletedAt FROM outline_items
+           WHERE volume_id = ? AND scope = 'volume' ORDER BY id LIMIT 1`
+        )
+        .get(existing.id) as { id: number; deletedAt: string | null } | undefined
+      if (!outline) {
+        insertVolumeOutlineRow(existing.id, bookId)
+      } else if (outline.deletedAt !== null) {
+        db.prepare(
+          `UPDATE outline_items SET deleted_at = NULL, updated_at = ${NOW} WHERE id = ?`
+        ).run(outline.id)
+      }
+      return existing.id
+    }
+
+    const result = db
+      .prepare(
+        `INSERT INTO volumes (book_id, kind, title, sort_order, is_unfiled)
+         VALUES (?, 'custom', '', ?, 1)`
+      )
+      .run(bookId, nextVolumeSortOrder(bookId, 'custom'))
+    const volumeId = Number(result.lastInsertRowid)
+    insertVolumeOutlineRow(volumeId, bookId)
+    return volumeId
+  })()
 }
 
 /**
@@ -112,6 +167,11 @@ export function createVolume(bookId: string, input: CreateVolumeInput = {}): Vol
 export function renameVolume(id: number, title: string): VolumeRow | null {
   const db = getDb()
   return db.transaction((): VolumeRow | null => {
+    const target = db
+      .prepare('SELECT is_unfiled AS isUnfiled FROM volumes WHERE id = ?')
+      .get(id) as { isUnfiled: number } | undefined
+    // 系统「未分卷」卷的展示名固定，不允许改名（含回收站态）。
+    if (!target || target.isUnfiled === 1) return null
     const result = db
       .prepare(`UPDATE volumes SET title = ?, updated_at = ${NOW} WHERE id = ?`)
       .run(normalizeVolumeTitle(title), id)
@@ -135,9 +195,12 @@ export function deleteVolume(id: number): boolean {
   const db = getDb()
   return db.transaction((): boolean => {
     const row = db
-      .prepare('SELECT book_id AS bookId, deleted_at AS deletedAt FROM volumes WHERE id = ?')
-      .get(id) as { bookId: string; deletedAt: string | null } | undefined
-    if (!row || row.deletedAt !== null) return false
+      .prepare(
+        'SELECT book_id AS bookId, deleted_at AS deletedAt, is_unfiled AS isUnfiled FROM volumes WHERE id = ?'
+      )
+      .get(id) as { bookId: string; deletedAt: string | null; isUnfiled: number } | undefined
+    // 系统「未分卷」卷是兜底容器，不可软删除（否则其下章会失去可见归属）。
+    if (!row || row.deletedAt !== null || row.isUnfiled === 1) return false
     db.prepare(`UPDATE volumes SET deleted_at = ${NOW} WHERE id = ?`).run(id)
     db.prepare(
       `UPDATE chapters SET deleted_at = ${NOW} WHERE volume_id = ? AND deleted_at IS NULL`

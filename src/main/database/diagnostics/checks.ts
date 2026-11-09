@@ -73,7 +73,8 @@ export function checkForeignKeys(db: Database.Database): DiagnosticsIssue[] {
  * - **B2** 分组容器卷（`kind='group'`）下不得有章节（仅大纲页可见，不可挂章）；
  * - **B3** 特殊章须有前段（`special_prefix`）与非空名段（`title`）；
  * - **B4** 普通章 `pin` 必须为 NULL（表级 CHECK 已强制；老库缺 CHECK 时可能残留）；
- * - **B5** 特殊章不得置于自定义卷（`kind='custom'`）；
+ * - **B5** 特殊章不得置于自定义卷（`kind='custom'`；系统「未分卷」卷借用 custom，
+ *   但它是还原 / 移入的兜底容器，按 `is_unfiled=0` 排除）；
  * - **B6** `outline_items` 的 `kind` / `volume_id` / `scope` 一致性（三条表级 CHECK 取反）。
  *
  * ⚠️ **不校验 CHECK 约束本身**：SQLite 无 PRAGMA 可枚举 CHECK，须解析 `sqlite_master.sql`
@@ -154,7 +155,8 @@ export function checkInvariants(
       .prepare(
         `SELECT c.id AS id, c.title AS title FROM chapters c
          JOIN volumes v ON v.id = c.volume_id
-         WHERE c.deleted_at IS NULL AND c.kind = 'special' AND v.kind = 'custom'`
+         WHERE c.deleted_at IS NULL AND c.kind = 'special'
+           AND v.kind = 'custom' AND v.is_unfiled = 0`
       )
       .all() as Array<{ id: number; title: string }>
     if (specialInCustom.length > 0) {

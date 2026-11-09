@@ -191,12 +191,12 @@ function isParagraphInputArray(
  * - chapters:stats            (bookId: string)                → ChapterStats（排除软删；非法 → {0,0}）
  * - chapters:nextVolumeTitle  (bookId: string)                → string（下一个默认卷名）
  * - chapters:nextChapterTitle (bookId: string, volumeId)      → string（下一个默认章名；达上限返回空串）
- * - chapters:listDeleted      (bookId: string)                → DeletedContent
+ * - chapters:listDeleted      (bookId: string)                → DeletedContent（只列软删章）
  * - chapters:restore          (id: number)                    → boolean（还原章）
  * - chapters:restoreVolume    (id: number)                    → boolean（还原卷及其下软删章）
  * - chapters:purge            (id: number)                    → boolean（彻底删章 + 段落级联）
  * - chapters:purgeVolume      (id: number)                    → boolean（彻底删卷 + 其下章 + 段落）
- * - chapters:purgeAllDeleted  (bookId: string)                → PurgeCounts（清空回收站）
+ * - chapters:purgeAllDeleted  (bookId: string)                → PurgeCounts（清空章节回收站：只删章）
  */
 export function registerChaptersIpc(): void {
   ipcMain.handle('chapters:listVolumes', (_event, bookId: unknown) => {
@@ -332,7 +332,7 @@ export function registerChaptersIpc(): void {
   })
 
   ipcMain.handle('chapters:listDeleted', (_event, bookId: unknown) => {
-    if (typeof bookId !== 'string' || bookId === '') return { volumes: [], chapters: [] }
+    if (typeof bookId !== 'string' || bookId === '') return { chapters: [] }
     return listDeleted(bookId)
   })
 
@@ -357,7 +357,7 @@ export function registerChaptersIpc(): void {
   })
 
   ipcMain.handle('chapters:purgeAllDeleted', (_event, bookId: unknown) => {
-    if (typeof bookId !== 'string' || bookId === '') return { volumes: 0, chapters: 0 }
+    if (typeof bookId !== 'string' || bookId === '') return { chapters: 0 }
     return runWrite('chapters:purgeAllDeleted', { bookId }, () => purgeAllDeleted(bookId))
   })
 }

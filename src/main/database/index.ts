@@ -56,6 +56,7 @@ import { migrateWorldEntityPowerSystemType } from './worldPowerSystemMigration'
 import { migrateWorldRefsHierarchy } from './worldRefsHierarchyMigration'
 import { migrateWorldRefsPruneDeletedEndpoints } from './worldRefsPruneDeletedEndpoints'
 import { migrateWorldTextsBodyJson } from './worldTextsBodyJsonBackfill'
+import { migrateOrphanChaptersToUnfiled } from './unfiledChaptersMigration'
 
 /** 数据库域日志 scope。 */
 const log = logger.scope('db')
@@ -130,6 +131,9 @@ export function getDb(): Database.Database {
     createParagraphSchema(instance)
     // 大纲域：outline_items，复用章节域卷池（引用 volumes / books，须在其后）。
     createOutlineItemsSchema(instance)
+    // 未分卷：把「活章挂软删 / 缺失父卷」的幽灵活章迁移到系统「未分卷」卷
+    //（幂等、事务回滚；须在卷表补列与大纲表就绪之后，因为需要建卷 + 卷纲行）。
+    migrateOrphanChaptersToUnfiled()
     // 伏笔域：两个埋点槽位语义固定（`body_*` 仅章节 / `outline_*` 仅大纲条目）。
     // 老库（`anchor_*` / `anchor2_*`）一次性整表重建 + 按 kind 归位（幂等、列探测判据、
     // 失败回滚）；**必须早于** `createForeshadowsSchema`——后者会按新列名建索引，

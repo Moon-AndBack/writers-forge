@@ -195,7 +195,7 @@ export interface Api {
     nextVolumeTitle: (bookId: string) => Promise<string>
     /** 下一个默认章名（「第X章」，卷内独立编号）；达上限返回空串 */
     nextChapterTitle: (bookId: string, volumeId: number) => Promise<string>
-    /** 回收站内容（软删的卷与章，章含原归属卷名） */
+    /** 回收站内容（只列软删章，含原归属卷名与卷状态） */
     listDeleted: (bookId: string) => Promise<DeletedContent>
     /** 还原章（追加到所属分组末尾） */
     restore: (id: number) => Promise<boolean>
@@ -205,7 +205,7 @@ export interface Api {
     purge: (id: number) => Promise<boolean>
     /** 彻底删除卷（含其下章与文档） */
     purgeVolume: (id: number) => Promise<boolean>
-    /** 清空回收站 */
+    /** 清空章节回收站（只删章，不动软删卷与大纲条目） */
     purgeAllDeleted: (bookId: string) => Promise<PurgeCounts>
     /** 搜索（本章 / 全书）：子串全表扫描，缓存 + 分页，返回一页命中 */
     search: (bookId: string, input: ChapterSearchInput) => Promise<ChapterSearchPage>

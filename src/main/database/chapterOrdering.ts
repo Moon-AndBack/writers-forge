@@ -21,8 +21,11 @@ import type { ChapterRow, VolumeRow } from './chapterTypes'
  * 不在渲染侧重写编号规则（避免两处漂移）。
  */
 
-/** 章节页卷展示序：自定义卷置顶在前（保持旧「特殊卷置顶」产品行为），各自段内按 `sort_order, id`。 */
-export const VOLUME_DISPLAY_ORDER_SQL = `CASE WHEN kind = 'custom' THEN 0 ELSE 1 END, sort_order, id`
+/**
+ * 章节页卷展示序：自定义卷置顶在前（保持旧「特殊卷置顶」产品行为），系统「未分卷」卷
+ * 固定置底（兜底容器，不参与常规卷排序），各自段内按 `sort_order, id`。
+ */
+export const VOLUME_DISPLAY_ORDER_SQL = `CASE WHEN is_unfiled = 1 THEN 2 WHEN kind = 'custom' THEN 0 ELSE 1 END, sort_order, id`
 
 /** 批量赋卷 `numberIndex`：输入须已按 `VOLUME_DISPLAY_ORDER_SQL` 排序；非 `normal` 卷恒 0。 */
 export function assignVolumeNumberIndex(rows: VolumeRow[]): VolumeRow[] {
