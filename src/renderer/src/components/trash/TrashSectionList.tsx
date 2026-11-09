@@ -107,15 +107,15 @@ export function TrashSectionList({
       {/* 标题卡固定，内容卡各自滚动（滚动条落在卡片底色内）。 */}
       <div className="trash-sections-scroll">
         {loadError && !hasRows ? (
-          <div className="trash-section">
+          <div className="trash-section trash-section--state">
             <LoadErrorState compact onRetry={() => onRetry?.()} />
           </div>
         ) : loading && !hasRows ? (
-          <div className="trash-section">
+          <div className="trash-section trash-section--state">
             <div className="trash-loading">{loadingText}</div>
           </div>
         ) : !hasRows ? (
-          <div className="trash-section">
+          <div className="trash-section trash-section--state">
             <EmptyState compact title={emptyText} />
           </div>
         ) : (

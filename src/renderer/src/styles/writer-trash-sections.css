@@ -63,16 +63,22 @@
   gap: 8px;
 }
 
-/* 内容卡独立滚动：overflow 在卡片自身上，滚动条落在 --soft-solid 底色内；
-   scrollbar-gutter: auto 让滚动条仅在需要时占宽，不再常驻预留。 */
+/* 内容卡按内容高度，不拉伸占满（与左栏 `.pane-region` 同口径）：flex-basis auto，
+   总高超出容器时允许收缩，并在卡内滚动。overflow 在卡片自身上，滚动条落在
+   --soft-solid 底色内；scrollbar-gutter: auto 让滚动条仅在需要时占宽。 */
 .trash-sections-scroll > .trash-section {
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-height: 0;
   overflow-y: auto;
   scrollbar-gutter: auto;
 }
 
-/* 空态 / 加载 / 错误：单卡占满剩余高度，内容在卡内垂直居中。 */
+/* 状态卡（空态 / 加载 / 错误）：单卡占满剩余高度。 */
+.trash-sections-scroll > .trash-section--state {
+  flex: 1;
+}
+
+/* 状态内容在卡内垂直居中。 */
 .trash-sections-scroll > .trash-section > .placeholder-view,
 .trash-sections-scroll > .trash-section > .trash-loading {
   display: flex;

@@ -112,7 +112,9 @@ export default function ChaptersPanel({
   const specialGroups = visibleGroups.filter(
     (group) => group.volume.kind === 'custom' && !group.volume.isUnfiled
   )
-  const normalGroups = visibleGroups.filter((group) => group.volume.kind === 'normal')
+  const normalGroups = visibleGroups.filter(
+    (group) => group.volume.kind === 'normal' && !group.volume.isUnfiled
+  )
   const unfiledGroups = visibleGroups.filter((group) => group.volume.isUnfiled)
   // 松手落卷立即展开目标卷：快速拖入收起卷时避免章移动后「消失」；
   // 悬停 450ms 自动展开（见下方 effect）只是提前预览。
