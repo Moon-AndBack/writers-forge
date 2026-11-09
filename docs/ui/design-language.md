@@ -124,12 +124,13 @@
 
 ### 4.1 行规格
 
-| 类型        | 内衬       | gap | 圆角     | hover                                                |
-| ----------- | ---------- | --- | -------- | ---------------------------------------------------- |
-| 树 / 导航行 | 9px × 10px | 10  | `--r-xs` | `--soft-hover-solid` + `--dur-fast`                  |
-| 数据行      | 8px × 10px | 10  | `--r-xs` | `--soft-hover-solid`；软底卡内用 `--control-on-soft` |
+| 类型         | 内衬       | gap | 圆角     | hover                                                |
+| ------------ | ---------- | --- | -------- | ---------------------------------------------------- |
+| 树 / 导航行  | 9px × 10px | 10  | `--r-xs` | `--soft-hover-solid` + `--dur-fast`                  |
+| 数据行       | 8px × 10px | 10  | `--r-xs` | `--soft-hover-solid`；软底卡内用 `--control-on-soft` |
+| 树形回收站行 | 9px × 10px | 10  | `--r-xs` | `--control-on-soft`（分栏卡内）                      |
 
-代表位置：`styles/writer-side-chapters.css:31-38`、`styles/writer-outline.css:20-27`、`styles/writer-trash.css:66-80`。现状中 `.chapter` / `.outline-chapter` 仍写裸 `0.1s`，属 §10 债务；目标统一 `--dur-fast`。
+代表位置：`styles/writer-side-chapters.css:31-38`、`styles/writer-outline.css:20-27`、`styles/writer-trash.css:66-80`、`styles/writer-trash-tree.css`。现状中 `.chapter` / `.outline-chapter` 仍写裸 `0.1s`，属 §10 债务；目标统一 `--dur-fast`。
 
 ### 4.2 选中态公式
 
@@ -187,9 +188,9 @@
 ```
 
 - 按钮尺寸统一 **22×22**（`.row-act`，`styles/writer-side-volumes.css:192-200`）。
-- 右缘偏移现有 2px（章节 / 大纲）与 6px（回收站）两档，按操作组与行内衬取值。
+- 右缘偏移现有 2px（章节 / 大纲 / 树形回收站）与 6px（伏笔 / 灵感等平铺回收站）两档，按操作组与行内衬取值。
 - 主名让位使用 `margin-right`（非 `padding`）：现有 48 / 52 / 72 / 95 四档，按操作组实际宽度推导；新增行先量操作组宽度再取值。
-- 代表位置：`writer-side-volumes.css:155-196,207-229`、`writer-outline.css:92-136`、`writer-trash.css:349-377`。
+- 代表位置：`writer-side-volumes.css:155-196,207-229`、`writer-outline.css:92-136`、`writer-trash.css:349-377`、`writer-trash-tree.css`。
 
 ### 4.4 禁止项
 

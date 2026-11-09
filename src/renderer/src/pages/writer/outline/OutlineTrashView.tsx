@@ -85,14 +85,23 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
     purgeItem: t('trash.purgeChapter')
   }
 
+  // 卷 / 分组行计数只统计「其下仍在回收站中的条目」，不是原卷总条目数。
+  const deletedItemCounts = new Map<number, number>()
+  for (const item of content.items) {
+    if (item.volumeId !== null) {
+      deletedItemCounts.set(item.volumeId, (deletedItemCounts.get(item.volumeId) ?? 0) + 1)
+    }
+  }
+
   const volumes: TrashRow[] = content.volumes.map((volume) => ({
     id: volume.id,
-    name: labels.outlineVolumeLabel(volume, tOutline('unnamedVolume'))
+    name: labels.outlineVolumeLabel(volume, tOutline('unnamedVolume')),
+    count: deletedItemCounts.get(volume.id) ?? 0,
+    emphasis: volume.kind === 'custom'
   }))
   const items: TrashRow[] = content.items.map((item) => ({
     id: item.id,
     name: outlineItemLabel(item, tOutline('unnamedChapter')),
-    sub: item.volumeTitle !== null ? item.volumeTitle : t('trash.orphanVolume'),
     parentId: item.volumeId ?? undefined
   }))
 

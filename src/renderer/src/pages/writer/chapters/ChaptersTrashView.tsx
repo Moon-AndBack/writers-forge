@@ -81,15 +81,29 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
     purgeItem: t('trash.purgeChapter')
   }
 
+  // 卷行计数只统计「该卷下仍在回收站中的章」，不是原卷总章数。
+  const deletedChapterCounts = new Map<number, number>()
+  for (const chapter of content.chapters) {
+    deletedChapterCounts.set(
+      chapter.volumeId,
+      (deletedChapterCounts.get(chapter.volumeId) ?? 0) + 1
+    )
+  }
+
   const volumes: TrashRow[] = content.volumes.map((volume) => ({
     id: volume.id,
-    name: labels.volumeLabel(volume) || t('trash.detail.untitledVolume')
+    name: labels.volumeLabel(volume) || t('trash.detail.untitledVolume'),
+    count: deletedChapterCounts.get(volume.id) ?? 0,
+    emphasis: volume.kind === 'custom'
   }))
   const chapters: TrashRow[] = content.chapters.map((chapter) => ({
     id: chapter.id,
-    name: labels.chapterLabel(chapter) || t('trash.untitledChapter'),
-    sub: chapter.volumeTitle !== null ? chapter.volumeTitle : t('trash.orphanVolume'),
-    parentId: chapter.volumeId
+    // 行名只取名段：特殊章的前段走 prefix，避免与 chapterLabel 的整串拼接口径重复。
+    name: chapter.title !== '' ? chapter.title : t('trash.untitledChapter'),
+    parentId: chapter.volumeId,
+    prefix: labels.chapterRowPrefixLabel(chapter) || undefined,
+    badge: chapter.status === 'draft' ? t('status.draft') : undefined,
+    emphasis: chapter.kind === 'special'
   }))
 
   const requestRestoreVolume = (id: number): void => {

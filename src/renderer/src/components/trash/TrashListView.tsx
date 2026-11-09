@@ -2,26 +2,38 @@
  * 回收站列表（章节 / 大纲 / 伏笔 / 灵感共用，§9 唯一实现）。
  *
  * 纯展示：不依赖 i18n，文案由调用方经 `t()` 取用后传入（对齐 `EmptyState` 约定）。
- * 样式直接复用 `styles/writer-trash.css`。
+ * 样式直接复用 `styles/writer-trash.css`；树形模式（章节 / 大纲）的增补规则在
+ * `styles/writer-trash-tree.css`。
  *
  * 「列表 + 详情」为可选能力：传入 `detail` / `detailEmpty` 且存在数据时，经
  * `TrashSplitLayout` 渲染「列表卡 + 分隔条 + 详情卡」两栏（宽度可拖拽并持久化）；
  * 未传详情区或首帧 / 空态 / 错误态时保持单列，head + 列表的 DOM 与改造前一致。
  */
+import { useState } from 'react'
 import type { KeyboardEvent, ReactElement, ReactNode } from 'react'
-import { Button, IconButton } from '../ui'
-import { RestoreIcon, TrashIcon } from '../icons'
+import { Button } from '../ui'
 import { EmptyState } from '../EmptyState'
 import { LoadErrorState } from '../LoadErrorState'
+import TreeRowItem from '../tree/TreeRowItem'
 import { TrashSplitLayout } from './TrashSplitLayout'
+import { TrashRowActions } from './TrashRowActions'
 
-/** 回收站行：`name` 为主名，`sub` 为次要行（如原归属卷名）。 */
+/** 回收站行：`name` 为主名，`sub` 为非树形模式的次要行（如原归属卷名）。 */
 export interface TrashRow {
   id: number
   name: string
+  /** 非树形模式的原归属副标题；树形模式不渲染（原归属改到右侧详情查看）。 */
   sub?: string
   /** 父卷 id（树形模式）：命中 `volumes` 中同 id 的行时，渲染在该卷行下方。 */
   parentId?: number
+  /** 树形章 / 条目行的前段（特殊章 `specialPrefix`）；普通章 / 大纲条目缺省。 */
+  prefix?: string
+  /** 树形行尾徽标文案（草稿）；大纲条目缺省。 */
+  badge?: string
+  /** 树形名段强调（自定义卷 / 特殊章）：名段由 `--text-dim` 转 `--text`。 */
+  emphasis?: boolean
+  /** 树形卷行计数：该卷下回收站中的章 / 条目数。 */
+  count?: number
 }
 
 /** 选中行所属分组：卷 / 条目（两表 id 可能相同，故以 kind 消歧）。 */
@@ -53,10 +65,10 @@ export interface TrashListViewMessages {
 export interface TrashListViewProps {
   /** 软删的卷行（单行展示，无次要行）。 */
   volumes: TrashRow[]
-  /** 软删的条目行（主名 + 原归属卷名两行展示）。 */
+  /** 软删的条目行（非树形模式展示主名 + 原归属卷名）。 */
   items: TrashRow[]
   /**
-   * 树形模式：父卷也在回收站的条目缩进到该卷行下，其余条目仍留在
+   * 树形模式：父卷也在回收站的条目挂到该卷行下，其余条目仍留在
    * `messages.groupItems` 残差分组。缺省 false（伏笔 / 灵感保持平铺分组）。
    */
   tree?: boolean
@@ -92,60 +104,16 @@ export interface TrashListViewProps {
   detailEmpty?: ReactNode
 }
 
-/** 行尾操作区：还原 + 彻底删除（两套回收站逐字相同）。 */
-function RowActions({
-  busy,
-  restoreLabel,
-  purgeLabel,
-  onRestore,
-  onPurge
-}: {
-  busy: boolean
-  restoreLabel: string
-  purgeLabel: string
-  onRestore: () => void
-  onPurge: () => void
-}): ReactElement {
-  return (
-    <span
-      className="trash-row-actions"
-      // 行本身可点击 / 可按 Enter 选中；操作按钮的点击与键盘事件不得冒泡触发行选中。
-      onClick={(event) => event.stopPropagation()}
-      onKeyDown={(event) => event.stopPropagation()}
-    >
-      <IconButton
-        size="sm"
-        className="row-act"
-        label={restoreLabel}
-        tooltipPlacement="top"
-        disabled={busy}
-        onClick={onRestore}
-      >
-        <RestoreIcon />
-      </IconButton>
-      <IconButton
-        size="sm"
-        className="row-act"
-        tone="danger"
-        label={purgeLabel}
-        tooltipPlacement="top"
-        disabled={busy}
-        onClick={onPurge}
-      >
-        <TrashIcon />
-      </IconButton>
-    </span>
-  )
-}
-
-/** 单行：卷为单行名，条目为主名 + 次要行（嵌套子行省略次要行）；`onSelect` 存在时整行可交互。 */
-function TrashRowItem({
+/**
+ * 非树形模式单行（伏笔 / 灵感回收站）：保持改造前的平铺结构与类名逐字不变——
+ * 卷为单行名，条目为主名 + 次要行；`onSelect` 存在时整行可交互。
+ */
+function FlatTrashRow({
   row,
   kind,
   selectable,
   selected,
   onSelect,
-  nested = false,
   children
 }: {
   row: TrashRow
@@ -153,8 +121,6 @@ function TrashRowItem({
   selectable: boolean
   selected: boolean
   onSelect?: (selection: TrashSelection) => void
-  /** 树形子行：缩进一级，并省略冗余的原归属副标题。 */
-  nested?: boolean
   children: ReactNode
 }): ReactElement {
   const baseClassName =
@@ -163,7 +129,6 @@ function TrashRowItem({
       : selectable
         ? 'trash-row is-selectable'
         : 'trash-row'
-  const className = nested ? `${baseClassName} is-nested` : baseClassName
 
   const pick = (): void => onSelect?.({ kind, id: row.id })
 
@@ -178,7 +143,7 @@ function TrashRowItem({
 
   return (
     <div
-      className={className}
+      className={baseClassName}
       role={selectable ? 'button' : undefined}
       tabIndex={selectable ? 0 : undefined}
       aria-pressed={selectable ? selected : undefined}
@@ -190,7 +155,7 @@ function TrashRowItem({
       ) : (
         <span className="trash-row-main">
           <span className="trash-row-name">{row.name}</span>
-          {nested ? null : <span className="trash-row-sub">{row.sub}</span>}
+          <span className="trash-row-sub">{row.sub}</span>
         </span>
       )}
       {children}
@@ -227,6 +192,17 @@ export function TrashListView({
   const detailEnabled = detail !== undefined || detailEmpty !== undefined
   const split = detailEnabled && total > 0
 
+  // 树形卷展开态：白名单，默认空集 = 打开回收站时全部收起（与左栏默认收起一致）。
+  const [openVolumes, setOpenVolumes] = useState<ReadonlySet<number>>(() => new Set<number>())
+  const toggleVolume = (id: number): void => {
+    setOpenVolumes((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   const isSelected = (kind: TrashSelectionKind, id: number): boolean =>
     selected !== undefined && selected !== null && selected.kind === kind && selected.id === id
 
@@ -249,8 +225,31 @@ export function TrashListView({
     }
   }
 
-  const volumeRow = (volume: TrashRow): ReactElement => (
-    <TrashRowItem
+  const volumeActions = (volume: TrashRow, wrapped = true): ReactElement => (
+    <TrashRowActions
+      busy={busy}
+      restoreLabel={messages.restoreVolume}
+      purgeLabel={messages.purgeVolume}
+      onRestore={() => onRestoreVolume(volume.id)}
+      onPurge={() => onPurgeVolume(volume.id)}
+      wrapped={wrapped}
+    />
+  )
+
+  const itemActions = (item: TrashRow, wrapped = true): ReactElement => (
+    <TrashRowActions
+      busy={busy}
+      restoreLabel={messages.restoreItem}
+      purgeLabel={messages.purgeItem}
+      onRestore={() => onRestoreItem(item.id)}
+      onPurge={() => onPurgeItem(item.id)}
+      wrapped={wrapped}
+    />
+  )
+
+  // 非树形（伏笔 / 灵感）：沿用改造前的平铺行组件，DOM / 类名 / 行为逐字不变。
+  const flatVolumeRow = (volume: TrashRow): ReactElement => (
+    <FlatTrashRow
       key={`v-${volume.id}`}
       row={volume}
       kind="volume"
@@ -258,35 +257,88 @@ export function TrashListView({
       selected={isSelected('volume', volume.id)}
       onSelect={onSelect}
     >
-      <RowActions
-        busy={busy}
-        restoreLabel={messages.restoreVolume}
-        purgeLabel={messages.purgeVolume}
-        onRestore={() => onRestoreVolume(volume.id)}
-        onPurge={() => onPurgeVolume(volume.id)}
-      />
-    </TrashRowItem>
+      {volumeActions(volume)}
+    </FlatTrashRow>
   )
 
-  const itemRow = (item: TrashRow, nested = false): ReactElement => (
-    <TrashRowItem
+  const flatItemRow = (item: TrashRow): ReactElement => (
+    <FlatTrashRow
       key={`c-${item.id}`}
       row={item}
       kind="item"
       selectable={selectable}
       selected={isSelected('item', item.id)}
       onSelect={onSelect}
-      nested={nested}
     >
-      <RowActions
-        busy={busy}
-        restoreLabel={messages.restoreItem}
-        purgeLabel={messages.purgeItem}
-        onRestore={() => onRestoreItem(item.id)}
-        onPurge={() => onPurgeItem(item.id)}
-      />
-    </TrashRowItem>
+      {itemActions(item)}
+    </FlatTrashRow>
   )
+
+  // 树形章 / 条目行：复用共享 `TreeRowItem`（圆点 + 可选特殊章前段 + 名段 + 草稿徽标 + 操作）。
+  const treeItemRow = (item: TrashRow): ReactElement => (
+    <TreeRowItem
+      key={`c-${item.id}`}
+      id={item.id}
+      classPrefix="trash-row"
+      activeClass="is-selected"
+      active={isSelected('item', item.id)}
+      stateClasses={item.emphasis ? ['is-special'] : undefined}
+      interactive={selectable}
+      onSelect={(id) => onSelect?.({ kind: 'item', id })}
+      leading={
+        item.prefix !== undefined && item.prefix !== '' ? (
+          <>
+            <span className="trash-row-prefix">{item.prefix}</span>
+            <span className="trash-row-sep" aria-hidden="true">
+              ●
+            </span>
+          </>
+        ) : undefined
+      }
+      nameNode={<span className="trash-row-name">{item.name}</span>}
+      badge={item.badge ? <span className="chapter-draft">{item.badge}</span> : null}
+      actions={itemActions(item, false)}
+    />
+  )
+
+  // 树形卷行：箭头（独立折叠）→ 卷名（x=24）→ 计数 → 操作；其余区域选中看详情。
+  const treeVolumeRow = (volume: TrashRow): ReactElement => {
+    const open = openVolumes.has(volume.id)
+    const children = childrenByVolume.get(volume.id) ?? []
+    return (
+      <div className="trash-tree-group" key={`tv-${volume.id}`}>
+        <TreeRowItem
+          id={volume.id}
+          classPrefix="trash-row"
+          activeClass="is-selected"
+          active={isSelected('volume', volume.id)}
+          stateClasses={volume.emphasis ? ['is-special'] : undefined}
+          interactive={selectable}
+          showDot={false}
+          chevron={{
+            expanded: open,
+            label: volume.name,
+            onToggle: () => toggleVolume(volume.id)
+          }}
+          onSelect={(id) => onSelect?.({ kind: 'volume', id })}
+          nameNode={<span className="trash-row-name">{volume.name}</span>}
+          badge={
+            volume.count !== undefined ? (
+              <span className="trash-row-count">{volume.count}</span>
+            ) : null
+          }
+          actions={volumeActions(volume, false)}
+        />
+        {children.length > 0 && (
+          <div className={`trash-children${open ? ' is-open' : ''}`} inert={!open}>
+            <div className="trash-children-inner">
+              <div className="trash-children-list">{children.map((item) => treeItemRow(item))}</div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   const head = (
     <div className="trash-head">
@@ -315,19 +367,16 @@ export function TrashListView({
             {volumes.length > 0 ? (
               <section className="trash-group">
                 <div className="trash-group-title">{messages.groupVolumes}</div>
-                {volumes.map((volume) => (
-                  <div className="trash-tree-group" key={`tv-${volume.id}`}>
-                    {volumeRow(volume)}
-                    {(childrenByVolume.get(volume.id) ?? []).map((item) => itemRow(item, true))}
-                  </div>
-                ))}
+                {volumes.map((volume) => treeVolumeRow(volume))}
               </section>
             ) : null}
 
             {residualItems.length > 0 ? (
               <section className="trash-group">
                 <div className="trash-group-title">{messages.groupItems}</div>
-                {residualItems.map((item) => itemRow(item))}
+                <div className="trash-tree-residual">
+                  {residualItems.map((item) => treeItemRow(item))}
+                </div>
               </section>
             ) : null}
           </>
@@ -336,14 +385,14 @@ export function TrashListView({
             {volumes.length > 0 ? (
               <section className="trash-group">
                 <div className="trash-group-title">{messages.groupVolumes}</div>
-                {volumes.map((volume) => volumeRow(volume))}
+                {volumes.map((volume) => flatVolumeRow(volume))}
               </section>
             ) : null}
 
             {items.length > 0 ? (
               <section className="trash-group">
                 <div className="trash-group-title">{messages.groupItems}</div>
-                {items.map((item) => itemRow(item))}
+                {items.map((item) => flatItemRow(item))}
               </section>
             ) : null}
           </>

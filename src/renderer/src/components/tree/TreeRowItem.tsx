@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { KeyboardEvent, ReactElement, ReactNode } from 'react'
 
 /**
  * 拖拽把手配置：域内已绑定行数据（章 / 条目），外壳只做渲染与事件转接。
@@ -13,11 +13,38 @@ export interface TreeRowGrip {
   onPointerCancel: (event: React.PointerEvent<HTMLElement>) => void
 }
 
+/** 折叠箭头：独立按钮，只切换展开态，不触发行选中（回收站卷行）。 */
+export interface TreeRowChevron {
+  /** 当前是否展开（驱动 `aria-expanded` 与箭头旋转）。 */
+  expanded: boolean
+  /** 无障碍名称（回收站传卷名，配合 `aria-expanded` 表达展开 / 收起）。 */
+  label: string
+  /** 切换展开态；点击 / 键盘事件已由外壳阻断冒泡。 */
+  onToggle: () => void
+}
+
+/** 共享树壳内联的折叠箭头（与左栏 `.vol-arrow` 同路径、同 9px 尺寸）。 */
+function Chevron(): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  )
+}
+
 /**
- * 树行公共外壳：根容器 → 圆点 → 域内前导内容 → 名字区 → 徽标 → 操作槽 → 可选把手。
+ * 树行公共外壳：根容器 → 可选折叠箭头 → 圆点 → 域内前导内容 → 名字区 → 徽标 → 操作槽 → 可选把手。
  *
  * 只承载**结构**，不承载内容：名字渲染、前缀段、徽标、内联改名输入框均由域内以
- * ReactNode 传入。类名一律由 `classPrefix` 拼出，现有 CSS 零改动。
+ * ReactNode 传入。类名一律由 `classPrefix` 拼出，现有章节 / 大纲 CSS 零改动。
  *
  * 占位线不在此组装：外壳恒为单 `div`，章行的 `drop-line` 兄弟节点仍由其包装层
  * 用 Fragment 拼装（避免把 `.chapters-list` 的 `gap` 作用到占位线上）。
@@ -25,25 +52,36 @@ export interface TreeRowGrip {
 export interface TreeRowItemProps {
   /** 行数据 id（选中 / 注册回调透传）。 */
   id: number
-  /** 根类前缀：拼出现有 CSS 类名（`chapter` | `outline-chapter`）。 */
-  classPrefix: 'chapter' | 'outline-chapter'
+  /** 根类前缀：拼出现有 CSS 类名（`chapter` | `outline-chapter` | `trash-row`）。 */
+  classPrefix: 'chapter' | 'outline-chapter' | 'trash-row'
   /** 是否当前选中行。 */
   active: boolean
+  /** 选中态类名，缺省 `is-active`（回收站沿用既有 `is-selected`）。 */
+  activeClass?: string
   /** 是否正在被拖拽（半透明视觉）。 */
   dragging?: boolean
-  /** 域内状态类，按序拼在 `is-active` 之后、`is-dragging` 之前（章：is-draft / is-special）。 */
+  /** 域内状态类，按序拼在选中态之后、`is-dragging` 之前（章：is-draft / is-special）。 */
   stateClasses?: readonly string[]
   /** 追加在 `is-dragging` 之后的状态类（大纲：is-nested / has-grip）。 */
   afterDraggingClasses?: readonly string[]
+  /** 是否渲染行首状态圆点，缺省 true（回收站卷行不渲染）。 */
+  showDot?: boolean
+  /** 折叠箭头（回收站卷行）；不传则不渲染，点击 / 键盘不冒泡到行选中。 */
+  chevron?: TreeRowChevron
+  /**
+   * 整行可交互：追加 `is-selectable`，设置 role=button / tabIndex / aria-pressed，
+   * 并支持 Enter / Space 选中。缺省 false（现有章节 / 大纲行行为逐字不变）。
+   */
+  interactive?: boolean
   /** 行元素引用回调（拖拽命中判定用；缺省不注册）。 */
   registerRow?: (id: number, element: HTMLElement | null) => void
   /** 选中行。 */
   onSelect: (id: number) => void
-  /** 圆点之后、名字之前的域内内容（章：前缀段 + `●`）；大纲不传。 */
+  /** 圆点之后、名字之前的域内内容（章：前缀段 + `●`；回收站章：特殊章前段 + `●`）。 */
   leading?: ReactNode
   /** 名字区（普通态 / 改名态由域内渲染）。 */
   nameNode: ReactNode
-  /** 行尾徽标（章：草稿徽标）；大纲不传。 */
+  /** 行尾徽标（章：草稿徽标；回收站卷行：计数）。 */
   badge?: ReactNode
   /** 操作按钮（域内组装），由外壳包进 `{prefix}-actions` 并阻断冒泡。 */
   actions: ReactNode
@@ -59,9 +97,13 @@ export default function TreeRowItem({
   id,
   classPrefix,
   active,
+  activeClass = 'is-active',
   dragging = false,
   stateClasses,
   afterDraggingClasses,
+  showDot = true,
+  chevron,
+  interactive = false,
   registerRow,
   onSelect,
   leading,
@@ -72,25 +114,58 @@ export default function TreeRowItem({
 }: TreeRowItemProps) {
   const classes = [
     classPrefix,
-    active ? 'is-active' : '',
+    active ? activeClass : '',
     ...(stateClasses ?? []),
     dragging ? 'is-dragging' : '',
-    ...(afterDraggingClasses ?? [])
+    ...(afterDraggingClasses ?? []),
+    interactive ? 'is-selectable' : ''
   ]
     .filter(Boolean)
     .join(' ')
+
+  const onKeyDown = interactive
+    ? (event: KeyboardEvent<HTMLDivElement>): void => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onSelect(id)
+        }
+      }
+    : undefined
 
   return (
     <div
       ref={registerRow ? (element) => registerRow(id, element) : undefined}
       className={classes}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      aria-pressed={interactive ? active : undefined}
       onClick={() => onSelect(id)}
+      onKeyDown={onKeyDown}
     >
-      <span className={`${classPrefix}-dot`} />
+      {chevron && (
+        <button
+          type="button"
+          className={`${classPrefix}-arrow`}
+          aria-expanded={chevron.expanded}
+          aria-label={chevron.label}
+          onClick={(event) => {
+            event.stopPropagation()
+            chevron.onToggle()
+          }}
+          onKeyDown={(event) => event.stopPropagation()}
+        >
+          <Chevron />
+        </button>
+      )}
+      {showDot && <span className={`${classPrefix}-dot`} />}
       {leading}
       {nameNode}
       {badge}
-      <span className={`${classPrefix}-actions`} onClick={(event) => event.stopPropagation()}>
+      <span
+        className={`${classPrefix}-actions`}
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={interactive ? (event) => event.stopPropagation() : undefined}
+      >
         {actions}
       </span>
       {grip && (

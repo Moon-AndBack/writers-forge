@@ -1,0 +1,228 @@
+/* ============================================================
+   写作视图 · 中栏回收站 — 树形模式行（章节 / 大纲回收站）
+   ------------------------------------------------------------------
+   与章节左栏 `.vol-head` / `.chapter` 行参数逐项对齐：
+   - 行内衬 9×10、gap 10、字号 13.5 / 行高 1.5、名段右缘 14px 渐隐；
+   - 卷行：padding-left 5 + 箭头有效宽 9 + gap 10 → 卷名 x=24；
+   - 章行：padding-left 10 + 圆点 6 + gap 10 → 前段 x=26（无前段时名段同起点）；
+   - 卷计数 mono 10.5 / --text-mute，hover / 聚焦隐藏；
+   - 操作组 right 2 / gap 1 / 22×22，主名让位沿用 writer-trash.css 的 52px；
+   - 展开 / 收起 grid-template-rows 0fr → 1fr（同 `.chapters`）。
+   选择器全部限定在 `.trash-tree-group` / `.trash-tree-residual` 内，
+   非树形（伏笔 / 灵感）保持 writer-trash.css 原视觉。
+   ============================================================ */
+
+/* ---------- 树形容器 ----------
+   卷间不加外边距：卷行上下内衬 9px 即形成 18px 视觉间隔；
+   展开时子列表底部 4px 内衬把间隔拉到 22px（对齐左栏卷章节奏）。 */
+.trash-tree-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 残差分组与卷内子列表同口径：1px 行距 + 上下 2 / 4 内衬。 */
+.trash-tree-residual {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0 4px;
+}
+
+/* ---------- 行参数（卷 / 章共用） ---------- */
+.trash-tree-group > .trash-row,
+.trash-tree-residual > .trash-row {
+  padding: 9px 10px;
+}
+
+.trash-tree-group > .trash-row {
+  padding: 9px 5px;
+}
+
+/* ---------- 卷行：折叠箭头 ----------
+   逻辑宽度 9px（18px 命中区 + 左右 -4.5px 外边距），与左栏 `.vol-arrow` 对齐；
+   命中区扩大但布局宽度不变，保证卷名起点 x = 5 + 9 + 10 = 24。 */
+.trash-row-arrow {
+  width: 18px;
+  height: 20px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 -4.5px;
+  border-radius: var(--r-xs);
+  color: var(--text-mute);
+}
+
+.trash-row-arrow svg {
+  width: 9px;
+  height: 9px;
+  /* 功能性 transform：展开旋转 90°，与左栏 `.vol-arrow` 同口径。
+     减动效由 base.css 的 prefers-reduced-motion 全局兜底。 */
+  transition: transform var(--dur-base) var(--ease);
+}
+
+.trash-row-arrow[aria-expanded='true'] svg {
+  transform: rotate(90deg);
+}
+
+.trash-row-arrow:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: -1px;
+}
+
+/* ---------- 卷名 / 章名 ----------
+   名段统一 13.5 / 1.5 + 右缘 14px 渐隐（同 `.vol-name` / `.chapter-name`）；
+   卷名 600，章名 400；自定义卷 / 特殊章抬到 --text，选中态再覆盖为品牌色 600。 */
+.trash-tree-group > .trash-row > .trash-row-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  -webkit-mask-image: linear-gradient(to right, var(--text) calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(to right, var(--text) calc(100% - 14px), transparent 100%);
+}
+
+.trash-children-list .trash-row-name,
+.trash-tree-residual .trash-row-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  -webkit-mask-image: linear-gradient(to right, var(--text) calc(100% - 14px), transparent 100%);
+  mask-image: linear-gradient(to right, var(--text) calc(100% - 14px), transparent 100%);
+}
+
+/* 自定义卷 / 特殊章：仅字色略深，选中态不参与。 */
+.trash-tree-group > .trash-row.is-special:not(.is-selected) > .trash-row-name,
+.trash-children-list .trash-row.is-special:not(.is-selected) .trash-row-name {
+  color: var(--text);
+}
+
+/* 选中名段（覆盖上面的 400 / --text-dim / --text 口径）。 */
+.trash-tree-group .trash-row.is-selected .trash-row-name,
+.trash-tree-residual .trash-row.is-selected .trash-row-name {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* ---------- 卷计数 ---------- */
+.trash-row-count {
+  flex: none;
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-mute);
+}
+
+.trash-tree-group > .trash-row:hover .trash-row-count,
+.trash-tree-group > .trash-row:focus-within .trash-row-count {
+  visibility: hidden;
+}
+
+/* ---------- 章行：状态圆点 / 特殊章前段 / 分隔点 ---------- */
+.trash-row-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--text-mute);
+  opacity: 0.5;
+  transition:
+    background var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+
+.trash-row.is-selected .trash-row-dot {
+  background: var(--brand);
+  opacity: 1;
+}
+
+.trash-row.is-special:not(.is-selected) .trash-row-dot {
+  background: var(--brand);
+  opacity: 0.7;
+}
+
+.trash-row-prefix {
+  flex: none;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.trash-row.is-selected .trash-row-prefix {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.trash-row-sep {
+  flex: none;
+  font-size: 6px;
+  line-height: 1;
+  color: var(--text-mute);
+  opacity: 0.7;
+  margin: 0 -3px;
+}
+
+/* ---------- 草稿徽标 ----------
+   复用章节左栏 `.chapter-draft`（9.5 / 600 / --warn / warn 16% 底），
+   hover / 聚焦时与操作按钮互斥隐藏（同左栏章行）。 */
+.trash-tree-group .trash-row:hover .chapter-draft,
+.trash-tree-group .trash-row:focus-within .chapter-draft,
+.trash-tree-residual .trash-row:hover .chapter-draft,
+.trash-tree-residual .trash-row:focus-within .chapter-draft {
+  visibility: hidden;
+}
+
+/* ---------- 操作组 ----------
+   右缘 2px（回收站无拖拽把手，贴行右缘）；按钮 22×22 来自共享 `.row-act`。
+   分栏卡内底色继续用 --control-on-soft；选中行与选中底同色，hover 回落控件底。 */
+.trash-tree-group .trash-row-actions,
+.trash-tree-residual .trash-row-actions {
+  right: 2px;
+  gap: 1px;
+}
+
+.trash-view--split .trash-tree-group .trash-row.is-selected .trash-row-actions,
+.trash-view--split .trash-tree-residual .trash-row.is-selected .trash-row-actions {
+  background: color-mix(in srgb, var(--brand) 12%, var(--soft-solid));
+}
+
+.trash-view--split .trash-tree-group .trash-row.is-selected:hover .trash-row-actions,
+.trash-view--split .trash-tree-residual .trash-row.is-selected:hover .trash-row-actions {
+  background: var(--control-on-soft);
+}
+
+/* ---------- 子行折叠 ----------
+   与 `.chapters` 同口径：0fr → 1fr；时长取 --dur-slow（240ms，贴近 220ms）；
+   内层 overflow:hidden 裁掉内容高度。 */
+.trash-children {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-slow) var(--ease);
+}
+
+.trash-children.is-open {
+  grid-template-rows: 1fr;
+}
+
+.trash-children-inner {
+  overflow: hidden;
+}
+
+.trash-children-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 2px 0 4px;
+}
