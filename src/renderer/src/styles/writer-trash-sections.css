@@ -2,7 +2,7 @@
    写作视图 · 中栏回收站 — 左侧三卡结构（章节回收站）
    ------------------------------------------------------------------
    - 标题卡（回收站 / 计数 / 清空）固定；
-   - 内容卡（分组 / 正文）在同一条滚动轴上共享滚动，空段不渲染；
+   - 内容卡（分组 / 正文）各自独立滚动，空段不渲染；
    - 卡底座 --soft-solid + --r-lg + 6px 内衬，卡间 8px；
    - 外层列表卡降级为透明宽度容器，避免同色软底再套软底卡（AGENTS §8.2）。
    仅作用于 `.trash-view--sections`（传 `sections` 的视图），其余回收站零变化。
@@ -53,19 +53,32 @@
   margin-left: auto;
 }
 
-/* 内容卡共享滚动：卡片保持自然高度，由本容器统一滚动。 */
+/* 内容区只负责纵向分配，不再滚动：滚动下放到每张内容卡内部。 */
 .trash-sections-scroll {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  scrollbar-gutter: stable;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+/* 内容卡独立滚动：overflow 在卡片自身上，滚动条落在 --soft-solid 底色内；
+   scrollbar-gutter: auto 让滚动条仅在需要时占宽，不再常驻预留。 */
 .trash-sections-scroll > .trash-section {
-  flex: none;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: auto;
+}
+
+/* 空态 / 加载 / 错误：单卡占满剩余高度，内容在卡内垂直居中。 */
+.trash-sections-scroll > .trash-section > .placeholder-view,
+.trash-sections-scroll > .trash-section > .trash-loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
 }
 
 /* 行状态：卡片底为 --soft-solid，沿用分栏列表卡的软底控件令牌。 */

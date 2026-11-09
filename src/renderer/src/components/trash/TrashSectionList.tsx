@@ -1,7 +1,7 @@
 /**
  * 回收站左侧三卡结构（仅 `TrashListView` 传入 `sections` 时启用）。
  *
- * 结构：固定标题卡（`.trash-head`）+ 内容卡共享滚动。内容卡按 `TrashRow.sectionKey`
+ * 结构：固定标题卡（`.trash-head`）+ 内容卡各自滚动。内容卡按 `TrashRow.sectionKey`
  * 分组，空段不渲染。section 可选自带卷行：有卷时由 `renderSectionRows` 走树形，
  * 无卷时沿用调用方传入的平铺行渲染器，保证选中 / 操作行为与旧单卡模式一致。
  * 样式见 `styles/writer-trash-sections.css`。
@@ -99,7 +99,7 @@ export function TrashSectionList({
     <div className="trash-sections">
       <div className="trash-section trash-section--head">{head}</div>
 
-      {/* 标题卡固定，内容卡共享这一条滚动轴（卡片自身不滚动）。 */}
+      {/* 标题卡固定，内容卡各自滚动（滚动条落在卡片底色内）。 */}
       <div className="trash-sections-scroll">
         {loadError && !hasRows ? (
           <div className="trash-section">
