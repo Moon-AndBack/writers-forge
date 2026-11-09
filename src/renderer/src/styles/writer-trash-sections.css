@@ -1,0 +1,88 @@
+/* ============================================================
+   写作视图 · 中栏回收站 — 左侧三卡结构（章节回收站）
+   ------------------------------------------------------------------
+   - 标题卡（回收站 / 计数 / 清空）固定；
+   - 内容卡（分组 / 正文）在同一条滚动轴上共享滚动，空段不渲染；
+   - 卡底座 --soft-solid + --r-lg + 6px 内衬，卡间 8px；
+   - 外层列表卡降级为透明宽度容器，避免同色软底再套软底卡（AGENTS §8.2）。
+   仅作用于 `.trash-view--sections`（传 `sections` 的视图），其余回收站零变化。
+   ============================================================ */
+
+/* 外层列表容器：保留 width / max-width / flex / min-height 与 Splitter 目标语义，
+   去掉卡片底色 / 描边 / 圆角 / 阴影。 */
+.trash-view--sections .trash-list-card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* 三卡纵向流：标题卡固定，内容区吃满剩余高度。 */
+.trash-sections {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 单列（空态 / 加载 / 错误态）补 8px 内衬；分栏时由 `.trash-body` 统一提供。 */
+.trash-view--sections:not(.trash-view--split) .trash-sections {
+  padding: 8px;
+}
+
+/* 分区卡底座（与左栏 `.pane-region` 同口径：--soft-solid + --r-lg + 6px 内衬）。 */
+.trash-section {
+  padding: 6px;
+  background: var(--soft-solid);
+  border-radius: var(--r-lg);
+}
+
+.trash-section--head {
+  flex: none;
+}
+
+/* 标题卡内衬：section 6px + 内容 8px；覆盖全局 head / 分栏 head 口径。 */
+.trash-view--sections .trash-head {
+  padding: 6px 8px;
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.trash-view--sections .trash-head > button {
+  margin-left: auto;
+}
+
+/* 内容卡共享滚动：卡片保持自然高度，由本容器统一滚动。 */
+.trash-sections-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trash-sections-scroll > .trash-section {
+  flex: none;
+}
+
+/* 行状态：卡片底为 --soft-solid，沿用分栏列表卡的软底控件令牌。 */
+.trash-view--sections .trash-row:hover {
+  background: var(--control-on-soft);
+}
+
+.trash-view--sections .trash-row.is-selected {
+  background: color-mix(in srgb, var(--brand) 12%, var(--soft-solid));
+}
+
+/* 选中行 hover 回落中性控件底，避免品牌底与悬停底叠加成第三种颜色。 */
+.trash-view--sections .trash-row.is-selected:hover {
+  background: var(--control-on-soft);
+}
+
+/* 行尾操作组同步换软底控件令牌，避免与行 hover 分层。 */
+.trash-view--sections .trash-row-actions {
+  background: var(--control-on-soft);
+}

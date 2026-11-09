@@ -3,7 +3,8 @@ import { CHAPTER_SELECT, toChapter, type ChapterRow } from './chapters'
 import { nextChapterSortOrder, nextVolumeSortOrder, renumberChaptersInGroup } from './chapterGroups'
 import { ensureUnfiledVolume } from './volumes'
 import { renumberOutlineItemsInGroup } from './outline/shared'
-import type { ChapterDbRow } from './chapterTypes'
+import { coerceVolumeKind } from './chapterMappers'
+import type { ChapterDbRow, VolumeKind } from './chapterTypes'
 
 /**
  * 章节域**回收站**（软删除的卷 / 章）：查询、还原、彻底删除。
@@ -35,6 +36,8 @@ export interface DeletedChapterRow extends ChapterRow {
   volumeInTrash: boolean
   /** 原归属卷是否系统「未分卷」卷。 */
   volumeIsUnfiled: boolean
+  /** 原归属卷 kind；卷被物理删除导致子查询无结果时为 null。 */
+  volumeKind: VolumeKind | null
 }
 
 /** 章节回收站内容：仅被软删的章（已删除的卷只在大纲回收站管理）。 */
@@ -51,6 +54,7 @@ interface DeletedChapterJoinRow extends ChapterDbRow {
   volumeTitle: string | null
   volumeDeletedAt: string | null
   volumeIsUnfiled: number | null
+  volumeKind: string | null
 }
 
 /**
@@ -64,7 +68,8 @@ export function listDeleted(bookId: string): DeletedContent {
         `SELECT ${CHAPTER_SELECT},
            (SELECT v.title FROM volumes v WHERE v.id = chapters.volume_id) AS volumeTitle,
            (SELECT v.deleted_at FROM volumes v WHERE v.id = chapters.volume_id) AS volumeDeletedAt,
-           (SELECT v.is_unfiled FROM volumes v WHERE v.id = chapters.volume_id) AS volumeIsUnfiled
+           (SELECT v.is_unfiled FROM volumes v WHERE v.id = chapters.volume_id) AS volumeIsUnfiled,
+           (SELECT v.kind FROM volumes v WHERE v.id = chapters.volume_id) AS volumeKind
          FROM chapters WHERE book_id = ? AND deleted_at IS NOT NULL
          ORDER BY deleted_at DESC, id DESC`
       )
@@ -73,7 +78,9 @@ export function listDeleted(bookId: string): DeletedContent {
     ...toChapter(row),
     volumeTitle: row.volumeTitle,
     volumeInTrash: row.volumeDeletedAt !== null,
-    volumeIsUnfiled: row.volumeIsUnfiled === 1
+    volumeIsUnfiled: row.volumeIsUnfiled === 1,
+    // 卷缺失（被物理删除）保留 null 语义；仅对存在的卷归一化异常 kind。
+    volumeKind: row.volumeKind === null ? null : coerceVolumeKind(row.volumeKind)
   }))
 
   return { chapters }

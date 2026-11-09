@@ -79,12 +79,21 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
     purgeItem: t('trash.purgeChapter')
   }
 
+  // 左侧三卡：标题卡 + 「分组」（原属自定义卷）+ 「正文」（其余）。空段由列表组件隐藏。
+  const sections = [
+    { key: 'custom', title: t('trash.groupCustom') },
+    { key: 'body', title: t('trash.groupBody') }
+  ]
+
   const chapterName = (chapter: DeletedContent['chapters'][number]): string =>
     labels.chapterLabel(chapter) || t('trash.untitledChapter')
 
   const chapters: TrashRow[] = content.chapters.map((chapter) => ({
     id: chapter.id,
-    name: chapterName(chapter)
+    name: chapterName(chapter),
+    // 「分组」= 原属自定义卷（排除系统「未分卷」卷）；正文卷 / 未分卷 /
+    // 原卷已被物理删除（volumeKind 为 null）/ 异常分组容器一律归「正文」。
+    sectionKey: chapter.volumeKind === 'custom' && !chapter.volumeIsUnfiled ? 'custom' : 'body'
   }))
 
   const requestRestoreChapter = (id: number): void => {
@@ -129,6 +138,7 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
   return (
     <TrashListView
       items={chapters}
+      sections={sections}
       loading={loading}
       loadError={loadError}
       onRetry={() => void reload()}

@@ -146,6 +146,8 @@ const chapters = {
     empty: '回收站为空',
     groupVolumes: '卷',
     groupChapters: '章节',
+    groupCustom: '分组',
+    groupBody: '正文',
     orphanVolume: '原卷已删除',
     unfiledVolume: '未分卷',
     untitledChapter: '无标题章节',

@@ -136,6 +136,8 @@ const chapters = {
     empty: 'Trash is empty',
     groupVolumes: 'Volumes',
     groupChapters: 'Chapters',
+    groupCustom: 'Custom',
+    groupBody: 'Body',
     orphanVolume: 'Original volume deleted',
     unfiledVolume: 'Unfiled',
     untitledChapter: 'Untitled chapter',

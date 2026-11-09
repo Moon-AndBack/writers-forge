@@ -8,15 +8,20 @@
  * 「列表 + 详情」为可选能力：传入 `detail` / `detailEmpty` 且存在数据时，经
  * `TrashSplitLayout` 渲染「列表卡 + 分隔条 + 详情卡」两栏（宽度可拖拽并持久化）；
  * 未传详情区或首帧 / 空态 / 错误态时保持单列，head + 列表的 DOM 与改造前一致。
+ * 传 `sections` 切换为左侧三卡（标题卡固定 + 内容卡共享滚动）：每个 section 可选
+ * `volumes` 自带卷树（大纲「分组大纲」），不传 / 空数组走平铺。不传 `sections` 时
+ * 仍走旧单卡结构，伏笔 / 灵感回收站视觉逐字不变。
  */
 import { useState } from 'react'
 import type { KeyboardEvent, ReactElement, ReactNode } from 'react'
 import { Button } from '../ui'
 import { EmptyState } from '../EmptyState'
 import { LoadErrorState } from '../LoadErrorState'
-import TreeRowItem from '../tree/TreeRowItem'
 import { TrashSplitLayout } from './TrashSplitLayout'
 import { TrashRowActions } from './TrashRowActions'
+import { TrashSectionList } from './TrashSectionList'
+import type { TrashSection } from './TrashSectionList'
+import { TrashTreeSection } from './TrashTreeSection'
 
 /** 回收站行：`name` 为主名，`sub` 为非树形模式的次要行（如原归属卷名）。 */
 export interface TrashRow {
@@ -34,6 +39,8 @@ export interface TrashRow {
   emphasis?: boolean
   /** 树形卷行计数：该卷下回收站中的章 / 条目数。 */
   count?: number
+  /** 三卡模式的归属段 key（对应 `sections[].key`）；缺省归入第一段。 */
+  sectionKey?: string
 }
 
 /** 选中行所属分组：卷 / 条目（两表 id 可能相同，故以 kind 消歧）。 */
@@ -65,12 +72,12 @@ export interface TrashListViewMessages {
 }
 
 export interface TrashListViewProps {
-  /** 软删的卷行（可选：章节回收站只列章，不传；大纲回收站仍传）。 */
+  /** 软删的卷行（仅旧单卡树形模式使用；三卡模式改由 `sections[].volumes` 传入）。 */
   volumes?: TrashRow[]
   /** 软删的条目行（平铺模式：主名 + 可选次要行；章节不传次要行）。 */
   items: TrashRow[]
   /**
-   * 树形模式：父卷也在回收站的条目挂到该卷行下，其余条目仍留在
+   * 旧单卡树形模式：父卷也在回收站的条目挂到该卷行下，其余条目仍留在
    * `messages.groupItems` 残差分组。缺省 false（章节 / 伏笔 / 灵感保持平铺分组）。
    */
   tree?: boolean
@@ -104,6 +111,12 @@ export interface TrashListViewProps {
   detail?: ReactNode
   /** 未选中时的详情区空态。 */
   detailEmpty?: ReactNode
+  /**
+   * 左侧三卡模式（章节 / 大纲回收站）：items 按 `sectionKey` 分组，渲染「标题卡 + 各内容卡」，
+   * 空段隐藏；卷行随 `sections[].volumes` 传入（section 内有卷时走树形），顶层 `volumes`
+   * 不参与分组 / 计数。缺省保持旧单卡平铺 / 树形结构（伏笔 / 灵感 / 大纲旧路径）。
+   */
+  sections?: TrashSection[]
 }
 
 /**
@@ -183,9 +196,16 @@ export function TrashListView({
   selected,
   onSelect,
   detail,
-  detailEmpty
+  detailEmpty,
+  sections = []
 }: TrashListViewProps): ReactElement {
-  const total = volumes.length + items.length
+  const sectionsEnabled = sections.length > 0
+  // 三卡模式的卷随 sections 自带，避免与顶层 `volumes` 重复计数。
+  const sectionVolumeCount = sections.reduce(
+    (sum, section) => sum + (section.volumes?.length ?? 0),
+    0
+  )
+  const total = (sectionsEnabled ? sectionVolumeCount : volumes.length) + items.length
   const isEmpty = !loading && total === 0
   const selectable = onSelect !== undefined
   // 详情区（含未选中空态）存在即启用分栏；两者都不传时保持旧单列结构。
@@ -195,6 +215,7 @@ export function TrashListView({
   const split = detailEnabled && total > 0
 
   // 树形卷展开态：白名单，默认空集 = 打开回收站时全部收起（与左栏默认收起一致）。
+  // 状态留在列表层，分栏切换导致子树重建时不会丢失已展开的卷。
   const [openVolumes, setOpenVolumes] = useState<ReadonlySet<number>>(() => new Set<number>())
   const toggleVolume = (id: number): void => {
     setOpenVolumes((prev) => {
@@ -207,25 +228,6 @@ export function TrashListView({
 
   const isSelected = (kind: TrashSelectionKind, id: number): boolean =>
     selected !== undefined && selected !== null && selected.kind === kind && selected.id === id
-
-  // 树形分组：仅把「父卷也在回收站」的条目挂到卷行下；无匹配父卷的条目
-  // （含大纲 volumeId = null 的独立条目）留在残差分组。条目沿用后端顺序，
-  // 按卷归组后组内顺序不变。非树形模式不参与计算。
-  const childrenByVolume = new Map<number, TrashRow[]>()
-  const residualItems: TrashRow[] = []
-  if (tree) {
-    const deletedVolumeIds = new Set(volumes.map((volume) => volume.id))
-    for (const item of items) {
-      const parentId = item.parentId
-      if (parentId !== undefined && deletedVolumeIds.has(parentId)) {
-        const siblings = childrenByVolume.get(parentId)
-        if (siblings) siblings.push(item)
-        else childrenByVolume.set(parentId, [item])
-      } else {
-        residualItems.push(item)
-      }
-    }
-  }
 
   const volumeActions = (volume: TrashRow, wrapped = true): ReactElement => (
     <TrashRowActions
@@ -276,72 +278,6 @@ export function TrashListView({
     </FlatTrashRow>
   )
 
-  // 树形章 / 条目行：复用共享 `TreeRowItem`（圆点 + 可选特殊章前段 + 名段 + 草稿徽标 + 操作）。
-  const treeItemRow = (item: TrashRow): ReactElement => (
-    <TreeRowItem
-      key={`c-${item.id}`}
-      id={item.id}
-      classPrefix="trash-row"
-      activeClass="is-selected"
-      active={isSelected('item', item.id)}
-      stateClasses={item.emphasis ? ['is-special'] : undefined}
-      interactive={selectable}
-      onSelect={(id) => onSelect?.({ kind: 'item', id })}
-      leading={
-        item.prefix !== undefined && item.prefix !== '' ? (
-          <>
-            <span className="trash-row-prefix">{item.prefix}</span>
-            <span className="trash-row-sep" aria-hidden="true">
-              ●
-            </span>
-          </>
-        ) : undefined
-      }
-      nameNode={<span className="trash-row-name">{item.name}</span>}
-      badge={item.badge ? <span className="chapter-draft">{item.badge}</span> : null}
-      actions={itemActions(item, false)}
-    />
-  )
-
-  // 树形卷行：箭头（独立折叠）→ 卷名（x=24）→ 计数 → 操作；其余区域选中看详情。
-  const treeVolumeRow = (volume: TrashRow): ReactElement => {
-    const open = openVolumes.has(volume.id)
-    const children = childrenByVolume.get(volume.id) ?? []
-    return (
-      <div className="trash-tree-group" key={`tv-${volume.id}`}>
-        <TreeRowItem
-          id={volume.id}
-          classPrefix="trash-row"
-          activeClass="is-selected"
-          active={isSelected('volume', volume.id)}
-          stateClasses={volume.emphasis ? ['is-special'] : undefined}
-          interactive={selectable}
-          showDot={false}
-          chevron={{
-            expanded: open,
-            label: volume.name,
-            onToggle: () => toggleVolume(volume.id)
-          }}
-          onSelect={(id) => onSelect?.({ kind: 'volume', id })}
-          nameNode={<span className="trash-row-name">{volume.name}</span>}
-          badge={
-            volume.count !== undefined ? (
-              <span className="trash-row-count">{volume.count}</span>
-            ) : null
-          }
-          actions={volumeActions(volume, false)}
-        />
-        {children.length > 0 && (
-          <div className={`trash-children${open ? ' is-open' : ''}`} inert={!open}>
-            <div className="trash-children-inner">
-              <div className="trash-children-list">{children.map((item) => treeItemRow(item))}</div>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
-
   const head = (
     <div className="trash-head">
       <span className="trash-title">{messages.title}</span>
@@ -365,23 +301,20 @@ export function TrashListView({
         ) : isEmpty ? (
           <EmptyState compact title={messages.empty} />
         ) : tree ? (
-          <>
-            {volumes.length > 0 ? (
-              <section className="trash-group">
-                <div className="trash-group-title">{messages.groupVolumes}</div>
-                {volumes.map((volume) => treeVolumeRow(volume))}
-              </section>
-            ) : null}
-
-            {residualItems.length > 0 ? (
-              <section className="trash-group">
-                <div className="trash-group-title">{messages.groupItems}</div>
-                <div className="trash-tree-residual">
-                  {residualItems.map((item) => treeItemRow(item))}
-                </div>
-              </section>
-            ) : null}
-          </>
+          <TrashTreeSection
+            volumes={volumes}
+            items={items}
+            openVolumes={openVolumes}
+            onToggleVolume={toggleVolume}
+            legacyGroups
+            groupVolumesLabel={messages.groupVolumes}
+            groupItemsLabel={messages.groupItems}
+            selectable={selectable}
+            isSelected={isSelected}
+            onSelect={onSelect}
+            renderVolumeActions={(volume) => volumeActions(volume, false)}
+            renderItemActions={(item) => itemActions(item, false)}
+          />
         ) : (
           <>
             {volumes.length > 0 ? (
@@ -403,24 +336,57 @@ export function TrashListView({
     </div>
   )
 
+  // 三卡模式：head 作为固定标题卡，items 按 sectionKey 分入内容卡；
+  // section 自带非空 volumes 时走树形，否则保持平铺。不传 sections 时继续走旧结构。
+  const content = sectionsEnabled ? (
+    <TrashSectionList
+      head={head}
+      sections={sections}
+      items={items}
+      loading={loading}
+      loadError={loadError}
+      onRetry={onRetry}
+      loadingText={messages.loadingText}
+      emptyText={messages.empty}
+      renderRow={flatItemRow}
+      renderSectionRows={(section, rows) =>
+        (section.volumes?.length ?? 0) > 0 ? (
+          <TrashTreeSection
+            volumes={section.volumes ?? []}
+            items={rows}
+            openVolumes={openVolumes}
+            onToggleVolume={toggleVolume}
+            groupItemsLabel={messages.groupItems}
+            selectable={selectable}
+            isSelected={isSelected}
+            onSelect={onSelect}
+            renderVolumeActions={(volume) => volumeActions(volume, false)}
+            renderItemActions={(item) => itemActions(item, false)}
+          />
+        ) : (
+          rows.map((row) => flatItemRow(row))
+        )
+      }
+    />
+  ) : (
+    <>
+      {head}
+      {list}
+    </>
+  )
+
+  // 根类名按原顺序拼接：不传 sections 时与改造前逐字一致。
+  const viewClassName = [
+    'trash-view',
+    split ? 'trash-view--split' : null,
+    sectionsEnabled ? 'trash-view--sections' : null
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
-    <div className={split ? 'trash-view trash-view--split' : 'trash-view'}>
-      {split ? (
-        <TrashSplitLayout
-          list={
-            <>
-              {head}
-              {list}
-            </>
-          }
-          detail={detail ?? detailEmpty}
-        />
-      ) : (
-        <>
-          {head}
-          {list}
-        </>
-      )}
+    <div className={viewClassName}>
+      {split ? <TrashSplitLayout list={content} detail={detail ?? detailEmpty} /> : content}
       {footer}
     </div>
   )

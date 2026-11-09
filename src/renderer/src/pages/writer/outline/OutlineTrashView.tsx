@@ -38,7 +38,8 @@ export interface OutlineTrashViewProps {
 /**
  * 大纲回收站视图（中栏）：列出被软删的卷与条目，支持还原、彻底删除、清空。
  *
- * 数据：`api.outline.listDeleted(bookId)`。卷 / 条目分组展示；条目带原归属卷名。
+ * 数据：`api.outline.listDeleted(bookId)`。左侧三卡分「单大纲」（独立条目）与
+ * 「分组大纲」（全部卷及其下条目，树形展示）；条目带原归属卷名。
  * 还原 / 彻底删除 / 清空后，除刷新本视图外，经 `onChanged` 通知页面刷新大纲树
  * （调用方 `OutlineEditor` 在该回调内一并执行 `onRefreshVolumes`）。
  * 与章节回收站的差异：大纲卷 / 条目均为纯自定义名（无编号），显示名走
@@ -102,8 +103,16 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
   const items: TrashRow[] = content.items.map((item) => ({
     id: item.id,
     name: outlineItemLabel(item, tOutline('unnamedChapter')),
-    parentId: item.volumeId ?? undefined
+    parentId: item.volumeId ?? undefined,
+    // 单大纲 = 独立条目（无归属卷）；其余条目全部归「分组大纲」。
+    sectionKey: item.volumeId === null ? 'standalone' : 'grouped'
   }))
+
+  // 左侧三卡：标题卡 + 「单大纲」（独立条目，平铺）+「分组大纲」（全部卷及其条目，树形）。
+  const sections = [
+    { key: 'standalone', title: tOutline('trash.groupStandalone'), volumes: [] },
+    { key: 'grouped', title: tOutline('trash.groupGrouped'), volumes }
+  ]
 
   const requestRestoreVolume = (id: number): void => {
     if (busy) return
@@ -169,9 +178,8 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
 
   return (
     <TrashListView
-      volumes={volumes}
       items={items}
-      tree
+      sections={sections}
       loading={loading}
       loadError={loadError}
       onRetry={() => void reload()}

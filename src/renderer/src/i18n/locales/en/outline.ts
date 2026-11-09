@@ -72,6 +72,10 @@ const outline = {
     none: 'No match',
     count: 'Match {{index}}/{{total}}',
     noMatch: 'No matches'
+  },
+  trash: {
+    groupStandalone: 'Standalone',
+    groupGrouped: 'Grouped'
   }
 } satisfies ZhCNResources['outline']
 

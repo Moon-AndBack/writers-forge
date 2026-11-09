@@ -77,6 +77,10 @@ const outline = {
     none: '无匹配',
     count: '命中 {{index}}/{{total}}',
     noMatch: '没有匹配项'
+  },
+  trash: {
+    groupStandalone: '单大纲',
+    groupGrouped: '分组大纲'
   }
 }
 
