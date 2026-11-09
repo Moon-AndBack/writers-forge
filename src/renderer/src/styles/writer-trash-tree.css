@@ -8,8 +8,9 @@
    - 卷计数 mono 10.5 / --text-mute，hover / 聚焦隐藏；
    - 操作组 right 2 / gap 1 / 22×22，主名让位沿用 writer-trash.css 的 52px；
    - 展开 / 收起 grid-template-rows 0fr → 1fr（同 `.chapters`）。
-   选择器全部限定在 `.trash-tree-group` / `.trash-tree-residual` 内，
-   非树形（伏笔 / 灵感）保持 writer-trash.css 原视觉。
+   选择器在 `.trash-tree-group` / `.trash-tree-residual` 内限定树形布局、名段与折叠；
+   `.trash-row-dot` 同时服务树形条目与平铺行（章节 / 大纲单大纲），
+   伏笔 / 灵感不渲染圆点，保持 writer-trash.css 原视觉。
    ============================================================ */
 
 /* ---------- 树形容器 ----------

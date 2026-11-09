@@ -105,7 +105,9 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
     name: outlineItemLabel(item, tOutline('unnamedChapter')),
     parentId: item.volumeId ?? undefined,
     // 单大纲 = 独立条目（无归属卷）；其余条目全部归「分组大纲」。
-    sectionKey: item.volumeId === null ? 'standalone' : 'grouped'
+    sectionKey: item.volumeId === null ? 'standalone' : 'grouped',
+    // 圆点仅加在「单大纲」平铺行；「分组大纲」走树形，圆点由 TreeRowItem 统一渲染。
+    showDot: item.volumeId === null
   }))
 
   // 左侧三卡：标题卡 + 「单大纲」（独立条目，平铺）+「分组大纲」（全部卷及其条目，树形）。

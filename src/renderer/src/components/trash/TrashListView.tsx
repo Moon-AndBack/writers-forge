@@ -37,6 +37,8 @@ export interface TrashRow {
   badge?: string
   /** 树形名段强调（自定义卷 / 特殊章）：名段由 `--text-dim` 转 `--text`。 */
   emphasis?: boolean
+  /** 平铺模式行首状态圆点（章节 / 大纲单大纲）；缺省 false（伏笔 / 灵感不渲染）。 */
+  showDot?: boolean
   /** 树形卷行计数：该卷下回收站中的章 / 条目数。 */
   count?: number
   /** 三卡模式的归属段 key（对应 `sections[].key`）；缺省归入第一段。 */
@@ -138,12 +140,14 @@ function FlatTrashRow({
   onSelect?: (selection: TrashSelection) => void
   children: ReactNode
 }): ReactElement {
-  const baseClassName =
-    selectable && selected
-      ? 'trash-row is-selectable is-selected'
-      : selectable
-        ? 'trash-row is-selectable'
-        : 'trash-row'
+  const baseClassName = [
+    'trash-row',
+    selectable ? 'is-selectable' : null,
+    selectable && selected ? 'is-selected' : null,
+    row.emphasis ? 'is-special' : null
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   const pick = (): void => onSelect?.({ kind, id: row.id })
 
@@ -165,6 +169,7 @@ function FlatTrashRow({
       onClick={selectable ? pick : undefined}
       onKeyDown={onKeyDown}
     >
+      {row.showDot ? <span className="trash-row-dot" /> : null}
       {kind === 'volume' ? (
         <span className="trash-row-name">{row.name}</span>
       ) : (

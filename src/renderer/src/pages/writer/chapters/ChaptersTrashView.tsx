@@ -91,6 +91,9 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
   const chapters: TrashRow[] = content.chapters.map((chapter) => ({
     id: chapter.id,
     name: chapterName(chapter),
+    // 平铺行与章节左栏章行对齐：行首状态圆点；特殊章经 `is-special` 转品牌 0.7。
+    showDot: true,
+    emphasis: chapter.kind === 'special',
     // 「分组」= 原属自定义卷（排除系统「未分卷」卷）；正文卷 / 未分卷 /
     // 原卷已被物理删除（volumeKind 为 null）/ 异常分组容器一律归「正文」。
     sectionKey: chapter.volumeKind === 'custom' && !chapter.volumeIsUnfiled ? 'custom' : 'body'
