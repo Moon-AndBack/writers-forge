@@ -2,8 +2,9 @@
  * 回收站左侧三卡结构（仅 `TrashListView` 传入 `sections` 时启用）。
  *
  * 结构：固定标题卡（`.trash-head`）+ 内容卡各自滚动。内容卡按 `TrashRow.sectionKey`
- * 分组，空段不渲染。section 可选自带卷行：有卷时由 `renderSectionRows` 走树形，
- * 无卷时沿用调用方传入的平铺行渲染器，保证选中 / 操作行为与旧单卡模式一致。
+ * 分组，空段不渲染；卡内不再渲染分组标题，直接展示行。section 可选自带卷行：
+ * 有卷时由 `renderSectionRows` 走树形，无卷时沿用调用方传入的平铺行渲染器，
+ * 保证选中 / 操作行为与旧单卡模式一致。
  * 样式见 `styles/writer-trash-sections.css`。
  */
 import type { ReactElement, ReactNode } from 'react'
@@ -11,9 +12,13 @@ import { EmptyState } from '../EmptyState'
 import { LoadErrorState } from '../LoadErrorState'
 import type { TrashRow } from './TrashListView'
 
-/** 内容卡定义：`key` 对应 `TrashRow.sectionKey`，`title` 为卡片分组标题。 */
+/** 内容卡定义：`key` 对应 `TrashRow.sectionKey`。 */
 export interface TrashSection {
   key: string
+  /**
+   * 卡片分组标题。内容卡已不渲染标题；字段保留以免改动调用方签名与 i18n key，
+   * 可作未来无障碍标签等用途。
+   */
   title: string
   /**
    * 该段卷行：非空时按树形渲染（卷行 + 其下条目 + 残差）；缺省 / 空数组走平铺。
@@ -116,7 +121,6 @@ export function TrashSectionList({
         ) : (
           visibleSections.map((section) => (
             <div className="trash-section" key={section.key}>
-              <div className="trash-group-title">{section.title}</div>
               {renderSectionRows !== undefined
                 ? renderSectionRows(section, section.rows)
                 : section.rows.map((row) => renderRow(row))}
