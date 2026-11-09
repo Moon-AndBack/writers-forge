@@ -7,7 +7,8 @@
  * 消除「双份维护」漂移面）。
  *
  * 本模块不发起 IPC，只做：
- * - **分组**：按 `listVolumes` 展示顺序归拢各卷章节（`volumeId` 必填，无「未分卷」）；
+ * - **分组**：按 `listVolumes` 展示顺序归拢各卷章节（`volumeId` 必填；系统「未分卷」卷
+ *   同样参与分组，展示名由渲染层给）；
  * - **动态编号展示**：卷「卷X」仅 `kind='normal'` 且 `numberIndex>0` 拼前缀；章「第X章」
  *   仅 `kind='normal'` 拼；特殊章显示 `specialPrefix + title`（编号由主进程算好，渲染层只消费）；
  * - **编辑头 N/M**：仅统计「普通卷的普通章」的全局序号 / 总数。
@@ -200,7 +201,7 @@ export const VOLUME_KIND_LABELS: Record<
 
 /**
  * 章节树分组：按 `listVolumes` 展示顺序归拢章节（保持 `listChapters` 相对顺序）。
- * `volumeId` 必填（未分卷语义已移除），无「未分卷」分组。
+ * `volumeId` 必填；系统「未分卷」卷作为普通分组参与（空卡与展示名由渲染层处理）。
  */
 export function groupChapters(volumes: VolumeRow[], chapters: ChapterRow[]): VolumeGroup[] {
   const byVolume = new Map<number, ChapterRow[]>()

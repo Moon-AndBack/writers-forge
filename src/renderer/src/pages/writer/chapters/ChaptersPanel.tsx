@@ -24,6 +24,9 @@ import {
 } from '../foreshadow/useForeshadowDeleteImpact'
 import type { CreateChapterInput } from './useChapterTree'
 
+/** 跨卷拖拽悬停收起卷的自动展开延迟（ms）。 */
+const DROP_EXPAND_DELAY = 450
+
 export interface ChaptersPanelProps {
   /** 所属书籍 id（切书时重置展开态；与 `key={bookId}` 重挂载双保险）。 */
   bookId?: string
@@ -47,19 +50,23 @@ export interface ChaptersPanelProps {
   onSetChapterPin: (id: number, pin: ChapterPin) => void
   /** 同段内重排章（松手落库，失败由页面 reload 回滚）。 */
   onReorderChapter: (id: number, targetIndex: number) => void
+  /** 跨卷移动章（追加到目标卷末尾，失败由页面 reload 回滚）。 */
+  onMoveChapter: (id: number, volumeId: number) => void
   /** 各卷普通章数（达上限时「新建章」禁用，tooltip「已达卷内最大容量」）。 */
   isVolumeFull: (volumeId: number) => boolean
 }
 
 /**
  * 章节树面板：卷 / 章两级行。
- * - 卷列表拆为上下两块容器卡（对齐大纲侧）：上卡自定义卷（`kind='custom'`，如「番外」）、
- *   下卡正文卷（`kind='normal'`，自动「卷X」编号）；卡内保持 `sort_order` 顺序（仅分组，
- *   不重排、不动数据）；某类卷为 0 时该卡不渲染（对齐大纲非卷区空卡行为）；
+ * - 卷列表拆为三块容器卡（对齐大纲侧）：上卡自定义卷（`kind='custom'`，如「番外」）、
+ *   下卡正文卷（`kind='normal'`，自动「卷X」编号）、底卡系统「未分卷」（`isUnfiled`，
+ *   仅其下有章时出卡，只可折叠 / 展开，不提供建章 / 重命名 / 删除）；卡内保持
+ *   `sort_order` 顺序（仅分组，不重排、不动数据）；某类卷为 0 时该卡不渲染
+ *   （对齐大纲非卷区空卡行为）；
  * - 卷行双段：「卷X」（斜体，不可编辑）+ `·` 分隔点 + 名段（可编辑，内联）；
  *   自定义卷整名（无编号前缀），重命名 = 整名编辑；
  * - 章行三段：dot → 前缀段（斜体）→ ● 圆点 → 名段；特殊章带置顶 / 置底切换；
- * - 拖拽：把手 pointer 模式，同卷同段内重排。
+ * - 拖拽：把手 pointer 模式；同卷同段内重排，拖到其它可接收卷 = 跨卷移动（追加到卷末尾）。
  */
 export default function ChaptersPanel({
   bookId,
@@ -73,6 +80,7 @@ export default function ChaptersPanel({
   onDeleteChapter,
   onSetChapterPin,
   onReorderChapter,
+  onMoveChapter,
   isVolumeFull
 }: ChaptersPanelProps) {
   const { t } = useTranslation('chapters')
@@ -91,10 +99,41 @@ export default function ChaptersPanel({
   const { inspect: inspectForeshadowImpact } = useForeshadowDeleteImpact()
 
   const groups = groupChapters(volumes, chapters)
-  // 两卡分组：上卡自定义卷（`custom`）/ 下卡正文卷（`normal`）（仅 filter，不重排）。
-  const specialGroups = groups.filter((group) => group.volume.kind === 'custom')
-  const normalGroups = groups.filter((group) => group.volume.kind !== 'custom')
-  const drag = useChapterDrag({ onReorder: onReorderChapter })
+  // 可见分组：系统「未分卷」卷仅在其下有章时出卡（空卡隐藏）；其余卷恒出卡。
+  // 空态按可见分组判定，避免「存在空未分卷卷」让空态失效。
+  const visibleGroups = groups.filter(
+    (group) => !group.volume.isUnfiled || group.chapters.length > 0
+  )
+  // 三卡分组（仅 filter，不重排）：上卡自定义卷（`custom`，排除系统未分卷）/
+  // 下卡正文卷（`normal`）/ 底卡系统未分卷（`isUnfiled`）。
+  const specialGroups = visibleGroups.filter(
+    (group) => group.volume.kind === 'custom' && !group.volume.isUnfiled
+  )
+  const normalGroups = visibleGroups.filter((group) => group.volume.kind === 'normal')
+  const unfiledGroups = visibleGroups.filter((group) => group.volume.isUnfiled)
+  // 松手落卷立即展开目标卷：快速拖入收起卷时避免章移动后「消失」；
+  // 悬停 450ms 自动展开（见下方 effect）只是提前预览。
+  const handleDropChapter = useCallback(
+    (id: number, volumeId: number): void => {
+      openVolume(`v${volumeId}`)
+      onMoveChapter(id, volumeId)
+    },
+    [openVolume, onMoveChapter]
+  )
+  const drag = useChapterDrag({
+    onReorder: onReorderChapter,
+    onMove: handleDropChapter,
+    volumes
+  })
+
+  // 跨卷拖拽悬停收起卷约 450ms 自动展开（复用卷展开态与 grid 过渡）；离开后不强制收起。
+  // 定时器随目标变化 / 拖拽结束（dropContainerKey 归 null）/ 组件卸载自动清理。
+  useEffect(() => {
+    const targetKey = drag.dropContainerKey
+    if (targetKey === null || isOpen(targetKey)) return undefined
+    const timer = window.setTimeout(() => openVolume(targetKey), DROP_EXPAND_DELAY)
+    return () => window.clearTimeout(timer)
+  }, [drag.dropContainerKey, isOpen, openVolume])
 
   // 当前编辑章所属卷 key（章节 key 约定 `v{volumeId}`）。
   const activeVolumeKey = useMemo(() => {
@@ -109,6 +148,17 @@ export default function ChaptersPanel({
     if (volumes.length === 0 || chapters.length === 0) return
     seedOnce(activeVolumeKey === null ? [] : [activeVolumeKey])
   }, [volumes.length, chapters.length, activeVolumeKey, seedOnce])
+
+  // 未分卷卡首次出现（从回收站还原章后懒创建 / 首次检测到其下有章）时自动展开一次：
+  // 默认全收起的左栏若把该卡收起，用户会误以为还原的章没有回来。
+  // 仅首次出现时展开；之后用户手动收起，不因数据刷新再次打开；普通卷仍默认收起。
+  const unfiledAutoOpened = useRef(false)
+  const firstUnfiledKey = unfiledGroups.find((group) => group.chapters.length > 0)?.key ?? null
+  useEffect(() => {
+    if (unfiledAutoOpened.current || firstUnfiledKey === null) return
+    unfiledAutoOpened.current = true
+    openVolume(firstUnfiledKey)
+  }, [firstUnfiledKey, openVolume])
 
   // 当前编辑项变化时跟随展开新卷（保留其它卷的原展开态，不强制折叠）。
   // 仅在 key 真正变化时触发：数据刷新（rename / reorder / 正文保存）不会重开用户手工收起的卷。
@@ -184,22 +234,29 @@ export default function ChaptersPanel({
     [confirm, onDeleteChapter, t, labels, inspectForeshadowImpact]
   )
 
-  // 单个卷分组的 `.vol` 块渲染：特殊卷卡 / 普通卷卡两卡共用（仅分组不同，
-  // 行结构与操作 / 折叠 / 拖拽完全一致）。
+  // 单个卷分组的 `.vol` 块渲染：自定义卷卡 / 正文卷卡 / 未分卷卡共用（仅分组不同，
+  // 行结构与折叠 / 章行拖拽完全一致；未分卷卡不渲染操作组、不可重命名）。
   const renderVolumeGroup = (group: VolumeGroup) => {
     const open = isOpen(group.key)
     const volume = group.volume
-    const renaming = renamingId === volume.id
+    const unfiled = volume.isUnfiled
+    const renaming = !unfiled && renamingId === volume.id
     const volPrefix = !renaming ? labels.volumePrefixLabel(volume) : ''
-    const volName = !renaming ? volumeNameLabel(volume) : ''
+    const volName = !renaming
+      ? unfiled
+        ? labels.volumeLabel(volume)
+        : volumeNameLabel(volume)
+      : ''
     const full = isVolumeFull(volume.id)
+    const dropTarget = drag.dropContainerKey === group.key
     return (
       <div
         key={group.key}
-        className={`vol${open ? ' is-open' : ''}${volume.kind === 'custom' ? ' is-special' : ' is-plain'}`}
+        data-volume-id={volume.id}
+        className={`vol${open ? ' is-open' : ''}${volume.kind === 'custom' ? ' is-special' : ' is-plain'}${unfiled ? ' is-unfiled' : ''}`}
       >
         <div
-          className="vol-head"
+          className={`vol-head${dropTarget ? ' is-drop-target' : ''}`}
           role="button"
           tabIndex={0}
           aria-expanded={open}
@@ -261,57 +318,60 @@ export default function ChaptersPanel({
           )}
           <span className="vol-count">{group.chapters.length}</span>
 
-          {/* 行内 hover 操作：新建章 + 新建特殊章（正文卷）/ 重命名 / 删除。 */}
-          <span className="vol-actions" onClick={(event) => event.stopPropagation()}>
-            <IconButton
-              size="sm"
-              className="row-act"
-              label={full ? t('volumeFull') : t('newChapter')}
-              tooltipPlacement="top"
-              disabled={full}
-              onClick={(event) => {
-                // 鼠标点击后 blur：本按钮无弹窗接焦，焦点残留会让
-                // .vol-head:focus-within 持续命中（移出后按钮组不隐藏）。
-                // detail>0 限定鼠标；键盘触发不 blur 保持可达性。
-                if (event.detail > 0) event.currentTarget.blur()
-                // 新建章落在本卷：先展开，避免收起态下新建后看不见。
-                openVolume(group.key)
-                onCreateChapter({ volumeId: volume.id })
-              }}
-            >
-              <PlusIcon width={14} />
-            </IconButton>
-            {volume.kind !== 'custom' && (
+          {/* 行内 hover 操作：新建章 + 新建特殊章（正文卷）/ 重命名 / 删除。
+              系统「未分卷」卡不提供任何操作（不可建章 / 重命名 / 删除），整组不渲染。 */}
+          {!unfiled && (
+            <span className="vol-actions" onClick={(event) => event.stopPropagation()}>
               <IconButton
                 size="sm"
                 className="row-act"
-                label={t('newSpecialChapter')}
+                label={full ? t('volumeFull') : t('newChapter')}
                 tooltipPlacement="top"
-                onClick={() => setSpecialChapterVolume(volume)}
+                disabled={full}
+                onClick={(event) => {
+                  // 鼠标点击后 blur：本按钮无弹窗接焦，焦点残留会让
+                  // .vol-head:focus-within 持续命中（移出后按钮组不隐藏）。
+                  // detail>0 限定鼠标；键盘触发不 blur 保持可达性。
+                  if (event.detail > 0) event.currentTarget.blur()
+                  // 新建章落在本卷：先展开，避免收起态下新建后看不见。
+                  openVolume(group.key)
+                  onCreateChapter({ volumeId: volume.id })
+                }}
               >
-                <SpecialChapterIcon width={14} />
+                <PlusIcon width={14} />
               </IconButton>
-            )}
-            <IconButton
-              size="sm"
-              className="row-act"
-              label={t('rename')}
-              tooltipPlacement="top"
-              onClick={() => beginRename(volume)}
-            >
-              <PencilIcon />
-            </IconButton>
-            <IconButton
-              size="sm"
-              className="row-act"
-              tone="danger"
-              label={t('deleteVolume')}
-              tooltipPlacement="top"
-              onClick={() => requestDeleteVolume(volume, labels.volumeLabel(volume))}
-            >
-              <TrashIcon />
-            </IconButton>
-          </span>
+              {volume.kind !== 'custom' && (
+                <IconButton
+                  size="sm"
+                  className="row-act"
+                  label={t('newSpecialChapter')}
+                  tooltipPlacement="top"
+                  onClick={() => setSpecialChapterVolume(volume)}
+                >
+                  <SpecialChapterIcon width={14} />
+                </IconButton>
+              )}
+              <IconButton
+                size="sm"
+                className="row-act"
+                label={t('rename')}
+                tooltipPlacement="top"
+                onClick={() => beginRename(volume)}
+              >
+                <PencilIcon />
+              </IconButton>
+              <IconButton
+                size="sm"
+                className="row-act"
+                tone="danger"
+                label={t('deleteVolume')}
+                tooltipPlacement="top"
+                onClick={() => requestDeleteVolume(volume, labels.volumeLabel(volume))}
+              >
+                <TrashIcon />
+              </IconButton>
+            </span>
+          )}
         </div>
 
         <div className="chapters">
@@ -333,8 +393,9 @@ export default function ChaptersPanel({
   return (
     <div className="pane-body">
       <div className="pane-scroll">
-        {groups.length === 0 ? (
-          /* 空态：无任何卷时居中提示（复用通用 EmptyState 的紧凑变体）。
+        {visibleGroups.length === 0 ? (
+          /* 空态：无任何可见卷时居中提示（复用通用 EmptyState 的紧凑变体）。
+             未分卷卷空卡已从 visibleGroups 过滤，不会让空态失效；
              引导文案指路标题栏「新建卷」（入口不在本侧栏，故不给可点击假象）。 */
           <EmptyState
             compact
@@ -343,12 +404,13 @@ export default function ChaptersPanel({
             description={t('emptyDesc')}
           />
         ) : (
-          /* 分区容器卡：拆为上下两块——上卡自定义卷（`custom`，如「番外」）、下卡正文卷
-             （`normal`，自动编号）；卡内保持 sort_order 顺序（仅分组，不重排）；
-             某类卷为 0 时该卡不渲染（对齐大纲非卷区空卡 return null 行为）。卡底座走
-             通用类 `.pane-region`（--soft-solid 圆角底 + 6px 内衬），与大纲侧
-             `.nonvol-section` / `.vol-region` 同源（见 styles/components/surface.css）；两卡间距 10px
-             对齐大纲，由 `.vol-special-region`（上卡 margin-bottom）提供。 */
+          /* 分区容器卡：拆为三块——上卡自定义卷（`custom`，如「番外」）、中卡正文卷
+             （`normal`，自动编号）、底卡系统未分卷（`isUnfiled`，仅其下有章时出卡）；
+             卡内保持 sort_order 顺序（仅分组，不重排）；某类卷为 0 时该卡不渲染
+             （对齐大纲非卷区空卡 return null 行为）。卡底座走通用类 `.pane-region`
+             （--soft-solid 圆角底 + 6px 内衬），与大纲侧 `.nonvol-section` /
+             `.vol-region` 同源（见 styles/components/surface.css）；卡片间距由
+             `.pane-scroll > .pane-region` 统一规则提供（writer-side-panels.css）。 */
           <>
             {specialGroups.length > 0 && (
               <div className="pane-region vol-special-region">
@@ -357,6 +419,9 @@ export default function ChaptersPanel({
             )}
             {normalGroups.length > 0 && (
               <div className="pane-region">{normalGroups.map(renderVolumeGroup)}</div>
+            )}
+            {unfiledGroups.length > 0 && (
+              <div className="pane-region">{unfiledGroups.map(renderVolumeGroup)}</div>
             )}
           </>
         )}

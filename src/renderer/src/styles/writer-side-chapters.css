@@ -22,6 +22,7 @@
 }
 
 .chapters-list {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -40,12 +41,12 @@
 
 /* 章行进场：行挂载时淡入 + 8px 上浮（motion.css 的 `wf-enter-up`）。
    **只加 animation，不动本文件的既有 transition**（§8 同理：行 hover 仅底色过渡）。
-   fill-mode 取 backwards 的硬性理由：`.chapter.is-dragging` 用 opacity: 0.45 表达
+   fill-mode 取 backwards 的硬性理由：`.chapter.is-dragging` 用 opacity: 0.68 表达
    拖拽态，若取 both，动画结束后仍持续供给 opacity: 1，会把拖拽半透明效果压掉。
    backwards 在动画区间结束后不再介入，状态类照常生效。
    触发时机：章行即使所在卷折叠也常驻 DOM（`.chapters` 用 grid-template-rows 0fr
    收起），故不会在展开 / 收起卷时重播；实际可见的进场是「面板挂载一次」与
-   「新建章后该行挂载」。拖拽占位线 `.drop-line` 不参与进场，避免每次拖拽重放。 */
+   「新建章后该行挂载」。拖拽落点线 `.chapter-drop-line` 不参与进场，避免每次拖拽重放。 */
 .chapter {
   animation: wf-enter-up var(--dur-base) var(--ease-out) backwards;
 }
@@ -184,10 +185,81 @@
   color: var(--brand);
 }
 
-/* 拖拽中：被拖行半透明 + 品牌浅底提示。 */
+/* 拖拽中：被拖行原位抬起（阴影）+ 半透明 + 品牌浅底。
+   z 取行内抬升令牌，保证压过让位行；不参与浮层档位。
+   不做指针跟手：跟手 transform 会让被拖行进入 `elementsFromPoint`，
+   使跨卷判定始终命中源卷（本批不改跨卷逻辑，故采用原位抬起方案）。 */
 .chapter.is-dragging {
-  opacity: 0.45;
+  z-index: var(--z-row-raised);
+  opacity: 0.68;
   background: color-mix(in srgb, var(--brand) 8%, var(--pane));
+  box-shadow: var(--sh-sm);
+  cursor: grabbing;
+}
+
+/* 让位至被拖行原槽位的那一行沉底：被拖行是半透明的，若让位行文字透出会双影。
+   只隐藏行表面，布局位置保留；减动效下不位移，故恢复显示（见文末）。 */
+.chapter.is-drag-underlap {
+  opacity: 0;
+}
+
+/* 同卷拖拽预览：让位行过渡到目标位移（transform 为功能性动画，非 hover / 选中反馈）。
+   仅拖拽期间启用 transform / opacity 过渡；拖拽结束类名移除后行立即回布局位置。
+   被拖行自身只过渡底色 / 阴影 / 透明度（原位），不参与 transform 过渡。 */
+.chapters-list.is-dragging .chapter {
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+
+.chapters-list.is-dragging .chapter.is-dragging {
+  transition:
+    background var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+
+/* 同卷落点线（v2）：复用 `.drop-line` 的视觉（高 2px / 品牌色 / 圆角 / 0.8 透明度），
+   仅覆盖为绝对定位——不占布局高度（避免推动行 / 干扰落点换算）。
+   位置由 ChapterList 按「目标行在原始布局中的上缘」计算后写入 inline top；
+   淡入 + scaleX 只作用于线本身，不改落点语义。 */
+.chapter-drop-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  transform-origin: center;
+  animation: chapter-drop-line-in var(--dur-fast) var(--ease-out);
+}
+
+@keyframes chapter-drop-line-in {
+  from {
+    opacity: 0;
+    transform: scaleX(0.6);
+  }
+  to {
+    opacity: 0.8;
+    transform: scaleX(1);
+  }
+}
+
+/* 减动效：关闭位移预览与落点线缩放，只保留静态落点线 / 目标卷高亮。
+   全局兜底（base.css）会把动画 / 过渡压到 0.01ms；此处额外用 !important
+   压掉行内 transform，并恢复「让位沉底行」的显示（不位移就无需隐藏）。 */
+@media (prefers-reduced-motion: reduce) {
+  .chapters-list.is-dragging .chapter {
+    transform: none !important;
+    transition: none;
+  }
+
+  .chapters-list.is-dragging .chapter.is-drag-underlap {
+    opacity: 1;
+  }
+
+  .chapter-drop-line {
+    animation: none;
+  }
 }
 
 /* 拖拽占位线（v2）：段内插入缝指示，品牌色细线横贯行位。 */

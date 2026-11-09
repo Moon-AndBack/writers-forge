@@ -168,6 +168,18 @@
   margin-right: 95px;
 }
 
+/* 系统「未分卷」卡无行内操作按钮：hover / 聚焦时保留章数计数、名段不让位，
+   避免沿用上面的计数隐藏与 72px 让位，出现「无按钮却缩进 + 数字消失」。 */
+.vol.is-unfiled .vol-head:hover .vol-count,
+.vol.is-unfiled .vol-head:focus-within .vol-count {
+  visibility: visible;
+}
+
+.vol.is-unfiled .vol-head:hover .vol-name,
+.vol.is-unfiled .vol-head:focus-within .vol-name {
+  margin-right: 0;
+}
+
 /* 重命名输入聚焦期间输入框同样让位（flex:1 占满行，不缩会被右缘悬浮的
    操作按钮盖住长卷名文字）；普通卷 4 按钮口径同上。 */
 .vol-head:focus-within .vol-rename {
@@ -227,4 +239,15 @@
    保持按钮组与所在行底色一致。 */
 .chapter.is-active:hover .chapter-actions {
   background: var(--soft-hover-solid);
+}
+
+/* ---------- 跨卷拖拽目标卷头 ----------
+   卷头在跨卷拖拽模式下的接收高亮：只改底色 / 描边环 / 光晕，
+   **不得用 transform**（AGENTS §8.8 卡片 hover 同口径）。
+   底色对齐选中行公式（品牌 12% + --pane），描边 / 光晕取卡片 hover 光晕的收敛值。 */
+.vol-head.is-drop-target {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent);
 }

@@ -36,6 +36,8 @@ export interface ChapterWorkspace {
   handleSetChapterPin: (id: number, pin: ChapterPin) => void
   /** 章节拖拽重排（同卷同 pin 段内）。 */
   handleReorderChapter: (id: number, targetIndex: number) => void
+  /** 跨卷拖拽移动（追加到目标卷末尾）。 */
+  handleMoveChapter: (id: number, volumeId: number) => void
   /** 标题栏「回收站」：切换中栏视图。 */
   handleToggleTrash: () => void
   /** 编辑头章节名落库（字段直映射）。 */
@@ -65,7 +67,8 @@ export function useChapterWorkspace(bookId: string, onTrashChanged?: () => void)
     createChapter,
     deleteChapter,
     setChapterPin,
-    reorderChapter
+    reorderChapter,
+    moveChapter
   } = useChapterTree(bookId)
   // 用户显式选中的章节 id（null = 尚未选择）。
   const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null)
@@ -149,6 +152,14 @@ export function useChapterWorkspace(bookId: string, onTrashChanged?: () => void)
     [reorderChapter]
   )
 
+  // 跨卷拖拽移动：成功 hook 内 reload；失败数据未变，无需额外回滚。
+  const handleMoveChapter = useCallback(
+    (id: number, volumeId: number): void => {
+      void moveChapter(id, volumeId)
+    },
+    [moveChapter]
+  )
+
   // 标题栏「回收站」：切换中栏视图。
   const handleToggleTrash = useCallback((): void => {
     setTrashOpen((prev) => !prev)
@@ -186,6 +197,7 @@ export function useChapterWorkspace(bookId: string, onTrashChanged?: () => void)
     handleDeleteChapter,
     handleSetChapterPin,
     handleReorderChapter,
+    handleMoveChapter,
     handleToggleTrash,
     handleRenameChapter,
     handleTrashChanged,

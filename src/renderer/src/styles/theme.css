@@ -52,6 +52,9 @@
   --z-popover: 971;
   --z-popover-nested: 972;
 
+  /* 行内拖拽抬升（非浮层）：仅在同一列表内压过让位行，不参与上面的浮层档位。 */
+  --z-row-raised: 1;
+
   /* 桌面光斑尺寸（.shell 三层 radial 的椭圆大小）。仅 light / sage / honey 生效：dark 由
      shell.css 的 [data-theme='dark'] .shell 整体替换为无光斑的斜切色带，四主题块均不覆写本组令牌。 */
   --desk-spot-1: 1000px 640px;

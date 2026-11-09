@@ -28,10 +28,10 @@ export interface ChapterLabels {
   chapterRowPrefixLabel: (chapter: ChapterRow) => string
   /** 章整串显示名（`chapterLabel` 的语言绑定版）。 */
   chapterLabel: (chapter: ChapterRow) => string
-  /** 卷行前缀段（`volumePrefixLabel` 的语言绑定版，仅正文卷非空）。 */
+  /** 卷行前缀段（`volumePrefixLabel` 的语言绑定版，仅正文卷非空；未分卷恒空）。 */
   volumePrefixLabel: (volume: Pick<VolumeRow, 'kind' | 'numberIndex'>) => string
-  /** 卷整串显示名（`volumeLabel` 的语言绑定版）。 */
-  volumeLabel: (volume: Pick<VolumeRow, 'kind' | 'numberIndex' | 'title'>) => string
+  /** 卷整串显示名（`volumeLabel` 的语言绑定版；未分卷 → `chapters.volume.unfiled`）。 */
+  volumeLabel: (volume: Pick<VolumeRow, 'kind' | 'numberIndex' | 'title' | 'isUnfiled'>) => string
   /** 大纲卷名：`title` 空 → `emptyLabel`；否则原文（大纲侧卷名为纯名段，无编号前缀）。 */
   outlineVolumeLabel: (volume: { title: string }, emptyLabel: string) => string
   /** 状态栏「第X章 共Y章」/「共Y章」（index=null 时）。 */
@@ -54,7 +54,9 @@ export function useChapterLabels(): ChapterLabels {
       chapterRowPrefixLabel: (chapter) => chapterRowPrefixLabel(chapter, format),
       chapterLabel: (chapter) => chapterLabel(chapter, format),
       volumePrefixLabel: (volume) => volumePrefixLabel(volume, format),
-      volumeLabel: (volume) => volumeLabel(volume, format),
+      // 未分卷系统卷 `title` 恒为空串，展示名走 i18n（不读 DB 标题）。
+      volumeLabel: (volume) =>
+        volume.isUnfiled ? t('volume.unfiled') : volumeLabel(volume, format),
       outlineVolumeLabel: (volume, emptyLabel) => (volume.title === '' ? emptyLabel : volume.title),
       statusBar: (index: number | null, total: number) =>
         index === null

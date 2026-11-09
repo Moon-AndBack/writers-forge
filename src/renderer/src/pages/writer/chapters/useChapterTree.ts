@@ -46,6 +46,11 @@ export interface ChapterTree {
    * 成功后 reload（后端整组重写 sort_order / 动态编号随卷序变化）。
    */
   reorderChapter: (id: number, targetIndex: number) => Promise<boolean>
+  /**
+   * 跨卷移动章（追加到目标卷末尾，源 / 目标两组重排）。
+   * 数据层拦截分组容器 / 特殊章 → 自定义卷；成功后 reload。
+   */
+  moveChapter: (id: number, volumeId: number) => Promise<boolean>
 }
 
 /**
@@ -53,7 +58,7 @@ export interface ChapterTree {
  *
  * 读：挂载 / `bookId` 变化时拉取；无 Electron API 或空 bookId 时置空。
  * 写：`setStatus` / `renameChapter` / `setChapterPin` 就地更新行；
- *     增删 / 重排等结构写成功后 reload 刷新（`createChapter` 返回新行供选中）。
+ *     增删 / 重排 / 跨卷移动等结构写成功后 reload 刷新（`createChapter` 返回新行供选中）。
  */
 export function useChapterTree(bookId: string): ChapterTree {
   const [chapters, setChapters] = useState<ChapterRow[]>([])
@@ -203,6 +208,22 @@ export function useChapterTree(bookId: string): ChapterTree {
     [reload]
   )
 
+  const moveChapter = useCallback(
+    async (id: number, volumeId: number): Promise<boolean> => {
+      const api = window.api?.chapters
+      if (!api) return false
+      try {
+        const ok = await api.move(id, volumeId)
+        if (ok) await reload()
+        return ok
+      } catch (error) {
+        log.warn('章节跨卷移动失败', error)
+        return false
+      }
+    },
+    [reload]
+  )
+
   return {
     chapters,
     loading,
@@ -212,6 +233,7 @@ export function useChapterTree(bookId: string): ChapterTree {
     createChapter,
     deleteChapter,
     setChapterPin,
-    reorderChapter
+    reorderChapter,
+    moveChapter
   }
 }

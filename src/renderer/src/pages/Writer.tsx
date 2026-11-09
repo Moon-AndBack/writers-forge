@@ -113,6 +113,7 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
     handleDeleteChapter,
     handleSetChapterPin,
     handleReorderChapter,
+    handleMoveChapter,
     handleToggleTrash,
     handleRenameChapter,
     handleTrashChanged,
@@ -160,7 +161,6 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
   const { show: showSaveFailed, node: saveFailedToast } = useToast()
   const { t: tCommon } = useTranslation('common')
   const { t: tModule } = useTranslation('module')
-
   /* ---------- 章节页动作（左栏 hover / 标题栏按钮组 / 回收站共享） ---------- */
 
   // 新建卷（弹窗提交）：章节域与大纲域**共用本入口**（写入主进程 `CreateVolumeInput`）。
@@ -359,6 +359,7 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
               onDeleteChapter={handleDeleteChapter}
               onSetChapterPin={handleSetChapterPin}
               onReorderChapter={handleReorderChapter}
+              onMoveChapter={handleMoveChapter}
               isVolumeFull={isVolumeFull}
               outlineVolumes={outlineVolumes}
               outlineItems={outlineItems}

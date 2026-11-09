@@ -16,13 +16,16 @@ const chapters = {
     statusPosition: 'Chapter {{index}} of {{total}}',
     statusTotal: '{{total}} chapters in total'
   },
+  volume: {
+    unfiled: 'Unfiled'
+  },
   statusToggleAria: 'Chapter status: {{label}} (click to toggle)',
   newVolume: 'New Volume',
   newVolumeTooltip: 'New volume (body volume / custom volume)',
   pinTop: 'Pin to top',
   pinBottom: 'Pin to bottom',
   deleteChapter: 'Delete chapter',
-  dragWithinSegment: 'Drag to reorder (within segment)',
+  dragReorder: 'Drag to reorder / move across volumes',
   rename: 'Rename',
   namePlaceholder: 'Edit',
   volumeFull: 'Volume is at maximum capacity',
@@ -134,6 +137,7 @@ const chapters = {
     groupVolumes: 'Volumes',
     groupChapters: 'Chapters',
     orphanVolume: 'Original volume deleted',
+    unfiledVolume: 'Unfiled',
     untitledChapter: 'Untitled chapter',
     restoreVolume: 'Restore volume',
     purgeVolume: 'Delete volume permanently',
@@ -146,6 +150,10 @@ const chapters = {
       status: 'Status {{status}}',
       originalVolume: 'Volume {{name}}',
       volumeInTrash: 'The original volume is also in the trash',
+      chapterVolumeInTrash:
+        'The original volume is also in the trash; restoring will move this chapter to Unfiled',
+      restoreToVolume: 'Will be restored to the end of the original volume',
+      restoreToUnfiled: 'Will be restored to the end of Unfiled',
       loading: 'Loading content…',
       loadFailed: 'Failed to load content',
       retry: 'Retry',
@@ -214,6 +222,8 @@ const chapters = {
       title: 'Empty trash',
       message:
         'All volumes and chapters in the trash will be permanently deleted and cannot be recovered.',
+      chapterMessage:
+        'All chapters in the trash will be permanently deleted and cannot be recovered; deleted volumes and outline entries are not affected.',
       confirm: 'Empty'
     }
   }

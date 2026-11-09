@@ -1,6 +1,9 @@
 /**
- * 章节回收站详情（卷 / 章）。
+ * 章节回收站详情（仅章）。
  *
+ * 第三批起章节回收站只列章，卷详情分支已删除（已删除的卷只在大纲回收站管理）。
+ * 章详情展示原卷状态与还原去向：原卷可用 → 原卷末尾；原卷也在回收站 / 原卷已删除 /
+ * 原卷为系统「未分卷」→ 未分卷末尾（与 `restoreChapter` 的目标卷判定一致）。
  * 章详情按需读取正文：仅选中时才调 `chapters:getParagraphs`，列表查询不携带全文。
  * 章节保存时 `docToParagraphs` 不写 `contentJson`，故这里按**纯文本段落**渲染
  * （保留空段与段内换行），不为此启动 Tiptap 只读实例。
@@ -12,76 +15,31 @@ import type { ReactElement } from 'react'
 import { Button } from '../../../components/ui'
 import type { TrashSelection } from '../../../components/trash/TrashListView'
 import { useChapterLabels } from './useChapterLabels'
-import { STATUS_LABELS, VOLUME_KIND_LABELS } from './chapterTree'
+import { STATUS_LABELS } from './chapterTree'
 import { countCharacters } from './docParagraphs'
 import { resolveLocale } from '../../../i18n/config'
 import { formatDateTime } from '../../../lib/relativeTime'
-import type {
-  DeletedChapterRow,
-  DeletedContent,
-  DeletedVolumeRow
-} from '../../../../../main/database/chapterTrash'
+import type { DeletedChapterRow, DeletedContent } from '../../../../../main/database/chapterTrash'
 import type { ParagraphRow } from '../../../../../main/database/paragraphs'
 
 export interface ChapterTrashDetailProps {
-  /** 当前选中项（卷 / 章）。 */
+  /** 当前选中项（章节回收站只产生 item 选中）。 */
   selection: TrashSelection
-  /** 回收站内容（用于查行与判断原卷删除态）。 */
+  /** 回收站内容（用于查章）。 */
   content: DeletedContent
 }
 
-/** 详情入口：解析选中行后分派到卷 / 章详情。 */
+/** 详情入口：解析选中章后渲染章详情。 */
 export function ChapterTrashDetail({ selection, content }: ChapterTrashDetailProps): ReactElement {
   const { t } = useTranslation('chapters')
 
-  if (selection.kind === 'volume') {
-    const volume = content.volumes.find((row) => row.id === selection.id)
-    if (!volume) return <div className="trash-detail__hint">{t('trash.detail.empty')}</div>
-    const chapterCount = content.chapters.filter((row) => row.volumeId === volume.id).length
-    return <ChapterVolumeDetail volume={volume} chapterCount={chapterCount} />
-  }
-
   const chapter = content.chapters.find((row) => row.id === selection.id)
   if (!chapter) return <div className="trash-detail__hint">{t('trash.detail.empty')}</div>
-  return <ChapterEntryDetail chapter={chapter} content={content} />
+  return <ChapterEntryDetail chapter={chapter} />
 }
 
-/** 卷详情：卷名、类型、其下软删章数、删除时间（卷本身无正文）。 */
-function ChapterVolumeDetail({
-  volume,
-  chapterCount
-}: {
-  volume: DeletedVolumeRow
-  chapterCount: number
-}): ReactElement {
-  const { t, i18n } = useTranslation('chapters')
-  const labels = useChapterLabels()
-  const locale = resolveLocale(i18n.language)
-  const name = labels.volumeLabel(volume) || t('trash.detail.untitledVolume')
-  const deletedAt = formatDateTime(volume.deletedAt, locale) || (volume.deletedAt ?? '')
-
-  return (
-    <div className="trash-detail__pane">
-      <header className="trash-detail__head">
-        <div className="trash-detail__title">{name}</div>
-        <div className="trash-detail__meta">
-          <span>{t('trash.detail.volumeKind', { kind: t(VOLUME_KIND_LABELS[volume.kind]) })}</span>
-          <span>{t('trash.detail.deletedChapters', { value: chapterCount })}</span>
-          <span>{t('trash.detail.deletedAt', { time: deletedAt })}</span>
-        </div>
-      </header>
-    </div>
-  )
-}
-
-/** 章详情：元信息 + 按需加载的只读正文。 */
-function ChapterEntryDetail({
-  chapter,
-  content
-}: {
-  chapter: DeletedChapterRow
-  content: DeletedContent
-}): ReactElement {
+/** 章详情：元信息 + 还原去向 + 按需加载的只读正文。 */
+function ChapterEntryDetail({ chapter }: { chapter: DeletedChapterRow }): ReactElement {
   const { t, i18n } = useTranslation('chapters')
   const labels = useChapterLabels()
   const locale = resolveLocale(i18n.language)
@@ -115,19 +73,28 @@ function ChapterEntryDetail({
 
   const words = countCharacters(paragraphs.map((row) => row.text))
   const hasText = paragraphs.some((row) => row.text !== '')
-  const volumeInTrash = content.volumes.some((row) => row.id === chapter.volumeId)
-  const volumeName =
-    chapter.volumeTitle !== null && chapter.volumeTitle !== ''
-      ? chapter.volumeTitle
-      : chapter.volumeTitle === null
-        ? t('trash.orphanVolume')
-        : t('trash.detail.untitledVolume')
+  const chapterName = labels.chapterLabel(chapter) || t('trash.untitledChapter')
+  // 原卷状态：系统未分卷 → 未分卷；卷缺失 → 原卷已删除；否则原卷名（空名回退未命名卷）。
+  const volumeName = chapter.volumeIsUnfiled
+    ? t('trash.unfiledVolume')
+    : chapter.volumeTitle === null
+      ? t('trash.orphanVolume')
+      : chapter.volumeTitle === ''
+        ? t('trash.detail.untitledVolume')
+        : chapter.volumeTitle
+  // 还原去向与 `restoreChapter` 判定一致：原卷可用 → 原卷末尾；否则 → 未分卷末尾。
+  // 原卷也在回收站时，合并成一条「原卷也在回收站，还原后进入未分卷」提示。
+  const restoreNotice = chapter.volumeInTrash
+    ? t('trash.detail.chapterVolumeInTrash')
+    : chapter.volumeIsUnfiled || chapter.volumeTitle === null
+      ? t('trash.detail.restoreToUnfiled')
+      : t('trash.detail.restoreToVolume')
   const deletedAt = formatDateTime(chapter.deletedAt, locale) || (chapter.deletedAt ?? '')
 
   return (
     <div className="trash-detail__pane">
       <header className="trash-detail__head">
-        <div className="trash-detail__title">{labels.chapterLabel(chapter)}</div>
+        <div className="trash-detail__title">{chapterName}</div>
         <div className="trash-detail__meta">
           <span>{t('trash.detail.status', { status: t(STATUS_LABELS[chapter.status]) })}</span>
           {loadState === 'ready' ? (
@@ -138,9 +105,7 @@ function ChapterEntryDetail({
         </div>
       </header>
 
-      {volumeInTrash ? (
-        <div className="trash-detail__notice">{t('trash.detail.volumeInTrash')}</div>
-      ) : null}
+      <div className="trash-detail__notice">{restoreNotice}</div>
 
       {loadState === 'loading' ? (
         <div className="trash-detail__hint">{t('trash.detail.loading')}</div>

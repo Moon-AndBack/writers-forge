@@ -18,7 +18,7 @@ import {
 /** 回收站内容：**直接从 preload `Api` 派生**，消除渲染层平行定义。 */
 type DeletedContent = Awaited<ReturnType<Window['api']['chapters']['listDeleted']>>
 
-const EMPTY: DeletedContent = { volumes: [], chapters: [] }
+const EMPTY: DeletedContent = { chapters: [] }
 
 /** 拉取回收站内容（纯异步，无 setState）：按 bookId 隔离，供初始加载与刷新复用。 */
 async function fetchDeleted(bookId: string): Promise<DeletedContent> {
@@ -35,9 +35,11 @@ export interface ChaptersTrashViewProps {
 }
 
 /**
- * 回收站视图（中栏）：列出被软删的卷与章，支持还原、彻底删除、清空。
+ * 回收站视图（中栏）：**平铺列出被软删的章**，支持还原、彻底删除、清空。
  *
- * 数据：`api.chapters.listDeleted(bookId)`。卷 / 章分组展示；章带原归属卷名。
+ * 数据：`api.chapters.listDeleted(bookId)`。第三批起章节回收站舍弃卷设计——
+ * 只列章、不列卷；已删除的卷只在大纲回收站管理。「清空」也只彻底删除章，
+ * 不动软删卷与大纲条目。
  * 还原 / 彻底删除 / 清空后，除刷新本视图外，经 `onChanged` 通知页面刷新章节树。
  * 彻底删除与清空为不可恢复操作，走确认弹窗。
  * 列表展示与数据加载 / 写操作分别收敛到 `TrashListView` / `useTrashData`；
@@ -57,13 +59,12 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
     onChanged,
     logger: 'ChaptersTrashView'
   })
-  // 选中行（卷 / 章）；列表刷新后行已不在回收站时自动失效，不残留旧详情。
+  // 选中行（仅章）；列表刷新后行已不在回收站时自动失效，不残留旧详情。
   const [selection, setSelection] = useState<TrashSelection | null>(null)
   const activeSelection =
     selection !== null &&
-    (selection.kind === 'volume'
-      ? content.volumes.some((row) => row.id === selection.id)
-      : content.chapters.some((row) => row.id === selection.id))
+    selection.kind === 'item' &&
+    content.chapters.some((row) => row.id === selection.id)
       ? selection
       : null
 
@@ -73,61 +74,22 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
     purgeAll: t('trash.purgeAll'),
     empty: t('trash.empty'),
     loadingText: tCommon('loading'),
-    groupVolumes: t('trash.groupVolumes'),
     groupItems: t('trash.groupChapters'),
-    restoreVolume: t('trash.restoreVolume'),
-    purgeVolume: t('trash.purgeVolume'),
     restoreItem: t('trash.restoreChapter'),
     purgeItem: t('trash.purgeChapter')
   }
 
-  // 卷行计数只统计「该卷下仍在回收站中的章」，不是原卷总章数。
-  const deletedChapterCounts = new Map<number, number>()
-  for (const chapter of content.chapters) {
-    deletedChapterCounts.set(
-      chapter.volumeId,
-      (deletedChapterCounts.get(chapter.volumeId) ?? 0) + 1
-    )
-  }
+  const chapterName = (chapter: DeletedContent['chapters'][number]): string =>
+    labels.chapterLabel(chapter) || t('trash.untitledChapter')
 
-  const volumes: TrashRow[] = content.volumes.map((volume) => ({
-    id: volume.id,
-    name: labels.volumeLabel(volume) || t('trash.detail.untitledVolume'),
-    count: deletedChapterCounts.get(volume.id) ?? 0,
-    emphasis: volume.kind === 'custom'
-  }))
   const chapters: TrashRow[] = content.chapters.map((chapter) => ({
     id: chapter.id,
-    // 行名只取名段：特殊章的前段走 prefix，避免与 chapterLabel 的整串拼接口径重复。
-    name: chapter.title !== '' ? chapter.title : t('trash.untitledChapter'),
-    parentId: chapter.volumeId,
-    prefix: labels.chapterRowPrefixLabel(chapter) || undefined,
-    badge: chapter.status === 'draft' ? t('status.draft') : undefined,
-    emphasis: chapter.kind === 'special'
+    name: chapterName(chapter)
   }))
-
-  const requestRestoreVolume = (id: number): void => {
-    if (busy) return
-    void runAction(() => window.api.chapters.restoreVolume(id))
-  }
 
   const requestRestoreChapter = (id: number): void => {
     if (busy) return
     void runAction(() => window.api.chapters.restore(id))
-  }
-
-  const requestPurgeVolume = (id: number): void => {
-    const volume = content.volumes.find((row) => row.id === id)
-    if (!volume) return
-    confirm.request(
-      {
-        title: t('dialog.purgeVolume.title'),
-        message: t('dialog.purgeVolume.message', { name: labels.volumeLabel(volume) }),
-        confirmText: t('dialog.purgeVolume.confirm'),
-        tone: 'danger'
-      },
-      () => runAction(() => window.api.chapters.purgeVolume(id))
-    )
   }
 
   const requestPurgeChapter = (id: number): void => {
@@ -140,7 +102,7 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
         {
           title: t('dialog.purgeChapter.title'),
           message: withDeleteImpactWarning(
-            t('dialog.purgeChapter.message', { name: labels.chapterLabel(chapter) }),
+            t('dialog.purgeChapter.message', { name: chapterName(chapter) }),
             warning
           ),
           confirmText: t('dialog.purgeChapter.confirm'),
@@ -155,7 +117,7 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
     confirm.request(
       {
         title: t('dialog.purgeAll.title'),
-        message: t('dialog.purgeAll.message'),
+        message: t('dialog.purgeAll.chapterMessage'),
         confirmText: t('dialog.purgeAll.confirm')
       },
       async () => {
@@ -166,16 +128,12 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
 
   return (
     <TrashListView
-      volumes={volumes}
       items={chapters}
-      tree
       loading={loading}
       loadError={loadError}
       onRetry={() => void reload()}
       busy={busy}
       messages={messages}
-      onRestoreVolume={requestRestoreVolume}
-      onPurgeVolume={requestPurgeVolume}
       onRestoreItem={requestRestoreChapter}
       onPurgeItem={requestPurgeChapter}
       onPurgeAll={requestPurgeAll}
@@ -184,7 +142,7 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
       detail={
         activeSelection !== null ? (
           <ChapterTrashDetail
-            key={`${activeSelection.kind}-${activeSelection.id}`}
+            key={`item-${activeSelection.id}`}
             selection={activeSelection}
             content={content}
           />

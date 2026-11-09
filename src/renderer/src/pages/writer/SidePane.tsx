@@ -41,6 +41,8 @@ interface SidePaneProps {
   onSetChapterPin: (id: number, pin: ChapterPin) => void
   /** 同段内重排章（松手落库）。 */
   onReorderChapter: (id: number, targetIndex: number) => void
+  /** 跨卷移动章（追加到目标卷末尾）。 */
+  onMoveChapter: (id: number, volumeId: number) => void
   /** 卷内普通章是否达上限（「新建章」禁用）。 */
   isVolumeFull: (volumeId: number) => boolean
   /** 大纲页可见卷（`kind IN ('normal','group')`；供卷 / 分组行渲染）。 */
@@ -112,6 +114,7 @@ export function SidePane({
   onDeleteChapter,
   onSetChapterPin,
   onReorderChapter,
+  onMoveChapter,
   isVolumeFull,
   outlineVolumes,
   outlineItems,
@@ -170,6 +173,7 @@ export function SidePane({
           onDeleteChapter={onDeleteChapter}
           onSetChapterPin={onSetChapterPin}
           onReorderChapter={onReorderChapter}
+          onMoveChapter={onMoveChapter}
           isVolumeFull={isVolumeFull}
         />
       </div>

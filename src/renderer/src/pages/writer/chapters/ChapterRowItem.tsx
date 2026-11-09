@@ -14,8 +14,10 @@ export interface ChapterRowItemProps {
   active: boolean
   /** 是否正在被拖拽（半透明视觉）。 */
   dragging: boolean
-  /** 是否在该章之前渲染占位线（段内插入缝 = 本行位置）。 */
-  dropBefore: boolean
+  /** 是否被让位行压在原槽位（沉底隐藏，避免与半透明被拖行的文字叠加）。 */
+  underlap: boolean
+  /** 拖拽纵向位移（px）：让位行 = ±一行；0 = 不位移。 */
+  shiftY: number
   /** 行元素引用回调（拖拽命中判定用；卸载传 null）。 */
   registerRow: (id: number, element: HTMLElement | null) => void
   /** 拖拽把手事件（仅把手可启动；capture 后 move/up 派发回把手）。 */
@@ -42,7 +44,8 @@ export default function ChapterRowItem({
   chapter,
   active,
   dragging,
-  dropBefore,
+  underlap,
+  shiftY,
   registerRow,
   dragHandle,
   onSelect,
@@ -55,74 +58,73 @@ export default function ChapterRowItem({
   const name = chapterNameLabel(chapter)
 
   return (
-    <>
-      {dropBefore && <div className="drop-line" aria-hidden="true" />}
-      <TreeRowItem
-        id={chapter.id}
-        classPrefix="chapter"
-        active={active}
-        dragging={dragging}
-        stateClasses={[
-          chapter.status === 'draft' ? 'is-draft' : '',
-          chapter.kind === 'special' ? 'is-special' : ''
-        ]}
-        registerRow={registerRow}
-        onSelect={onSelect}
-        leading={
-          <>
-            {prefix !== '' && <span className="chapter-prefix">{prefix}</span>}
-            {/* 圆点分隔符：前缀段与名段之间恒显示（前缀段可能为空——回收站口径不适用此处）。 */}
-            <span className="chapter-sep" aria-hidden="true">
-              ●
-            </span>
-          </>
-        }
-        nameNode={
-          name !== '' ? (
-            <span className="chapter-name">{name}</span>
-          ) : (
-            <span className="chapter-name chapter-name--empty" />
-          )
-        }
-        badge={
-          chapter.status === 'draft' ? (
-            <span className="chapter-draft">{t('status.draft')}</span>
-          ) : null
-        }
-        actions={
-          <>
-            {chapter.kind === 'special' && (
-              <IconButton
-                size="sm"
-                className="row-act"
-                label={chapter.pin === 'top' ? t('pinBottom') : t('pinTop')}
-                tooltipPlacement="top"
-                onClick={() => onTogglePin(chapter.id, chapter.pin === 'top' ? 'bottom' : 'top')}
-              >
-                {chapter.pin === 'top' ? <PinBottomIcon /> : <PinTopIcon />}
-              </IconButton>
-            )}
+    <TreeRowItem
+      id={chapter.id}
+      classPrefix="chapter"
+      active={active}
+      dragging={dragging}
+      stateClasses={[
+        chapter.status === 'draft' ? 'is-draft' : '',
+        chapter.kind === 'special' ? 'is-special' : '',
+        underlap ? 'is-drag-underlap' : ''
+      ]}
+      style={shiftY !== 0 ? { transform: `translateY(${shiftY}px)` } : undefined}
+      registerRow={registerRow}
+      onSelect={onSelect}
+      leading={
+        <>
+          {prefix !== '' && <span className="chapter-prefix">{prefix}</span>}
+          {/* 圆点分隔符：前缀段与名段之间恒显示（前缀段可能为空——回收站口径不适用此处）。 */}
+          <span className="chapter-sep" aria-hidden="true">
+            ●
+          </span>
+        </>
+      }
+      nameNode={
+        name !== '' ? (
+          <span className="chapter-name">{name}</span>
+        ) : (
+          <span className="chapter-name chapter-name--empty" />
+        )
+      }
+      badge={
+        chapter.status === 'draft' ? (
+          <span className="chapter-draft">{t('status.draft')}</span>
+        ) : null
+      }
+      actions={
+        <>
+          {chapter.kind === 'special' && (
             <IconButton
               size="sm"
               className="row-act"
-              tone="danger"
-              label={t('deleteChapter')}
+              label={chapter.pin === 'top' ? t('pinBottom') : t('pinTop')}
               tooltipPlacement="top"
-              onClick={() => onDelete(chapter)}
+              onClick={() => onTogglePin(chapter.id, chapter.pin === 'top' ? 'bottom' : 'top')}
             >
-              <TrashIcon />
+              {chapter.pin === 'top' ? <PinBottomIcon /> : <PinTopIcon />}
             </IconButton>
-          </>
-        }
-        grip={{
-          title: t('dragWithinSegment'),
-          icon: <GripVerticalIcon />,
-          onPointerDown: (event) => dragHandle.onPointerDown(event, chapter),
-          onPointerMove: dragHandle.onPointerMove,
-          onPointerUp: dragHandle.onPointerUp,
-          onPointerCancel: dragHandle.onPointerCancel
-        }}
-      />
-    </>
+          )}
+          <IconButton
+            size="sm"
+            className="row-act"
+            tone="danger"
+            label={t('deleteChapter')}
+            tooltipPlacement="top"
+            onClick={() => onDelete(chapter)}
+          >
+            <TrashIcon />
+          </IconButton>
+        </>
+      }
+      grip={{
+        title: t('dragReorder'),
+        icon: <GripVerticalIcon />,
+        onPointerDown: (event) => dragHandle.onPointerDown(event, chapter),
+        onPointerMove: dragHandle.onPointerMove,
+        onPointerUp: dragHandle.onPointerUp,
+        onPointerCancel: dragHandle.onPointerCancel
+      }}
+    />
   )
 }

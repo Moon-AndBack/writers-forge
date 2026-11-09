@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactElement, ReactNode } from 'react'
+import type { CSSProperties, KeyboardEvent, ReactElement, ReactNode } from 'react'
 
 /**
  * 拖拽把手配置：域内已绑定行数据（章 / 条目），外壳只做渲染与事件转接。
@@ -91,6 +91,8 @@ export interface TreeRowItemProps {
    * 保持章节行根类不含该类（改动前即如此）。
    */
   grip?: TreeRowGrip
+  /** 行根内联样式（拖拽让位 transform 由域内计算；缺省不写 style）。 */
+  style?: CSSProperties
 }
 
 export default function TreeRowItem({
@@ -110,7 +112,8 @@ export default function TreeRowItem({
   nameNode,
   badge,
   actions,
-  grip
+  grip,
+  style
 }: TreeRowItemProps) {
   const classes = [
     classPrefix,
@@ -136,6 +139,7 @@ export default function TreeRowItem({
     <div
       ref={registerRow ? (element) => registerRow(id, element) : undefined}
       className={classes}
+      style={style}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : undefined}
       aria-pressed={interactive ? active : undefined}

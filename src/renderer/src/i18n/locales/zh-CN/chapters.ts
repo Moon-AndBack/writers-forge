@@ -26,13 +26,16 @@ const chapters = {
     statusPosition: '第{{index}}章 共{{total}}章',
     statusTotal: '共{{total}}章'
   },
+  volume: {
+    unfiled: '未分卷'
+  },
   statusToggleAria: '章节状态：{{label}}（点击切换）',
   newVolume: '新建卷',
   newVolumeTooltip: '新建卷（正文卷 / 自定义卷）',
   pinTop: '置顶',
   pinBottom: '置底',
   deleteChapter: '删除章节',
-  dragWithinSegment: '拖拽排序（同段内）',
+  dragReorder: '拖拽排序 / 跨卷移动',
   rename: '重命名',
   namePlaceholder: '请编辑',
   volumeFull: '已达卷内最大容量',
@@ -144,6 +147,7 @@ const chapters = {
     groupVolumes: '卷',
     groupChapters: '章节',
     orphanVolume: '原卷已删除',
+    unfiledVolume: '未分卷',
     untitledChapter: '无标题章节',
     restoreVolume: '还原卷',
     purgeVolume: '彻底删除卷',
@@ -156,6 +160,9 @@ const chapters = {
       status: '状态 {{status}}',
       originalVolume: '原卷 {{name}}',
       volumeInTrash: '原卷也在回收站',
+      chapterVolumeInTrash: '原卷也在回收站，还原后进入未分卷',
+      restoreToVolume: '将还原到原卷末尾',
+      restoreToUnfiled: '将还原到未分卷末尾',
       loading: '正在加载正文…',
       loadFailed: '正文加载失败',
       retry: '重试',
@@ -222,6 +229,7 @@ const chapters = {
     purgeAll: {
       title: '清空回收站',
       message: '回收站中的全部卷与章节将被永久删除且无法恢复。',
+      chapterMessage: '回收站中的全部章节将被永久删除且无法恢复；已删除的卷与大纲条目不受影响。',
       confirm: '清空'
     }
   }

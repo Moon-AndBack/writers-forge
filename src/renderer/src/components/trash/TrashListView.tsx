@@ -2,8 +2,8 @@
  * 回收站列表（章节 / 大纲 / 伏笔 / 灵感共用，§9 唯一实现）。
  *
  * 纯展示：不依赖 i18n，文案由调用方经 `t()` 取用后传入（对齐 `EmptyState` 约定）。
- * 样式直接复用 `styles/writer-trash.css`；树形模式（章节 / 大纲）的增补规则在
- * `styles/writer-trash-tree.css`。
+ * 样式直接复用 `styles/writer-trash.css`；树形模式（大纲）的增补规则在
+ * `styles/writer-trash-tree.css`。章节回收站第三批起改为**纯平铺章列表**，不传卷。
  *
  * 「列表 + 详情」为可选能力：传入 `detail` / `detailEmpty` 且存在数据时，经
  * `TrashSplitLayout` 渲染「列表卡 + 分隔条 + 详情卡」两栏（宽度可拖拽并持久化）；
@@ -54,22 +54,24 @@ export interface TrashListViewMessages {
   empty: string
   /** 首帧 / 重试加载中的提示文案（复用 `common.loading`）。 */
   loadingText: string
-  groupVolumes: string
+  /** 卷分组标题（可选：章节回收站只列章，不传）。 */
+  groupVolumes?: string
   groupItems: string
-  restoreVolume: string
-  purgeVolume: string
+  /** 卷行操作文案（可选：章节回收站只列章，不传）。 */
+  restoreVolume?: string
+  purgeVolume?: string
   restoreItem: string
   purgeItem: string
 }
 
 export interface TrashListViewProps {
-  /** 软删的卷行（单行展示，无次要行）。 */
-  volumes: TrashRow[]
-  /** 软删的条目行（非树形模式展示主名 + 原归属卷名）。 */
+  /** 软删的卷行（可选：章节回收站只列章，不传；大纲回收站仍传）。 */
+  volumes?: TrashRow[]
+  /** 软删的条目行（平铺模式：主名 + 可选次要行；章节不传次要行）。 */
   items: TrashRow[]
   /**
    * 树形模式：父卷也在回收站的条目挂到该卷行下，其余条目仍留在
-   * `messages.groupItems` 残差分组。缺省 false（伏笔 / 灵感保持平铺分组）。
+   * `messages.groupItems` 残差分组。缺省 false（章节 / 伏笔 / 灵感保持平铺分组）。
    */
   tree?: boolean
   /** 首帧加载中：显示加载文案并抑制空态闪现。 */
@@ -81,8 +83,8 @@ export interface TrashListViewProps {
   /** 写操作进行中：禁用全部操作按钮。 */
   busy: boolean
   messages: TrashListViewMessages
-  onRestoreVolume(id: number): void
-  onPurgeVolume(id: number): void
+  onRestoreVolume?: (id: number) => void
+  onPurgeVolume?: (id: number) => void
   onRestoreItem(id: number): void
   onPurgeItem(id: number): void
   onPurgeAll(): void
@@ -105,7 +107,7 @@ export interface TrashListViewProps {
 }
 
 /**
- * 非树形模式单行（伏笔 / 灵感回收站）：保持改造前的平铺结构与类名逐字不变——
+ * 非树形模式单行（章节 / 伏笔 / 灵感回收站）：保持改造前的平铺结构与类名逐字不变——
  * 卷为单行名，条目为主名 + 次要行；`onSelect` 存在时整行可交互。
  */
 function FlatTrashRow({
@@ -164,7 +166,7 @@ function FlatTrashRow({
 }
 
 export function TrashListView({
-  volumes,
+  volumes = [],
   items,
   tree = false,
   loading = false,
@@ -228,10 +230,10 @@ export function TrashListView({
   const volumeActions = (volume: TrashRow, wrapped = true): ReactElement => (
     <TrashRowActions
       busy={busy}
-      restoreLabel={messages.restoreVolume}
-      purgeLabel={messages.purgeVolume}
-      onRestore={() => onRestoreVolume(volume.id)}
-      onPurge={() => onPurgeVolume(volume.id)}
+      restoreLabel={messages.restoreVolume ?? ''}
+      purgeLabel={messages.purgeVolume ?? ''}
+      onRestore={() => onRestoreVolume?.(volume.id)}
+      onPurge={() => onPurgeVolume?.(volume.id)}
       wrapped={wrapped}
     />
   )
@@ -247,7 +249,7 @@ export function TrashListView({
     />
   )
 
-  // 非树形（伏笔 / 灵感）：沿用改造前的平铺行组件，DOM / 类名 / 行为逐字不变。
+  // 非树形（章节 / 伏笔 / 灵感）：沿用改造前的平铺行组件，DOM / 类名 / 行为逐字不变。
   const flatVolumeRow = (volume: TrashRow): ReactElement => (
     <FlatTrashRow
       key={`v-${volume.id}`}
