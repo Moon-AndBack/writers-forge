@@ -208,7 +208,10 @@ const chapters = {
   dialog: {
     deleteVolume: {
       title: '删除卷',
-      message: '确定删除「{{name}}」？该卷及其下的章节会一并移入回收站，可再还原。',
+      message:
+        '确定删除「{{name}}」？该卷及其下的章节将移入章节回收站；大纲中的对应卷及其下的条目也会一并移入大纲回收站，均可再还原。',
+      messageWithImpact:
+        '确定删除「{{name}}」？该卷及其下 {{chapters}} 个章节将移入章节回收站；大纲中的对应卷及其 {{outlineItems}} 个条目也会一并移入大纲回收站，均可再还原。',
       confirm: '删除'
     },
     deleteChapter: {

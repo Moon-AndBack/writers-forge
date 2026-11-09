@@ -28,7 +28,14 @@ import { MAX_CHAPTERS_PER_VOLUME, coerceStatus } from './chapterStatus'
  */
 
 /** 卷域 re-export（`ipc/chapters.ts` / 渲染层 preload 类型继续从此导入）。 */
-export { createVolume, deleteVolume, listVolumes, renameVolume } from './volumes'
+export {
+  createVolume,
+  deleteVolume,
+  getVolumeDeleteImpact,
+  listVolumes,
+  renameVolume
+} from './volumes'
+export type { VolumeDeleteImpact } from './volumes'
 export type {
   ChapterKind,
   ChapterPin,

@@ -9,6 +9,7 @@ import {
   withDeleteImpactWarning
 } from '../foreshadow/useForeshadowDeleteImpact'
 import type { VolumeRow } from '../chapters/chapterTree'
+import { useVolumeDeleteImpact } from '../volumes/useVolumeDeleteImpact'
 import type { TreeExpansion } from '../useTreeExpansion'
 import {
   outlineItemLabel,
@@ -73,6 +74,8 @@ export default function OutlineNonVolumeList({
   const confirm = useConfirm()
   // 删除确认前的双埋点伏笔查询（软删：伏笔保留，仅此处锚点失效）。
   const { inspect: inspectForeshadowImpact } = useForeshadowDeleteImpact()
+  // 删除分组前的条目数预检（查询失败回退静态文案，不阻断删除）。
+  const { inspect: inspectVolumeDeleteImpact } = useVolumeDeleteImpact()
 
   const beginRenameItem = useCallback((item: OutlineItemRow): void => {
     setItemRenamingId(item.id)
@@ -114,18 +117,28 @@ export default function OutlineNonVolumeList({
 
   const requestDeleteGroup = useCallback(
     (volume: VolumeRow): void => {
-      confirm.request(
-        {
-          title: t('dialog.deleteGroup.title'),
-          message: t('dialog.deleteGroup.message', {
-            name: outlineItemLabel({ title: volume.title }, t('unnamedGroup'))
-          }),
-          confirmText: t('dialog.deleteGroup.confirm')
-        },
-        () => onDeleteGroup(volume.id)
-      )
+      const name = outlineItemLabel({ title: volume.title }, t('unnamedGroup'))
+      // 分组仅存在于大纲域（正文无对应卷）：预检只取条目数，`chapters` 恒 0 不展示；
+      // 查询失败（null）回退静态文案，仍可删除，绝不因预检阻断。
+      void (async (): Promise<void> => {
+        const impact = await inspectVolumeDeleteImpact(volume.id)
+        confirm.request(
+          {
+            title: t('dialog.deleteGroup.title'),
+            message:
+              impact === null
+                ? t('dialog.deleteGroup.message', { name })
+                : t('dialog.deleteGroup.messageWithImpact', {
+                    name,
+                    outlineItems: impact.outlineItems
+                  }),
+            confirmText: t('dialog.deleteGroup.confirm')
+          },
+          () => onDeleteGroup(volume.id)
+        )
+      })()
     },
-    [confirm, onDeleteGroup, t]
+    [confirm, onDeleteGroup, t, inspectVolumeDeleteImpact]
   )
 
   const requestDeleteEntry = useCallback(

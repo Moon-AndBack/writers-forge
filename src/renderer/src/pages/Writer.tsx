@@ -90,7 +90,7 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
     handleOpenOutlineTarget,
     handleOutlineTrashChanged,
     handleRenameOutlineVolume,
-    handleDeleteOutlineVolume,
+    handleDeleteVolume,
     handleCreateOutlineChapter,
     handleCreateOutlineNonVolumeChapter,
     handleCreateOutlineGroup,
@@ -177,13 +177,6 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
       void renameVolume(id, title)
     },
     [renameVolume]
-  )
-
-  const handleDeleteVolume = useCallback(
-    (id: number): void => {
-      void deleteVolume(id)
-    },
-    [deleteVolume]
   )
 
   // 章节状态切换（中栏编辑头两态按钮）：包一层以稳定引用——`memo(EditorPane)` 的浅比较
@@ -366,7 +359,7 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
               activeOutlineSelection={activeOutlineSelection}
               onOpenOutlineTarget={handleOpenOutlineTarget}
               onRenameOutlineVolume={handleRenameOutlineVolume}
-              onDeleteOutlineVolume={handleDeleteOutlineVolume}
+              onDeleteOutlineVolume={handleDeleteVolume}
               onCreateOutlineChapter={handleCreateOutlineChapter}
               onRenameOutlineItem={handleRenameOutlineItem}
               onDeleteOutlineChapter={handleDeleteOutlineChapter}

@@ -11,6 +11,7 @@ import {
   createVolume,
   deleteChapter,
   deleteVolume,
+  getVolumeDeleteImpact,
   listChapters,
   listVolumes,
   moveChapter,
@@ -175,6 +176,7 @@ function isParagraphInputArray(
  *     （同事务建卷纲行；`kind` 缺省 `normal` 自动「卷X」）
  * - chapters:renameVolume     (id: number, title: string)     → VolumeRow | null（仅写名段；空白归空串）
  * - chapters:deleteVolume     (id: number)                    → boolean（软删除，整卷入回收站）
+ * - chapters:volumeDeleteImpact (id: number)                  → VolumeDeleteImpact | null（删除前跨域影响预检）
  * - chapters:reorderVolume    (id: number, index: number)     → boolean
  * - chapters:create           (bookId: string, input: { volumeId, title?, status?, isSpecial?, specialPrefix?, pin? }) → ChapterRow | null
  *     （volumeId 必填；特殊章须前段 + 名段；`isSpecial` 对外映射数据层 `kind`；
@@ -223,6 +225,11 @@ export function registerChaptersIpc(): void {
   ipcMain.handle('chapters:deleteVolume', (_event, id: unknown) => {
     if (!isPositiveInt(id)) return false
     return runWrite('chapters:deleteVolume', { id }, () => deleteVolume(id))
+  })
+
+  ipcMain.handle('chapters:volumeDeleteImpact', (_event, id: unknown) => {
+    if (!isPositiveInt(id)) return null
+    return getVolumeDeleteImpact(id)
   })
 
   ipcMain.handle('chapters:reorderVolume', (_event, id: unknown, index: unknown) => {

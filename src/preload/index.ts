@@ -13,6 +13,7 @@ import type {
   CreateChapterInput,
   CreateVolumeInput,
   RenameChapterPatch,
+  VolumeDeleteImpact,
   VolumeRow
 } from '../main/database/chapters'
 import type { DeletedContent, PurgeCounts } from '../main/database/chapterTrash'
@@ -156,6 +157,9 @@ const api = {
     renameVolume: (id: number, title: string): Promise<VolumeRow | null> =>
       ipcRenderer.invoke('chapters:renameVolume', id, title),
     deleteVolume: (id: number): Promise<boolean> => ipcRenderer.invoke('chapters:deleteVolume', id),
+    /** 删除卷前的跨域影响预检（章节数 / 大纲条目数）；卷不存在 / 已删 / 未分卷 → null */
+    volumeDeleteImpact: (id: number): Promise<VolumeDeleteImpact | null> =>
+      ipcRenderer.invoke('chapters:volumeDeleteImpact', id),
     reorderVolume: (id: number, index: number): Promise<boolean> =>
       ipcRenderer.invoke('chapters:reorderVolume', id, index),
     create: (bookId: string, input: CreateChapterInput): Promise<ChapterRow | null> =>

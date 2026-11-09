@@ -43,7 +43,10 @@ const outline = {
   dialog: {
     deleteVolume: {
       title: '删除卷',
-      message: '确定删除「{{name}}」？该卷及其下的章会一并删除。',
+      message:
+        '确定删除「{{name}}」？该卷及其下的条目将移入大纲回收站；正文中的对应卷及其下的章节也会一并移入章节回收站，均可再还原。',
+      messageWithImpact:
+        '确定删除「{{name}}」？该卷及其下 {{outlineItems}} 个条目将移入大纲回收站；正文中的对应卷及其 {{chapters}} 个章节也会一并移入章节回收站，均可再还原。',
       confirm: '删除'
     },
     deleteChapter: {
@@ -53,7 +56,9 @@ const outline = {
     },
     deleteGroup: {
       title: '删除分组',
-      message: '确定删除「{{name}}」？该分组及其下的条目会一并删除。',
+      message: '确定删除「{{name}}」？该分组及其下的条目将移入大纲回收站，可再还原。',
+      messageWithImpact:
+        '确定删除「{{name}}」？该分组及其下 {{outlineItems}} 个条目将移入大纲回收站，可再还原。',
       confirm: '删除'
     }
   },

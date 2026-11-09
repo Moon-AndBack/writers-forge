@@ -22,6 +22,7 @@ import {
   useForeshadowDeleteImpact,
   withDeleteImpactWarning
 } from '../foreshadow/useForeshadowDeleteImpact'
+import { useVolumeDeleteImpact } from '../volumes/useVolumeDeleteImpact'
 import type { CreateChapterInput } from './useChapterTree'
 
 /** 跨卷拖拽悬停收起卷的自动展开延迟（ms）。 */
@@ -97,6 +98,8 @@ export default function ChaptersPanel({
   const confirm = useConfirm()
   // 删除确认前的双埋点伏笔查询（软删：伏笔保留，仅此处锚点失效）。
   const { inspect: inspectForeshadowImpact } = useForeshadowDeleteImpact()
+  // 删除卷确认前的跨域影响预检（章节数 / 大纲条目数；失败回退静态文案）。
+  const { inspect: inspectVolumeDeleteImpact } = useVolumeDeleteImpact()
 
   const groups = groupChapters(volumes, chapters)
   // 可见分组：系统「未分卷」卷仅在其下有章时出卡（空卡隐藏）；其余卷恒出卡。
@@ -200,16 +203,28 @@ export default function ChaptersPanel({
 
   const requestDeleteVolume = useCallback(
     (volume: VolumeRow, displayName: string): void => {
-      confirm.request(
-        {
-          title: t('dialog.deleteVolume.title'),
-          message: t('dialog.deleteVolume.message', { name: displayName }),
-          confirmText: t('dialog.deleteVolume.confirm')
-        },
-        () => onDeleteVolume(volume.id)
-      )
+      // 卷级删除会同时软删章节与大纲条目：先预检两侧数量再弹确认；
+      // 查询失败（null）回退静态文案，仍可删除，绝不因预检阻断。
+      void (async (): Promise<void> => {
+        const impact = await inspectVolumeDeleteImpact(volume.id)
+        confirm.request(
+          {
+            title: t('dialog.deleteVolume.title'),
+            message:
+              impact === null
+                ? t('dialog.deleteVolume.message', { name: displayName })
+                : t('dialog.deleteVolume.messageWithImpact', {
+                    name: displayName,
+                    chapters: impact.chapters,
+                    outlineItems: impact.outlineItems
+                  }),
+            confirmText: t('dialog.deleteVolume.confirm')
+          },
+          () => onDeleteVolume(volume.id)
+        )
+      })()
     },
-    [confirm, onDeleteVolume, t]
+    [confirm, onDeleteVolume, t, inspectVolumeDeleteImpact]
   )
 
   const requestDeleteChapter = useCallback(

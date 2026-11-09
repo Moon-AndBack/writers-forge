@@ -200,7 +200,9 @@ const chapters = {
     deleteVolume: {
       title: 'Delete volume',
       message:
-        'Delete “{{name}}”? The volume and its chapters will be moved to the trash and can be restored.',
+        'Delete “{{name}}”? The volume and its chapters will be moved to the chapters trash; the matching volume and its entries in the outline will also be moved to the outline trash. Both can be restored.',
+      messageWithImpact:
+        'Delete “{{name}}”? The volume and its {{chapters}} chapters will be moved to the chapters trash; the matching volume and its {{outlineItems}} entries in the outline will also be moved to the outline trash. Both can be restored.',
       confirm: 'Delete'
     },
     deleteChapter: {

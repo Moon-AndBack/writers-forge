@@ -24,14 +24,16 @@ export interface OutlineWorkspace {
   activeOutlineSelection: OutlineSelection | null
   /** 重新拉取大纲卷源（卷纲载体）。 */
   reloadOutlineVolumes: () => Promise<void>
+  /** 重新拉取大纲条目树（卷级删除会连带软删条目，需与卷源同步刷新）。 */
+  reloadOutline: () => Promise<void>
   /** 选中大纲编辑目标（左栏行点击 → 中栏编辑）。 */
   handleOpenOutlineTarget: (selection: OutlineSelection) => void
   /** 大纲回收站还原 / 彻底删除 / 清空后：刷新条目树、可见卷与章节侧共享卷列表。 */
   handleOutlineTrashChanged: () => void
   /** 大纲卷 / 分组重命名（走共享卷通道）：成功后重取大纲侧卷。 */
   handleRenameOutlineVolume: (id: number, title: string) => void
-  /** 大纲卷 / 分组删除（走共享卷通道）：成功后重取大纲侧卷。 */
-  handleDeleteOutlineVolume: (id: number) => void
+  /** 卷 / 分组删除（章节页与大纲页共用）：成功后同时重取大纲卷源与条目树。 */
+  handleDeleteVolume: (id: number) => void
   /** 新建大纲条目：创建成功后选中新条目。 */
   handleCreateOutlineChapter: (volumeId: number) => void
   /** 新建置顶独立条目（可空名）：创建成功后选中该条目。 */
@@ -126,14 +128,17 @@ export function useOutlineWorkspace(
     [renameVolume, reloadOutlineVolumes]
   )
 
-  const handleDeleteOutlineVolume = useCallback(
+  // 章节页与大纲页共用的卷删除入口：删卷会级联软删其下章节与大纲条目，
+  // 故成功后同时重取大纲卷源与条目树（共享卷列表由 `deleteVolume` 自行 reload）。
+  const handleDeleteVolume = useCallback(
     (id: number): void => {
       void (async () => {
         await deleteVolume(id)
         await reloadOutlineVolumes()
+        await reloadOutline()
       })()
     },
-    [deleteVolume, reloadOutlineVolumes]
+    [deleteVolume, reloadOutlineVolumes, reloadOutline]
   )
 
   // 新建大纲条目：创建成功后选中新条目（纯自定义名，默认空名）。
@@ -213,10 +218,11 @@ export function useOutlineWorkspace(
     outlineVolumeRows,
     activeOutlineSelection,
     reloadOutlineVolumes,
+    reloadOutline,
     handleOpenOutlineTarget,
     handleOutlineTrashChanged,
     handleRenameOutlineVolume,
-    handleDeleteOutlineVolume,
+    handleDeleteVolume,
     handleCreateOutlineChapter,
     handleCreateOutlineNonVolumeChapter,
     handleCreateOutlineGroup,

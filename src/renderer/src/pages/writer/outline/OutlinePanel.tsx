@@ -11,6 +11,7 @@ import {
 } from '../foreshadow/useForeshadowDeleteImpact'
 import { volumeNameLabel, type VolumeRow } from '../chapters/chapterTree'
 import { useChapterLabels } from '../chapters/useChapterLabels'
+import { useVolumeDeleteImpact } from '../volumes/useVolumeDeleteImpact'
 import { useTreeExpansion } from '../useTreeExpansion'
 import { resolveDropLineId } from '../useSortableDrag'
 import {
@@ -85,6 +86,8 @@ export default function OutlinePanel({
   const confirm = useConfirm()
   // 删除确认前的双埋点伏笔查询（软删：伏笔保留，仅此处锚点失效）。
   const { inspect: inspectForeshadowImpact } = useForeshadowDeleteImpact()
+  // 删除卷确认前的跨域影响预检（大纲条目数 / 正文章节数；失败回退静态文案）。
+  const { inspect: inspectVolumeDeleteImpact } = useVolumeDeleteImpact()
 
   // 卷池已由页面层过滤为大纲页可见卷（`normal` + `group`）。
   const tree = useMemo(() => buildOutlineTree(volumes, chapters), [volumes, chapters])
@@ -160,16 +163,28 @@ export default function OutlinePanel({
 
   const requestDeleteVolume = useCallback(
     (volume: VolumeRow): void => {
-      confirm.request(
-        {
-          title: t('dialog.deleteVolume.title'),
-          message: t('dialog.deleteVolume.message', { name: labels.volumeLabel(volume) }),
-          confirmText: t('dialog.deleteVolume.confirm')
-        },
-        () => onDeleteVolume(volume.id)
-      )
+      // 卷级删除会同时软删大纲条目与正文章节：先预检两侧数量再弹确认；
+      // 查询失败（null）回退静态文案，仍可删除，绝不因预检阻断。
+      void (async (): Promise<void> => {
+        const impact = await inspectVolumeDeleteImpact(volume.id)
+        confirm.request(
+          {
+            title: t('dialog.deleteVolume.title'),
+            message:
+              impact === null
+                ? t('dialog.deleteVolume.message', { name: labels.volumeLabel(volume) })
+                : t('dialog.deleteVolume.messageWithImpact', {
+                    name: labels.volumeLabel(volume),
+                    outlineItems: impact.outlineItems,
+                    chapters: impact.chapters
+                  }),
+            confirmText: t('dialog.deleteVolume.confirm')
+          },
+          () => onDeleteVolume(volume.id)
+        )
+      })()
     },
-    [confirm, onDeleteVolume, t, labels]
+    [confirm, onDeleteVolume, t, labels, inspectVolumeDeleteImpact]
   )
 
   const requestDeleteChapter = useCallback(

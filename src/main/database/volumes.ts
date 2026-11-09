@@ -55,6 +55,38 @@ export function listVolumes(bookId: string): VolumeRow[] {
   return assignVolumeNumberIndex(statement.all(bookId).map(toVolume))
 }
 
+/** 删除卷前的跨域影响（仅计未删除行）：供确认框展示「会连带删除多少内容」。 */
+export interface VolumeDeleteImpact {
+  /** 该卷下未删除的章节数。 */
+  chapters: number
+  /** 挂该卷未删除的大纲条目数（`scope='entry'`；不含卷纲行）。 */
+  outlineItems: number
+}
+
+/**
+ * 卷删除影响预检：卷不存在 / 已软删 / 系统「未分卷」→ null；否则统计其下
+ * 未删除章节与大纲条目（`scope='entry'`，不含卷纲行）数量。
+ *
+ * 只读查询，不改任何数据。渲染层查询失败时回退静态确认文案，不阻断删除。
+ */
+export function getVolumeDeleteImpact(volumeId: number): VolumeDeleteImpact | null {
+  const db = getDb()
+  const volume = db
+    .prepare('SELECT is_unfiled AS isUnfiled FROM volumes WHERE id = ? AND deleted_at IS NULL')
+    .get(volumeId) as { isUnfiled: number } | undefined
+  if (!volume || volume.isUnfiled === 1) return null
+  const chapters = db
+    .prepare('SELECT COUNT(*) AS count FROM chapters WHERE volume_id = ? AND deleted_at IS NULL')
+    .get(volumeId) as { count: number }
+  const outlineItems = db
+    .prepare(
+      `SELECT COUNT(*) AS count FROM outline_items
+       WHERE volume_id = ? AND scope = 'entry' AND deleted_at IS NULL`
+    )
+    .get(volumeId) as { count: number }
+  return { chapters: chapters.count, outlineItems: outlineItems.count }
+}
+
 /* ---------- 写入 ---------- */
 
 /**

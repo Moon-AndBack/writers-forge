@@ -37,7 +37,10 @@ const outline = {
   dialog: {
     deleteVolume: {
       title: 'Delete volume',
-      message: 'Delete “{{name}}”? Its chapters will be deleted as well.',
+      message:
+        'Delete “{{name}}”? The volume and its entries will be moved to the outline trash; the matching volume and its chapters in the chapters view will also be moved to the chapters trash. Both can be restored.',
+      messageWithImpact:
+        'Delete “{{name}}”? The volume and its {{outlineItems}} entries will be moved to the outline trash; the matching volume and its {{chapters}} chapters in the chapters view will also be moved to the chapters trash. Both can be restored.',
       confirm: 'Delete'
     },
     deleteChapter: {
@@ -47,7 +50,10 @@ const outline = {
     },
     deleteGroup: {
       title: 'Delete group',
-      message: 'Delete “{{name}}”? Its entries will be deleted as well.',
+      message:
+        'Delete “{{name}}”? The group and its entries will be moved to the outline trash and can be restored.',
+      messageWithImpact:
+        'Delete “{{name}}”? The group and its {{outlineItems}} entries will be moved to the outline trash and can be restored.',
       confirm: 'Delete'
     }
   },

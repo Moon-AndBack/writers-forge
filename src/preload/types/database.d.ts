@@ -23,6 +23,7 @@ import type {
   CreateChapterInput,
   CreateVolumeInput,
   RenameChapterPatch,
+  VolumeDeleteImpact,
   VolumeRow
 } from '../../main/database/chapters'
 import type { ChapterStatus } from '../../main/database/chapterStatus'
@@ -51,6 +52,7 @@ export type {
   CreateChapterInput,
   CreateVolumeInput,
   RenameChapterPatch,
+  VolumeDeleteImpact,
   VolumeRow,
   ChapterSearchInput,
   ChapterSearchPage,

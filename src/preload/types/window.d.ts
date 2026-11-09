@@ -33,6 +33,7 @@ import type {
   PurgeCounts,
   RenameChapterPatch,
   UpdateBookPatch,
+  VolumeDeleteImpact,
   VolumeRow
 } from './database'
 import type {
@@ -172,6 +173,8 @@ export interface Api {
     /** 改卷名段（title）；空白归空串。「卷X」编号由渲染层按序号动态拼出 */
     renameVolume: (id: number, title: string) => Promise<VolumeRow | null>
     deleteVolume: (id: number) => Promise<boolean>
+    /** 删除卷前的跨域影响预检（章节数 / 大纲条目数）；卷不存在 / 已删 / 未分卷 → null */
+    volumeDeleteImpact: (id: number) => Promise<VolumeDeleteImpact | null>
     reorderVolume: (id: number, index: number) => Promise<boolean>
     create: (bookId: string, input: CreateChapterInput) => Promise<ChapterRow | null>
     rename: (id: number, patch: RenameChapterPatch) => Promise<ChapterRow | null>
