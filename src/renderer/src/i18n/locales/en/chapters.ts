@@ -106,7 +106,19 @@ const chapters = {
     hitListTitle: '{{total}} matches in this chapter across {{words}} words',
     hitTimes: '{{count}} times',
     openLibrary: 'Open prohibited words',
-    metaLine: 'Source: {{source}} ({{license}}) · fetched on {{date}}'
+    categoryEnable: 'Enable built-in words in this category',
+    categoryDisable: 'Disable built-in words in this category',
+    categoryEnableMessage:
+      'Enable {{count}} built-in words in the “{{category}}” category. Your own words are not affected.',
+    categoryDisableMessage:
+      'Disable {{count}} built-in words in the “{{category}}” category (they are not deleted). Your own words are not affected.',
+    categoryConfirmEnable: 'Enable',
+    categoryConfirmDisable: 'Disable',
+    categoryEnableDone: 'Enabled {{count}} built-in words in “{{category}}”',
+    categoryDisableDone: 'Disabled {{count}} built-in words in “{{category}}”',
+    categoryToggleFailed: 'Failed to update this category, please retry',
+    metaSourceManual: 'Self-built',
+    metaLine: 'Sources: {{sources}} ({{licenses}}) · updated {{date}}'
   },
   search: {
     aria: 'Chapter search and replace',

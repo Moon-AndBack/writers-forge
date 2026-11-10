@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Input, Modal, Segmented, Select } from '../ui'
+import { Button, Input, Modal, Segmented, Select } from '../ui'
 import { BUILTIN_META } from './cleanWordsMeta'
+import { useConfirm } from '../../pages/writer/chapters/useConfirm'
 import '../../styles/components/clean-words.css'
 import { CleanWordAddForm } from './CleanWordAddForm'
 import { CleanWordsTable } from './CleanWordsTable'
@@ -12,8 +14,8 @@ import { useCleanWordsLibrary } from './useCleanWordsLibrary'
    词表行交给 `CleanWordsTable`，取数与动作交给 `useCleanWordsLibrary`
    （state / 分页常量在 `useCleanWordsLibrary.ts`、`cleanWordsMeta.ts`）。
 
-   列表性能：项目无虚拟列表依赖（853 条全量 DOM 约 2.5 万 px 会明显卡顿），故用
-   「三重筛选 + 分批渲染」：筛选把候选集压到单类别上限（当前 436 条）以内，再按
+   列表性能：项目无虚拟列表依赖（1274 条全量 DOM 约 4 万 px 会明显卡顿），故用
+   「三重筛选 + 分批渲染」：筛选把候选集压到单类别上限（当前 320 条）以内，再按
    `PAGE_SIZE` 逐批挂载（首屏 ≤80 行），「显示更多」每次追加一页。
 
    样式：类名前缀 `cw-`，见 styles/components/clean-words.css（行内控件统一走
@@ -26,6 +28,9 @@ export interface CleanWordsDialogProps {
   onClose: () => void
 }
 
+/** 出处行许可证（与 `BUILTIN_META.sources` 同序；静态常量，不进组件状态）。 */
+const META_LICENSES = BUILTIN_META.sources.map((source) => source.license).join(' / ')
+
 /**
  * 违禁词库管理弹窗。内置词（`source = 'builtin'`）只能启用 / 禁用，仅用户自建词可删除
  * （与主进程 `deleteCleanWord` 口径一致：内置词删除后会被下次词库更新写回）。
@@ -33,6 +38,37 @@ export interface CleanWordsDialogProps {
 export function CleanWordsDialog({ open, onClose }: CleanWordsDialogProps) {
   const { t } = useTranslation('chapters')
   const library = useCleanWordsLibrary(open)
+  const confirm = useConfirm()
+  const bulk = library.categoryBulk
+
+  /** 多来源出处：`manual` 走 i18n「自建」，其余来源直接显示 id（与种子 meta 一致）。 */
+  const metaSources = useMemo(
+    () =>
+      BUILTIN_META.sources
+        .map((source) => (source.id === 'manual' ? t('cleanWords.metaSourceManual') : source.id))
+        .join(' / '),
+    [t]
+  )
+
+  /** 计数行右侧的批量按钮：确认框带类别名与条数，确认后只操作内置词。 */
+  const handleBulkToggle = (): void => {
+    if (!bulk) return
+    const enable = !bulk.anyEnabled
+    confirm.request(
+      {
+        title: t(enable ? 'cleanWords.categoryEnable' : 'cleanWords.categoryDisable'),
+        message: t(
+          enable ? 'cleanWords.categoryEnableMessage' : 'cleanWords.categoryDisableMessage',
+          { category: bulk.label, count: bulk.count }
+        ),
+        confirmText: t(
+          enable ? 'cleanWords.categoryConfirmEnable' : 'cleanWords.categoryConfirmDisable'
+        ),
+        tone: enable ? 'default' : 'danger'
+      },
+      () => bulk.apply(enable)
+    )
+  }
 
   return (
     <Modal
@@ -43,6 +79,7 @@ export function CleanWordsDialog({ open, onClose }: CleanWordsDialogProps) {
       ariaLabel={t('cleanWords.dialogTitle')}
     >
       {library.toastNode}
+      {confirm.node}
       <div className="cw-root">
         {/* 行 1. 筛选：来源 / 类别 / 搜索（三件控件同为 sm 档，高度一致） */}
         <div className="cw-filters">
@@ -74,21 +111,28 @@ export function CleanWordsDialog({ open, onClose }: CleanWordsDialogProps) {
           />
         </div>
 
-        {/* 行 2. 结果：计数（合并原统计 Badge）+ 词表 + 内置词表出处 */}
+        {/* 行 2. 结果：计数 + 按类别批量启停 + 词表 + 内置词表出处 */}
         <div className="cw-results">
-          <p className="cw-count" aria-live="polite" aria-atomic="true">
-            {t('cleanWords.countSummary', {
-              shown: library.visibleRows.length,
-              total: library.filtered.length,
-              builtin: library.totals.builtin,
-              user: library.totals.user
-            })}
-          </p>
+          <div className="cw-count-row">
+            <p className="cw-count" aria-live="polite" aria-atomic="true">
+              {t('cleanWords.countSummary', {
+                shown: library.visibleRows.length,
+                total: library.filtered.length,
+                builtin: library.totals.builtin,
+                user: library.totals.user
+              })}
+            </p>
+            {bulk ? (
+              <Button size="sm" variant="ghost" onClick={handleBulkToggle}>
+                {bulk.anyEnabled ? t('cleanWords.categoryDisable') : t('cleanWords.categoryEnable')}
+              </Button>
+            ) : null}
+          </div>
           <p className="cw-meta">
             {t('cleanWords.metaLine', {
-              source: BUILTIN_META.source,
-              license: BUILTIN_META.license,
-              date: BUILTIN_META.fetchedAt
+              sources: metaSources,
+              licenses: META_LICENSES,
+              date: BUILTIN_META.generatedAt
             })}
           </p>
           <CleanWordsTable

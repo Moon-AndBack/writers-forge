@@ -35,7 +35,8 @@ export const CATEGORY_LABEL_KEYS = {
 
 /**
  * 内置词表元信息（镜像主进程 `cleanWordSeed/meta.ts` 的 `BUILTIN_CLEAN_WORDS_META`；
- * 渲染层不能直接 import 主进程模块）。末尾三个单行字段供现有出处行展示。
+ * 渲染层不能直接 import 主进程模块）。出处行按 `sources` 逐项拼接（来源名 + 许可证），
+ * 不再维护单来源的冗余字段。
  */
 export const BUILTIN_META = {
   version: 2,
@@ -74,10 +75,7 @@ export const BUILTIN_META = {
     weapon: 260,
     minor: 105
   },
-  total: 1274,
-  source: 'fwwdn + houbb + 自建',
-  license: 'Apache-2.0 / Apache-2.0 / MIT',
-  fetchedAt: '2026-11-10'
+  total: 1274
 } as const
 
 /** 单批渲染行数（首屏与「显示更多」步长）。 */

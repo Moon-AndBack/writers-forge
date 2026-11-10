@@ -16,5 +16,7 @@ export const cleanWordsApi = {
   active: () => ipcRenderer.invoke('cleanWords:active'),
   import: (words) => ipcRenderer.invoke('cleanWords:import', { words, source: 'user' }),
   toggle: (id, enabled) => ipcRenderer.invoke('cleanWords:toggle', { id, enabled }),
+  setCategoryEnabled: (category, enabled) =>
+    ipcRenderer.invoke('cleanWords:setCategoryEnabled', { category, enabled }),
   delete: (id) => ipcRenderer.invoke('cleanWords:delete', { id })
 } satisfies Api['cleanWords']

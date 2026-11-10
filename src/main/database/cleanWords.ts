@@ -311,6 +311,21 @@ export function setCleanWordEnabled(id: number, enabled: boolean): boolean {
 }
 
 /**
+ * 按类别批量启停**内置词**，返回变更行数。
+ *
+ * - SQL 限定 `source = 'builtin'`：用户自建词不受影响（与「内置词只能禁用不能删」同源）；
+ * - SQLite 的 `changes` 统计 WHERE 匹配行数（值未变也计入），故返回值即该类别内置词条数。
+ */
+export function setCategoryEnabled(category: CleanWordCategory, enabled: boolean): number {
+  const result = getDb()
+    .prepare(
+      "UPDATE clean_word_list SET enabled = ?, updated_at = datetime('now') WHERE source = 'builtin' AND category = ?"
+    )
+    .run(enabled ? 1 : 0, category)
+  return Number(result.changes)
+}
+
+/**
  * 删除单条（**仅 `source = 'user'`**；`builtin` 只能禁用不能删），返回是否真的删除。
  *
  * 理由：内置词库随版本更新导入，删除后的内置词会在下次更新被重新写回；

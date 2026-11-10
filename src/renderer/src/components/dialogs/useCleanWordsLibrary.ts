@@ -23,7 +23,7 @@ import type { CategoryFilter, SourceFilter } from './cleanWordsMeta'
 
 /* ---------- 数据读取 ---------- */
 
-/** 全量词条 + 聚合计数（853 条单次 IPC 可接受，换本地筛选零延迟）。纯函数，不碰 state。 */
+/** 全量词条 + 聚合计数（1274 条约 20KB，单次 IPC 可接受，换本地筛选零延迟）。纯函数，不碰 state。 */
 async function fetchCleanWords(): Promise<{
   rows: CleanWordRow[]
   counts: CleanWordCount[]
@@ -39,11 +39,28 @@ async function fetchCleanWords(): Promise<{
   }
 }
 
+/** 当前类别内置词的批量启停入口（`CleanWordsLibrary.categoryBulk`）。 */
+export interface CategoryBulk {
+  /** 该类别内置词条数（确认框展示）。 */
+  count: number
+  /** 是否有任意启用中的内置词（决定按钮是「禁用」还是「启用」）。 */
+  anyEnabled: boolean
+  /** 已翻译的类别名（确认框 / toast 插值）。 */
+  label: string
+  /** 执行批量启停：IPC → 缓存失效 → toast → 刷新列表与计数。 */
+  apply: (enabled: boolean) => Promise<void>
+}
+
 export interface CleanWordsLibrary {
   /** toast 节点（挂到弹窗 return 内渲染）。 */
   toastNode: ReactNode
   /** 内置 / 自建词条总数。 */
   totals: { builtin: number; user: number }
+  /**
+   * 当前类别内置词的批量启停入口：类别筛选为「全部」或该类别无内置词时为 null。
+   * 只操作 `source = 'builtin'`，用户自建词不受影响。
+   */
+  categoryBulk: CategoryBulk | null
   loaded: boolean
   failed: boolean
   sourceFilter: SourceFilter
@@ -222,6 +239,41 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
     [showToast, t]
   )
 
+  /** 按类别批量启停内置词（IPC 失败返回 -1）；成功后失效检测缓存并刷新列表 / 计数。 */
+  const applyCategoryBulk = useCallback(
+    async (category: CleanWordCategory, enabled: boolean): Promise<void> => {
+      const changed = await window.api.cleanWords.setCategoryEnabled(category, enabled)
+      if (changed < 0) {
+        showToast(t('cleanWords.categoryToggleFailed'))
+        return
+      }
+      resetActiveCleanWords()
+      showToast(
+        t(enabled ? 'cleanWords.categoryEnableDone' : 'cleanWords.categoryDisableDone', {
+          category: t(CATEGORY_LABEL_KEYS[category]),
+          count: changed
+        })
+      )
+      await refresh()
+    },
+    [refresh, showToast, t]
+  )
+
+  /** 仅当筛选到具体类别且该类别有内置词时提供批量入口。 */
+  const categoryBulk = useMemo<CategoryBulk | null>(() => {
+    if (categoryFilter === 'all') return null
+    const builtinRows = rows.filter(
+      (row) => row.category === categoryFilter && row.source === 'builtin'
+    )
+    if (builtinRows.length === 0) return null
+    return {
+      count: builtinRows.length,
+      anyEnabled: builtinRows.some((row) => row.enabled),
+      label: t(CATEGORY_LABEL_KEYS[categoryFilter]),
+      apply: (enabled) => applyCategoryBulk(categoryFilter, enabled)
+    }
+  }, [applyCategoryBulk, categoryFilter, rows, t])
+
   const handleDelete = useCallback(
     async (row: CleanWordRow): Promise<void> => {
       const ok = await window.api.cleanWords.delete(row.id)
@@ -282,6 +334,7 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
   return {
     toastNode,
     totals,
+    categoryBulk,
     loaded,
     failed,
     sourceFilter,

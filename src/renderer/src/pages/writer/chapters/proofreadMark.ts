@@ -25,7 +25,7 @@ import { publishProofreadHits, releaseProofreadHits } from './proofreadHits'
  * - 扫描时机：文档变更后**尾沿防抖 500ms**；整章替换（`setContent(..., { emitUpdate: false })`
  *   带 `preventUpdate` 元信息）**立即**扫一次（切章不等防抖）；编辑器首次挂载扫一次。
  *
- * 性能（本地实测，860 条内置词）：5000 字 0.31ms / 20000 字 0.58ms / 200000 字 6.4ms（中位），
+ * 性能（本地实测，1274 条内置词）：5000 字 0.31ms / 20000 字 0.58ms / 200000 字 6.4ms（中位），
  * 故「防抖 + 全量重扫」无需脏区域增量（对比：整篇重扫远低于一帧 16.7ms 预算）。
  *
  * 与 `outlineSearch.ts` / `linkSelectionMirror.ts` 同构：PluginKey + `apply` 里 meta 直写优先、

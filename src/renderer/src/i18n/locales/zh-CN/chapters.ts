@@ -116,7 +116,18 @@ const chapters = {
     hitListTitle: '本章命中 {{total}} 处，涉及 {{words}} 个词',
     hitTimes: '{{count}} 次',
     openLibrary: '打开违禁词库',
-    metaLine: '来源：{{source}}（{{license}}）· 拉取于 {{date}}'
+    categoryEnable: '启用本类别内置词',
+    categoryDisable: '禁用本类别内置词',
+    categoryEnableMessage: '将启用「{{category}}」类别的 {{count}} 条内置词。用户自建词不受影响。',
+    categoryDisableMessage:
+      '将禁用「{{category}}」类别的 {{count}} 条内置词（不会删除）。用户自建词不受影响。',
+    categoryConfirmEnable: '启用',
+    categoryConfirmDisable: '禁用',
+    categoryEnableDone: '已启用「{{category}}」类别的 {{count}} 条内置词',
+    categoryDisableDone: '已禁用「{{category}}」类别的 {{count}} 条内置词',
+    categoryToggleFailed: '批量更新失败，请重试',
+    metaSourceManual: '自建',
+    metaLine: '来源：{{sources}}（{{licenses}}）· 更新于 {{date}}'
   },
   search: {
     aria: '章节搜索与替换',

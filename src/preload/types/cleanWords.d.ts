@@ -47,6 +47,8 @@ export interface CleanWordsApi {
   import: (words: CleanWordImportInput[]) => Promise<CleanWordImportResult | null>
   /** 单条启用 / 禁用；未命中记录 → false。 */
   toggle: (id: number, enabled: boolean) => Promise<boolean>
+  /** 按类别批量启停**内置词**（用户自建词不受影响），返回变更行数；非法 / 失败 → -1。 */
+  setCategoryEnabled: (category: CleanWordCategory, enabled: boolean) => Promise<number>
   /** 删除单条（仅 `source='user'`，内置词由数据层拒绝）；未删除 → false。 */
   delete: (id: number) => Promise<boolean>
 }

@@ -7,6 +7,7 @@ import {
   importCleanWords,
   listActiveCleanWords,
   listCleanWords,
+  setCategoryEnabled,
   setCleanWordEnabled
 } from '../database/cleanWords'
 import type {
@@ -37,6 +38,7 @@ const MAX_REPLACEMENT_CHARS = 200
  * - cleanWords:active  ()                                    → ActiveCleanWord[]（检测用：仅启用中的词）
  * - cleanWords:import  ({ words, source })                   → CleanWordImportResult | null
  * - cleanWords:toggle  ({ id, enabled })                     → boolean
+ * - cleanWords:setCategoryEnabled ({ category, enabled })    → number（仅内置词，失败 → -1）
  * - cleanWords:delete  ({ id })                              → boolean（仅 source='user' 可删）
  *
  * 校验强度：入参一律 `unknown` + 本层显式收敛（对象形态 / 枚举白名单 / 长度上限 / 正整数），
@@ -120,6 +122,20 @@ export function registerCleanWordsIpc(): void {
       { id, enabled },
       () => setCleanWordEnabled(id, enabled),
       false
+    )
+  })
+
+  ipcMain.handle('cleanWords:setCategoryEnabled', (_event, input: unknown) => {
+    if (!isRecord(input) || !isCategory(input.category) || typeof input.enabled !== 'boolean') {
+      log.warn('cleanWords:setCategoryEnabled 入参非法')
+      return -1
+    }
+    const { category, enabled } = input
+    return runWrite(
+      'cleanWords:setCategoryEnabled',
+      { category, enabled },
+      () => setCategoryEnabled(category, enabled),
+      -1
     )
   })
 
