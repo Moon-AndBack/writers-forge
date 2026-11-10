@@ -75,7 +75,14 @@ const outline = {
   },
   trash: {
     groupStandalone: 'Standalone',
-    groupGrouped: 'Grouped'
+    groupGrouped: 'Grouped',
+    volumeNotDeleted: 'Not deleted (collection only)',
+    volumeLiveNotice:
+      'This volume / group is not deleted and only collects entries; restored entries return to its end',
+    volumeDeletedNotice:
+      'Restoring brings back its outline entries; chapters of a body volume must still be restored separately in the chapter trash',
+    itemRestoreAfterVolume:
+      'The parent volume / group is also in the trash; restore the parent volume first'
   }
 } satisfies ZhCNResources['outline']
 

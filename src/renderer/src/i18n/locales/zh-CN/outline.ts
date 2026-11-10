@@ -7,7 +7,8 @@
  *
  * 跨 ns 复用（不在此重复定义）：
  * - 标题栏按钮组：添加 / 保存 / 撤销 / 重做 / 搜索 / 回收站复用 `outline.*` 与 `common.*`；
- * - 回收站视图：整体复用 `chapters.trash.*` 与 `chapters.dialog.purge*`（与章节回收站语义一致）。
+ * - 回收站视图：列表 / 弹窗文案复用 `chapters.trash.*` 与 `chapters.dialog.purge*`；
+ *   卷 / 分组未删状态与还原说明见本命名空间 `trash.*`。
  *
  * 不译边界（二期）：大纲卷 / 章均为纯自定义名（无「卷X」/「第X章」编号），不涉及中文数字。
  */
@@ -80,7 +81,11 @@ const outline = {
   },
   trash: {
     groupStandalone: '单大纲',
-    groupGrouped: '分组大纲'
+    groupGrouped: '分组大纲',
+    volumeNotDeleted: '未删除（仅作收拢）',
+    volumeLiveNotice: '该卷 / 分组未删除，仅作收拢；条目还原后回到其末尾',
+    volumeDeletedNotice: '还原后其下大纲条目一并回来；正文卷的章节仍需在章节回收站单独还原',
+    itemRestoreAfterVolume: '所属卷 / 分组也在回收站，先还原所属卷'
   }
 }
 

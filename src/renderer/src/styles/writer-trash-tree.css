@@ -130,6 +130,11 @@
   visibility: hidden;
 }
 
+/* 未删收拢卷（is-container）没有操作按钮：计数不随 hover / 聚焦隐藏。 */
+.trash-tree-group > .trash-row.is-container .trash-row-count {
+  visibility: visible;
+}
+
 /* ---------- 章行：状态圆点 / 特殊章前段 / 分隔点 ---------- */
 .trash-row-dot {
   width: 6px;

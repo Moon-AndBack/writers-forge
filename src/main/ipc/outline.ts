@@ -97,12 +97,12 @@ function isValidContentJson(value: unknown): value is string | null {
  * - outline:getVolumeOutline (volumeId: number)                 → OutlineContentPayload | null（按卷 id 取卷纲行）
  * - outline:saveContent    (itemId: number, contentJson: string | null, text: string) → boolean
  *     （contentJson 非空须为合法 JSON；行不存在 / 已软删 → false）
- * - outline:listDeleted    (bookId: string)                     → DeletedOutlineContent { volumes, items }
- * - outline:restore        (id: number)                         → boolean（还原条目）
+ * - outline:listDeleted    (bookId: string)                     → DeletedOutlineContent（软删卷 / 未删收拢卷 + 软删条目）
+ * - outline:restore        (id: number)                         → boolean（还原条目；父卷须存在且未删）
  * - outline:restoreVolume  (id: number)                         → boolean（还原卷及其下软删条目）
  * - outline:purge          (id: number)                         → boolean（彻底删除条目）
  * - outline:purgeVolume    (id: number)                         → boolean（彻底删除卷 + 其下条目）
- * - outline:purgeAllDeleted (bookId: string)                    → OutlinePurgeCounts { volumes, items }
+ * - outline:purgeAllDeleted (bookId: string)                    → OutlinePurgeCounts（清空 normal/group 软删卷 + 残留条目）
  */
 export function registerOutlineIpc(): void {
   ipcMain.handle('outline:listVolumes', (_event, bookId: unknown) => {

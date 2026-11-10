@@ -193,12 +193,12 @@ function isParagraphInputArray(
  * - chapters:stats            (bookId: string)                → ChapterStats（排除软删；非法 → {0,0}）
  * - chapters:nextVolumeTitle  (bookId: string)                → string（下一个默认卷名）
  * - chapters:nextChapterTitle (bookId: string, volumeId)      → string（下一个默认章名；达上限返回空串）
- * - chapters:listDeleted      (bookId: string)                → DeletedContent（只列软删章）
+ * - chapters:listDeleted      (bookId: string)                → DeletedContent（软删章 + 软删卷 / 未删收拢卷）
  * - chapters:restore          (id: number)                    → boolean（还原章）
  * - chapters:restoreVolume    (id: number)                    → boolean（还原卷及其下软删章）
  * - chapters:purge            (id: number)                    → boolean（彻底删章 + 段落级联）
  * - chapters:purgeVolume      (id: number)                    → boolean（彻底删卷 + 其下章 + 段落）
- * - chapters:purgeAllDeleted  (bookId: string)                → PurgeCounts（清空章节回收站：只删章）
+ * - chapters:purgeAllDeleted  (bookId: string)                → PurgeCounts（清空：软删卷 + 软删章）
  */
 export function registerChaptersIpc(): void {
   ipcMain.handle('chapters:listVolumes', (_event, bookId: unknown) => {

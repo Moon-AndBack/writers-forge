@@ -290,7 +290,7 @@ const api = {
     /** 保存正文：contentJson 非空须为合法 JSON 串（主进程复验）；空串/null = 清空；行不存在返回 false */
     saveContent: (itemId: number, contentJson: string | null, text: string): Promise<boolean> =>
       ipcRenderer.invoke('outline:saveContent', itemId, contentJson, text),
-    /** 回收站内容（软删的卷与条目；条目含原归属卷名 volumeTitle） */
+    /** 回收站内容（软删卷 / 未删收拢卷 + 软删条目；条目含原归属卷名与父卷状态） */
     listDeleted: (bookId: string): Promise<DeletedOutlineContent> =>
       ipcRenderer.invoke('outline:listDeleted', bookId),
     /** 还原条目（追加到所属卷末尾） */

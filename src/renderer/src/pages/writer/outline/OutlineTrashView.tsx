@@ -13,7 +13,7 @@ import {
   useForeshadowDeleteImpact,
   withDeleteImpactWarning
 } from '../foreshadow/useForeshadowDeleteImpact'
-import { outlineItemLabel } from './outlineTree'
+import { isOutlineItemRestoreBlocked, outlineItemLabel } from './outlineTree'
 import { OutlineTrashDetail } from './OutlineTrashDetail'
 
 /** 回收站内容：**直接从 preload `Api` 派生**，消除渲染层平行定义。 */
@@ -83,7 +83,8 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
     restoreVolume: t('trash.restoreVolume'),
     purgeVolume: t('trash.purgeVolume'),
     restoreItem: t('trash.restoreChapter'),
-    purgeItem: t('trash.purgeChapter')
+    purgeItem: t('trash.purgeChapter'),
+    restoreAfterVolume: tOutline('trash.itemRestoreAfterVolume')
   }
 
   // 卷 / 分组行计数只统计「其下仍在回收站中的条目」，不是原卷总条目数。
@@ -98,6 +99,8 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
     id: volume.id,
     name: labels.outlineVolumeLabel(volume, tOutline('unnamedVolume')),
     count: deletedItemCounts.get(volume.id) ?? 0,
+    // 已删卷可还原 / 彻底删除；未删收拢卷仅作容器，无卷级操作（共享组件按此隐藏）。
+    inTrash: volume.deletedAt !== null,
     emphasis: volume.kind === 'custom'
   }))
   const items: TrashRow[] = content.items.map((item) => ({
@@ -107,7 +110,9 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
     // 单大纲 = 独立条目（无归属卷）；其余条目全部归「分组大纲」。
     sectionKey: item.volumeId === null ? 'standalone' : 'grouped',
     // 圆点仅加在「单大纲」平铺行；「分组大纲」走树形，圆点由 TreeRowItem 统一渲染。
-    showDot: item.volumeId === null
+    showDot: item.volumeId === null,
+    // 父卷已删 / 缺失 / 非大纲可见 kind → 禁止单独还原（后端父卷守卫同样拒绝）。
+    restoreBlocked: isOutlineItemRestoreBlocked(item)
   }))
 
   // 左侧三卡：标题卡 + 「单大纲」（独立条目，平铺）+「分组大纲」（树形）。
@@ -119,7 +124,9 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
   ]
 
   const requestRestoreVolume = (id: number): void => {
-    if (busy) return
+    const volume = content.volumes.find((row) => row.id === id)
+    // 未删收拢卷没有卷级操作；操作区已不渲染，这里再做一次防御。
+    if (busy || !volume || volume.deletedAt === null) return
     void runAction(() => window.api.outline.restoreVolume(id))
   }
 
@@ -130,7 +137,7 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
 
   const requestPurgeVolume = (id: number): void => {
     const volume = content.volumes.find((row) => row.id === id)
-    if (!volume) return
+    if (busy || !volume || volume.deletedAt === null) return
     confirm.request(
       {
         title: t('dialog.purgeVolume.title'),

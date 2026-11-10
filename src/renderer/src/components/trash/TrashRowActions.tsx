@@ -9,6 +9,10 @@ export interface TrashRowActionsProps {
   restoreLabel: string
   /** 彻底删除按钮文案。 */
   purgeLabel: string
+  /** 禁止单独还原（父卷不可用）；aria-label 仍为 `restoreLabel`，tooltip 解释原因。 */
+  restoreDisabled?: boolean
+  /** 还原禁用原因（仅 `restoreDisabled` 为 true 时作为 tooltip 文案）。 */
+  restoreDisabledTooltip?: string
   onRestore: () => void
   onPurge: () => void
   /**
@@ -27,19 +31,25 @@ export function TrashRowActions({
   busy,
   restoreLabel,
   purgeLabel,
+  restoreDisabled = false,
+  restoreDisabledTooltip,
   onRestore,
   onPurge,
   wrapped = true
 }: TrashRowActionsProps): ReactElement {
   const buttons = (
     <>
+      {/* 禁用原因需可 hover / focus 展示：还原禁用走 `aria-disabled`（保留 aria-label
+          并挂 tooltip），原生 `disabled` 只用于 busy；两者都不改变按钮布局。 */}
       <IconButton
         size="sm"
         className="row-act"
         label={restoreLabel}
+        tooltip={restoreDisabled ? restoreDisabledTooltip : undefined}
         tooltipPlacement="top"
+        aria-disabled={restoreDisabled || undefined}
         disabled={busy}
-        onClick={onRestore}
+        onClick={restoreDisabled ? undefined : onRestore}
       >
         <RestoreIcon />
       </IconButton>

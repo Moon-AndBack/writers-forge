@@ -1,10 +1,11 @@
 import { getDb } from './index'
 import { CHAPTER_SELECT, toChapter, type ChapterRow } from './chapters'
 import { nextChapterSortOrder, nextVolumeSortOrder, renumberChaptersInGroup } from './chapterGroups'
-import { ensureUnfiledVolume } from './volumes'
+import { ensureUnfiledVolume, withVolumeNumberIndex } from './volumes'
 import { renumberOutlineItemsInGroup } from './outline/shared'
-import { coerceVolumeKind } from './chapterMappers'
-import type { ChapterDbRow, VolumeKind } from './chapterTypes'
+import { coerceVolumeKind, toVolume } from './chapterMappers'
+import { VOLUME_COLUMNS } from './chapterTypes'
+import type { ChapterDbRow, VolumeDbRow, VolumeKind, VolumeRow } from './chapterTypes'
 
 /**
  * 章节域**回收站**（软删除的卷 / 章）：查询、还原、彻底删除。
@@ -21,11 +22,10 @@ import type { ChapterDbRow, VolumeKind } from './chapterTypes'
  * `volume_id` 指向的卷。还原章的目标卷：**原卷未删且非分组容器 → 原卷末尾**；否则
  * （父卷软删 / 缺失 / 分组容器异常数据）→ 系统「未分卷」卷末尾（`ensureUnfiledVolume` 兜底），
  * 避免活章挂在软删卷下成为左栏不可见的幽灵活章。
- * 回收站**不按卷 kind 过滤**——全部 kind 一视同仁可见可还原。
- *
- * 第三批起，**章节回收站只列章、不列卷**：软删卷只在大纲回收站管理。卷的还原 / 彻底删除
- * 函数（`restoreVolume` / `purgeVolume`）与 IPC 仍保留（大纲侧可能复用），但章节 UI 不再调用；
- * 章节回收站的「清空」也只物理删除软删章，不触碰卷与大纲条目。
+ * 回收站列**两类卷**：① 已软删的 `normal` / `custom` 卷（可还原 / 彻底删除）；
+ * ② 未删但下有软删章的卷（仅作收拢容器，不可操作；正文卷补「卷X」动态编号）。
+ * 章节回收站的卷详情**只展示元信息**，不返回卷纲正文（正文卷的卷纲在大纲模块编辑）。
+ * 「清空」先物理删除 ① 类卷及其下章 / 大纲行，再删除其余软删章。
  */
 
 /** 回收站中的章行：原归属卷信息（供平铺列表与详情判断还原去向）。 */
@@ -40,13 +40,16 @@ export interface DeletedChapterRow extends ChapterRow {
   volumeKind: VolumeKind | null
 }
 
-/** 章节回收站内容：仅被软删的章（已删除的卷只在大纲回收站管理）。 */
+/** 章节回收站内容：回收站卷 + 被软删的章。 */
 export interface DeletedContent {
+  /** 已软删的 `normal` / `custom` 卷，以及下有软删章的未删卷（收拢容器）。 */
+  volumes: VolumeRow[]
   chapters: DeletedChapterRow[]
 }
 
-/** 清空章节回收站的清除计数。 */
+/** 清空章节回收站的清除计数（`chapters` 含随卷一并物理删除的章）。 */
 export interface PurgeCounts {
+  volumes: number
   chapters: number
 }
 
@@ -58,12 +61,41 @@ interface DeletedChapterJoinRow extends ChapterDbRow {
 }
 
 /**
- * 列出某书章节回收站内容：软删的章（含原归属卷名与卷状态），
- * 按 `deleted_at DESC, id DESC`（最近删除优先，与伏笔 / 灵感回收站同口径）。
+ * 列出某书章节回收站内容：软删的章（含原归属卷名与卷状态）+ 回收站卷。
+ *
+ * 卷查询覆盖两类：
+ * - **已软删**的 `normal` / `custom` 卷（排除系统「未分卷」）——可还原 / 彻底删除；
+ * - **未删但下有软删章**的卷——仅作收拢容器，UI 不提供卷级操作。
+ *
+ * 排序：已删卷在前（真正可操作的回收站项），未删收拢卷在后；段内自定义卷优先、
+ * 正文卷次之、未分卷置底，再按 `sort_order, id`。未删正文卷补动态 `numberIndex`（「卷X」），
+ * 已删卷编号恒 0。章按 `deleted_at DESC, id DESC`（最近删除优先，与伏笔 / 灵感回收站同口径）。
  */
 export function listDeleted(bookId: string): DeletedContent {
+  const db = getDb()
+  const volumes = (
+    db
+      .prepare(
+        `SELECT ${VOLUME_COLUMNS} FROM volumes
+         WHERE book_id = ? AND kind IN ('normal', 'custom')
+           AND (
+             (deleted_at IS NOT NULL AND is_unfiled = 0)
+             OR EXISTS (
+               SELECT 1 FROM chapters c
+               WHERE c.volume_id = volumes.id AND c.deleted_at IS NOT NULL
+             )
+           )
+         ORDER BY (deleted_at IS NULL),
+                  CASE WHEN is_unfiled = 1 THEN 2 WHEN kind = 'custom' THEN 0 ELSE 1 END,
+                  sort_order, id`
+      )
+      .all(bookId) as VolumeDbRow[]
+  )
+    .map(toVolume)
+    .map((volume) => (volume.deletedAt === null ? withVolumeNumberIndex(volume) : volume))
+
   const chapters = (
-    getDb()
+    db
       .prepare(
         `SELECT ${CHAPTER_SELECT},
            (SELECT v.title FROM volumes v WHERE v.id = chapters.volume_id) AS volumeTitle,
@@ -83,7 +115,7 @@ export function listDeleted(bookId: string): DeletedContent {
     volumeKind: row.volumeKind === null ? null : coerceVolumeKind(row.volumeKind)
   }))
 
-  return { chapters }
+  return { volumes, chapters }
 }
 
 /**
@@ -205,10 +237,35 @@ export function purgeChapter(id: number): boolean {
   })()
 }
 
-/** 清空某书章节回收站：只物理删除全部软删章（段落随外键 CASCADE），不动软删卷与大纲条目。 */
+/**
+ * 清空某书章节回收站：物理删除全部软删的 `normal` / `custom` 卷（其下章与大纲行一并删除）、
+ * 再删除剩余软删章（段落随外键 CASCADE）。系统「未分卷」与未删卷不受影响；
+ * 后者下的软删章按普通软删章清除。`chapters` 计数含随卷删除的章。
+ */
 export function purgeAllDeleted(bookId: string): PurgeCounts {
-  const result = getDb()
-    .prepare('DELETE FROM chapters WHERE book_id = ? AND deleted_at IS NOT NULL')
-    .run(bookId)
-  return { chapters: result.changes }
+  const db = getDb()
+  return db.transaction((): PurgeCounts => {
+    const volumeIds = (
+      db
+        .prepare(
+          `SELECT id FROM volumes
+           WHERE book_id = ? AND kind IN ('normal', 'custom')
+             AND is_unfiled = 0 AND deleted_at IS NOT NULL`
+        )
+        .all(bookId) as Array<{ id: number }>
+    ).map((row) => row.id)
+
+    let chapters = 0
+    for (const volumeId of volumeIds) {
+      db.prepare('DELETE FROM outline_items WHERE volume_id = ?').run(volumeId)
+      chapters += db.prepare('DELETE FROM chapters WHERE volume_id = ?').run(volumeId).changes
+      db.prepare('DELETE FROM volumes WHERE id = ?').run(volumeId)
+    }
+
+    chapters += db
+      .prepare('DELETE FROM chapters WHERE book_id = ? AND deleted_at IS NOT NULL')
+      .run(bookId).changes
+
+    return { volumes: volumeIds.length, chapters }
+  })()
 }

@@ -1,5 +1,5 @@
 /**
- * 回收站树形分组（大纲回收站）：卷行 + 其下条目（父子归组 / 独立折叠）+ 残差条目。
+ * 回收站树形分组（章节 / 大纲回收站）：卷行 + 其下条目（父子归组 / 独立折叠）+ 残差条目。
  *
  * 共用同一套行构造与折叠状态，两种装载方式：
  * - `legacyGroups`：旧单卡树形结构，输出「卷 / 条目」两个 `<section class="trash-group">`，
@@ -98,7 +98,10 @@ export function TrashTreeSection({
           classPrefix="trash-row"
           activeClass="is-selected"
           active={isSelected('volume', volume.id)}
-          stateClasses={volume.emphasis ? ['is-special'] : undefined}
+          stateClasses={[
+            ...(volume.emphasis ? ['is-special'] : []),
+            ...(volume.inTrash === false ? ['is-container'] : [])
+          ]}
           interactive={selectable}
           showDot={false}
           chevron={{

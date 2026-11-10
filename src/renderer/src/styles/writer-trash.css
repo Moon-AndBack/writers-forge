@@ -402,6 +402,19 @@
   margin-right: 52px;
 }
 
+/* 未删收拢卷（is-container）：无卷级操作——操作槽不占位、主名不让位；
+   计数常显由 `writer-trash-tree.css` 覆盖，行 hover 保持普通反馈，仍可选中看详情。 */
+.trash-row.is-container .trash-row-actions {
+  display: none;
+}
+
+.trash-row.is-container:hover > .trash-row-name,
+.trash-row.is-container:focus-within > .trash-row-name,
+.trash-row.is-container:hover > .trash-row-main,
+.trash-row.is-container:focus-within > .trash-row-main {
+  margin-right: 0;
+}
+
 /* 加载态：与伏笔 / 灵感中栏同口径。 */
 .trash-loading {
   padding: 24px 0;

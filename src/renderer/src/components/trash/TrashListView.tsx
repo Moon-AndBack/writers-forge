@@ -2,8 +2,10 @@
  * 回收站列表（章节 / 大纲 / 伏笔 / 灵感共用，§9 唯一实现）。
  *
  * 纯展示：不依赖 i18n，文案由调用方经 `t()` 取用后传入（对齐 `EmptyState` 约定）。
- * 样式直接复用 `styles/writer-trash.css`；树形模式（大纲）的增补规则在
- * `styles/writer-trash-tree.css`。章节回收站第三批起改为**纯平铺章列表**，不传卷。
+ * 样式直接复用 `styles/writer-trash.css`；树形模式（章节 / 大纲）的增补规则在
+ * `styles/writer-trash-tree.css`。章节回收站现与大纲回收站共用「卷树 + 残差条目」：
+ * 已删卷可还原 / 彻底删除，未删收拢卷仅作容器（`inTrash === false`，不渲染卷级操作、
+ * 不计入「N 项」）；父卷不可用的条目经 `restoreBlocked` 禁用单独还原。
  *
  * 「列表 + 详情」为可选能力：传入 `detail` / `detailEmpty` 且存在数据时，经
  * `TrashSplitLayout` 渲染「列表卡 + 分隔条 + 详情卡」两栏（宽度可拖拽并持久化）；
@@ -41,6 +43,16 @@ export interface TrashRow {
   showDot?: boolean
   /** 树形卷行计数：该卷下回收站中的章 / 条目数。 */
   count?: number
+  /**
+   * 卷行是否在回收站（软删）；缺省 true。`false` = 未删的收拢容器：
+   * 不渲染卷级还原 / 彻底删除，也不计入总数。
+   */
+  inTrash?: boolean
+  /**
+   * 条目行是否禁止单独还原（父卷不可用）；缺省 false。
+   * 禁用时保留还原按钮（aria-label 不变），仅以 tooltip 解释原因。
+   */
+  restoreBlocked?: boolean
   /** 三卡模式的归属段 key（对应 `sections[].key`）；缺省归入第一段。 */
   sectionKey?: string
 }
@@ -63,14 +75,16 @@ export interface TrashListViewMessages {
   empty: string
   /** 首帧 / 重试加载中的提示文案（复用 `common.loading`）。 */
   loadingText: string
-  /** 卷分组标题（可选：章节回收站只列章，不传）。 */
+  /** 旧单卡树形模式的卷分组标题（三卡模式与平铺模式不传）。 */
   groupVolumes?: string
   groupItems: string
-  /** 卷行操作文案（可选：章节回收站只列章，不传）。 */
+  /** 卷行操作文案（章节 / 大纲回收站传入；不传则不渲染卷操作）。 */
   restoreVolume?: string
   purgeVolume?: string
   restoreItem: string
   purgeItem: string
+  /** 条目还原被禁用时的原因提示（父卷不可用）；缺省不显示 tooltip。 */
+  restoreAfterVolume?: string
 }
 
 export interface TrashListViewProps {
@@ -145,7 +159,8 @@ function FlatTrashRow({
     'trash-row',
     selectable ? 'is-selectable' : null,
     selectable && selected ? 'is-selected' : null,
-    row.emphasis ? 'is-special' : null
+    row.emphasis ? 'is-special' : null,
+    row.inTrash === false ? 'is-container' : null
   ]
     .filter(Boolean)
     .join(' ')
@@ -206,12 +221,15 @@ export function TrashListView({
   sections = []
 }: TrashListViewProps): ReactElement {
   const sectionsEnabled = sections.length > 0
+  // 未删的收拢卷只作容器，不计入「N 项」：只统计 `inTrash !== false` 的卷。
+  const isCountedVolume = (volume: TrashRow): boolean => volume.inTrash !== false
   // 三卡模式的卷随 sections 自带，避免与顶层 `volumes` 重复计数。
   const sectionVolumeCount = sections.reduce(
-    (sum, section) => sum + (section.volumes?.length ?? 0),
+    (sum, section) => sum + (section.volumes?.filter(isCountedVolume).length ?? 0),
     0
   )
-  const total = (sectionsEnabled ? sectionVolumeCount : volumes.length) + items.length
+  const topVolumeCount = volumes.filter(isCountedVolume).length
+  const total = (sectionsEnabled ? sectionVolumeCount : topVolumeCount) + items.length
   const isEmpty = !loading && total === 0
   const selectable = onSelect !== undefined
   // 详情区（含未选中空态）存在即启用分栏；两者都不传时保持旧单列结构。
@@ -235,22 +253,26 @@ export function TrashListView({
   const isSelected = (kind: TrashSelectionKind, id: number): boolean =>
     selected !== undefined && selected !== null && selected.kind === kind && selected.id === id
 
-  const volumeActions = (volume: TrashRow, wrapped = true): ReactElement => (
-    <TrashRowActions
-      busy={busy}
-      restoreLabel={messages.restoreVolume ?? ''}
-      purgeLabel={messages.purgeVolume ?? ''}
-      onRestore={() => onRestoreVolume?.(volume.id)}
-      onPurge={() => onPurgeVolume?.(volume.id)}
-      wrapped={wrapped}
-    />
-  )
+  // 未删收拢卷没有卷级操作：不渲染还原 / 彻底删除（仍可选中看详情）。
+  const volumeActions = (volume: TrashRow, wrapped = true): ReactElement | null =>
+    volume.inTrash === false ? null : (
+      <TrashRowActions
+        busy={busy}
+        restoreLabel={messages.restoreVolume ?? ''}
+        purgeLabel={messages.purgeVolume ?? ''}
+        onRestore={() => onRestoreVolume?.(volume.id)}
+        onPurge={() => onPurgeVolume?.(volume.id)}
+        wrapped={wrapped}
+      />
+    )
 
   const itemActions = (item: TrashRow, wrapped = true): ReactElement => (
     <TrashRowActions
       busy={busy}
       restoreLabel={messages.restoreItem}
       purgeLabel={messages.purgeItem}
+      restoreDisabled={item.restoreBlocked === true}
+      restoreDisabledTooltip={messages.restoreAfterVolume}
       onRestore={() => onRestoreItem(item.id)}
       onPurge={() => onPurgeItem(item.id)}
       wrapped={wrapped}

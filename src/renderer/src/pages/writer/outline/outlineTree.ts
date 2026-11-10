@@ -15,7 +15,7 @@
  *   空串名回退占位（仅展示层，不改数据）。
  */
 
-import type { OutlineItemRow } from '../../../../../main/database/outline'
+import type { DeletedOutlineItemRow, OutlineItemRow } from '../../../../../main/database/outline'
 import type { VolumeRow } from '../chapters/chapterTree'
 
 export type { OutlineItemRow }
@@ -107,6 +107,19 @@ export interface OutlineTreeStructure {
  */
 export function outlineItemLabel(item: Pick<OutlineItemRow, 'title'>, emptyLabel: string): string {
   return item.title.trim() !== '' ? item.title : emptyLabel
+}
+
+/**
+ * 回收站条目是否禁止单独还原：父卷已删 / 缺失 / 非大纲可见 kind（`normal` / `group`）
+ * 时禁止；独立条目（`volumeId === null`）无父卷，允许还原。与主进程
+ * `restoreOutlineItem` 的父卷守卫同口径。
+ */
+export function isOutlineItemRestoreBlocked(
+  item: Pick<DeletedOutlineItemRow, 'volumeId' | 'volumeKind' | 'volumeInTrash'>
+): boolean {
+  if (item.volumeId === null) return false
+  if (item.volumeInTrash) return true
+  return item.volumeKind !== 'normal' && item.volumeKind !== 'group'
 }
 
 /**

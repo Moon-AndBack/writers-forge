@@ -145,6 +145,7 @@ const chapters = {
     purgeVolume: 'Delete volume permanently',
     restoreChapter: 'Restore chapter',
     purgeChapter: 'Delete chapter permanently',
+    restoreAfterVolume: 'Restore the parent volume first',
     detail: {
       empty: 'Select an item on the left to view details',
       deletedAt: 'Deleted {{time}}',
@@ -164,6 +165,11 @@ const chapters = {
       volumeKindNormal: 'Body volume',
       volumeKindCustom: 'Custom volume',
       volumeKindGroup: 'Group',
+      volumeNotDeleted: 'Not deleted (collecting only)',
+      volumeLiveNotice:
+        'This volume is not deleted; its chapters will return to the end of the volume when restored',
+      volumeDeletedNotice:
+        'Restoring will return the volume and its chapters to the end of the volume; the matching outline entries will also be restored',
       deletedChapters: '{{value}} chapters in trash',
       deletedItems: '{{value}} entries in trash',
       standalone: 'Standalone entry',

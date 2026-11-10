@@ -155,6 +155,7 @@ const chapters = {
     purgeVolume: '彻底删除卷',
     restoreChapter: '还原章节',
     purgeChapter: '彻底删除章节',
+    restoreAfterVolume: '先还原所属卷',
     detail: {
       empty: '选择左侧条目查看详情',
       deletedAt: '删除时间 {{time}}',
@@ -173,6 +174,9 @@ const chapters = {
       volumeKindNormal: '正文卷',
       volumeKindCustom: '自定义卷',
       volumeKindGroup: '分组',
+      volumeNotDeleted: '未删除（仅作收拢）',
+      volumeLiveNotice: '该卷未删除；其下章节还原后回到卷末',
+      volumeDeletedNotice: '还原后卷及其下章节回到卷末；该卷的大纲条目一并还原',
       deletedChapters: '含 {{value}} 个回收站章节',
       deletedItems: '含 {{value}} 个回收站条目',
       standalone: '独立条目',

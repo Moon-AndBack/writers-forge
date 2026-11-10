@@ -18,7 +18,7 @@ import {
 /** 回收站内容：**直接从 preload `Api` 派生**，消除渲染层平行定义。 */
 type DeletedContent = Awaited<ReturnType<Window['api']['chapters']['listDeleted']>>
 
-const EMPTY: DeletedContent = { chapters: [] }
+const EMPTY: DeletedContent = { volumes: [], chapters: [] }
 
 /** 拉取回收站内容（纯异步，无 setState）：按 bookId 隔离，供初始加载与刷新复用。 */
 async function fetchDeleted(bookId: string): Promise<DeletedContent> {
@@ -35,13 +35,14 @@ export interface ChaptersTrashViewProps {
 }
 
 /**
- * 回收站视图（中栏）：**平铺列出被软删的章**，支持还原、彻底删除、清空。
+ * 章节回收站视图（中栏）：按卷树形列出被软删的章，支持还原、彻底删除、清空。
  *
- * 数据：`api.chapters.listDeleted(bookId)`。第三批起章节回收站舍弃卷设计——
- * 只列章、不列卷；已删除的卷只在大纲回收站管理。「清空」也只彻底删除章，
- * 不动软删卷与大纲条目。
+ * 数据：`api.chapters.listDeleted(bookId)`。卷集合含两类：① 已删卷（可还原 / 彻底删除）；
+ * ② 未删但下有软删章的收拢卷（仅作容器，无卷级操作）。左侧三卡按原卷 kind 分
+ * 「分组」（自定义卷）与「正文」（正文卷 / 未分卷）；原卷已被物理删除的章父卷不命中，
+ * 作为残差排在「正文」卷树之后。
  * 还原 / 彻底删除 / 清空后，除刷新本视图外，经 `onChanged` 通知页面刷新章节树。
- * 彻底删除与清空为不可恢复操作，走确认弹窗。
+ * 彻底删除与清空为不可恢复操作，走确认弹窗；清空包含已删卷（数据层一并物理删除）。
  * 列表展示与数据加载 / 写操作分别收敛到 `TrashListView` / `useTrashData`；
  * 本视图只保留章节域的 API 适配、名称解析、确认文案与伏笔目标。
  */
@@ -59,12 +60,13 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
     onChanged,
     logger: 'ChaptersTrashView'
   })
-  // 选中行（仅章）；列表刷新后行已不在回收站时自动失效，不残留旧详情。
+  // 选中行（卷 / 章）；列表刷新后行已不在回收站时自动失效，不残留旧详情。
   const [selection, setSelection] = useState<TrashSelection | null>(null)
   const activeSelection =
     selection !== null &&
-    selection.kind === 'item' &&
-    content.chapters.some((row) => row.id === selection.id)
+    (selection.kind === 'volume'
+      ? content.volumes.some((row) => row.id === selection.id)
+      : content.chapters.some((row) => row.id === selection.id))
       ? selection
       : null
 
@@ -75,29 +77,92 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
     empty: t('trash.empty'),
     loadingText: tCommon('loading'),
     groupItems: t('trash.groupChapters'),
+    restoreVolume: t('trash.restoreVolume'),
+    purgeVolume: t('trash.purgeVolume'),
     restoreItem: t('trash.restoreChapter'),
-    purgeItem: t('trash.purgeChapter')
+    purgeItem: t('trash.purgeChapter'),
+    restoreAfterVolume: t('trash.restoreAfterVolume')
   }
-
-  // 左侧三卡：标题卡 + 「分组」（原属自定义卷）+ 「正文」（其余）。空段由列表组件隐藏。
-  const sections = [
-    { key: 'custom', title: t('trash.groupCustom') },
-    { key: 'body', title: t('trash.groupBody') }
-  ]
 
   const chapterName = (chapter: DeletedContent['chapters'][number]): string =>
     labels.chapterLabel(chapter) || t('trash.untitledChapter')
 
+  const volumeName = (volume: DeletedContent['volumes'][number]): string =>
+    labels.volumeLabel(volume) || t('trash.detail.untitledVolume')
+
+  // 卷行计数 = 其下仍在回收站中的章数（不是卷内总章数）。
+  const deletedChapterCounts = new Map<number, number>()
+  for (const chapter of content.chapters) {
+    deletedChapterCounts.set(
+      chapter.volumeId,
+      (deletedChapterCounts.get(chapter.volumeId) ?? 0) + 1
+    )
+  }
+
+  // 已删卷可还原 / 彻底删除；未删卷仅作收拢容器（`inTrash: false` → 无卷级操作）。
+  const volumeRow = (volume: DeletedContent['volumes'][number]): TrashRow => ({
+    id: volume.id,
+    name: volumeName(volume),
+    count: deletedChapterCounts.get(volume.id) ?? 0,
+    inTrash: volume.deletedAt !== null,
+    emphasis: volume.kind === 'custom' && !volume.isUnfiled
+  })
+
+  // 左侧三卡：标题卡 + 「分组」（自定义卷）+「正文」（正文卷 / 未分卷 / 残差章）。
+  // 两段都显式 tree：原卷已被物理删除、只剩残差章时仍保留树形残差区。
+  const sections = [
+    {
+      key: 'custom',
+      title: t('trash.groupCustom'),
+      volumes: content.volumes
+        .filter((volume) => volume.kind === 'custom' && !volume.isUnfiled)
+        .map(volumeRow),
+      tree: true
+    },
+    {
+      key: 'body',
+      title: t('trash.groupBody'),
+      volumes: content.volumes
+        .filter((volume) => volume.kind === 'normal' || volume.isUnfiled)
+        .map(volumeRow),
+      tree: true
+    }
+  ]
+
   const chapters: TrashRow[] = content.chapters.map((chapter) => ({
     id: chapter.id,
     name: chapterName(chapter),
-    // 平铺行与章节左栏章行对齐：行首状态圆点；特殊章经 `is-special` 转品牌 0.7。
+    parentId: chapter.volumeId,
+    // 与章节左栏章行对齐：特殊章前段 / 普通章「第X章」、草稿徽标、特殊章名段强调。
+    prefix: labels.chapterRowPrefixLabel(chapter),
+    badge: chapter.status === 'draft' ? t('status.draft') : undefined,
     showDot: true,
     emphasis: chapter.kind === 'special',
     // 「分组」= 原属自定义卷（排除系统「未分卷」卷）；正文卷 / 未分卷 /
     // 原卷已被物理删除（volumeKind 为 null）/ 异常分组容器一律归「正文」。
     sectionKey: chapter.volumeKind === 'custom' && !chapter.volumeIsUnfiled ? 'custom' : 'body'
   }))
+
+  const requestRestoreVolume = (id: number): void => {
+    const volume = content.volumes.find((row) => row.id === id)
+    // 未删收拢卷没有卷级操作；操作区已不渲染，这里再做一次防御。
+    if (busy || !volume || volume.deletedAt === null) return
+    void runAction(() => window.api.chapters.restoreVolume(id))
+  }
+
+  const requestPurgeVolume = (id: number): void => {
+    const volume = content.volumes.find((row) => row.id === id)
+    if (busy || !volume || volume.deletedAt === null) return
+    confirm.request(
+      {
+        title: t('dialog.purgeVolume.title'),
+        message: t('dialog.purgeVolume.message', { name: volumeName(volume) }),
+        confirmText: t('dialog.purgeVolume.confirm'),
+        tone: 'danger'
+      },
+      () => runAction(() => window.api.chapters.purgeVolume(id))
+    )
+  }
 
   const requestRestoreChapter = (id: number): void => {
     if (busy) return
@@ -147,6 +212,8 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
       onRetry={() => void reload()}
       busy={busy}
       messages={messages}
+      onRestoreVolume={requestRestoreVolume}
+      onPurgeVolume={requestPurgeVolume}
       onRestoreItem={requestRestoreChapter}
       onPurgeItem={requestPurgeChapter}
       onPurgeAll={requestPurgeAll}
@@ -155,7 +222,7 @@ export default function ChaptersTrashView({ bookId, onChanged }: ChaptersTrashVi
       detail={
         activeSelection !== null ? (
           <ChapterTrashDetail
-            key={`item-${activeSelection.id}`}
+            key={`${activeSelection.kind}-${activeSelection.id}`}
             selection={activeSelection}
             content={content}
           />

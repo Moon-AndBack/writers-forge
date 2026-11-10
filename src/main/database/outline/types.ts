@@ -118,20 +118,31 @@ export function isOutlineVisibleVolumeKind(kind: VolumeKind): boolean {
 
 /* ---------- 回收站：类型 ---------- */
 
-/** 回收站中的条目行：`volumeTitle` 为其**原归属**卷名（供渲染「某某卷下的某某条目」）。 */
+/**
+ * 回收站中的条目行：`volumeTitle` 为其**原归属**卷名（供渲染「某某卷下的某某条目」）。
+ * 父卷状态字段与章节域 `DeletedChapterRow` 对齐，供 UI 判定条目的归属是否可还原。
+ */
 export interface DeletedOutlineItemRow extends OutlineItemRow {
   volumeTitle: string | null
+  /** 原归属卷 kind；卷缺失（已被物理删除）时为 `null`。 */
+  volumeKind: VolumeKind | null
+  /** 原归属卷是否在回收站（软删）；卷缺失时按 `false` 处理。 */
+  volumeInTrash: boolean
 }
 
 /**
  * 回收站中的卷行：附带该卷卷纲行（`scope='volume'`）的正文 JSON。
- * 卷纲行缺失（旧数据 / 异常）或空正文时为 `null`。
+ * 仅**已软删卷**有卷纲正文；未删收拢卷（其下有软删条目）的 `contentJson` 恒为 `null`。
+ * 卷纲行缺失（旧数据 / 异常）或空正文时亦为 `null`。
  */
 export interface DeletedOutlineVolumeRow extends VolumeRow {
   contentJson: string | null
 }
 
-/** 大纲回收站内容：被软删的卷与条目（卷含卷纲正文，条目含原归属卷名）。 */
+/**
+ * 大纲回收站内容：已软删的卷 + 下有软删条目的未删收拢卷，以及软删条目。
+ * `volumes` 可能含未删除的收拢容器（其 `contentJson` 为 `null`，UI 不提供卷级操作）。
+ */
 export interface DeletedOutlineContent {
   volumes: DeletedOutlineVolumeRow[]
   items: DeletedOutlineItemRow[]
