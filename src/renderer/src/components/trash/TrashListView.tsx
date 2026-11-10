@@ -9,8 +9,8 @@
  * `TrashSplitLayout` 渲染「列表卡 + 分隔条 + 详情卡」两栏（宽度可拖拽并持久化）；
  * 未传详情区或首帧 / 空态 / 错误态时保持单列，head + 列表的 DOM 与改造前一致。
  * 传 `sections` 切换为左侧三卡（标题卡固定 + 内容卡共享滚动）：每个 section 可选
- * `volumes` 自带卷树（大纲「分组大纲」），不传 / 空数组走平铺。不传 `sections` 时
- * 仍走旧单卡结构，伏笔 / 灵感回收站视觉逐字不变。
+ * `tree` 显式声明树形，或由 `volumes` 非空启用卷树（大纲「分组大纲」）；两者都没有
+ * 走平铺。不传 `sections` 时仍走旧单卡结构，伏笔 / 灵感回收站视觉逐字不变。
  */
 import { useState } from 'react'
 import type { KeyboardEvent, ReactElement, ReactNode } from 'react'
@@ -115,8 +115,9 @@ export interface TrashListViewProps {
   detailEmpty?: ReactNode
   /**
    * 左侧三卡模式（章节 / 大纲回收站）：items 按 `sectionKey` 分组，渲染「标题卡 + 各内容卡」，
-   * 空段隐藏；卷行随 `sections[].volumes` 传入（section 内有卷时走树形），顶层 `volumes`
-   * 不参与分组 / 计数。缺省保持旧单卡平铺 / 树形结构（伏笔 / 灵感 / 大纲旧路径）。
+   * 空段隐藏；卷行随 `sections[].volumes` 传入，`sections[].tree === true` 或卷行非空时
+   * 走树形，顶层 `volumes` 不参与分组 / 计数。缺省保持旧单卡平铺 / 树形结构
+   * （伏笔 / 灵感 / 大纲旧路径）。
    */
   sections?: TrashSection[]
 }
@@ -342,7 +343,8 @@ export function TrashListView({
   )
 
   // 三卡模式：head 作为固定标题卡，items 按 sectionKey 分入内容卡；
-  // section 自带非空 volumes 时走树形，否则保持平铺。不传 sections 时继续走旧结构。
+  // section.tree 为 true 或自带非空 volumes 时走树形，否则保持平铺。
+  // 不传 sections 时继续走旧结构。
   const content = sectionsEnabled ? (
     <TrashSectionList
       head={head}
@@ -355,7 +357,7 @@ export function TrashListView({
       emptyText={messages.empty}
       renderRow={flatItemRow}
       renderSectionRows={(section, rows) =>
-        (section.volumes?.length ?? 0) > 0 ? (
+        section.tree === true || section.volumes.length > 0 ? (
           <TrashTreeSection
             volumes={section.volumes ?? []}
             items={rows}

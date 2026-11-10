@@ -2,8 +2,8 @@
  * 回收站左侧三卡结构（仅 `TrashListView` 传入 `sections` 时启用）。
  *
  * 结构：固定标题卡（`.trash-head`）+ 内容卡各自滚动。内容卡按 `TrashRow.sectionKey`
- * 分组，空段不渲染；卡内不再渲染分组标题，直接展示行。section 可选自带卷行：
- * 有卷时由 `renderSectionRows` 走树形，无卷时沿用调用方传入的平铺行渲染器，
+ * 分组，空段不渲染；卡内不再渲染分组标题，直接展示行。section 可声明 `tree`
+ * 或自带卷行走树形，两者都没有时沿用调用方传入的平铺行渲染器，
  * 保证选中 / 操作行为与旧单卡模式一致。
  * 样式见 `styles/writer-trash-sections.css`。
  */
@@ -25,6 +25,11 @@ export interface TrashSection {
    * 大纲「分组大纲」传入全部回收站卷，章节回收站不传。
    */
   volumes?: TrashRow[]
+  /**
+   * 显式树形开关：为 true 时即使 `volumes` 为空也走树形残差区——父卷不在回收站的
+   * 条目排在残差，而不是退化为平铺。大纲「分组大纲」恒为 true，章节不传。
+   */
+  tree?: boolean
 }
 
 /** 分组后的内容卡：卷行与条目行均已按 `section` 归位。 */
@@ -51,7 +56,7 @@ export interface TrashSectionListProps {
   renderRow: (row: TrashRow) => ReactElement
   /**
    * 内容卡正文渲染器（可选）：传入后替代默认的 `rows.map(renderRow)`，
-   * 供调用方在 `section.volumes` 非空时切换为树形渲染。
+   * 供调用方在 `section.tree` 为 true 或 `section.volumes` 非空时切换为树形渲染。
    */
   renderSectionRows?: (section: TrashGroupedSection, rows: TrashRow[]) => ReactNode
 }

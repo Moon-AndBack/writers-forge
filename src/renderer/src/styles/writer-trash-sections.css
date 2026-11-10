@@ -38,6 +38,10 @@
   border-radius: var(--r-lg);
 }
 
+/* 滚动条圆角：接受现状，不额外包内层滚动层。全局 thumb（base.css:77-82）带 4px
+   透明边框并按 content-box 裁切，可见药丸距卡边 10px；卡片 6px 内衬 + --r-lg(8)
+   的圆角弧只占 8px 内，thumb 端部不会进入圆角缺口，包裹内层无可见收益。 */
+
 .trash-section--head {
   flex: none;
 }

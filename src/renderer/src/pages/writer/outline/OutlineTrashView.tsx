@@ -110,10 +110,12 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
     showDot: item.volumeId === null
   }))
 
-  // 左侧三卡：标题卡 + 「单大纲」（独立条目，平铺）+「分组大纲」（全部卷及其条目，树形）。
+  // 左侧三卡：标题卡 + 「单大纲」（独立条目，平铺）+「分组大纲」（树形）。
+  // 「分组大纲」显式 tree：回收站中没有卷、只剩父卷不在回收站的条目时，仍排进残差区，
+  // 不退化为平铺。
   const sections = [
     { key: 'standalone', title: tOutline('trash.groupStandalone'), volumes: [] },
-    { key: 'grouped', title: tOutline('trash.groupGrouped'), volumes }
+    { key: 'grouped', title: tOutline('trash.groupGrouped'), volumes, tree: true }
   ]
 
   const requestRestoreVolume = (id: number): void => {
