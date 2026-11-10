@@ -47,10 +47,13 @@
   gap: 10px;
 }
 
-/* 卡头 / 说明文案按内容高度，不参与剩余空间分配。 */
-.timeline-origin-card > .timeline-card__head,
-.timeline-origin-card > .timeline-card__desc {
+/* 起点卡卡头：标题 + 说明两行（说明并入值块，替代字段标签），按内容高度、
+   不参与剩余空间分配；仅作用于起点卡，场景详情卡卡头仍为横向。 */
+.timeline-origin-card > .timeline-card__head {
   flex: none;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
 }
 
 /* 描述字段是卡内唯一伸缩项。 */
