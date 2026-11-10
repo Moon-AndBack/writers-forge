@@ -11,10 +11,19 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v129'
+export const CHAPTER_SEED_VERSION = 'v130'
 
 /**
- * 最近版本变更日志（v129；更早版本见上述历史文件）。
+ * 最近版本变更日志（v130；更早版本见上述历史文件）。
+ *
+ * `v130`（伏笔 / 灵感回收站下线批）：伏笔与灵感的回收站**移除**——两模块标题栏不再有垃圾桶
+ * 入口，卡片删除改为二次确认后**物理删除、不可恢复**（伏笔整行删除，正文埋点 / 大纲埋点 /
+ * 回收点随行一并消失，与删除章 / 大纲条目时的外键级联同语义；灵感整行删除）。仅章节（正文）
+ * 与大纲保留回收站。启动时由 `legacyTrashPurge.ts` 清空两表存量软删行（按
+ * `deleted_at IS NOT NULL`，幂等、不写一次性 settings 键），`deleted_at` 列保留仅作历史兼容
+ * （诊断仍校验列存在）。伏笔的「回收点 / 回收伏笔」是剧情语义（正文兑现事件），**不受影响**。
+ * 教学文案同步（卷四伏笔 / 灵感删除说明与两节回收站移除、大纲「回收站：列表与详情」改为
+ * 两个回收站、伏笔 / 灵感条目改为删除即永久删除），键提升让老库也能看到新文案。
  *
  * `v129`（回收站卷容器批）：章节回收站**重新显示卷**并改为卷树——三卡结构保留
  * （标题 / 分组 / 正文），卡内由平铺章改为「卷行 + 其下章行」。章节 `listDeleted`
@@ -336,9 +345,10 @@ export const CHAPTER_SEED_VERSION = 'v129'
  *
  * `v105`（灵感 / 伏笔回收站批）：灵感与伏笔此前只做软删除、界面没有恢复入口，本批补齐
  * 与章节 / 大纲对称的回收站——数据层新增 `listDeleted` / `restore` / `purge` /
- * `purgeAllDeleted`（灵感在 `inspirations.ts`，伏笔在 `foreshadowsTrash.ts`；伏笔物理删除
+ * `purgeAllDeleted`（灵感在 `inspirations.ts`，伏笔在 `foreshadows.ts`；该回收站已于后续
+ * 批次下线，灵感 / 伏笔删除改为物理删除，`deleted_at` 列保留仅作历史兼容。当时伏笔物理删除
  * 整行，正文埋点 / 大纲埋点 / 回收点随行一并消失，与删除章 / 大纲条目时外键级联同语义）；
- * IPC 新增 `inspiration:listDeleted|restore|purge|purgeAllDeleted` 与伏笔同名通道，
+ * IPC 新增灵感 / 伏笔同名的回收站通道（该批回收站已于后续批次下线），
  * preload 同步。UI 在灵感 / 伏笔模块标题栏复用共享 `EditorTrashButton`（垃圾桶图标）打开
  * 中栏回收站视图，视图复用 `TrashListView` / `useTrashData`（零新增 CSS）；灵感行显示
  * 标题 + 标签，伏笔行显示名称 + 描述摘要；卡片删除确认文案由「此操作不可撤销」改为

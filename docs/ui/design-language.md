@@ -185,7 +185,7 @@
 ```
 
 - 按钮尺寸统一 **22×22**（`.row-act`，`styles/writer-side-volumes.css:192-200`）。
-- 右缘偏移现有 2px（章节 / 大纲 / 树形回收站）与 6px（伏笔 / 灵感等平铺回收站）两档，按操作组与行内衬取值。
+- 右缘偏移现为 2px（章节 / 大纲 / 树形回收站）；`writer-trash.css` 的 6px 平铺档随伏笔 / 灵感回收站下线已无使用者，按操作组与行内衬取值。
 - 主名让位使用 `margin-right`（非 `padding`）：现有 48 / 52 / 72 / 95 四档，按操作组实际宽度推导；新增行先量操作组宽度再取值。
 - 代表位置：`writer-side-volumes.css:155-196,207-229`、`writer-outline.css:92-136`、`writer-trash.css:349-377`、`writer-trash-tree.css`。
 
