@@ -151,7 +151,9 @@ export default function TimelineOriginPanel({
   return (
     <>
       <section className="timeline-card timeline-origin-card on-soft" aria-label={t('originTitle')}>
-        <div className="timeline-card__head">
+        {/* 卡头与下方字段同为值块（`.wf-readonly-block`：--control-on-soft 底 + 内描边 +
+            10 / 12 内衬），标题左缘与字段左缘对齐。 */}
+        <div className="timeline-card__head wf-readonly-block">
           <span className="timeline-card__title">{t('originTitle')}</span>
         </div>
         <p className="timeline-card__desc">{t('originDesc')}</p>
