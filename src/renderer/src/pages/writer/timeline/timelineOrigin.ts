@@ -2,7 +2,7 @@
  * 独立时间线模块 · 起点 / 时间线键工具（渲染层）。
  *
  * 多时间线数据层（批1）：
- * - 列表键：`timeline:list:<bookId>` → JSON 数组 `TimelineEntry[]`：`{ id, name, origin, description, descriptionJson? }`
+ * - 列表键：`timeline:list:<bookId>` → JSON 数组 `TimelineEntry[]`：`{ id, name, origin, originName, description, descriptionJson? }`
  * - 选中键：`timeline:active:<bookId>` → 选中 id 字符串
  * - 老键 `timeline:origin:<bookId>` 仅 migration 兼容；新代码读写新键。
  *
@@ -27,6 +27,8 @@ export interface TimelineEntry {
   id: string
   name: string
   origin: string
+  /** 起点卡片的自定义标题；老数据缺失 / 清空 → `''`，展示层回退 `t('originTitle')`。 */
+  originName: string
   /** 起点描述（派生纯文本）；老数据缺失 → `''`。 */
   description: string
   /** 起点描述富文本（Tiptap JSON 串）；老数据缺失 → 读侧经 `resolveEntryDescriptionJson` 兜底。 */
@@ -71,6 +73,8 @@ export function parseTimelineList(raw: string | null): TimelineEntry[] {
       // 缺名回填空串，展示层经 `t('timeline.defaultName')` 兜底（不写入中文默认名）。
       const name = typeof obj.name === 'string' && obj.name.trim() !== '' ? obj.name : ''
       const origin = typeof obj.origin === 'string' ? obj.origin : ''
+      // 起点卡标题：老数据缺失 / 非字符串 → 空串，展示层回退「起点」。
+      const originName = typeof obj.originName === 'string' ? obj.originName : ''
       // 向后兼容：老数据无 `description`（或非字符串）→ 空串，不丢弃条目。
       const description = typeof obj.description === 'string' ? obj.description : ''
       // 富文本起点描述：老数据缺失 / 非字符串 → 不写入（读侧由下方兜底函数补齐）。
@@ -80,6 +84,7 @@ export function parseTimelineList(raw: string | null): TimelineEntry[] {
         id,
         name,
         origin,
+        originName,
         description,
         ...(descriptionJson === undefined ? {} : { descriptionJson })
       })

@@ -11,10 +11,22 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v133'
+export const CHAPTER_SEED_VERSION = 'v134'
 
 /**
- * 最近版本变更日志（v133；更早版本见上述历史文件）。
+ * 最近版本变更日志（v134；更早版本见上述历史文件）。
+ *
+ * `v134`（时间线起点卡标题改名批）：时间线「起点」卡标题由 i18n 固定文案改为可改名——
+ * `timeline:list:<bookId>` JSON 的 `TimelineEntry` 新增 `originName`（渲染层必填、解析时空串
+ * 兜底；主进程可选字段并由 `normalizeEntry` 条件透传；老数据不补字段，**无 DB 迁移**）。
+ * 右栏起点卡卡头新增 22×22 铅笔，行内编辑：Enter 提交 / Esc 取消 / blur 提交，
+ * `isComposing` 期间不提交（中文输入法选词回车不会误保存）；空名（trim 后为空）落空串并回退
+ * 「起点」，失败复用 `renameFailed` toast。中栏元年卡卡头同步显示自定义名；时间列仍为
+ * 「元年」，`origin` 字段与 `plot.timeEra.zero` 语义不变。写链路沿用 `settings:get/set`
+ * 读-改-写（`useTimelineWorkspace.renameOrigin`），**零新 IPC**；状态源统一到页面层，
+ * 右栏 / 中栏经 props 同步，改名后无需刷新。教学文案同步（卷三「主时间线：只读聚合」
+ * 「多时间线」、大纲「主时间线只读聚合」），键提升让老库也能看到新文案。
+ * 注意：升版本只重灌教学书，`timeline:list` 不在重灌范围，用户已改的起点名不会被覆盖。
  *
  * `v133`（时间线右栏正文跟随状态栏批）：时间线右栏的**起点编辑器**与**场景详情正文**
  * 改为正文档排版——起点内容卡（`.timeline-origin-card`）补齐字体 / 字号

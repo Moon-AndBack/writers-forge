@@ -23,6 +23,8 @@ export interface TimelineWorkspace {
   activeEntry: TimelineEntry | null
   /** 当前选中时间线的 origin（可能为空 → 由消费方回退默认）。 */
   origin: string
+  /** 当前选中时间线的起点卡片标题（可能为空 → 由消费方回退 `t('originTitle')`）。 */
+  originName: string
   /** 当前选中时间线的起点描述（派生纯文本，供中栏展示；可能为空）。 */
   description: string
   /** 当前选中时间线的起点描述富文本（Tiptap JSON 串；老数据已经读侧兜底派生，无描述为 `''`）。 */
@@ -44,6 +46,11 @@ export interface TimelineWorkspace {
    * 空名回退默认空名（展示层经 `t('timeline.defaultName')` 兜底）；返回是否落库成功。
    */
   renameTimeline: (id: string, name: string) => Promise<boolean>
+  /**
+   * 重命名起点卡标题：读磁盘最新列表 → 只改目标条目的 `originName` → 原样写回。
+   * 空名（trim 后为空）落空串，展示层回退 `t('originTitle')`；返回是否落库成功。
+   */
+  renameOrigin: (id: string, name: string) => Promise<boolean>
   /**
    * 删除指定时间线：读磁盘最新列表 → 移除目标条目 → 原样写回。
    * 至少保留一条（删最后一条返回 false）；该时间线下仍有剧情线时拒绝删除（返回 false，
@@ -76,6 +83,7 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
         id: 'default',
         name: DEFAULT_TIMELINE_NAME,
         origin: '',
+        originName: '',
         description: '',
         // 显式写空富文本：与保存路径的「双列」口径一致（读侧仍可兜底老数据）。
         descriptionJson: ''
@@ -136,6 +144,7 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
         id,
         name: entryName,
         origin: '',
+        originName: '',
         description: entryDescription,
         descriptionJson: entryDescriptionJson
       }
@@ -212,6 +221,7 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
     (list.length > 0 ? list[0] : null) ??
     null
   const origin = activeEntry?.origin ?? ''
+  const originName = activeEntry?.originName ?? ''
   const description = activeEntry?.description ?? ''
   // 中栏元年卡与右栏同源口径：老数据只有 `description`（无 `descriptionJson`）时，
   // 读侧经共享纯函数派生成文档，避免「描述还在、中栏却显示故事开始了」的假空态。
@@ -228,6 +238,29 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
       if (!base.some((entry) => entry.id === id)) return false
       const nextName = name.trim() !== '' ? name.trim() : DEFAULT_TIMELINE_NAME
       const nextList = base.map((entry) => (entry.id === id ? { ...entry, name: nextName } : entry))
+      try {
+        await window.api?.settings.set(listKey, serializeTimelineList(nextList))
+        setList(nextList)
+        return true
+      } catch {
+        return false
+      }
+    },
+    [list, listKey]
+  )
+
+  // 起点卡标题重命名：与 `renameTimeline` 同款「磁盘最新列表 → 读-改-写」，只替换目标条目的
+  // `originName`（trim 后空串即清空，展示层回退「起点」），不改 `origin` 时间语义。
+  const renameOrigin = useCallback(
+    async (id: string, name: string): Promise<boolean> => {
+      const listRaw = await window.api?.settings.get(listKey)
+      const current = parseTimelineList(listRaw ?? null)
+      const base = current.length > 0 ? current : list
+      if (!base.some((entry) => entry.id === id)) return false
+      const nextOriginName = name.trim()
+      const nextList = base.map((entry) =>
+        entry.id === id ? { ...entry, originName: nextOriginName } : entry
+      )
       try {
         await window.api?.settings.set(listKey, serializeTimelineList(nextList))
         setList(nextList)
@@ -286,6 +319,7 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
     activeId,
     activeEntry,
     origin,
+    originName,
     description,
     descriptionJson,
     loaded,
@@ -293,6 +327,7 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
     createTimeline,
     updateDescription,
     renameTimeline,
+    renameOrigin,
     removeTimeline,
     reload: load
   }

@@ -19,6 +19,7 @@ const timeline = {
     descPlaceholder: 'e.g. The story begins here'
   },
   originTitle: 'Origin',
+  originRename: 'Rename origin',
   originDefault: 'Year One',
   originDesc:
     'The starting-point time is fixed at “Year One” and cannot be changed; describe the starting point of the current timeline here, then click “Save” below to store it.',

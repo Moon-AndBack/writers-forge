@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
+import { IconButton, useToast } from '../../../components/ui'
 import type { RichTextBodyValue } from '../../../components/editor/useRichTextBodyEditor'
 import EntityShortRichTextField from '../entities/EntityShortRichTextField'
+import { PencilIcon } from '../icons'
 import SaveBar from '../SaveBar'
 import {
   parseTimelineList,
@@ -22,6 +24,10 @@ export interface TimelineOriginPanelProps {
   hoverCard?: boolean
   /** 当前选中时间线 id；切换时重新读取对应条目的描述。 */
   activeTimelineId?: string | null
+  /** 起点卡片标题（页面层派生；空串 → 展示回退「起点」）。 */
+  originName?: string
+  /** 重命名起点卡片标题（页面层 `useTimelineWorkspace.renameOrigin`；返回是否落库成功）。 */
+  onRenameOrigin?: (name: string) => Promise<boolean>
   /** 写回当前选中时间线的起点描述（页面层 `updateDescription`，入参为编辑器归一值）。 */
   onSaveDescription: (value: RichTextBodyValue) => Promise<boolean>
   /**
@@ -47,10 +53,17 @@ export default function TimelineOriginPanel({
   bookId,
   hoverCard = true,
   activeTimelineId,
+  originName = '',
+  onRenameOrigin,
   onSaveDescription,
   flushRef
 }: TimelineOriginPanelProps) {
   const { t } = useTranslation('timeline')
+  // 起点卡头行内改名态：草稿名 + 结算标记（Enter / Esc 后阻止随后 blur 二次提交）。
+  const [renaming, setRenaming] = useState(false)
+  const [draftName, setDraftName] = useState('')
+  const renameSettled = useRef(false)
+  const { show: showToast, node: toastNode } = useToast()
   // 富文本初始正文只在挂载时读取一次（外层按 `bookId + activeTimelineId` 重建即回退草稿）。
   const [initialJson, setInitialJson] = useState<string | null>(null)
   const [draft, setDraft] = useState<RichTextBodyValue>(EMPTY_VALUE)
@@ -147,12 +160,71 @@ export default function TimelineOriginPanel({
     }
   }, [flushRef, flushSave])
 
+  // 卡头标题：自定义名 trim 后为空 → 回退 i18n「起点」。
+  const displayName = originName.trim() !== '' ? originName : t('originTitle')
+
+  const beginRename = (): void => {
+    setDraftName(originName)
+    setRenaming(true)
+    renameSettled.current = false
+  }
+
+  // 结算改名：Enter / 失焦提交，Esc 取消；空名落空串（展示层回退「起点」）。
+  const settleRename = (commit: boolean): void => {
+    if (renameSettled.current) return
+    renameSettled.current = true
+    setRenaming(false)
+    if (!commit) return
+    const next = draftName.trim()
+    if (next === originName.trim()) return
+    void onRenameOrigin?.(next).then((ok) => {
+      if (!ok) showToast(t('renameFailed'))
+    })
+  }
+
   return (
     <>
       {/* 卡头卡：标题 + 说明（说明替代字段标签），按内容高度。 */}
-      <section className="timeline-card timeline-origin-head" aria-label={t('originTitle')}>
+      <section className="timeline-card timeline-origin-head" aria-label={displayName}>
         <div className="timeline-card__head">
-          <span className="timeline-card__title">{t('originTitle')}</span>
+          <div className="timeline-card__title-row">
+            {renaming ? (
+              <input
+                className="timeline-rename timeline-origin-rename"
+                type="text"
+                value={draftName}
+                autoFocus
+                spellCheck={false}
+                aria-label={t('originRename')}
+                onChange={(event) => setDraftName(event.target.value)}
+                onBlur={() => settleRename(true)}
+                onKeyDown={(event) => {
+                  // 中文输入法选词回车不提交（isComposing 期间 Enter 属于组字确认）。
+                  if (event.nativeEvent.isComposing) return
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    settleRename(true)
+                  } else if (event.key === 'Escape') {
+                    event.preventDefault()
+                    settleRename(false)
+                  }
+                }}
+              />
+            ) : (
+              <span className="timeline-card__title">{displayName}</span>
+            )}
+            {renaming ? null : (
+              <IconButton
+                size="sm"
+                className="row-act timeline-origin-rename-btn"
+                label={t('originRename')}
+                tooltipPlacement="top"
+                onClick={beginRename}
+              >
+                <PencilIcon />
+              </IconButton>
+            )}
+          </div>
           <p className="timeline-card__desc">{t('originDesc')}</p>
         </div>
       </section>
@@ -185,6 +257,7 @@ export default function TimelineOriginPanel({
           void handleSave()
         }}
       />
+      {toastNode}
     </>
   )
 }

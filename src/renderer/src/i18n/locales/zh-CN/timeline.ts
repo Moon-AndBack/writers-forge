@@ -16,6 +16,7 @@ const timeline = {
     descPlaceholder: '例：故事从这里开始'
   },
   originTitle: '起点',
+  originRename: '重命名起点',
   originDefault: '元年',
   originDesc:
     '起点时间固定为「元年」，不可修改；此处填写当前时间线的起点描述，改完点下方「保存」落库。',

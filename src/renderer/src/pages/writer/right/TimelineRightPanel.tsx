@@ -75,6 +75,10 @@ export interface TimelineRightPanelProps {
   bookId?: string
   /** 当前选中时间线 id；切换时起点卡重新加载对应条目。 */
   activeTimelineId?: string | null
+  /** 起点卡片标题（页面层派生；空串 → 展示回退「起点」）。 */
+  originName?: string
+  /** 重命名起点卡片标题（页面层包装 `useTimelineWorkspace.renameOrigin`）。 */
+  onRenameOrigin?: (name: string) => Promise<boolean>
   /** 写回当前选中时间线的起点描述（页面层 `useTimelineWorkspace.updateDescription`，入参为编辑器归一值）。 */
   onUpdateDescription: (value: RichTextBodyValue) => Promise<boolean>
   /** 关闭前统一 flush 入口（起点卡挂载时写入；页面层聚合调用）。 */
@@ -93,6 +97,8 @@ export interface TimelineRightPanelProps {
 export function TimelineRightPanel({
   bookId,
   activeTimelineId,
+  originName = '',
+  onRenameOrigin,
   onUpdateDescription,
   flushRef,
   scene,
@@ -112,6 +118,8 @@ export function TimelineRightPanel({
           bookId={bookId}
           hoverCard={false}
           activeTimelineId={activeTimelineId}
+          originName={originName}
+          onRenameOrigin={onRenameOrigin}
           onSaveDescription={onUpdateDescription}
           flushRef={flushRef}
         />

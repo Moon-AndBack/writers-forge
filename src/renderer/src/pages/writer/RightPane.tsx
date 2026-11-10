@@ -90,6 +90,8 @@ export function RightPane({
   timelineScene = null,
   timelineOriginSelected = false,
   activeTimelineId = null,
+  timelineOriginName = '',
+  onRenameTimelineOrigin,
   onUpdateTimelineDescription,
   timelineFlushRef,
   dossier = null,
@@ -151,6 +153,10 @@ export function RightPane({
   timelineOriginSelected?: boolean
   /** 当前选中时间线 id（右栏 origin 面板跟随切换）。 */
   activeTimelineId?: string | null
+  /** 当前选中时间线的起点卡片标题（右栏起点卡头显示；空串回退「起点」）。 */
+  timelineOriginName?: string
+  /** 重命名当前时间线的起点卡片标题（右栏卡头铅笔；返回是否落库成功）。 */
+  onRenameTimelineOrigin?: (name: string) => Promise<boolean>
   /** 写回当前选中时间线的起点描述（右栏「起点」卡保存；入参为编辑器归一值）。 */
   onUpdateTimelineDescription: (value: RichTextBodyValue) => Promise<boolean>
   /** 时间线起点卡关闭前 flush 入口（页面层聚合调用）。 */
@@ -312,6 +318,8 @@ export function RightPane({
         <TimelineRightPanel
           bookId={bookId}
           activeTimelineId={activeTimelineId}
+          originName={timelineOriginName}
+          onRenameOrigin={onRenameTimelineOrigin}
           onUpdateDescription={onUpdateTimelineDescription}
           flushRef={timelineFlushRef}
           scene={timelineScene}

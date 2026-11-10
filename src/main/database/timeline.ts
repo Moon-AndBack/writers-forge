@@ -6,7 +6,7 @@ import { DEFAULT_TIMELINE_ORIGIN } from './books'
 /** 时间线（多起点 / 多 origin 集合）数据层 helper。
  *
  * 存储约定（settings JSON）：
- * - 列表键：`timeline:list:<bookId>` → JSON 数组 `TimelineEntry[]`：`{ id, name, origin, description? }`
+ * - 列表键：`timeline:list:<bookId>` → JSON 数组 `TimelineEntry[]`：`{ id, name, origin, originName?, description? }`
  * - 选中键：`timeline:active:<bookId>` → 选中 id 字符串
  * - 默认时间线 id：`'default'`，名称 / origin 默认均为空串（展示层 i18n 兜底，不落中文）
  *
@@ -24,6 +24,8 @@ export interface TimelineEntry {
   id: string
   name: string
   origin: string
+  /** 起点卡片的自定义标题；不存在 / 非字符串时不写入，保持老数据原样。 */
+  originName?: string
   /** 起点描述（派生纯文本，渲染层可编辑）；不存在 / 非字符串时不写入，保持老数据原样。 */
   description?: string
   /** 起点描述富文本（Tiptap JSON 串，富文本真源）；不存在 / 非字符串时不写入。 */
@@ -62,6 +64,8 @@ function normalizeEntry(raw: unknown): TimelineEntry | null {
   const id = typeof obj.id === 'string' && obj.id.trim() !== '' ? obj.id.trim() : null
   const name = typeof obj.name === 'string' ? obj.name : ''
   const origin = typeof obj.origin === 'string' ? obj.origin : ''
+  // 透传渲染层扩展字段 `originName`：缺失 / 非字符串时不写入（不给老数据凭空补字段）。
+  const originName = typeof obj.originName === 'string' ? obj.originName : undefined
   // 透传渲染层扩展字段 `description`：缺失 / 非字符串时不写入（不给老数据凭空补空串）。
   const description = typeof obj.description === 'string' ? obj.description : undefined
   // 富文本起点描述 `descriptionJson`：同款条件透传（老数据不补字段，由读侧兜底）。
@@ -71,6 +75,7 @@ function normalizeEntry(raw: unknown): TimelineEntry | null {
     id,
     name: name === '' ? DEFAULT_TIMELINE_NAME : name,
     origin,
+    ...(originName === undefined ? {} : { originName }),
     ...(description === undefined ? {} : { description }),
     ...(descriptionJson === undefined ? {} : { descriptionJson })
   }

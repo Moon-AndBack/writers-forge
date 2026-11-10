@@ -115,6 +115,8 @@ export interface EditorPaneProps {
   timelineOrigin?: string
   /** 当前选中时间线的起点描述富文本（Tiptap JSON 串；中栏元年卡逐段渲染，为空回退「故事开始了」）。 */
   timelineDescriptionJson?: string
+  /** 当前选中时间线的起点卡片标题（中栏元年卡卡头；空串回退「起点」）。 */
+  timelineOriginName?: string
   /** 当前激活时间线名称（新建剧情线弹窗只读展示用）。 */
   activeTimelineName?: string
   /** 当前激活时间线 id（新建剧情线继承用）。 */
@@ -179,6 +181,7 @@ function EditorPaneComponent({
   timelineSelection,
   timelineOrigin,
   timelineDescriptionJson,
+  timelineOriginName,
   activeTimelineName,
   activeTimelineId,
   onCreateTimeline,
@@ -389,6 +392,7 @@ function EditorPaneComponent({
           bookId={bookId}
           origin={timelineOrigin}
           descriptionJson={timelineDescriptionJson}
+          originName={timelineOriginName}
           activeTimelineId={activeTimelineId}
           onCreateTimeline={onCreateTimeline}
           originSelected={timelineOriginSelected}

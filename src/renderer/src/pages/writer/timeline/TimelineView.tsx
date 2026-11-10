@@ -27,6 +27,8 @@ export interface TimelineViewProps {
   bookId?: string
   /** 当前选中时间线的 origin（渲染层持有；缺省时按书键自行读取）。 */
   origin?: string
+  /** 当前选中时间线的起点卡片标题（页面层派生；空串回退「起点」；只影响卡头标题）。 */
+  originName?: string
   /** 当前选中时间线的起点描述富文本（Tiptap JSON 串；为空时元年卡回退 `t('originNote')`）。 */
   descriptionJson?: string
   /** 当前选中时间线 id（用于自行读取 origin 时定位）。 */
@@ -62,6 +64,7 @@ export interface TimelineViewProps {
 export default function TimelineView({
   bookId,
   origin,
+  originName = '',
   descriptionJson = '',
   activeTimelineId = null,
   onCreateTimeline,
@@ -147,6 +150,8 @@ export default function TimelineView({
 
   const resolvedStored = origin !== undefined ? (isStoredOrigin(origin) ? origin : null) : stored
   const originDisplay = isStoredOrigin(resolvedStored) ? resolvedStored.trim() : t('originDefault')
+  // 元年卡卡头标题：自定义起点名（trim 后为空 → 回退「起点」）；时间列仍是「元年」。
+  const originTitle = originName.trim() !== '' ? originName : t('originTitle')
   // 元年卡正文 = 当前时间线的起点描述富文本（用户可编辑）：按块级段落拆行、逐段渲染
   // （段首缩进由 `.plot-scene-para` 提供）；无段落（空文档 / 老数据空描述）时回退「故事开始了」。
   const originParagraphs = useMemo(() => docJsonToParagraphs(descriptionJson), [descriptionJson])
@@ -232,9 +237,7 @@ export default function TimelineView({
                         readonly
                         cardProps={{ title: originDisplay, onClick: () => onSelectOrigin?.() }}
                         head={
-                          <h3 className="wf-entity-card__title plot-scene-title">
-                            {t('originTitle')}
-                          </h3>
+                          <h3 className="wf-entity-card__title plot-scene-title">{originTitle}</h3>
                         }
                         description={
                           originParagraphs.length > 0

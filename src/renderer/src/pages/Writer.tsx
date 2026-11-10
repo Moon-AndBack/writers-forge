@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { useToast } from '../components/ui'
 import { RichTextEditorProvider } from '../components/editor/richTextEditorProvider'
 import type { RichTextEditorSlots } from '../components/editor/richTextEditorContext'
-import type { RichTextBodyValue } from '../components/editor/useRichTextBodyEditor'
 import { useActivityBar, useRegisterActivityBar } from '../shell/activityBarContext'
 import type { WriterModule } from '../shell/activityBarModules'
 import { useRegisterUnsavedSwitchGuard } from '../shell/unsavedSwitchGuard'
@@ -23,6 +22,7 @@ import { useOutlineWorkspace } from './writer/outline/useOutlineWorkspace'
 import { usePlotWorkspace } from './writer/plot/usePlotWorkspace'
 import { usePlotStatusBar } from './writer/plot/usePlotStatusBar'
 import { useTimelineWorkspace } from './writer/timeline/useTimelineWorkspace'
+import { useTimelinePageActions } from './writer/timeline/useTimelinePageActions'
 import { useDossierBundle } from './writer/dossier/useDossierBundle'
 import { useForeshadowBundle } from './writer/foreshadow/useForeshadowBundle'
 import { useInspirationBundle } from './writer/inspiration/useInspirationBundle'
@@ -229,63 +229,21 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
   useRegisterBeforeCloseFlush(flushAll)
 
   /* 时间线切换 / 新建 / 删除都会改 `activeTimelineId`，右栏起点卡随之重建、未提交草稿丢失：
-     故统一「先补存（`flushModule('timeline')`，内部已记日志、失败不阻断）再过剧情守卫」。
-     补存必须先于 `setActiveId`——`updateDescription` 按闭包捕获的旧 `activeId` 定位目标条目。 */
-  // 先取出稳定成员再进回调依赖，避免整个 `timeline` / `plot` 装配对象入依赖（每次渲染新引用）。
+     统一「先补存（`flushModule('timeline')`，内部已记日志、失败不阻断）再过剧情守卫」，
+     补存必须先于 `setActiveId`（`updateDescription` 按闭包捕获的旧 `activeId` 定位目标条目）。
+     动作实现集中在 `useTimelinePageActions`，本页只装配依赖。 */
   const {
-    activeId: activeTimelineId,
-    selectTimeline,
-    createTimeline,
-    renameTimeline,
-    removeTimeline
-  } = timeline
-  const { guardSwitch: guardPlotSwitch } = plot
-  const handleSelectTimeline = useCallback(
-    async (id: string): Promise<void> => {
-      if (id === activeTimelineId) return
-      await flushModule('timeline')
-      guardPlotSwitch(() => selectTimeline(id))
-    },
-    [activeTimelineId, selectTimeline, guardPlotSwitch, flushModule]
-  )
-
-  // 新建时间线内部同样 `setActiveId`（隐式切换），入参与返回值语义保持原样：
-  // 调用方仅 `void` 调用、不消费返回值，故包装后仍以 void 暴露。
-  const handleCreateTimeline = useCallback(
-    async (name: string, description?: RichTextBodyValue): Promise<void> => {
-      await flushModule('timeline')
-      guardPlotSwitch(() => {
-        // 弹窗已产出富文本归一值（`text` + `json`），原样落库；缺省为空文档。
-        void createTimeline(name, description)
-      })
-    },
-    [guardPlotSwitch, createTimeline, flushModule]
-  )
-
-  // 时间线重命名：active 不变，不触发剧情切换守卫；结果交回面板做失败提示。
-  const handleRenameTimeline = useCallback(
-    (id: string, name: string): Promise<boolean> => renameTimeline(id, name).catch(() => false),
-    [renameTimeline]
-  )
-
-  // 删除时间线：删当前 active 等同隐式切换（先补存 + 剧情守卫）；删其它条目不影响当前上下文，直接执行。
-  const handleDeleteTimeline = useCallback(
-    async (id: string): Promise<boolean> => {
-      const run = (): Promise<boolean> =>
-        removeTimeline(id)
-          .catch(() => false)
-          .then((ok) => {
-            if (!ok) showSaveFailed(tCommon('saveFailed'))
-            return ok
-          })
-      if (id !== activeTimelineId) return run()
-      await flushModule('timeline')
-      guardPlotSwitch(() => {
-        void run()
-      })
-      return true
-    },
-    [activeTimelineId, guardPlotSwitch, removeTimeline, showSaveFailed, tCommon, flushModule]
+    handleSelectTimeline,
+    handleCreateTimeline,
+    handleRenameTimeline,
+    handleRenameTimelineOrigin,
+    handleDeleteTimeline
+  } = useTimelinePageActions(
+    timeline,
+    plot.guardSwitch,
+    flushModule,
+    showSaveFailed,
+    tCommon('saveFailed')
   )
 
   // 设定档案右栏正文编辑器聚焦态（真源在本页）：右栏 `DossierBodyEditor` 经通用注册表上报。
@@ -413,6 +371,7 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
               onSelectTimelineScene={handleSelectTimelineScene}
               timelineOrigin={timeline.origin}
               timelineDescriptionJson={timeline.descriptionJson}
+              timelineOriginName={timeline.originName}
               activeTimelineName={timeline.activeEntry?.name}
               activeTimelineId={timeline.activeId}
               onCreateTimeline={handleCreateTimeline}
@@ -452,6 +411,8 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
               timelineScene={timelineScene}
               timelineOriginSelected={timelineOriginSelected}
               activeTimelineId={timeline.activeId}
+              timelineOriginName={timeline.originName}
+              onRenameTimelineOrigin={handleRenameTimelineOrigin}
               onUpdateTimelineDescription={timeline.updateDescription}
               timelineFlushRef={timelineFlushRef}
               dossier={dossierBundle}

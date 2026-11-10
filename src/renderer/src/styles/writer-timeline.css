@@ -253,3 +253,34 @@
 .timeline-item:focus-within .timeline-rename {
   margin-right: 50px;
 }
+
+/* ---------- 起点卡头：行内改名（标题 + 22×22 铅笔） ----------
+   铅笔按 §8.5 行操作按钮口径：非 hover / 聚焦时 hidden + opacity 0，
+   hover / focus-within 浮现；只过渡透明度（无 transform）。 */
+.timeline-origin-head .timeline-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.timeline-origin-rename-btn {
+  flex: none;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.timeline-origin-head:hover .timeline-origin-rename-btn,
+.timeline-origin-head:focus-within .timeline-origin-rename-btn {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* 编辑输入：沿用 `.timeline-rename` 底座，字号 / 字重 / 行高与卡头标题一致。 */
+.timeline-rename.timeline-origin-rename {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
