@@ -26,17 +26,6 @@ const ai = {
     placeholderOpencode: 'https://opencode.ai/inference/go',
     hint: 'Relay endpoints are allowed; leave empty to restore the default'
   },
-  model: {
-    label: 'Model',
-    description: 'Fetch the list from the provider, or enter a model ID manually',
-    placeholder: 'Select or enter a model ID',
-    refresh: 'Refresh',
-    loading: 'Fetching model list…',
-    empty: 'No models found; please enter a model ID manually',
-    failed: 'Failed to fetch models: {{message}}',
-    custom: 'Custom model…',
-    useList: 'Choose from list'
-  },
   catalog: {
     label: 'Model catalog',
     description: 'Identifies each model’s context window; the built-in baseline is used offline',

@@ -2,8 +2,8 @@
    写作视图 · 左栏 — 面板滚动区与通用列表行
    ------------------------------------------------------------------
    自 `writer-side.css` 原样搬移（保持单文件 ≤500 行，§3）。
-   面板滚动区 / 内容容器、`.pane-region` 间距规则（所有侧栏统一），
-   通用列表行（大纲 / 人物 / 世界观 / 笔记）与时间线左栏列表行。
+   面板滚动区 / 内容容器、`.pane-region` 间距规则（所有侧栏统一）
+   与时间线左栏列表行。
    ============================================================ */
 
 /* 面板滚动区：容纳卷章树（超出滚动）。 */
@@ -46,55 +46,6 @@
 .pane-scroll > .pane-region:only-child {
   margin-top: 0;
   margin-bottom: 0;
-}
-
-.list-avatar {
-  width: 28px;
-  height: 28px;
-  flex: none;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-xs);
-  font-size: 12px;
-  font-weight: 700;
-  color: #fff;
-}
-
-.list-avatar.photo {
-  background: linear-gradient(135deg, #5b4de8, #7d8cf5);
-}
-
-.list-avatar.loc {
-  background: linear-gradient(135deg, #2f9ae0, #5fc0ec);
-}
-
-.list-avatar.org {
-  background: linear-gradient(135deg, #0f7b4f, #4ccfa4);
-}
-
-.list-avatar.item {
-  background: linear-gradient(135deg, #9d5d00, #f2b357);
-}
-
-.list-avatar.note {
-  background: linear-gradient(135deg, #8a8a8a, #b0b0b0);
-}
-
-.list-name {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.list-sub {
-  font-size: 10.5px;
-  color: var(--text-mute);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ---------- 时间线左栏（timeline）列表行 ----------

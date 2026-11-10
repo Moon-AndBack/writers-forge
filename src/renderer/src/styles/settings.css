@@ -143,11 +143,10 @@
 }
 
 /* ---------- 控件列宽 ----------
-   行内 Select / 宽输入 / 模型下拉原为 176 / 320 / 240px 三个散点，现统一取
+   行内 Select / 宽输入原为 176 / 320px 两个散点，现统一取
    `.settings-container` 的单一变量 `--settings-control-w`。
    悬停反馈全部交给控件自身（颜色 / 描边 / 阴影），无位移 / 缩放（§8）。 */
-.settings-row__control .settings-control--wide,
-.settings-row__control .settings-control--model {
+.settings-row__control .settings-control--wide {
   width: var(--settings-control-w);
 }
 

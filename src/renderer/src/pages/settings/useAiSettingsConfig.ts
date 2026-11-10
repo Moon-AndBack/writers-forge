@@ -49,7 +49,7 @@ export function useAiSettingsConfig(): AiSettingsConfigController {
   const [savingKey, setSavingKey] = useState(false)
   const [clearingKey, setClearingKey] = useState(false)
 
-  // 落库函数以展示回调为依赖构造；同时供模型 hook 复用（不复制实现）。
+  // 落库函数以展示回调为依赖构造。
   const persistConfig = useMemo(
     () =>
       createPersistConfig({

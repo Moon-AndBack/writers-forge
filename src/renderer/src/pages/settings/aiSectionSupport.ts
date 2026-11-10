@@ -2,7 +2,7 @@
  * 设置页 · AI 分区的共享常量、类型与落库工具。
  *
  * 只承载无状态定义与纯函数；`draft` / `config` 等 state 一律留在
- * `useAiSettingsConfig`，模型列表 state 留在 `useAiModelList`。
+ * `useAiSettingsConfig`。
  */
 import type {
   AiConfigPatch,
@@ -13,9 +13,6 @@ import type {
 import { notifyAiConfigChanged } from '../writer/right/ai/aiConfigSync'
 
 type AiErrorCode = AiError['code']
-
-/** 模型下拉里的「自定义」哨兵值（真实模型 ID 不会用这种形态）。 */
-export const CUSTOM_MODEL_VALUE = '__custom_model__'
 
 /**
  * 错误码 → 文案 key 的静态映射：`satisfies` 强制覆盖 `AiErrorCode` 全部 14 个值，
@@ -48,8 +45,6 @@ export interface ConnectionDraft {
   model: string
 }
 
-export type ModelsState = 'idle' | 'loading' | 'ready' | 'error'
-
 export type TestState =
   | { status: 'idle' | 'testing' }
   | { status: 'ok'; latencyMs: number }
@@ -61,10 +56,7 @@ export const UNKNOWN_ERROR: AiError = { code: 'unknown', message: '' }
 /** 落库连接配置：成功返回最新掩码视图，失败提示并返回 null。 */
 export type PersistConfig = (patch: AiConfigPatch) => Promise<AiConfigView | null>
 
-/**
- * 构造 `persistConfig`：`useAiSettingsConfig`（`flushConnection`）与
- * `useAiModelList`（模型提交）共用同一实现，避免复制。
- */
+/** 构造 `persistConfig`：供 `useAiSettingsConfig` 的 `flushConnection` 使用。 */
 export function createPersistConfig(deps: {
   setConfig: (view: AiConfigView) => void
   onError: () => void

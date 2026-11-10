@@ -26,17 +26,6 @@ const ai = {
     placeholderOpencode: 'https://opencode.ai/inference/go',
     hint: '可填中转站地址；留空则恢复默认地址'
   },
-  model: {
-    label: '模型',
-    description: '从服务商动态拉取，或手动填写模型 ID',
-    placeholder: '选择或输入模型 ID',
-    refresh: '刷新',
-    loading: '正在获取模型列表…',
-    empty: '未获取到模型，请手动填写模型 ID',
-    failed: '获取模型列表失败：{{message}}',
-    custom: '自定义模型…',
-    useList: '从列表选择'
-  },
   catalog: {
     label: '模型目录',
     description: '用于识别各模型的上下文窗口；离线时使用内置基线',
