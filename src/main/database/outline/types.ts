@@ -124,7 +124,7 @@ export function isOutlineVisibleVolumeKind(kind: VolumeKind): boolean {
  */
 export interface DeletedOutlineItemRow extends OutlineItemRow {
   volumeTitle: string | null
-  /** 原归属卷 kind；卷缺失（已被物理删除）时为 `null`。 */
+  /** 原归属卷 kind；独立条目为 `null`（父卷缺失的条目已由查询过滤）。 */
   volumeKind: VolumeKind | null
   /** 原归属卷是否在回收站（软删）；卷缺失时按 `false` 处理。 */
   volumeInTrash: boolean
