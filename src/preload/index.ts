@@ -49,11 +49,9 @@ import type {
   ForeshadowUpdatePatch,
   SetForeshadowAbandonedResult
 } from '../main/database/foreshadows'
-import type { DeletedForeshadowRow } from '../main/database/foreshadowsTrash'
 import type { ClearForeshadowAnchorResult } from '../main/database/foreshadowsClear'
 import type { ForeshadowAnchorHit } from '../main/database/foreshadowsQuery'
 import type {
-  DeletedInspirationRow,
   InspirationCreatePayload,
   InspirationRow,
   InspirationUpdatePatch
@@ -356,6 +354,7 @@ const api = {
       ipcRenderer.invoke('foreshadow:create', bookId, payload),
     update: (id: number, patch: ForeshadowUpdatePatch): Promise<ForeshadowRow | null> =>
       ipcRenderer.invoke('foreshadow:update', id, patch),
+    /** 永久删除伏笔（物理删整行，双埋点 / 回收点一并消失） */
     delete: (id: number): Promise<boolean> => ipcRenderer.invoke('foreshadow:delete', id),
     /** 按章节或大纲条目取锚定伏笔（章节 → 正文埋点 / 大纲 → 大纲埋点；优先 chapterId） */
     listByAnchor: (chapterId?: number, outlineItemId?: number): Promise<ForeshadowRow[]> =>
@@ -372,7 +371,7 @@ const api = {
     /** 清空大纲埋点（`outline_*` → none）；已回收 → `recovered`，不存在 → `notFound` */
     clearOutlineAnchor: (id: number): Promise<ClearForeshadowAnchorResult> =>
       ipcRenderer.invoke('foreshadow:clearOutlineAnchor', id),
-    /** 清空回收点（`recover_*` → none）；不存在 / 已软删 → null（撤销回收不受限） */
+    /** 清空回收点（`recover_*` → none）；不存在 → null（撤销回收不受限） */
     clearRecoverAnchor: (id: number): Promise<ForeshadowRow | null> =>
       ipcRenderer.invoke('foreshadow:clearRecoverAnchor', id),
     /** 切换废弃标记（可撤销）；有回收点的伏笔拒绝废弃（`reason: 'recovered'`） */
@@ -380,21 +379,11 @@ const api = {
       ipcRenderer.invoke('foreshadow:setAbandoned', id, abandoned),
     /** 回收点锚点反查（章节 / 大纲条目，两者都给时优先 chapterId） */
     listByRecoverAnchor: (chapterId?: number, outlineItemId?: number): Promise<ForeshadowRow[]> =>
-      ipcRenderer.invoke('foreshadow:listByRecoverAnchor', chapterId, outlineItemId),
-    /** 回收站内容（软删伏笔，`deleted_at DESC`） */
-    listDeleted: (bookId: string): Promise<DeletedForeshadowRow[]> =>
-      ipcRenderer.invoke('foreshadow:listDeleted', bookId),
-    /** 还原伏笔（仅回收站行） */
-    restore: (id: number): Promise<boolean> => ipcRenderer.invoke('foreshadow:restore', id),
-    /** 彻底删除伏笔（物理删整行，双埋点 / 回收点一并消失） */
-    purge: (id: number): Promise<boolean> => ipcRenderer.invoke('foreshadow:purge', id),
-    /** 清空本书伏笔回收站，返回删除条数 */
-    purgeAllDeleted: (bookId: string): Promise<number> =>
-      ipcRenderer.invoke('foreshadow:purgeAllDeleted', bookId)
+      ipcRenderer.invoke('foreshadow:listByRecoverAnchor', chapterId, outlineItemId)
   },
-  /** 灵感域：碎片速记 + JSON 标签；本批仅数据层 / IPC，UI 后续批次接入 */
+  /** 灵感域：碎片速记 + JSON 标签 */
   inspiration: {
-    /** 列出未删除灵感（`updated_at DESC`）；`tag` 非空时按标签筛选 */
+    /** 列出灵感（`updated_at DESC`）；`tag` 非空时按标签筛选 */
     list: (bookId: string, tag?: string): Promise<InspirationRow[]> =>
       ipcRenderer.invoke('inspiration:list', bookId, tag),
     /** 列出该书已使用的去重标签（供筛选下拉） */
@@ -405,18 +394,8 @@ const api = {
     /** 更新灵感（仅覆盖提供的字段） */
     update: (id: number, patch?: InspirationUpdatePatch): Promise<InspirationRow | null> =>
       ipcRenderer.invoke('inspiration:update', id, patch),
-    /** 软删除灵感 */
-    delete: (id: number): Promise<boolean> => ipcRenderer.invoke('inspiration:delete', id),
-    /** 回收站内容（软删灵感，`deleted_at DESC`；标签已反序列化） */
-    listDeleted: (bookId: string): Promise<DeletedInspirationRow[]> =>
-      ipcRenderer.invoke('inspiration:listDeleted', bookId),
-    /** 还原灵感（仅回收站行） */
-    restore: (id: number): Promise<boolean> => ipcRenderer.invoke('inspiration:restore', id),
-    /** 彻底删除灵感（物理删，仅回收站行） */
-    purge: (id: number): Promise<boolean> => ipcRenderer.invoke('inspiration:purge', id),
-    /** 清空本书灵感回收站，返回删除条数 */
-    purgeAllDeleted: (bookId: string): Promise<number> =>
-      ipcRenderer.invoke('inspiration:purgeAllDeleted', bookId)
+    /** 永久删除灵感 */
+    delete: (id: number): Promise<boolean> => ipcRenderer.invoke('inspiration:delete', id)
   },
   stats: {
     /** 全书累计有效字数 */

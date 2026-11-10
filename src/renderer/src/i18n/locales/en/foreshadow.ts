@@ -90,7 +90,7 @@ const foreshadow = {
     },
     delete: {
       title: 'Delete foreshadowing',
-      message: 'Delete “{{title}}”? It will be moved to the trash and can be restored.',
+      message: 'Delete “{{title}}”? This permanently deletes it and cannot be undone.',
       confirm: 'Delete'
     },
     removeAnchor2: {
@@ -123,31 +123,6 @@ const foreshadow = {
     save: 'Save',
     cancel: 'Cancel',
     delete: 'Delete'
-  },
-  trash: {
-    title: 'Foreshadowing trash',
-    groupItems: 'Foreshadowing',
-    restoreItem: 'Restore foreshadowing',
-    purgeItem: 'Delete foreshadowing permanently',
-    detail: {
-      createdAt: 'Created {{time}}',
-      updatedAt: 'Updated {{time}}',
-      noExcerpt: '(No source excerpt)'
-    },
-    dialog: {
-      purge: {
-        title: 'Delete foreshadowing permanently',
-        message:
-          '“{{name}}” will be permanently deleted and cannot be recovered (its body planting point, outline planting point, and recovery location are deleted too).',
-        confirm: 'Delete permanently'
-      },
-      purgeAll: {
-        title: 'Empty foreshadowing trash',
-        message:
-          'All foreshadowing in the trash will be permanently deleted and cannot be recovered.',
-        confirm: 'Empty'
-      }
-    }
   },
   toast: {
     createSuccess: 'Foreshadowing created',

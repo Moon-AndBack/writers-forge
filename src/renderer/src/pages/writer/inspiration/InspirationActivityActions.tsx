@@ -8,23 +8,15 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconButton } from '../../../components/ui'
 import { useSetActivityActions } from '../../../shell/activityActions'
-import { EditorActionSep, EditorTrashButton } from '../../../components/editor/EditorActionGroup'
+import { EditorActionSep } from '../../../components/editor/EditorActionGroup'
 import { PlusIcon } from '../icons'
 
 export interface InspirationActivityActionsProps {
   /** 新建一条空白灵感（有未保存草稿时由装配包挂起两态确认）。 */
   onCreate: () => void
-  /** 切换中栏回收站视图。 */
-  onToggleTrash: () => void
-  /** 回收站视图是否打开（按钮呈激活态）。 */
-  trashOpen: boolean
 }
 
-export default function InspirationActivityActions({
-  onCreate,
-  onToggleTrash,
-  trashOpen
-}: InspirationActivityActionsProps) {
+export default function InspirationActivityActions({ onCreate }: InspirationActivityActionsProps) {
   const { t } = useTranslation('inspiration')
 
   const node = useMemo(
@@ -40,11 +32,9 @@ export default function InspirationActivityActions({
         >
           <PlusIcon />
         </IconButton>
-        {/* 回收站入口与章节 / 大纲标题栏同款（共享 `EditorTrashButton`，自带分隔线）。 */}
-        <EditorTrashButton onToggleTrash={onToggleTrash} trashOpen={trashOpen} />
       </>
     ),
-    [onCreate, onToggleTrash, trashOpen, t]
+    [onCreate, t]
   )
 
   useSetActivityActions('inspiration', node)

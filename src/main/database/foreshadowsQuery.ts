@@ -25,34 +25,34 @@ export interface ForeshadowAnchorHit {
   slot: 'body' | 'outline'
 }
 
-/** 列出某书全部**未删除**伏笔，按 `updated_at DESC, id DESC`。 */
+/** 列出某书全部伏笔，按 `updated_at DESC, id DESC`。 */
 export function listForeshadows(bookId: string): ForeshadowRow[] {
   return getDb()
     .prepare(
       `SELECT ${FORESHADOW_COLUMNS} FROM foreshadows
-       WHERE book_id = ? AND deleted_at IS NULL
+       WHERE book_id = ?
        ORDER BY updated_at DESC, id DESC`
     )
     .all(bookId) as ForeshadowRow[]
 }
 
-/** 按 id 取单条**未删除**伏笔；不存在 / 已软删返回 null。 */
+/** 按 id 取单条伏笔；不存在返回 null。 */
 export function getForeshadow(id: number): ForeshadowRow | null {
   const row = getDb()
-    .prepare(`SELECT ${FORESHADOW_COLUMNS} FROM foreshadows WHERE id = ? AND deleted_at IS NULL`)
+    .prepare(`SELECT ${FORESHADOW_COLUMNS} FROM foreshadows WHERE id = ?`)
     .get(id) as ForeshadowRow | undefined
   return row ?? null
 }
 
 /**
- * 列出**正文埋点**锚定在某章的未删除伏笔（供正文标记）：按段落序号（缺失按 -1 排前）、
+ * 列出**正文埋点**锚定在某章的伏笔（供正文标记）：按段落序号（缺失按 -1 排前）、
  * id 升序；命中槽位恒为 `body`。
  */
 export function listForeshadowsByChapter(chapterId: number): ForeshadowAnchorHit[] {
   const rows = getDb()
     .prepare(
       `SELECT ${FORESHADOW_COLUMNS} FROM foreshadows
-       WHERE deleted_at IS NULL AND body_kind = 'chapter' AND body_chapter_id = ?
+       WHERE body_kind = 'chapter' AND body_chapter_id = ?
        ORDER BY body_paragraph_idx, id`
     )
     .all(chapterId) as ForeshadowRow[]
@@ -60,14 +60,14 @@ export function listForeshadowsByChapter(chapterId: number): ForeshadowAnchorHit
 }
 
 /**
- * 列出**大纲埋点**锚定在某大纲条目的未删除伏笔（供正文标记）：按 id 升序；
+ * 列出**大纲埋点**锚定在某大纲条目的伏笔（供正文标记）：按 id 升序；
  * 命中槽位恒为 `outline`。
  */
 export function listForeshadowsByOutlineItem(outlineItemId: number): ForeshadowAnchorHit[] {
   const rows = getDb()
     .prepare(
       `SELECT ${FORESHADOW_COLUMNS} FROM foreshadows
-       WHERE deleted_at IS NULL AND outline_kind = 'outline' AND outline_item_id = ?
+       WHERE outline_kind = 'outline' AND outline_item_id = ?
        ORDER BY id`
     )
     .all(outlineItemId) as ForeshadowRow[]
@@ -75,21 +75,21 @@ export function listForeshadowsByOutlineItem(outlineItemId: number): ForeshadowA
 }
 
 /**
- * 列出**回收点**锚定在某章的未删除伏笔（供正文「回收处」标记）：
+ * 列出**回收点**锚定在某章的伏笔（供正文「回收处」标记）：
  * 按回收段落序号、id 升序。`status` 不在此过滤，由调用方按业务决定是否展示。
  */
 export function listForeshadowsByRecoverAnchorChapter(chapterId: number): ForeshadowRow[] {
   return getDb()
     .prepare(
       `SELECT ${FORESHADOW_COLUMNS} FROM foreshadows
-       WHERE recover_chapter_id = ? AND recover_anchor_kind = 'chapter' AND deleted_at IS NULL
+       WHERE recover_chapter_id = ? AND recover_anchor_kind = 'chapter'
        ORDER BY recover_paragraph_idx, id`
     )
     .all(chapterId) as ForeshadowRow[]
 }
 
 /**
- * 列出**回收点**锚定在某大纲条目的未删除伏笔（供正文「回收处」标记）：按 id 升序。
+ * 列出**回收点**锚定在某大纲条目的伏笔（供正文「回收处」标记）：按 id 升序。
  * `status` 不在此过滤，由调用方按业务决定是否展示。
  */
 export function listForeshadowsByRecoverAnchorOutlineItem(outlineItemId: number): ForeshadowRow[] {
@@ -97,7 +97,6 @@ export function listForeshadowsByRecoverAnchorOutlineItem(outlineItemId: number)
     .prepare(
       `SELECT ${FORESHADOW_COLUMNS} FROM foreshadows
        WHERE recover_outline_item_id = ? AND recover_anchor_kind = 'outline'
-         AND deleted_at IS NULL
        ORDER BY id`
     )
     .all(outlineItemId) as ForeshadowRow[]

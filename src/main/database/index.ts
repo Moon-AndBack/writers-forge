@@ -35,6 +35,7 @@ import { createWorldItemSubtypesSchema } from './schema/worldItemSubtypes'
 import { createWorldviewSubtypesSchema } from './schema/worldWorldviewSubtypes'
 import { createWorldPowersSchema } from './schema/worldPowers'
 import { migrateDropLegacyDossierTables } from './legacyDossierDrop'
+import { purgeLegacyTrash } from './legacyTrashPurge'
 import { migrateDropWorldRefAttrs } from './worldRefAttrsDrop'
 import { migrateBooksDropColumns } from './booksDropColumns'
 import { migrateForeshadowsBodyOutlineSlots } from './foreshadowsSlotMigration'
@@ -144,6 +145,9 @@ export function getDb(): Database.Database {
     // 灵感域：inspirations（碎片速记 + JSON 标签），按书隔离（引用 books，须在其后），
     // 幂等建表。
     createInspirationsSchema(instance)
+    // 伏笔 / 灵感回收站已下线（删除改为物理删）：清空历史软删行（幂等，事务回滚）；
+    // `deleted_at` 列保留仅作历史兼容，业务不再写入。
+    purgeLegacyTrash()
     // 伏笔描述富文本化：既有纯文本 `description` 包成富文本写入 `description_json`
     //（幂等、事务、失败回滚；须在 createForeshadowsSchema 建表 / 补列之后；
     //  早于后续任何读取，保证列表读到的 `description_json` 已就绪）。

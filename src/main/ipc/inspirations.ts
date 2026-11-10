@@ -5,12 +5,8 @@ import {
   MAX_INSPIRATION_TAG_CHARS,
   createInspiration,
   deleteInspiration,
-  listDeletedInspirations,
   listInspirationTags,
   listInspirations,
-  purgeAllDeletedInspirations,
-  purgeInspiration,
-  restoreInspiration,
   updateInspiration,
   type InspirationCreatePayload,
   type InspirationUpdatePatch
@@ -106,19 +102,14 @@ function sanitizeUpdatePatch(value: unknown): InspirationUpdatePatch | undefined
  *
  * 通道 → 入参 / 出参（非法入参回退安全默认，不抛异常；数据层校验失败抛错原样上抛）：
  * - inspiration:list   (bookId: string, tag?: string) → InspirationRow[]
- *   （未删除，`updated_at DESC, id DESC`；`tag` 非空时只返回带该标签的条目，
+ *   （`updated_at DESC, id DESC`；`tag` 非空时只返回带该标签的条目，
  *    非法 / 超长标签回空数组）
  * - inspiration:tags   (bookId: string)               → string[]（去重标签，供筛选）
  * - inspiration:create (bookId: string, payload?: { title?, content?, tags? })
  *                                                     → InspirationRow | null
  * - inspiration:update (id: number, patch?: { title?, content?, tags? })
  *                                                     → InspirationRow | null
- * - inspiration:delete (id: number)                  → boolean（软删除）
- * - inspiration:listDeleted (bookId: string)         → InspirationRow[]（回收站：软删行，
- *                                                       `deleted_at DESC, id DESC`）
- * - inspiration:restore   (id: number)               → boolean（还原，仅回收站行）
- * - inspiration:purge     (id: number)               → boolean（物理删除，仅回收站行）
- * - inspiration:purgeAllDeleted (bookId: string)     → number（清空本书回收站，返回删除条数）
+ * - inspiration:delete (id: number)                  → boolean（永久删除）
  *
  * 标签约束：最多 20 个、单个最长 40 字符（去空白 / 去重 / 截断在数据层统一执行）；
  * 标题超长截断到 200 字符，正文超 5 万字符整包拒绝。
@@ -162,27 +153,5 @@ export function registerInspirationsIpc(): void {
   ipcMain.handle('inspiration:delete', (_event, id: unknown) => {
     if (!isPositiveInt(id)) return false
     return runWrite('inspiration:delete', { id }, () => deleteInspiration(id))
-  })
-
-  ipcMain.handle('inspiration:listDeleted', (_event, bookId: unknown) => {
-    if (typeof bookId !== 'string' || bookId === '' || bookId.length > MAX_BOOK_ID_CHARS) return []
-    return listDeletedInspirations(bookId)
-  })
-
-  ipcMain.handle('inspiration:restore', (_event, id: unknown) => {
-    if (!isPositiveInt(id)) return false
-    return runWrite('inspiration:restore', { id }, () => restoreInspiration(id))
-  })
-
-  ipcMain.handle('inspiration:purge', (_event, id: unknown) => {
-    if (!isPositiveInt(id)) return false
-    return runWrite('inspiration:purge', { id }, () => purgeInspiration(id))
-  })
-
-  ipcMain.handle('inspiration:purgeAllDeleted', (_event, bookId: unknown) => {
-    if (typeof bookId !== 'string' || bookId === '' || bookId.length > MAX_BOOK_ID_CHARS) return 0
-    return runWrite('inspiration:purgeAllDeleted', { bookId }, () =>
-      purgeAllDeletedInspirations(bookId)
-    )
   })
 }

@@ -83,7 +83,6 @@ export default function ForeshadowRecoverDialog({
 
   // 打开时拉全书伏笔，只保留可回收项（**派生状态为 `planted`**；
   // 建设中 / 已废弃 / 已回收均不可再回收）。
-  // 软删除已由 `foreshadow.list` 在数据层过滤，此处无需再判 `deletedAt`。
   // 状态初始化放在 useState 初值（弹窗按 `bookId` 挂 key 重挂，切换书即重置）；
   // 不在 effect 体内同步 setState，避免级联渲染（react-hooks/set-state-in-effect）。
   useEffect(() => {

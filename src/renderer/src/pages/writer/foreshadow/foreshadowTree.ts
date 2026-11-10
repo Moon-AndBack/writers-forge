@@ -388,7 +388,7 @@ export interface ForeshadowBundle {
    * `'recovered'` = 已回收不可废弃（服务端拒绝），`'failed'` = 请求失败。
    */
   onSetAbandoned: (id: number, abandoned: boolean) => Promise<'ok' | 'recovered' | 'failed'>
-  /** 软删除；返回是否落库成功。 */
+  /** 永久删除；返回是否落库成功。 */
   onDelete: (id: number) => Promise<boolean>
   /** 重新拉取列表（新建成功后 `selectFirst` = 选中刷新后首条）。 */
   reload: (selectFirst?: boolean) => Promise<void>

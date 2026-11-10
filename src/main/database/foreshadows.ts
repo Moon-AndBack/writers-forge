@@ -21,7 +21,8 @@ import {
  *   CHECK 拒绝，故不再需要「一章 + 一大纲、禁同类型双埋」的组合校验；
  * - **回收点**：`recover_*` 仍为「章节 / 大纲条目 / 未记录」三态，与埋点共用同一套
  *   归一化 / 书域校验；
- * - **软删除**：`deleteForeshadow` 只置 `deleted_at`，查询一律过滤；
+ * - **物理删除**：`deleteForeshadow` 直接删除整行（无回收站）；`deleted_at` 列仅作
+ *   历史兼容保留，业务不再写入；
  * - **状态自动派生**：`status` 列只作废弃标记（`'abandoned'` / `'planted'`），展示状态
  *   由 `deriveForeshadowStatus`（`src/shared/foreshadowStatus.ts`）按回收点 / 埋点派生；
  * - 锚点目标（章 / 大纲条目）必须属于同一本书，写入前显式校验；
@@ -88,7 +89,7 @@ export type ForeshadowAnchor = ForeshadowBodyAnchor | ForeshadowOutlineAnchor | 
  */
 export type ForeshadowRecoverAnchor = ForeshadowAnchor
 
-/** 伏笔行。`deletedAt` 非 null 表示已软删除。 */
+/** 伏笔行。 */
 export interface ForeshadowRow {
   id: number
   bookId: string
@@ -134,7 +135,6 @@ export interface ForeshadowRow {
   outlineCharEnd: number | null
   createdAt: string
   updatedAt: string
-  deletedAt: string | null
 }
 
 /**
@@ -193,7 +193,7 @@ export const FORESHADOW_COLUMNS =
   'recover_outline_item_id AS recoverOutlineItemId, ' +
   'recover_paragraph_idx AS recoverParagraphIdx, recover_quote AS recoverQuote, ' +
   'recover_char_start AS recoverCharStart, recover_char_end AS recoverCharEnd, ' +
-  'created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt'
+  'created_at AS createdAt, updated_at AS updatedAt'
 
 const FORESHADOW_STATUSES: readonly string[] = ['planted', 'recovered', 'abandoned']
 
@@ -255,7 +255,7 @@ export function createForeshadow(bookId: string, payload: ForeshadowCreatePayloa
     .get(Number(result.lastInsertRowid)) as ForeshadowRow
 }
 
-/** 更新伏笔：仅覆盖提供的字段并刷新 `updated_at`；不存在 / 已软删返回 null。 */
+/** 更新伏笔：仅覆盖提供的字段并刷新 `updated_at`；不存在返回 null。 */
 export function updateForeshadow(id: number, patch: ForeshadowUpdatePatch): ForeshadowRow | null {
   const db = getDb()
   return db.transaction((): ForeshadowRow | null => {
@@ -263,7 +263,7 @@ export function updateForeshadow(id: number, patch: ForeshadowUpdatePatch): Fore
       .prepare(
         `SELECT book_id AS bookId, body_kind AS bodyKind, outline_kind AS outlineKind,
                 recover_anchor_kind AS recoverAnchorKind
-         FROM foreshadows WHERE id = ? AND deleted_at IS NULL`
+         FROM foreshadows WHERE id = ?`
       )
       .get(id) as
       | {
@@ -338,14 +338,13 @@ export function updateForeshadow(id: number, patch: ForeshadowUpdatePatch): Fore
   })()
 }
 
-/** 软删除伏笔：置 `deleted_at`，**不物理删除**；不存在 / 已软删返回 false。 */
+/**
+ * 永久删除伏笔（物理删整行）：正文埋点 / 大纲埋点 / 回收点随行一并消失；
+ * 不存在返回 false。`deleted_at` 列保留仅作历史兼容，业务不再写入。
+ */
 export function deleteForeshadow(id: number): boolean {
-  const db = getDb()
-  const row = db.prepare('SELECT deleted_at AS deletedAt FROM foreshadows WHERE id = ?').get(id) as
-    { deletedAt: string | null } | undefined
-  if (!row || row.deletedAt !== null) return false
-  db.prepare(`UPDATE foreshadows SET deleted_at = ${NOW} WHERE id = ?`).run(id)
-  return true
+  const result = getDb().prepare('DELETE FROM foreshadows WHERE id = ?').run(id)
+  return result.changes > 0
 }
 
 /** `attachForeshadowAnchor` 结果：失败原因区分满槽 / 入参非法 / 不存在。 */
@@ -359,7 +358,7 @@ export type AttachForeshadowAnchorResult =
  * 规则：
  * - 目标须为 `chapter` / `outline`（`none` 由 IPC 消毒层拒为 `invalid`）；
  * - 目标槽位已被占用 → `full`（要换位置请走 `updateForeshadow` 覆盖）；
- * - 伏笔不存在 / 已软删 → `notFound`。
+ * - 伏笔不存在 → `notFound`。
  *
  * 返回结构化结果而非抛错：满槽是**可预期的业务拒绝**（UI 据此提示）；
  * 目标章 / 大纲条目不属于该书的**入参非法**仍由 {@link normalizeAnchor} 抛错。
@@ -373,7 +372,7 @@ export function attachForeshadowAnchor(
     const existing = db
       .prepare(
         `SELECT book_id AS bookId, body_kind AS bodyKind, outline_kind AS outlineKind
-         FROM foreshadows WHERE id = ? AND deleted_at IS NULL`
+         FROM foreshadows WHERE id = ?`
       )
       .get(id) as
       | { bookId: string; bodyKind: ForeshadowBodyKind; outlineKind: ForeshadowOutlineKind }
@@ -420,7 +419,7 @@ export function setForeshadowAbandoned(
       .prepare(
         `SELECT status, recover_anchor_kind AS recoverAnchorKind,
                 body_kind AS bodyKind, outline_kind AS outlineKind
-         FROM foreshadows WHERE id = ? AND deleted_at IS NULL`
+         FROM foreshadows WHERE id = ?`
       )
       .get(id) as
       | {

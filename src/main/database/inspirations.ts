@@ -10,7 +10,8 @@ import { getDb } from './index'
  *   写侧经 {@link normalizeInspirationTags} 去空白、去重、截断超长标签并限制数量；
  * - **按标签筛选走 SQLite JSON1**：`json_each()` 在内置 SQLite（3.38+）默认可用，
  *   无需额外索引即可在单书几百条量级内完成筛选；
- * - **软删除**：`deleteInspiration` 只置 `deleted_at`，所有查询过滤未删除行；
+ * - **物理删除**：`deleteInspiration` 直接删除整行（无回收站）；`deleted_at` 列仅作
+ *   历史兼容保留，业务不再写入；
  * - **排序**：`updated_at DESC, id DESC`（最近编辑优先），写操作刷新 `updated_at`。
  */
 
@@ -32,7 +33,6 @@ export interface InspirationRow {
   tags: string[]
   createdAt: string
   updatedAt: string
-  deletedAt: string | null
 }
 
 /** 数据库原始行：`tags` 为 JSON 数组字符串。 */
@@ -43,7 +43,7 @@ interface InspirationDbRow extends Omit<InspirationRow, 'tags'> {
 /** 列投影（AS 别名对齐 `InspirationRow`）。 */
 export const INSPIRATION_COLUMNS =
   'id, book_id AS bookId, title, content, tags, ' +
-  'created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt'
+  'created_at AS createdAt, updated_at AS updatedAt'
 
 /** 创建灵感入参：全部可选（支持「先建空条目再补内容」的速记流程）。 */
 export interface InspirationCreatePayload {
@@ -94,7 +94,7 @@ function mapRow(row: InspirationDbRow): InspirationRow {
   return { ...row, tags: decodeTags(row.tags) }
 }
 
-/** 按 id 取单条（含已软删行，供写路径回读）。 */
+/** 按 id 取单条（供写路径回读）。 */
 function selectInspiration(id: number): InspirationRow {
   const row = getDb()
     .prepare(`SELECT ${INSPIRATION_COLUMNS} FROM inspirations WHERE id = ?`)
@@ -105,7 +105,7 @@ function selectInspiration(id: number): InspirationRow {
 }
 
 /**
- * 列出某书全部**未删除**灵感，按 `updated_at DESC, id DESC`。
+ * 列出某书全部灵感，按 `updated_at DESC, id DESC`。
  * `tag` 非空时只返回带该标签的条目（JSON1 `json_each` 精确匹配，调用前已 trim）。
  */
 export function listInspirations(bookId: string, tag?: string): InspirationRow[] {
@@ -116,14 +116,14 @@ export function listInspirations(bookId: string, tag?: string): InspirationRow[]
       ? db
           .prepare(
             `SELECT ${INSPIRATION_COLUMNS} FROM inspirations
-             WHERE book_id = ? AND deleted_at IS NULL
+             WHERE book_id = ?
              ORDER BY updated_at DESC, id DESC`
           )
           .all(bookId)
       : db
           .prepare(
             `SELECT ${INSPIRATION_COLUMNS} FROM inspirations
-             WHERE book_id = ? AND deleted_at IS NULL
+             WHERE book_id = ?
                AND EXISTS (
                  SELECT 1
                  FROM json_each(
@@ -139,7 +139,7 @@ export function listInspirations(bookId: string, tag?: string): InspirationRow[]
 }
 
 /**
- * 列出某书全部**未删除**灵感用到的去重标签（供筛选下拉）：
+ * 列出某书全部灵感用到的去重标签（供筛选下拉）：
  * 按名称不区分大小写升序；空标签已在写入侧被过滤，此处再兜底剔除。
  */
 export function listInspirationTags(bookId: string): string[] {
@@ -150,7 +150,7 @@ export function listInspirationTags(bookId: string): string[] {
             json_each(
               CASE WHEN json_valid(inspirations.tags) THEN inspirations.tags ELSE '[]' END
             ) AS je
-       WHERE inspirations.book_id = ? AND inspirations.deleted_at IS NULL
+       WHERE inspirations.book_id = ?
          AND je.value <> ''
        ORDER BY tag COLLATE NOCASE, tag`
     )
@@ -174,16 +174,14 @@ export function createInspiration(
   return selectInspiration(Number(result.lastInsertRowid))
 }
 
-/** 更新灵感：仅覆盖提供的字段，并刷新 `updated_at`；不存在 / 已软删返回 null。 */
+/** 更新灵感：仅覆盖提供的字段，并刷新 `updated_at`；不存在返回 null。 */
 export function updateInspiration(
   id: number,
   patch: InspirationUpdatePatch
 ): InspirationRow | null {
   const db = getDb()
   return db.transaction((): InspirationRow | null => {
-    const existing = db
-      .prepare('SELECT id FROM inspirations WHERE id = ? AND deleted_at IS NULL')
-      .get(id)
+    const existing = db.prepare('SELECT id FROM inspirations WHERE id = ?').get(id)
     if (!existing) return null
 
     const sets: string[] = []
@@ -208,63 +206,11 @@ export function updateInspiration(
   })()
 }
 
-/** 软删除灵感：置 `deleted_at`，**不物理删除**；不存在 / 已软删返回 false。 */
+/**
+ * 永久删除灵感（物理删）：不存在返回 false。
+ * `inspirations` 无关联表 / 被引用外键，删除本行即完成。
+ */
 export function deleteInspiration(id: number): boolean {
-  const db = getDb()
-  const row = db
-    .prepare('SELECT deleted_at AS deletedAt FROM inspirations WHERE id = ?')
-    .get(id) as { deletedAt: string | null } | undefined
-  if (!row || row.deletedAt !== null) return false
-  db.prepare(`UPDATE inspirations SET deleted_at = ${NOW} WHERE id = ?`).run(id)
-  return true
-}
-
-/** 回收站中的灵感行（= {@link InspirationRow}，`deletedAt` 非 null）。 */
-export type DeletedInspirationRow = InspirationRow
-
-/**
- * 列出某书回收站中的灵感（软删行），按 `deleted_at DESC, id DESC`（最近删除优先）。
- * 标签仍经 {@link mapRow} 反序列化，供回收站列表展示。
- */
-export function listDeletedInspirations(bookId: string): DeletedInspirationRow[] {
-  const rows = getDb()
-    .prepare(
-      `SELECT ${INSPIRATION_COLUMNS} FROM inspirations
-       WHERE book_id = ? AND deleted_at IS NOT NULL
-       ORDER BY deleted_at DESC, id DESC`
-    )
-    .all(bookId) as InspirationDbRow[]
-  return rows.map(mapRow)
-}
-
-/**
- * 还原灵感：仅对回收站中的行生效，清空 `deleted_at` 并刷新 `updated_at`
- * （列表按 `updated_at DESC` 排序，刚还原的行回到最前）；不存在 / 未删除返回 false。
- */
-export function restoreInspiration(id: number): boolean {
-  const db = getDb()
-  const row = db
-    .prepare('SELECT deleted_at AS deletedAt FROM inspirations WHERE id = ?')
-    .get(id) as { deletedAt: string | null } | undefined
-  if (!row || row.deletedAt === null) return false
-  db.prepare(`UPDATE inspirations SET deleted_at = NULL, updated_at = ${NOW} WHERE id = ?`).run(id)
-  return true
-}
-
-/**
- * 彻底删除灵感（物理删）：仅对回收站中的行生效；`inspirations` 无关联表 / 被引用外键，
- * 删除本行即完成，不存在 / 未删除返回 false。
- */
-export function purgeInspiration(id: number): boolean {
-  const result = getDb()
-    .prepare('DELETE FROM inspirations WHERE id = ? AND deleted_at IS NOT NULL')
-    .run(id)
+  const result = getDb().prepare('DELETE FROM inspirations WHERE id = ?').run(id)
   return result.changes > 0
-}
-
-/** 清空某书灵感回收站：物理删除全部软删行，返回删除条数。 */
-export function purgeAllDeletedInspirations(bookId: string): number {
-  return getDb()
-    .prepare('DELETE FROM inspirations WHERE book_id = ? AND deleted_at IS NOT NULL')
-    .run(bookId).changes
 }

@@ -17,7 +17,8 @@ import type Database from 'better-sqlite3'
  *   （`database/inspirations.ts` 的 `listInspirations` / `listInspirationTags`）。
  *   若将来出现「标签管理页 / 跨书标签统计」需求，再迁移为 `tags` + `inspiration_tags`
  *   关联表（届时用一次性迁移回填，读侧接口保持不变）；
- * - **软删除 / 回收站**：`deleted_at TEXT`（NULL = 未删除），与其它域表口径一致；
+ * - **物理删除**：删除直接删整行（无回收站）；`deleted_at TEXT` 列保留仅作历史兼容，
+ *   业务不再写入；
  * - **排序**：列表按 `updated_at DESC, id DESC`（最近编辑优先），建
  *   `(book_id, updated_at)` 索引支撑；
  * - 幂等建表（`CREATE ... IF NOT EXISTS`）。
@@ -33,12 +34,14 @@ export function createInspirationsSchema(db: Database.Database): void {
       tags TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(tags)),
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      -- 历史兼容列：回收站已下线（删除改为物理删），业务不再写入。
       deleted_at TEXT,
       FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
     )
   `)
 
-  // 索引：按书取未删除列表（含标签筛选）/ 按最近编辑排序。
+  // 索引：按书取列表（含标签筛选）/ 按最近编辑排序。
+  // `deleted_at` 列保留仅作历史兼容（业务不再写入），索引沿用旧定义以兼容老库。
   db.exec('CREATE INDEX IF NOT EXISTS idx_inspirations_book ON inspirations(book_id, deleted_at)')
   db.exec(
     'CREATE INDEX IF NOT EXISTS idx_inspirations_updated ON inspirations(book_id, updated_at)'

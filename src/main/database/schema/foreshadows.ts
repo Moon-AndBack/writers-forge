@@ -19,7 +19,8 @@ import type Database from 'better-sqlite3'
  * - **回收点锚点**：`recover_*` 七列仍为「章节 / 大纲条目 / 未记录」三态，
  *   记录「回收伏笔时右键选中的那段正文」，使埋设处与回收处都能在正文显示标记；
  *   `recover_anchor_kind` 默认 `'none'`（= 尚未记录回收点），`recover_quote` 默认空串；
- * - **软删除 / 回收站**：`deleted_at TEXT`（NULL = 未删除）；
+ * - **物理删除**：删除直接删整行（无回收站）；`deleted_at` 列为历史兼容保留，
+ *   业务不再写入；
  * - **回收备注**：`recovery_note TEXT NOT NULL DEFAULT ''`，回收伏笔时记录「如何回收 /
  *   在哪一章回收」等说明，空串 = 无备注；仅 `updateForeshadow` 可写，新建恒为空；
  * - **`status` 仅作废弃标记（本模型不做表迁移）**：业务上只写 `'planted'`（未废弃）/
@@ -40,6 +41,7 @@ export function createForeshadowsSchema(db: Database.Database): void {
   ensureColumn(db, 'foreshadows', 'description_json', 'TEXT')
 
   // 索引：按书取列表 / 正文埋点按章反查 / 大纲埋点按条目反查。
+  // `deleted_at` 列保留仅作历史兼容（业务不再写入），索引沿用旧定义以兼容老库。
   db.exec('CREATE INDEX IF NOT EXISTS idx_foreshadows_book ON foreshadows(book_id, deleted_at)')
   db.exec('CREATE INDEX IF NOT EXISTS idx_foreshadows_body_chapter ON foreshadows(body_chapter_id)')
   db.exec('CREATE INDEX IF NOT EXISTS idx_foreshadows_outline_item ON foreshadows(outline_item_id)')
@@ -91,6 +93,7 @@ export function foreshadowsTableDdl(table: string): string {
       recover_char_end INTEGER,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      -- 历史兼容列：回收站已下线（删除改为物理删），业务不再写入。
       deleted_at TEXT,
       FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
       FOREIGN KEY (body_chapter_id) REFERENCES chapters(id) ON DELETE CASCADE,

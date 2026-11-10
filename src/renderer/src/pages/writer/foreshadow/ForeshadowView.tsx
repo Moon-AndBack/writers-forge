@@ -19,7 +19,6 @@ import { HoverCard } from '../entities/HoverCard'
 import { useEntityHover } from '../entities/useEntityHover'
 import ForeshadowActivityActions from './ForeshadowActivityActions'
 import ForeshadowItem from './ForeshadowItem'
-import ForeshadowTrashView from './ForeshadowTrashView'
 import { useForeshadowEntityMatches } from './useForeshadowEntityMatches'
 import type { ForeshadowEntityChip } from './useForeshadowEntityMatches'
 import type { ForeshadowBundle } from './foreshadowTree'
@@ -54,8 +53,6 @@ export default function ForeshadowView({
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleting, setDeleting] = useState(false)
-  /** 中栏是否显示回收站（与章节 / 大纲同型：标题栏按钮切换，替代列表区）。 */
-  const [trashOpen, setTrashOpen] = useState(false)
   // 相关实体：列表层批量匹配（四段文本 → 去重胶囊），卡片只接收本行结果。
   const entityMatches = useForeshadowEntityMatches(bundle.bookId, bundle.rows)
   // 卡片网格：布局签名（单卡内容可用宽）供实体胶囊行容量重测。
@@ -77,17 +74,8 @@ export default function ForeshadowView({
     showToast(ok ? t('toast.deleteSuccess') : t('toast.deleteFailed'))
   }, [bundle, deleteRow, showToast, t])
 
-  const handleToggleTrash = useCallback((): void => setTrashOpen((open) => !open), [])
-
-  /** 还原 / 彻底删除 / 清空后刷新全书列表（选中项自动回退）。 */
-  const handleTrashChanged = useCallback((): void => {
-    void bundle.reload()
-  }, [bundle])
-
   // 有未保存草稿时先挂起（新建会切走当前详情，交右栏两态确认后再开弹窗）。
   const handleCreate = useCallback((): void => {
-    // 新建落在列表视图：回收站打开时先切回列表。
-    setTrashOpen(false)
     bundle.guardSwitch(() => setCreateOpen(true))
   }, [bundle])
 
@@ -106,55 +94,47 @@ export default function ForeshadowView({
 
   return (
     <>
-      <ForeshadowActivityActions
-        onCreate={handleCreate}
-        onToggleTrash={handleToggleTrash}
-        trashOpen={trashOpen}
-      />
+      <ForeshadowActivityActions onCreate={handleCreate} />
 
-      {trashOpen ? (
-        <ForeshadowTrashView bookId={bundle.bookId} onChanged={handleTrashChanged} />
-      ) : (
-        <div className="editor-scroll">
-          <div className="editor-inner is-full">
-            {bundle.loadError && bundle.rows.length === 0 ? (
-              /* 读取失败且无可用数据：与「真的是空列表」区分，给出重试入口。 */
-              <LoadErrorState onRetry={() => void bundle.reload()} />
-            ) : bundle.loading && bundle.rows.length === 0 ? (
-              <div className="foreshadow-loading">{tCommon('loading')}</div>
-            ) : bundle.rows.length === 0 ? (
-              /* 区分「全书没有伏笔」与「当前筛选下没有匹配」：后者提示调整条件。 */
-              <EmptyState
-                title={bundle.hasFilter ? t('emptyFilteredTitle') : t('emptyTitle')}
-                description={bundle.hasFilter ? t('emptyFilteredDesc') : t('emptyDesc')}
-              />
-            ) : (
-              <div
-                className="wf-card-grid foreshadow-grid"
-                ref={gridRef}
-                onMouseOver={entityHover.onMouseOver}
-                onMouseLeave={entityHover.onMouseLeave}
-              >
-                {bundle.rows.map((row) => (
-                  <ForeshadowItem
-                    key={row.id}
-                    row={row}
-                    active={row.id === bundle.activeId}
-                    chapters={chapters}
-                    volumes={volumes}
-                    outlineItems={outlineItems}
-                    entities={entityMatches.get(row.id) ?? EMPTY_ENTITIES}
-                    layoutKey={layoutKey}
-                    entityHover={entityHover}
-                    onSelect={bundle.onSelect}
-                    onDelete={setDeleteId}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+      <div className="editor-scroll">
+        <div className="editor-inner is-full">
+          {bundle.loadError && bundle.rows.length === 0 ? (
+            /* 读取失败且无可用数据：与「真的是空列表」区分，给出重试入口。 */
+            <LoadErrorState onRetry={() => void bundle.reload()} />
+          ) : bundle.loading && bundle.rows.length === 0 ? (
+            <div className="foreshadow-loading">{tCommon('loading')}</div>
+          ) : bundle.rows.length === 0 ? (
+            /* 区分「全书没有伏笔」与「当前筛选下没有匹配」：后者提示调整条件。 */
+            <EmptyState
+              title={bundle.hasFilter ? t('emptyFilteredTitle') : t('emptyTitle')}
+              description={bundle.hasFilter ? t('emptyFilteredDesc') : t('emptyDesc')}
+            />
+          ) : (
+            <div
+              className="wf-card-grid foreshadow-grid"
+              ref={gridRef}
+              onMouseOver={entityHover.onMouseOver}
+              onMouseLeave={entityHover.onMouseLeave}
+            >
+              {bundle.rows.map((row) => (
+                <ForeshadowItem
+                  key={row.id}
+                  row={row}
+                  active={row.id === bundle.activeId}
+                  chapters={chapters}
+                  volumes={volumes}
+                  outlineItems={outlineItems}
+                  entities={entityMatches.get(row.id) ?? EMPTY_ENTITIES}
+                  layoutKey={layoutKey}
+                  entityHover={entityHover}
+                  onSelect={bundle.onSelect}
+                  onDelete={setDeleteId}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {createOpen ? (
         <ForeshadowCreateDialog

@@ -45,7 +45,7 @@ function clearAnchorSlot(
     const existing = db
       .prepare(
         `SELECT book_id AS bookId, recover_anchor_kind AS recoverAnchorKind
-         FROM foreshadows WHERE id = ? AND deleted_at IS NULL`
+         FROM foreshadows WHERE id = ?`
       )
       .get(id) as { bookId: string; recoverAnchorKind: ForeshadowAnchorKind } | undefined
     if (!existing) return { ok: false, reason: 'notFound' }
@@ -75,7 +75,7 @@ export function clearForeshadowOutlineAnchor(id: number): ClearForeshadowAnchorR
   return clearAnchorSlot(id, OUTLINE_COLUMNS, true)
 }
 
-/** 清空**回收点**（`recover_*` → `'none'`）；不存在 / 已软删返回 null。 */
+/** 清空**回收点**（`recover_*` → `'none'`）；不存在返回 null。 */
 export function clearForeshadowRecoverAnchor(id: number): ForeshadowRow | null {
   const result = clearAnchorSlot(id, RECOVER_COLUMNS, false)
   // 未开启 `guardRecovered`，失败只可能是 `notFound`，保持旧返回契约不变。

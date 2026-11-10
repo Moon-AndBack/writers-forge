@@ -12,7 +12,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { createLogger } from '@renderer/lib/log'
-import { notifyTrashChanged } from '../trashRefresh'
 import { notifyForeshadowMarksRefresh } from '../../../components/editor/useForeshadowMarks'
 import { useUnsavedGuard } from '../../../shell/useUnsavedGuard'
 import type {
@@ -290,8 +289,6 @@ export function useForeshadowWorkspace(enabled: boolean, bookId: string): Foresh
         setSelectedId((prev) => (prev === id ? null : prev))
         // 删除后清掉常驻编辑器里的旧标记。
         notifyForeshadowMarksRefresh()
-        // 回收站可能正打开：通知其重新拉取。
-        notifyTrashChanged()
         return true
       } catch (error) {
         log.warn('伏笔删除失败', error)

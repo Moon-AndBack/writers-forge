@@ -1,7 +1,7 @@
 /**
  * 灵感域展示口径：类型别名 + 右栏草稿补丁（纯函数，不发起 IPC）。
  *
- * 数据层 `inspirations` 已就绪（纯文本正文 + JSON 数组标签 + 软删除），本文件只做
+ * 数据层 `inspirations` 已就绪（纯文本正文 + JSON 数组标签 + 物理删除），本文件只做
  * 「行 → 草稿」与「草稿 → 仅变更字段补丁」的比对；标签归一化口径与主进程
  * `normalizeInspirationTags` 保持一致（去空白 / 去重 / 截断 / 限数），
  * 避免保存后服务端归一化结果与草稿不同而产生「假脏态」。
@@ -115,7 +115,7 @@ export interface InspirationBundle {
   onCreate: () => Promise<boolean>
   /** 更新补丁；返回是否落库成功。 */
   onUpdate: (id: number, patch: InspirationUpdatePatch) => Promise<boolean>
-  /** 软删除；返回是否落库成功。 */
+  /** 永久删除；返回是否落库成功。 */
   onDelete: (id: number) => Promise<boolean>
   /** 重新拉取全书列表（新建 / 删除后同步；本地筛选自动重算）。 */
   reload: (selectFirst?: boolean) => Promise<void>

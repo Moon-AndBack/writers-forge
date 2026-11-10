@@ -15,7 +15,6 @@ import { useToast } from '../../../components/ui'
 import ConfirmDialog from '../ConfirmDialog'
 import InspirationActivityActions from './InspirationActivityActions'
 import InspirationCard from './InspirationCard'
-import InspirationTrashView from './InspirationTrashView'
 import { useInspirationFilters } from './inspirationFilterContext'
 import type { InspirationBundle } from './inspirationTree'
 
@@ -26,12 +25,10 @@ export interface InspirationViewProps {
 export default function InspirationView({ bundle }: InspirationViewProps) {
   const { t } = useTranslation('inspiration')
   const { t: tCommon } = useTranslation('common')
-  const { filters, refreshTags } = useInspirationFilters()
+  const { filters } = useInspirationFilters()
   const { show: showToast, node: toastNode } = useToast()
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleting, setDeleting] = useState(false)
-  /** 中栏是否显示回收站（与章节 / 大纲同型：标题栏按钮切换，替代列表区）。 */
-  const [trashOpen, setTrashOpen] = useState(false)
   /** 当前是否有筛选条件（标签或非空关键词）：用于区分「无数据」与「筛空」空态。 */
   const hasFilter = filters.tag !== null || filters.query.trim() !== ''
 
@@ -39,17 +36,7 @@ export default function InspirationView({ bundle }: InspirationViewProps) {
   const deleteRow =
     deleteId === null ? null : (bundle.rows.find((row) => row.id === deleteId) ?? null)
 
-  const handleToggleTrash = useCallback((): void => setTrashOpen((open) => !open), [])
-
-  /** 还原 / 彻底删除 / 清空后刷新全书列表（本地筛选自动重算、选中项自动回退）与标签集合。 */
-  const handleTrashChanged = useCallback((): void => {
-    void bundle.reload()
-    void refreshTags()
-  }, [bundle, refreshTags])
-
   const handleCreate = useCallback((): void => {
-    // 新建落在列表视图：回收站打开时先切回列表。
-    setTrashOpen(false)
     // 有未保存草稿时先挂起（新建会切走当前详情，交右栏两态确认后再创建）。
     bundle.guardSwitch(() => {
       void bundle.onCreate().then((ok) => {
@@ -69,43 +56,35 @@ export default function InspirationView({ bundle }: InspirationViewProps) {
 
   return (
     <>
-      <InspirationActivityActions
-        onCreate={handleCreate}
-        onToggleTrash={handleToggleTrash}
-        trashOpen={trashOpen}
-      />
+      <InspirationActivityActions onCreate={handleCreate} />
 
-      {trashOpen ? (
-        <InspirationTrashView bookId={bundle.bookId} onChanged={handleTrashChanged} />
-      ) : (
-        <div className="editor-scroll">
-          <div className="editor-inner is-full">
-            {bundle.loadError && bundle.rows.length === 0 ? (
-              /* 读取失败且无可用数据：与「真的是空列表 / 筛空」区分，给出重试入口。 */
-              <LoadErrorState onRetry={() => void bundle.reload()} />
-            ) : bundle.loading ? (
-              <div className="inspiration-loading">{tCommon('loading')}</div>
-            ) : bundle.rows.length === 0 ? (
-              <EmptyState
-                title={hasFilter ? t('emptyFilteredTitle') : t('emptyTitle')}
-                description={hasFilter ? t('emptyFilteredDesc') : t('emptyDesc')}
-              />
-            ) : (
-              <div className="wf-card-grid inspiration-grid">
-                {bundle.rows.map((row) => (
-                  <InspirationCard
-                    key={row.id}
-                    row={row}
-                    active={row.id === bundle.activeId}
-                    onSelect={bundle.onSelect}
-                    onDelete={setDeleteId}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+      <div className="editor-scroll">
+        <div className="editor-inner is-full">
+          {bundle.loadError && bundle.rows.length === 0 ? (
+            /* 读取失败且无可用数据：与「真的是空列表 / 筛空」区分，给出重试入口。 */
+            <LoadErrorState onRetry={() => void bundle.reload()} />
+          ) : bundle.loading ? (
+            <div className="inspiration-loading">{tCommon('loading')}</div>
+          ) : bundle.rows.length === 0 ? (
+            <EmptyState
+              title={hasFilter ? t('emptyFilteredTitle') : t('emptyTitle')}
+              description={hasFilter ? t('emptyFilteredDesc') : t('emptyDesc')}
+            />
+          ) : (
+            <div className="wf-card-grid inspiration-grid">
+              {bundle.rows.map((row) => (
+                <InspirationCard
+                  key={row.id}
+                  row={row}
+                  active={row.id === bundle.activeId}
+                  onSelect={bundle.onSelect}
+                  onDelete={setDeleteId}
+                />
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {deleteRow === null ? null : (
         <ConfirmDialog
