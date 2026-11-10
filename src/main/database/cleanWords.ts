@@ -61,6 +61,11 @@ export interface CleanWordImportResult {
   skipped: number
 }
 
+/** 内置词库同步结果计数（导入三计数 + 删除的过期内置词数）。 */
+export interface CleanWordSyncResult extends CleanWordImportResult {
+  removed: number
+}
+
 /** 来源 / 类别聚合计数（设置页展示用）。 */
 export interface CleanWordCount {
   source: CleanWordSource
@@ -190,9 +195,9 @@ export function upsertCleanWord(input: {
  * 批量导入（**同一事务**）：返回 `{ inserted, updated, skipped }`。
  *
  * - `word` 去首尾空白，空串计入 `skipped`；
- * - 库中已有同词 → 只更新类别 / 替代词，**保留原有 `enabled`**（用户已禁用的词
- *   不会因词库更新被重新启用），计入 `updated`；批内重复词同理（首条 inserted，
- *   后续按 updated 计）；
+ * - 库中已有同词 → **只更新 `builtin` 行的类别 / 替代词**，用户自建词的字段不动；
+ *   **保留原有 `enabled`**（用户已禁用的词不会因词库更新被重新启用），计入 `updated`；
+ *   批内重复词同理（首条 inserted，后续按 updated 计）；
  * - 新插入的词默认 `enabled = 1`，追加到词表末尾（`sort_order = MAX + 1`），
  *   `source` 取入参。
  */
@@ -208,7 +213,9 @@ export function importCleanWords(
   )
   const update = db.prepare(
     `UPDATE clean_word_list
-     SET category = ?, replacement = ?, updated_at = datetime('now')
+     SET category = CASE WHEN source = 'builtin' THEN ? ELSE category END,
+         replacement = CASE WHEN source = 'builtin' THEN ? ELSE replacement END,
+         updated_at = datetime('now')
      WHERE id = ?`
   )
 
@@ -231,6 +238,67 @@ export function importCleanWords(
       }
     }
     return result
+  })()
+}
+
+/**
+ * 同步内置词库（**同一事务**）：导入新种子 → 删除已下线的内置词 → 重排展示顺序。
+ *
+ * - 导入走 `importCleanWords(words, 'builtin')`：新词插入，同词只更新 builtin 行的
+ *   类别 / 替代词，用户自建词的字段与 `enabled` 均不受影响；
+ * - 清理只针对 `source = 'builtin'` 且 `word` 不在新种子集合中的行；SQL 再次限定
+ *   `source = 'builtin'`，**用户自建词永不删除**；
+ * - `sort_order` 统一重排：builtin 按种子顺序（类别 → 词长），user 按原
+ *   `sort_order, id` 紧随其后；
+ * - 返回 `{ inserted, updated, skipped, removed }`，由调用方写入守卫键。
+ */
+export function syncBuiltinCleanWords(words: CleanWordImportInput[]): CleanWordSyncResult {
+  const db = getDb()
+  return db.transaction((): CleanWordSyncResult => {
+    const result = importCleanWords(words, 'builtin')
+
+    const seedWords = new Set<string>()
+    for (const entry of words) {
+      const word = entry.word.trim()
+      if (word !== '') seedWords.add(word)
+    }
+
+    const builtinRows = db
+      .prepare("SELECT id, word FROM clean_word_list WHERE source = 'builtin'")
+      .all() as Array<{ id: number; word: string }>
+    const removeBuiltin = db.prepare(
+      "DELETE FROM clean_word_list WHERE id = ? AND source = 'builtin'"
+    )
+    let removed = 0
+    for (const row of builtinRows) {
+      if (!seedWords.has(row.word)) removed += Number(removeBuiltin.run(row.id).changes)
+    }
+
+    const survivingBuiltin = db
+      .prepare("SELECT id, word FROM clean_word_list WHERE source = 'builtin'")
+      .all() as Array<{ id: number; word: string }>
+    const builtinIdByWord = new Map(
+      survivingBuiltin.map((row): [string, number] => [row.word, row.id])
+    )
+    const userRows = db
+      .prepare("SELECT id FROM clean_word_list WHERE source = 'user' ORDER BY sort_order, id")
+      .all() as Array<{ id: number }>
+    const setSortOrder = db.prepare('UPDATE clean_word_list SET sort_order = ? WHERE id = ?')
+    const placed = new Set<number>()
+    let order = 0
+    for (const entry of words) {
+      const id = builtinIdByWord.get(entry.word.trim())
+      if (id === undefined || placed.has(id)) continue
+      placed.add(id)
+      setSortOrder.run(order, id)
+      order += 1
+    }
+    for (const row of userRows) {
+      setSortOrder.run(order, row.id)
+      order += 1
+    }
+
+    return { ...result, removed }
   })()
 }
 

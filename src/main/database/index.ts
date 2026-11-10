@@ -167,8 +167,8 @@ export function getDb(): Database.Database {
     // 统一设定库（第 4 层）：境界体系仅保留「体系」子表（一对一，FK → world_entities），
     // 须在 createWorldEntitiesSchema 之后，幂等建表。
     createWorldPowersSchema(instance)
-    // 违禁词库初始化（建表 → 旧工具明细表一次性 DROP → 内置词库首次播种；守卫键
-    // `cleanWords:dropWorldDetails:v1` / `cleanWords:seed:v1`，均失败回滚）。
+    // 违禁词库初始化（建表 → 旧工具明细表一次性 DROP → 内置词库 v2 同步；守卫键
+    // `cleanWords:dropWorldDetails:v1` / `cleanWords:seed:v2`，均失败回滚）。
     applyCleanWordsSetup(instance)
     // 第 6 批：下线境界 4 张专表 + 15 张零消费专用关系表 + 3 张零消费明细表
     //（幂等、守卫键、失败回滚；须在建表之后、种子与自检之前）。

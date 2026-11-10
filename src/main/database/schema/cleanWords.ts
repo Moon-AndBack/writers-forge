@@ -1,10 +1,6 @@
 import type Database from 'better-sqlite3'
-import {
-  CLEAN_WORD_CATEGORY_CHECK,
-  toCleanWordCategory,
-  type CleanWordCategory
-} from '../cleanWordCategories'
-import { importCleanWords } from '../cleanWords'
+import { CLEAN_WORD_CATEGORY_CHECK, toCleanWordCategory } from '../cleanWordCategories'
+import { syncBuiltinCleanWords } from '../cleanWords'
 import { listBuiltinCleanWords } from '../cleanWordSeed'
 
 /**
@@ -250,38 +246,33 @@ export function migrateDropLegacyWordTables(instance: Database.Database): void {
   })()
 }
 
-/** 内置词库播种守卫键。 */
-const BUILTIN_SEED_KEY = 'cleanWords:seed:v1'
+/** 内置词库同步守卫键（v1 键保留为历史记录，不删除）。 */
+const BUILTIN_SEED_KEY = 'cleanWords:seed:v2'
 
 /**
- * 首次启动把内置违禁词灌入 `clean_word_list`（`source = 'builtin'`）。
+ * 首次启动 / 老库升级时把内置违禁词同步进 `clean_word_list`（`source = 'builtin'`）。
  *
- * - 词条来源：`listBuiltinCleanWords()`（`../cleanWordSeed`，860 条原始词条 / 853 个
- *   不重复词；跨类别重复词按**后出现的类别**落库，`word` 唯一，故实际入库 853 行）。
- * - 写入走 `importCleanWords(words, 'builtin')`：同一事务批量 upsert，新词 `enabled = 1`，
- *   已存在的同词**保留用户 `enabled` 意图**（不复活用户已禁用的词）。
- * - 守卫键 `cleanWords:seed:v1`：只执行一次；清空内置库后不会自动重灌
- *   （用户主动删 / 禁的意图优先于词库）。
+ * - 词条来源：`listBuiltinCleanWords()`（`../cleanWordSeed`，1274 条词条、无跨类重复，
+ *   覆盖 9 类中的 8 类；`other` 保留给用户自建词，故实际入库 1274 行）。
+ * - 写入走 `syncBuiltinCleanWords(words)`：同一事务内批量 upsert + 删除已下线的内置词
+ *   + 重排 `sort_order`；新词 `enabled = 1`，已存在的同词**保留用户 `enabled` 意图**
+ *   （不复活用户已禁用的词），用户自建词不受影响。
+ * - 守卫键 `cleanWords:seed:v2`：只执行一次（新库与老库均执行一次 v2 同步）；清空内置库
+ *   后不会自动重灌（用户主动删 / 禁的意图优先于词库）。v1 键保留不动。
  * - 与 `migrateDropLegacyWordTables` 一样在事务内执行，失败回滚且不置键，下次启动重试。
- * - 守卫值存导入结果 `{ inserted, updated, skipped }` 的 JSON，便于排查。
+ * - 守卫值存同步结果 `{ inserted, updated, skipped, removed }` 的 JSON，便于排查。
  * - 须在 `createCleanWordsSchema` 之后调用；须在 `getDb()` 初始化阶段调用——本函数与
- *   `importCleanWords` 均以 `instance` / 单例 `db` 落库，此刻两者为同一连接。
+ *   `syncBuiltinCleanWords` 均以 `instance` / 单例 `db` 落库，此刻两者为同一连接。
  */
 export function seedBuiltinCleanWords(instance: Database.Database): void {
   const done = instance.prepare('SELECT 1 FROM settings WHERE key = ?').get(BUILTIN_SEED_KEY)
   if (done) return
 
   instance.transaction(() => {
-    // 内置词表仍以旧三类（ads / sexual / violence）维护：入库前经单一真源映射到新 9 类
-    // （ads → other；下一批由种子重新归类到 sexual / gambling / fraud）。
-    const words = listBuiltinCleanWords().map(
-      (entry): { word: string; category: CleanWordCategory } => ({
-        word: entry.word,
-        category: toCleanWordCategory(entry.category)
-      })
-    )
-    // 外层事务 + `importCleanWords` 内层事务：better-sqlite3 会自动降级为 SAVEPOINT。
-    const result = importCleanWords(words, 'builtin')
+    // 新种子已是 9 类（other 仅供用户自建），无需再经旧类别桥接。
+    const words = listBuiltinCleanWords()
+    // 外层事务 + `syncBuiltinCleanWords` 内层事务：better-sqlite3 会自动降级为 SAVEPOINT。
+    const result = syncBuiltinCleanWords(words)
     instance
       .prepare(
         `INSERT INTO settings (key, value) VALUES (?, ?)
@@ -292,7 +283,7 @@ export function seedBuiltinCleanWords(instance: Database.Database): void {
 }
 
 /**
- * 违禁词库初始化装配：建表 → 类别 schema 迁移 → 旧工具明细表下线 → 内置词库首次播种
+ * 违禁词库初始化装配：建表 → 类别 schema 迁移 → 旧工具明细表下线 → 内置词库 v2 同步
  * （**顺序不可调换**）。
  *
  * 供 `getDb()` 单行调用，避免在 `index.ts`（单文件 500 行硬上限）里堆叠多条调用。

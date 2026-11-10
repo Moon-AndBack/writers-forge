@@ -146,7 +146,7 @@ instance.pragma('foreign_keys = ON')
 | 设定库                                | `world_texts:bodyBlocks:v1`          | `derivedTextBlocksBackfill.ts`      | 按 `body_json` 重算派生 `body`                                                         |
 | 分类                                  | `categories:seed:v1`                 | `categories.ts`                     | 官方分类首播（一级 33 / 二级 145）                                                     |
 | 违禁词                                | `cleanWords:dropWorldDetails:v1`     | `schema/cleanWords.ts`              | 下线 `world_forbidden_words` / `world_substitutions`                                   |
-| 违禁词                                | `cleanWords:seed:v1`                 | `schema/cleanWords.ts`              | 内置词库首播（853 个去重词条）                                                         |
+| 违禁词                                | `cleanWords:seed:v2`                 | `schema/cleanWords.ts`              | 内置词库同步（1274 条；删过期 builtin，不删用户词）                                    |
 | 时间线                                | `timeline:migrated:v1`               | `timeline.ts`                       | 老 `timeline:origin:<bookId>` 迁入列表 / 选中键；另按书写 `timeline:migrated:<bookId>` |
 | i18n                                  | `i18n:defaultsCleanup:v1`            | `i18nDefaultsCleanup.ts`            | 清空存量中文默认值（时间线 / 剧情线 / 场景时间）                                       |
 
@@ -169,7 +169,7 @@ instance.pragma('foreign_keys = ON')
 | 教学书         | 1 本 / 5 卷        | `chapterData:v59:migrated`      | 全量重灌卷章、正文、大纲、剧情、实体（§6）         |
 | 子类预设       | 23 条 / 书         | `worldSubtypes:presets:v1`      | 为既有书籍补齐；新建书由 `createBook` 即时写入     |
 | 关系语义码     | 4 个               | 无键                            | 每次启动 `ON CONFLICT(code) DO NOTHING` 补齐新增码 |
-| 内置违禁词     | 853 行             | `cleanWords:seed:v1`            | 首次导入；已存在同词保留用户启停意图               |
+| 内置违禁词     | 1274 行            | `cleanWords:seed:v2`            | 首次 v2 同步；保留用户启停意图与自建词             |
 | 教学书演示实体 | 5 类若干           | `worldEntities:seeded:<bookId>` | 按书播种；重灌时先删标记再重播                     |
 | 样例书籍       | 0                  | 无                              | `seedBooksIfEmpty()` 为空实现，样例书已下线        |
 
