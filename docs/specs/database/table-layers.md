@@ -246,7 +246,7 @@ DDL 变更同步清单（缺一即被自检误报）：
 | L0      | `categories`                                                         | `categories.ts`             | `categories.ts`、`categoriesWrite.ts`                                                         |
 | L0      | `images`                                                             | `images.ts`                 | `images.ts`                                                                                   |
 | L0      | `chip_colors`                                                        | `chipColors.ts`             | `chipColors.ts`                                                                               |
-| L0      | `clean_word_list`                                                    | `cleanWords.ts`             | `cleanWords.ts`、`cleanWordSeed.ts`                                                           |
+| L0      | `clean_word_list`                                                    | `cleanWords.ts`             | `cleanWords.ts`、`cleanWordSeed/`                                                             |
 | L1      | `world_entities`                                                     | `worldEntities.ts`          | `worldEntities.ts`、`worldEntityQueries.ts`、`worldEntityWrites.ts`、`worldEntityMeta.ts`     |
 | L1      | `world_subtypes`                                                     | `worldSubtypes.ts`          | `worldSubtypes.ts`、`worldSubtypePresetSeed.ts`、`worldSubtypeCharacterSplit.ts`（迁移）      |
 | L1      | `world_texts` / `world_aliases` / `world_tags` / `world_entity_tags` | `worldEntities.ts`          | `worldEntityMeta.ts`                                                                          |
