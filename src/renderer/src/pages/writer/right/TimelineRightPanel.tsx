@@ -43,9 +43,8 @@ function TimelineSceneDetail({
   return (
     // key 随选中场景变化：同一个 `<section>` 复用时只换文本不会重播进场动画，按场景重建即可。
     <section key={scene.id} className="timeline-card timeline-scene-detail">
-      {/* 卡头与卡身正文同为值块（`.wf-readonly-block`：--control-on-soft 底 + 内描边 +
-          10 / 12 内衬），标题左缘与正文左缘对齐。 */}
-      <div className="timeline-card__head wf-readonly-block">
+      {/* 卡头透明（不套 `.wf-readonly-block` 值块），仅卡身正文保留值块底。 */}
+      <div className="timeline-card__head">
         <span className="timeline-card__title">{plotSceneTitle(scene, t('unnamedScene'))}</span>
         {/* 时间弱化在卡头右侧（不再单列一个字段），窄栏下允许换行。 */}
         <span className="timeline-card__meta">
