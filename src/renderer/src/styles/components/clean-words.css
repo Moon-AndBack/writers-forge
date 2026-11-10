@@ -9,11 +9,6 @@
 
 /* ---------- 内容列 ---------- */
 .cw-root {
-  /* 三行布局内所有单行控件（Segmented / Select / Input / Button）的统一高度：
-     与 .wf-input--sm / .wf-select--sm 实测一致（6px 上下内边距 + 12px×1.4 行高
-     + 1px 上下描边 = 30.8px，全局 box-sizing: border-box）。 */
-  --cw-control-h: 30.8px;
-
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -34,25 +29,10 @@
   gap: 8px;
 }
 
-/* 行内控件统一高度：Segmented sm 实高 25.4px、Button sm 为 26px，均低于同排
-   Select / Input sm 的 30.8px。这里用**显式 height**（全局 border-box）对齐，
-   不靠 `align-items: stretch`——Button 走 `min-height`，stretch 无法约束其内容盒。
-   仅作用于 cw- 作用域，不改 segmented.css / form.css / button.css 的全局档位。 */
-.cw-filters > .wf-seg {
-  height: var(--cw-control-h);
-}
-
-.cw-filters .wf-seg__item {
-  height: 100%;
-}
-
-.cw-filters .wf-select__trigger,
-.cw-filters .wf-input {
-  height: var(--cw-control-h);
-}
-
 /* 类别下拉固定宽；搜索框占用剩余宽度并在窄窗 / 英文文案下收缩。
-   原组件内联的 132 / flex 140 / min-width 120 收敛到此。 */
+   原组件内联的 132 / flex 140 / min-width 120 收敛到此。
+   行内 Segmented / Select / Input 全部为 sm 档，高度统一 30px（--control-h-sm），
+   无需在本作用域另写 height 覆盖。 */
 .cw-filters__category {
   flex: none;
   width: 148px;
@@ -74,9 +54,7 @@
    与结果区之间用左右渐隐分隔线划开（伪元素实现，与弹窗底栏
    .wf-window__footer::before 同色同几何：两端透明、20%–80% 实色，
    颜色取自 .wf-window 的 --wf-window-fade-line）；
-   控件高度同筛选行（--cw-control-h），三件严格等高：
-   Select 触发器 / Input 用显式 height，Button 同时覆盖
-   局部变量 --wf-btn-h（基类用 min-height）。 */
+   三件控件均为 sm 档（30px），与筛选行等高，无需局部 height 覆盖。 */
 .cw-add {
   position: relative;
   display: flex;
@@ -118,16 +96,6 @@
   min-width: 120px;
 }
 
-.cw-add__row .wf-select__trigger,
-.cw-add__row .wf-input,
-.cw-add__row .wf-btn {
-  height: var(--cw-control-h);
-}
-
-.cw-add__row .wf-btn {
-  --wf-btn-h: var(--cw-control-h);
-}
-
 .cw-add__hint {
   margin: 0;
   font-size: 11.5px;
@@ -150,17 +118,17 @@
   border-radius: var(--r-lg);
 }
 
-/* 行采用四槽 grid：词条（弹性）/ 类别 Tag（固定 88）/ 开关（固定 30）/ 删除（固定 24）。
+/* 行采用四槽 grid：词条（弹性）/ 类别 Tag（固定 88）/ 开关（固定 30）/ 删除（固定 30）。
    后三列固定宽度，删除按钮的有无（内置词无删除）不再让开关 / Tag 横向漂移。
    88px 依据：Tag 为 11.5px/500 + 左右各 10px 内边距，实测中文最长「政治」43px、
    英文最长「Advertising」79.97px，88px 仍余 8px，zh / en 均不截断。
-   开关 sm 轨道 30px、IconButton sm 24px，均取自组件实际尺寸。
+   开关 sm 轨道 30px、IconButton sm 30px，均取自组件实际尺寸。
    行 hover：容器已是 --soft-solid（light 下 --soft-hover-solid 与其同值 6%，
    hover 会完全失效），故改用「软底上的控件」令牌 --control-on-soft
    （light / sage / honey 10%、dark 14%，恒高于容器底色）。 */
 .cw-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 88px 30px 24px;
+  grid-template-columns: minmax(0, 1fr) 88px 30px 30px;
   align-items: center;
   gap: 8px;
   padding: 7px 8px;

@@ -16,8 +16,8 @@ import { useCleanWordsLibrary } from './useCleanWordsLibrary'
    「三重筛选 + 分批渲染」：筛选把候选集压到单类别上限（当前 436 条）以内，再按
    `PAGE_SIZE` 逐批挂载（首屏 ≤80 行），「显示更多」每次追加一页。
 
-   样式：类名前缀 `cw-`，见 styles/components/clean-words.css（行内控件统一高度
-   `--cw-control-h`；分区标题已删除，改用三行天然分组）。管理型弹窗无提交动作，
+   样式：类名前缀 `cw-`，见 styles/components/clean-words.css（行内控件统一走
+   sm 档 30px，即 --control-h-sm；分区标题已删除，改用三行天然分组）。管理型弹窗无提交动作，
    故不传 `footer`，关闭入口为头部 ×。
    ============================================================ */
 
@@ -44,7 +44,7 @@ export function CleanWordsDialog({ open, onClose }: CleanWordsDialogProps) {
     >
       {library.toastNode}
       <div className="cw-root">
-        {/* 行 1. 筛选：来源 / 类别 / 搜索（三件控件同高，见 --cw-control-h） */}
+        {/* 行 1. 筛选：来源 / 类别 / 搜索（三件控件同为 sm 档，高度一致） */}
         <div className="cw-filters">
           <Segmented
             size="sm"

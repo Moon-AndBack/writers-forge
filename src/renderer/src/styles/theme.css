@@ -17,6 +17,13 @@
   --r-xs: 4px;
   --r-lg: 8px;
   --r-window: 8px;
+
+  /* 控件高度统一档位（AGENTS §8.4）：Button / IconButton / Input / Select /
+     Combobox / SearchInput / ChipInput / Segmented / Stepper 共用 sm 30 / md 38 / lg 44；
+     同类控件同行必须等高，禁止再写局部控件高度魔法值。 */
+  --control-h-sm: 30px;
+  --control-h-md: 38px;
+  --control-h-lg: 44px;
   --font:
     'Segoe UI Variable Display', 'Segoe UI', 'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC',
     -apple-system, BlinkMacSystemFont, sans-serif;

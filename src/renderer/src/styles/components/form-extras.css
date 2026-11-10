@@ -18,7 +18,8 @@
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 6px 12px;
+  height: var(--control-h-md);
+  padding: 0 12px;
   background: var(--soft-solid);
   border: 1px solid transparent;
   border-radius: var(--r-xs);
@@ -125,7 +126,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  min-height: 38px;
+  min-height: var(--control-h-md);
   padding: 6px 8px;
   background: var(--soft-solid);
   border: 1px solid transparent;
@@ -325,6 +326,7 @@
   display: inline-flex;
   align-items: center;
   gap: 1px;
+  height: var(--control-h-md);
   padding: 2px;
   background: var(--pill-bg-solid);
   border-radius: var(--r-xs);
@@ -335,8 +337,8 @@
 .wf-stepper__btn {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  align-self: stretch;
+  width: calc(var(--control-h-md) - 4px);
   font-size: 14px;
   font-weight: 600;
   line-height: 1;

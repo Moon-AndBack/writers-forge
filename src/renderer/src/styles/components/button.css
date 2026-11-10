@@ -10,7 +10,7 @@
    ============================================================ */
 
 .wf-btn {
-  --wf-btn-h: 32px;
+  --wf-btn-h: var(--control-h-md);
   --wf-btn-px: 16px;
   --wf-btn-fs: 13px;
 
@@ -130,12 +130,12 @@
 
 /* ---------- 尺寸 ---------- */
 .wf-btn--sm {
-  --wf-btn-h: 26px;
+  --wf-btn-h: var(--control-h-sm);
   --wf-btn-px: 10px;
   --wf-btn-fs: 12px;
 }
 .wf-btn--lg {
-  --wf-btn-h: 40px;
+  --wf-btn-h: var(--control-h-lg);
   --wf-btn-px: 22px;
   --wf-btn-fs: 14px;
 }

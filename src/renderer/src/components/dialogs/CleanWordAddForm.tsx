@@ -26,7 +26,7 @@ export interface CleanWordAddFormProps {
  * ——IPC 对任一条非法入参会整批返回 `null`，且单字词不会被正文标注，前置拦截可避免
  * 「加了却看不到效果」。
  *
- * 三件控件的高度由 `--cw-control-h` 在 `clean-words.css` 内显式对齐（见 `.cw-add__row`）。
+ * 三件控件均为 sm 档（30px），由组件统一尺寸保证同行等高（见 `.cw-add__row`）。
  */
 export function CleanWordAddForm({
   value,

@@ -45,7 +45,8 @@
     color 0.18s var(--ease);
 }
 .wf-input {
-  padding: 9px 12px;
+  height: var(--control-h-md);
+  padding: 0 12px;
   line-height: 1.4;
   border-radius: var(--r-xs);
 }
@@ -91,11 +92,13 @@
   opacity: 0.6;
 }
 .wf-input--sm {
-  padding: 6px 10px;
+  height: var(--control-h-sm);
+  padding: 0 10px;
   font-size: 12px;
 }
 .wf-input--lg {
-  padding: 11px 14px;
+  height: var(--control-h-lg);
+  padding: 0 14px;
   font-size: 14px;
 }
 .wf-textarea--sm {

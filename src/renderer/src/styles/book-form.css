@@ -8,8 +8,6 @@
    ============================================================ */
 
 .bf-form {
-  /* 表单控件统一尺寸（md ≈38px）：输入 / 下拉 / 按钮 / 色板等高 */
-  --wf-control-h: 38px;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -109,14 +107,14 @@
   display: none;
 }
 
-/* 色板：色块与输入 / 按钮等高（md ≈38px），左窄栏竖排下保持统一控件尺寸 */
+/* 色板：色块与输入 / 按钮同取 md 档（--control-h-md），左窄栏竖排下保持统一控件尺寸 */
 .bf-form .bf-cover .wf-swatch {
   padding: 0;
 }
 
 .bf-form .bf-cover .wf-swatch__item {
-  width: var(--wf-control-h);
-  height: var(--wf-control-h);
+  width: var(--control-h-md);
+  height: var(--control-h-md);
 }
 
 /* ---------- 窄窗口：双栏改单栏，封面回退横排 ---------- */

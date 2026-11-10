@@ -11,8 +11,8 @@
   display: inline-grid;
   place-items: center;
   flex: none;
-  width: 30px;
-  height: 30px;
+  width: var(--control-h-md);
+  height: var(--control-h-md);
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -81,8 +81,8 @@
 
 /* ---------- 尺寸 ---------- */
 .wf-iconbtn--sm {
-  width: 24px;
-  height: 24px;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
 }
 
 .wf-iconbtn--sm > svg {

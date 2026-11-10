@@ -11,6 +11,7 @@
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  height: var(--control-h-md);
   padding: 3px;
   border-radius: 6px;
   background: var(--soft-solid);
@@ -22,6 +23,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  height: 100%;
   padding: 5px 14px;
   border: 0;
   border-radius: 4px;
@@ -90,6 +92,7 @@
 
 /* ---------- 紧凑尺寸 ---------- */
 .wf-seg--sm {
+  height: var(--control-h-sm);
   padding: 2px;
 }
 .wf-seg--sm .wf-seg__item {
@@ -98,15 +101,15 @@
 }
 
 /* ---------- 满宽变体（弹窗表单用） ----------
-   横向撑满内容区，高度等于 .wf-input（padding 9px×2 + 13px×1.4 行高 +
-   边框 2px ≈ 38px，全局 box-sizing: border-box），与同列输入框上下对齐。
+   横向撑满内容区，高度与同列 `.wf-input`（md 档 --control-h-md）一致，
+   全局 box-sizing: border-box，上下严格对齐。
    项拉伸填满容器，使选中框随容器等高（覆盖 inline-flex 的内容高）。
    新建卷 / 新建大纲 / 新建特殊章三个弹窗共用本类，禁止再写弹窗级覆盖
    （AGENTS §9 通用组件优先）。与 size 变体正交：高度由本类统一给定，
    `--sm` 只影响内边距与字号。 */
 .wf-seg--fill {
   width: 100%;
-  height: 38px;
+  height: var(--control-h-md);
 }
 .wf-seg--fill .wf-seg__item {
   height: 100%;

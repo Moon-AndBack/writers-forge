@@ -10,7 +10,7 @@
    ============================================================ */
 
 /* ---------- 左侧「返回书架」图标（仅写作页渲染） ----------
-   复用 IconButton（.wf-iconbtn 圆形 30×30），此处仅补原型 .tb-back 的
+   复用 IconButton（.wf-iconbtn md 档圆形），此处仅补原型 .tb-back 的
    定位微调：与品牌区之间留出间隔，hover / active 交互沿用 .wf-iconbtn 默认。 */
 .titlebar .tb-back {
   -webkit-app-region: no-drag;
@@ -61,7 +61,7 @@
   display: contents;
 }
 
-/* 章节操作按钮：沿用 IconButton ghost 基座（圆形 30×30，同 .tb-back / .tb-tool），
+/* 章节操作按钮：沿用 IconButton ghost 基座（md 档圆形，同 .tb-back / .tb-tool），
    布局与图标尺寸引用 `.wf-iconbtn` 默认值，不额外覆盖；此处仅补激活态。
    激活态底色为**不透明全底**（品牌色 18% 混入 --pane，口径同 .act-btn.is-active）；
    不用 transparent——标题栏背景透明，半透明底会透出 .shell 桌面渐变而观感发花。 */
@@ -83,7 +83,7 @@
 }
 
 /* ---------- 右栏面板开关按钮（.tb-right-tools 内，设置与主题之间） ----------
-   基座沿用 IconButton ghost（圆形 30×30，同 .tb-tool）；激活态仿 .tb-action.is-active：
+   基座沿用 IconButton ghost（md 档圆形，同 .tb-tool）；激活态仿 .tb-action.is-active：
    品牌色字 + 品牌色 18% 混入 --pane 的**不透明全底**。激活语义：右栏实际显示中
    （与搜索 / 回收站等 is-active 语义一致）。仅颜色 / 底色变化，hover 无 transform。 */
 .tb-pane-toggle.is-active {
@@ -92,7 +92,7 @@
 }
 
 /* ---------- 主题触发按钮：由「图标 + 文字标签」改为纯图标 ----------
-   复用 IconButton（.wf-iconbtn）作为基座（圆形 30×30、hover 出底），
+   复用 IconButton（.wf-iconbtn）作为基座（md 档圆形、hover 出底），
    与其左右两侧的设置 / 帮助保持完全一致的观感与间距。
    `.tb-theme-wrap` 仍为其浮层定位锚点（见 theme-switcher.css）。 */
 .titlebar .tb-theme-icon {

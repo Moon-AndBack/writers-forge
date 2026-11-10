@@ -10,7 +10,7 @@
   /* 底部操作区分隔线的渐隐色：由 --text 派生，随主题自动适配 */
   --wf-window-fade-line: color-mix(in srgb, var(--text) 6%, transparent);
   /* 底部操作区按钮统一最小宽度（欢迎页 / 弹窗共用同一值）；
-     高度沿用 .wf-btn 的 md 尺寸（32px）。 */
+     高度沿用 .wf-btn 的 md 档（--control-h-md: 38px）。 */
   --wf-window-action-min-w: 104px;
 
   position: relative;

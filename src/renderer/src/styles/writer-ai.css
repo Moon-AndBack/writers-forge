@@ -112,17 +112,12 @@
   box-shadow: inset 0 0 0 1px var(--line);
 }
 
-/* 下拉占满剩余宽度；标签单行省略（只显示会话名，不带时间后缀）。 */
+/* 下拉占满剩余宽度；标签单行省略（只显示会话名，不带时间后缀）。
+   行内 Select / IconButton / Button 均为 sm 档（30px），无需局部钉高。 */
 .ai-panel__sessionbar > .wf-select {
   flex: 1 1 auto;
   width: auto;
   min-width: 0;
-}
-
-/* 与同行两个按钮对齐（Select sm 默认比 Button / IconButton 略高）。 */
-.ai-panel__sessionbar .wf-select__trigger {
-  height: 26px;
-  padding-block: 0;
 }
 
 /* 新建按钮：ghost 与软底同层，hover 只换底色；图标随按钮字号收小。 */
@@ -224,28 +219,20 @@
 }
 
 /* 控件行：模型 / 功能 / 两个上下文切换 / 发送，窄栏下按行换行（顺序不变）。
-   行内控件统一高度（--ai-ctl-h）：Button sm 高 26px（min-height、纵向无内边距），
-   Select sm 触发器高 30.8px（6px×2 内边距 + 12px×1.4 行高 + 1px×2 描边），
-   两者不等高；这里把两者都钉到 31px（改的只是本行外观，不动组件自身的尺寸定义），
-   保证两个下拉、两个切换按钮、发送按钮落在同一条基线上。 */
+   行内控件全部走 sm 档（30px，--control-h-sm）：Select / Button 由组件统一
+   给出同高，本作用域不再写局部高度覆盖。 */
 .ai-panel__controls {
-  --ai-ctl-h: 31px;
-
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
 
-/* 两个下拉等分一行（窄栏下文字省略），触发器钉高与按钮齐平。 */
+/* 两个下拉等分一行（窄栏下文字省略）。 */
 .ai-panel__controls > .wf-select {
   flex: 1 1 88px;
   width: auto;
   min-width: 0;
-}
-
-.ai-panel__controls > .wf-select > .wf-select__trigger {
-  height: var(--ai-ctl-h);
 }
 
 /* 两个上下文切换按钮成组：始终同处一行，换行时整体换行、不被拆散。 */
@@ -254,10 +241,6 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-
-.ai-panel__carry .wf-btn {
-  height: var(--ai-ctl-h);
 }
 
 /* 切换按钮：未激活 = Button 默认 secondary（软底，与同行两个下拉同一视觉层，
@@ -273,10 +256,9 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent);
 }
 
-/* 发送 / 停止靠右，换行后仍贴行尾；钉高与其他控件一致。 */
+/* 发送 / 停止靠右，换行后仍贴行尾。 */
 .ai-panel__controls > .wf-btn {
   flex: none;
-  height: var(--ai-ctl-h);
   margin-left: auto;
 }
 

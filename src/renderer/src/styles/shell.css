@@ -366,7 +366,7 @@ body.act-pinned .act-pill {
 
 /* ---------- 模块按钮（复用 IconButton，覆盖为方形小按钮 1:1） ---------- */
 .act-btn {
-  /* 复位 .wf-iconbtn 的圆形 30×30，恢复原型 36×36 圆角方块 */
+  /* 复位 .wf-iconbtn 的 md 档圆形，恢复原型 36×36 圆角方块 */
   width: 36px;
   height: 36px;
   border-radius: var(--r-xs);

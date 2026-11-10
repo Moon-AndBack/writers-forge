@@ -79,12 +79,12 @@
 
 | 场景                       | 值                 | 代表位置                                                               |
 | -------------------------- | ------------------ | ---------------------------------------------------------------------- |
-| 微间隙（图标–文字 / 胶囊） | 4 / 6px            | `components/entity-card.css:50,76`、`components/segmented.css:24`      |
+| 微间隙（图标–文字 / 胶囊） | 4 / 6px            | `components/entity-card.css:50,76`、`components/segmented.css:25`      |
 | 栏内衬 / 面板 gap          | 8px                | `styles/writer-right-panels.css:48-55`                                 |
 | 分区内衬                   | 6px                | `components/surface.css:145-148`                                       |
 | 树 / 导航行内衬            | 9px × 10px         | `styles/writer-side-chapters.css:35`、`styles/writer-outline.css:24`   |
 | 数据行内衬                 | 8px × 10px         | `styles/writer-trash.css:71`                                           |
-| 控件横向内衬               | 12px               | `components/form.css:48`、`components/form-select.css:16`              |
+| 控件横向内衬               | 12px               | `components/form.css:49`、`components/form-select.css:17`              |
 | 卡片内衬                   | 14px × 16px        | `components/surface.css:124`、`components/entity-card.css:21`          |
 | 弹窗 head                  | 16px × 20px × 12px | `components/window.css:51`                                             |
 | 弹窗 body                  | 4px × 20px × 16px  | `components/window.css:88`                                             |
@@ -100,23 +100,20 @@
 
 ### 3.3 控件高度表
 
-> 现状值按 CSS `padding + line-height + border` 计算（未含字体渲染差异）；目标值为本仓库统一口径。**目标值尚未全量落地**，新代码直接按目标值实现。
+> **已收敛**：下表「现状」列即统一后的实际值（md 38 / sm 30 / lg 44），与目标一致。高度一律由 `--control-h-sm/md/lg`（`theme.css:24-26`）显式给定（`height` / `min-height`），不再由 `padding + line-height + border` 推导；无 sm / lg 变体的控件不在表中虚构档位。
 
-| 控件                              | 现状 md | 现状 sm | 现状 lg | 目标 md | 目标 sm | 目标 lg | 证据                                                                    |
-| --------------------------------- | ------- | ------- | ------- | ------- | ------- | ------- | ----------------------------------------------------------------------- |
-| Button                            | 32      | 26      | 40      | **38**  | **30**  | **44**  | `components/button.css:13`、`:132-140`                                  |
-| Input / Select / Combobox（单行） | 38.2    | 30.8    | 43.6    | **38**  | **30**  | **44**  | `components/form.css:48,94,98`、`components/form-select.css:16,149-155` |
-| SearchInput                       | 32.2    | —       | —       | **38**  | **30**  | —       | `components/form-extras.css:21`                                         |
-| IconButton                        | 30      | 24      | —       | **38**  | **30**  | —       | `components/icon-button.css:14-15,83-86`                                |
-| Segmented                         | 33.5    | 25.4    | —       | **38**  | **30**  | —       | `components/segmented.css:14-15,25,92-98`                               |
-| ChipInput                         | 38      | —       | —       | **38**  | **30**  | —       | `components/form-extras.css:128`                                        |
-| Stepper                           | 30      | —       | —       | —       | **30**  | —       | `components/form-extras.css:324-339`（外框 2px + 按钮 26px）            |
-| Textarea（多行）                  | ≥82     | ≥62     | ≥108    | 不纳入  | 不纳入  | 不纳入  | `components/form.css:52-58,101-110`                                     |
+| 控件                              | 现状 md | 现状 sm | 现状 lg | 目标 md | 目标 sm | 目标 lg | 证据                                                                     |
+| --------------------------------- | ------- | ------- | ------- | ------- | ------- | ------- | ------------------------------------------------------------------------ |
+| Button                            | 38      | 30      | 44      | **38**  | **30**  | **44**  | `components/button.css:13,132-140`                                       |
+| Input / Select / Combobox（单行） | 38      | 30      | 44      | **38**  | **30**  | **44**  | `components/form.css:48,95,100`、`components/form-select.css:16,151-158` |
+| SearchInput                       | 38      | —       | —       | **38**  | —       | —       | `components/form-extras.css:21`                                          |
+| IconButton                        | 38      | 30      | —       | **38**  | **30**  | —       | `components/icon-button.css:14-15,84-85`                                 |
+| Segmented                         | 38      | 30      | —       | **38**  | **30**  | —       | `components/segmented.css:14,95,112`                                     |
+| ChipInput                         | 38      | —       | —       | **38**  | —       | —       | `components/form-extras.css:129`                                         |
+| Stepper                           | 38      | —       | —       | **38**  | —       | —       | `components/form-extras.css:329,341`（外框 2px + 按钮 34px）             |
+| Textarea（多行）                  | ≥82     | ≥62     | ≥108    | 不纳入  | 不纳入  | 不纳入  | `components/form.css:53-59,104-114`                                      |
 
-遗留偏差（详见 §10）：
-
-- Button 32 / 26 / 40，IconButton 30 / 24，Segmented 33.5 / 25.4，SearchInput 32.2 均未到目标档。
-- `--cw-control-h: 30.8px`（`components/clean-words.css:15`）与 `--ai-ctl-h: 31px`（`styles/writer-ai.css:232`）是同一问题的两处局部魔法值，目标统一删除。
+> 局部魔法值 `--cw-control-h`（违禁词弹窗）与 `--ai-ctl-h`（AI 面板）已删除：两处同行控件均走组件自身的 sm 档（30px），不再另存高度变量。
 
 ---
 
@@ -376,20 +373,20 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 
 ## 10. 历史债务表
 
-| #   | 债务                                 | 现状                                                                                                                     | 目标                                  | 证据                                                                              |
-| --- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------- | --------------------------------------------------------------------------------- |
-| 1   | 控件高度五档并存                     | Button 32/26/40；Input 38.2/30.8/43.6；Search 32.2；IconButton 30/24；Segmented 33.5/25.4；ChipInput 38；Stepper 30      | 统一 md 38 / sm 30 / lg 44（见 §3.3） | 见 §3.3 各行                                                                      |
-| 2   | 局部控件高度魔法值                   | `--cw-control-h: 30.8px`；`--ai-ctl-h: 31px`                                                                             | 删除，改走统一档位                    | `components/clean-words.css:15`、`styles/writer-ai.css:232`                       |
-| 3   | 16px 中间档                          | 当前 0 处                                                                                                                | 保持禁止                              | 2026-11-09 grep；正文 16→18 见 `73a968d`                                          |
-| 4   | 字号半档密集                         | 11 / 11.5 / 12 / 12.5 / 13 / 13.5 并存                                                                                   | 保留白名单；新增不再加档              | 本文 §2.1                                                                         |
-| 5   | 裸时长                               | `0.1s`×42、`0.15s`×43、`0.18s`×27、`0.2s`×15、`0.22s`×11、`0.25s`×1、`0.32s`×8、`0.4s`×1、`180ms`×10（含令牌定义与注释） | 全部收敛到 `--dur-*` / `--ease*`      | 2026-11-09 grep                                                                   |
-| 6   | z-index 字面量                       | 仅 970/971/972 令牌化；60/100/101/900/940/980/990/1000/1040/1100 仍为字面量                                              | 收敛到 `--z-*`（见 §6.2）             | 本文 §6.2                                                                         |
-| 7   | 三态顺序相反                         | `TrashListView` error → loading；`CleanWordsTable` loading → error                                                       | 统一 loading → error → empty          | `TrashListView.tsx:237-242`、`CleanWordsTable.tsx:69-74`                          |
-| 8   | 死代码 `.wf-listitem` / `.list-item` | 无 TSX 调用点（2026-11-09 grep 核实）                                                                                    | 清理或恢复调用                        | `components/display-extras.css:16-85`、`styles/writer-side-panels.css:52-70`      |
-| 9   | 已移除组件的残留 CSS                 | Accordion / Avatar / Checkbox / Divider / Drawer / ListItem / Radio / Stepper 的 CSS 仍在，组件层无 TSX 调用点           | 分批清理；清理前不得被新代码引用      | `surface.css`、`display-extras.css`、`overlay.css`、`form.css`、`form-extras.css` |
-| 10  | 加载态无统一组件                     | 7 个 `xx-loading` 类并存（entity-card / foreshadow / inspiration / timeline / trash / ctp / cw）                         | 上提共享 loading 组件                 | 上述 7 个样式文件                                                                 |
-| 11  | `docs/ui/components.md` 陈旧         | 原写 29 项并列出 8 个不存在的组件                                                                                        | 本批已改为 23 项（21 组件 + 2 钩子）  | 本批文档 diff                                                                     |
-| 12  | `docs/ui/design-tokens.md` 陈旧      | 原称「令牌只在 theme.css」「唯一硬编码色是 shell.css」「z-index 全部令牌」                                               | 本批已修正                            | 本批文档 diff                                                                     |
+| #   | 债务                                 | 现状                                                                                                                     | 目标                                 | 证据                                                                              |
+| --- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------ | --------------------------------------------------------------------------------- |
+| 1   | 控件高度五档并存（已收敛）           | 已统一为 md 38 / sm 30 / lg 44（2026-11-10）                                                                             | 保持统一，新增控件走 `--control-h-*` | 见 §3.3 各行                                                                      |
+| 2   | 局部控件高度魔法值（已清理）         | `--cw-control-h` / `--ai-ctl-h` 已删除；活动栏筛选浮层改走 `--control-h-md`                                              | 禁止新增                             | `styles/theme.css:24-26`                                                          |
+| 3   | 16px 中间档                          | 当前 0 处                                                                                                                | 保持禁止                             | 2026-11-09 grep；正文 16→18 见 `73a968d`                                          |
+| 4   | 字号半档密集                         | 11 / 11.5 / 12 / 12.5 / 13 / 13.5 并存                                                                                   | 保留白名单；新增不再加档             | 本文 §2.1                                                                         |
+| 5   | 裸时长                               | `0.1s`×42、`0.15s`×43、`0.18s`×27、`0.2s`×15、`0.22s`×11、`0.25s`×1、`0.32s`×8、`0.4s`×1、`180ms`×10（含令牌定义与注释） | 全部收敛到 `--dur-*` / `--ease*`     | 2026-11-09 grep                                                                   |
+| 6   | z-index 字面量                       | 仅 970/971/972 令牌化；60/100/101/900/940/980/990/1000/1040/1100 仍为字面量                                              | 收敛到 `--z-*`（见 §6.2）            | 本文 §6.2                                                                         |
+| 7   | 三态顺序相反                         | `TrashListView` error → loading；`CleanWordsTable` loading → error                                                       | 统一 loading → error → empty         | `TrashListView.tsx:237-242`、`CleanWordsTable.tsx:69-74`                          |
+| 8   | 死代码 `.wf-listitem` / `.list-item` | 无 TSX 调用点（2026-11-09 grep 核实）                                                                                    | 清理或恢复调用                       | `components/display-extras.css:16-85`、`styles/writer-side-panels.css:52-70`      |
+| 9   | 已移除组件的残留 CSS                 | Accordion / Avatar / Checkbox / Divider / Drawer / ListItem / Radio / Stepper 的 CSS 仍在，组件层无 TSX 调用点           | 分批清理；清理前不得被新代码引用     | `surface.css`、`display-extras.css`、`overlay.css`、`form.css`、`form-extras.css` |
+| 10  | 加载态无统一组件                     | 7 个 `xx-loading` 类并存（entity-card / foreshadow / inspiration / timeline / trash / ctp / cw）                         | 上提共享 loading 组件                | 上述 7 个样式文件                                                                 |
+| 11  | `docs/ui/components.md` 陈旧         | 原写 29 项并列出 8 个不存在的组件                                                                                        | 本批已改为 23 项（21 组件 + 2 钩子） | 本批文档 diff                                                                     |
+| 12  | `docs/ui/design-tokens.md` 陈旧      | 原称「令牌只在 theme.css」「唯一硬编码色是 shell.css」「z-index 全部令牌」                                               | 本批已修正                           | 本批文档 diff                                                                     |
 
 ---
 

@@ -16,7 +16,7 @@
    宽度自适应、超出自动换行（详见 `.act-filter__list`）。
    `--filter-input-h` 是搜索框高度真源，圆形按钮尺寸由它 `calc(+2px)` 推导。 */
 .act-filter {
-  --filter-input-h: 32px;
+  --filter-input-h: var(--control-h-md);
   position: fixed;
   z-index: 980;
   box-sizing: border-box;
@@ -47,8 +47,8 @@
 }
 
 /* 第一行：模块名 + 搜索框 + 圆形按钮。模块名不压缩，输入框占满剩余宽度。
-   行高由 34px 的按钮撑开，32px 的搜索框在其中垂直居中 → 按钮相对输入框
-   上下各外露 1px（无需负 margin，避免与浮层内衬 / 换行间距打架）。 */
+   行高由 `--filter-input-h + 2px` 的按钮撑开，等高的搜索框在其中垂直居中 →
+   按钮相对输入框上下各外露 1px（无需负 margin，避免与浮层内衬 / 换行间距打架）。 */
 .act-filter__headrow {
   display: flex;
   align-items: center;
