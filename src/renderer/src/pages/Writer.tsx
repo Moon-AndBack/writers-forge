@@ -22,7 +22,6 @@ import { useVolumes } from './writer/volumes/useVolumes'
 import { useOutlineWorkspace } from './writer/outline/useOutlineWorkspace'
 import { usePlotWorkspace } from './writer/plot/usePlotWorkspace'
 import { usePlotStatusBar } from './writer/plot/usePlotStatusBar'
-import { useTimelineStatusBar } from './writer/timeline/useTimelineStatusBar'
 import { useTimelineWorkspace } from './writer/timeline/useTimelineWorkspace'
 import { useDossierBundle } from './writer/dossier/useDossierBundle'
 import { useForeshadowBundle } from './writer/foreshadow/useForeshadowBundle'
@@ -128,10 +127,6 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
   const plot = usePlotWorkspace(bookId ?? '', timeline.activeId)
   // 剧情正文聚焦编辑 → 状态栏右下角排版组（无页宽）；未编辑时不注册，外壳回退全局组。
   usePlotStatusBar(plot.editing)
-
-  // 时间线模块状态栏（卡片尺寸控件 ×4 → 状态栏 right 插槽）：模块级注册，外壳按
-  // 当前活动模块选区；时间线页右下角以此**替换**外壳全局排版 / 缩放组（去重见 App.tsx）。
-  useTimelineStatusBar()
 
   // 章节模块状态栏（「第X章 共Y章」→ 状态栏 left 插槽）：位置派生 + 模块级注册
   // 集中于 useChapterStatusBar；外壳按当前活动模块选区（`modules[active] ?? page`），

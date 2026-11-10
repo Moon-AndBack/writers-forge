@@ -41,21 +41,7 @@ const timeline = {
     placeholder: '选择时间线'
   },
   plotEmpty: '暂无剧情节点',
-  sceneBodyEmpty: '该节点暂无正文',
-  /* 状态栏「卡片尺寸」控件（4 档；数值档展示名直接取字面值，仅「不限制」可译）。 */
-  cardSize: {
-    minWidth: '最小宽度',
-    maxWidth: '最大宽度',
-    minHeight: '最小高度',
-    maxHeight: '最大高度',
-    none: '不限制',
-    pill: {
-      minWidth: '宽 ≥ {{value}}',
-      maxWidth: '宽 ≤ {{value}}',
-      minHeight: '高 ≥ {{value}}',
-      maxHeight: '高 ≤ {{value}}'
-    }
-  }
+  sceneBodyEmpty: '该节点暂无正文'
 }
 
 export default timeline

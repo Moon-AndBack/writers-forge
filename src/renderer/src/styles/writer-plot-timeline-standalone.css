@@ -3,7 +3,7 @@
    ------------------------------------------------------------------
    自 `writer-plot.css` 原样搬移（保持单文件 ≤500 行，§3）。
    复用纵线 / 圆点 / 卡片，仅以 `.timeline-main` / `is-origin` 区分只读首段；
-   含左内衬（纵线随之右移）与「卡片尺寸」控件变量兜底。
+   含左内衬（纵线随之右移）与固定卡片尺寸。
    ============================================================ */
 
 /* 首次读取列表 / 重试中的加载态（与剧情视图空态同一留白口径）。 */
@@ -29,16 +29,14 @@
   display: none;
 }
 
-/* 卡片尺寸：受状态栏「卡片尺寸」控件控制（最小 / 最大宽度、最小 / 最大高度，各 4 档，
-   见 timeline/timelineCardContext.ts）。变量由 Provider 写入文档根内联样式，此处以 var()
-   兜底默认值——与现状视觉一致（宽 320px / 宽上限 100% / 高 min 120px / 高上限 240px）。
-   仅作用于 `.timeline-main`（独立时间线只读卡）；剧情线视图 `.plot-scene-wrap` 卡片不受影响。
-   `overflow: hidden` 仅在「最大高度」非 none 档时对超高内容收口（默认档不裁剪）。 */
+/* 卡片尺寸：固定默认值（原状态栏「卡片尺寸」控件已移除）——宽 320px / 宽上限 100% /
+   高 min 120px / 高上限 240px。仅作用于 `.timeline-main`（独立时间线只读卡）；
+   剧情线视图 `.plot-scene-wrap` 卡片不受影响。`overflow: hidden` 对超高内容收口。 */
 .timeline-main .plot-scene-card {
-  flex: 0 0 var(--tl-card-min-w, 320px);
-  width: var(--tl-card-min-w, 320px);
-  max-width: var(--tl-card-max-w, 100%);
-  min-height: var(--tl-card-min-h, 120px);
-  max-height: var(--tl-card-max-h, 240px);
+  flex: 0 0 320px;
+  width: 320px;
+  max-width: 100%;
+  min-height: 120px;
+  max-height: 240px;
   overflow: hidden;
 }

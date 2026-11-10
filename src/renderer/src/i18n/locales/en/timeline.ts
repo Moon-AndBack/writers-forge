@@ -45,21 +45,7 @@ const timeline = {
     placeholder: 'Select timeline'
   },
   plotEmpty: 'No plot scenes yet',
-  sceneBodyEmpty: 'This scene has no body yet',
-  /* Status bar “card size” control (4 levels; numeric levels show their literal value, only “unlimited” is translated). */
-  cardSize: {
-    minWidth: 'Min width',
-    maxWidth: 'Max width',
-    minHeight: 'Min height',
-    maxHeight: 'Max height',
-    none: 'Unlimited',
-    pill: {
-      minWidth: 'W ≥ {{value}}',
-      maxWidth: 'W ≤ {{value}}',
-      minHeight: 'H ≥ {{value}}',
-      maxHeight: 'H ≤ {{value}}'
-    }
-  }
+  sceneBodyEmpty: 'This scene has no body yet'
 } satisfies ZhCNResources['timeline']
 
 export default timeline

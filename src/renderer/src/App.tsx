@@ -10,7 +10,6 @@ import {
   DEFAULT_DEFAULT_VIEW,
   type DefaultView
 } from './pages/settings/defaultView'
-import { TimelineCardSizeProvider } from './pages/writer/timeline/TimelineCardSizeProvider'
 import { DossierFilterProvider } from './pages/writer/dossier/DossierFilterProvider'
 import { InspirationFilterProvider } from './pages/writer/inspiration/InspirationFilterProvider'
 import { ActivityBar, ActivityBarProvider } from './shell/activityBar'
@@ -81,7 +80,7 @@ function ActivityBarSlot() {
  * 保存状态由 Writer 页经 `useSetStatusBar` 注册 left 插槽，与本节点同排
  * 渲染；图钉按钮已移至状态栏最左（见下方 `statusBarLeading`）。
  *
- * 去重：若当前活动模块已自带右下角插槽（`right`，如时间线页的卡片尺寸控件），
+ * 去重：若当前活动模块已自带右下角插槽（`right`，如剧情模块编辑正文时的排版组），
  * 则跳过本全局组，避免出现两组控件 / 页宽残留；未注册模块行为不变。
  *
  * 页宽只作用于中栏版心（章节 / 大纲）；其余模块的右栏正文不吃 `--page-width`
@@ -217,87 +216,83 @@ export default function App({
         <ActivityPinnedProvider initialPinned={initialActivityPinned}>
           <RightPaneVisibilityProvider>
             <TypographyProvider>
-              {/* 时间线卡片尺寸：Provider 挂在外壳层（状态栏控件在 Writer 之外，
-                  需与时间线视图共享同一份尺寸状态；口径同 TypographyProvider）。 */}
-              <TimelineCardSizeProvider>
-                <ActivityBarProvider>
-                  {/* 关闭前统一保存：页面（Writer）注册 flush 处理器，外壳统一保存；
+              <ActivityBarProvider>
+                {/* 关闭前统一保存：页面（Writer）注册 flush 处理器，外壳统一保存；
                       主进程拦截窗口 close → 通知 → `BeforeCloseFlushBridge` 落盘 → 回执后关窗。
                       桥必须位于 Provider 内层才能取到 flush 处理器。 */}
-                  <BeforeCloseFlushProvider>
-                    <BeforeCloseFlushBridge />
-                    {/* 模块切换未保存守卫：活动栏图标 / 筛选浮层的「切换模块」经
+                <BeforeCloseFlushProvider>
+                  <BeforeCloseFlushBridge />
+                  {/* 模块切换未保存守卫：活动栏图标 / 筛选浮层的「切换模块」经
                         `useRequestSwitch` 交由页面注册的守卫裁决（当前仅设定档案右栏有脏草稿
                         时弹两态确认）；无注册者时降级为直接 setActive。 */}
-                    <UnsavedSwitchGuardProvider>
-                      {/* 设定档案筛选条件：入口在活动栏、消费在中栏，Provider 挂在两者共同祖先
-                        （口径同 TimelineCardSizeProvider）；bookId 由 pathname 解析，唯一真源。 */}
-                      <DossierFilterProvider>
-                        {/* 灵感筛选条件与已用标签：与设定档案同一范式，入口活动栏浮层、消费中栏网格。 */}
-                        <InspirationFilterProvider>
-                          <ActivityActionsProvider>
-                            <div className="shell">
-                              <TitleBar settingsLocked={status !== 'done'} />
+                  <UnsavedSwitchGuardProvider>
+                    {/* 设定档案筛选条件：入口在活动栏、消费在中栏，Provider 挂在两者共同祖先
+                        （口径同 TypographyProvider）；bookId 由 pathname 解析，唯一真源。 */}
+                    <DossierFilterProvider>
+                      {/* 灵感筛选条件与已用标签：与设定档案同一范式，入口活动栏浮层、消费中栏网格。 */}
+                      <InspirationFilterProvider>
+                        <ActivityActionsProvider>
+                          <div className="shell">
+                            <TitleBar settingsLocked={status !== 'done'} />
 
-                              <ActivityBarSlot />
+                            <ActivityBarSlot />
 
-                              <main className="app-viewport">
-                                {/* 启动首屏：按 `defaultView` 跳章节 / 大纲；仅启动时尝试一次。 */}
-                                <StartupViewRedirect
-                                  defaultView={initialDefaultView}
-                                  enabled={status === 'done'}
-                                />
-                                {status === 'loading' ? (
-                                  <ViewportPlaceholder />
-                                ) : (
-                                  /* 路由页懒加载：只包裹路由出口，标题栏 / 活动栏 / 状态栏外壳
+                            <main className="app-viewport">
+                              {/* 启动首屏：按 `defaultView` 跳章节 / 大纲；仅启动时尝试一次。 */}
+                              <StartupViewRedirect
+                                defaultView={initialDefaultView}
+                                enabled={status === 'done'}
+                              />
+                              {status === 'loading' ? (
+                                <ViewportPlaceholder />
+                              ) : (
+                                /* 路由页懒加载：只包裹路由出口，标题栏 / 活动栏 / 状态栏外壳
                                      首帧即渲染；fallback 与上面的引导占位同款，衔接无跳变。 */
-                                  <Suspense fallback={<ViewportPlaceholder />}>
-                                    <Routes>
-                                      <Route
-                                        path="/"
-                                        element={
-                                          status === 'required' ? (
-                                            <Welcome onFinish={complete} />
-                                          ) : (
-                                            <Bookshelf />
-                                          )
-                                        }
-                                      />
-                                      <Route
-                                        path="/write/:bookId"
-                                        element={
-                                          status === 'required' ? (
-                                            <Navigate to="/" replace />
-                                          ) : (
-                                            <WriteRoute />
-                                          )
-                                        }
-                                      />
-                                      {/* 设置已改为标题栏齿轮唤起的弹窗（`SettingsDialog`），
+                                <Suspense fallback={<ViewportPlaceholder />}>
+                                  <Routes>
+                                    <Route
+                                      path="/"
+                                      element={
+                                        status === 'required' ? (
+                                          <Welcome onFinish={complete} />
+                                        ) : (
+                                          <Bookshelf />
+                                        )
+                                      }
+                                    />
+                                    <Route
+                                      path="/write/:bookId"
+                                      element={
+                                        status === 'required' ? (
+                                          <Navigate to="/" replace />
+                                        ) : (
+                                          <WriteRoute />
+                                        )
+                                      }
+                                    />
+                                    {/* 设置已改为标题栏齿轮唤起的弹窗（`SettingsDialog`），
                                       不再占用路由；未匹配路径一律回首页。 */}
-                                      <Route path="*" element={<Navigate to="/" replace />} />
-                                    </Routes>
-                                  </Suspense>
-                                )}
-                              </main>
+                                    <Route path="*" element={<Navigate to="/" replace />} />
+                                  </Routes>
+                                </Suspense>
+                              )}
+                            </main>
 
-                              <StatusBar
-                                className={isWriter ? 'is-writer' : undefined}
-                                leading={isWriter ? <StatusBarLeading /> : undefined}
-                              >
-                                <StatusBarWidgets />
-                              </StatusBar>
-                            </div>
-                          </ActivityActionsProvider>
-                        </InspirationFilterProvider>
-                      </DossierFilterProvider>
-                    </UnsavedSwitchGuardProvider>
-                  </BeforeCloseFlushProvider>
-                  {/* 数据健康自检：启动拉取一次，发现问题即弹 Modal（跨路由恒定，位于 Provider 层内） */}
-                  <DiagnosticsGate />
-                </ActivityBarProvider>
-              </TimelineCardSizeProvider>
+                            <StatusBar
+                              className={isWriter ? 'is-writer' : undefined}
+                              leading={isWriter ? <StatusBarLeading /> : undefined}
+                            >
+                              <StatusBarWidgets />
+                            </StatusBar>
+                          </div>
+                        </ActivityActionsProvider>
+                      </InspirationFilterProvider>
+                    </DossierFilterProvider>
+                  </UnsavedSwitchGuardProvider>
+                </BeforeCloseFlushProvider>
+                {/* 数据健康自检：启动拉取一次，发现问题即弹 Modal（跨路由恒定，位于 Provider 层内） */}
+                <DiagnosticsGate />
+              </ActivityBarProvider>
             </TypographyProvider>
           </RightPaneVisibilityProvider>
         </ActivityPinnedProvider>
