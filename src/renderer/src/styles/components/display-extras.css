@@ -1,92 +1,13 @@
 /* ============================================================
-   展示扩展组件样式：ListItem / ColorSwatchPicker / Accordion
+   展示扩展组件样式：ColorSwatchPicker / Accordion
    设计参照 template/index.html：
-     - .list-item / .chapter（列表可选行）
      - .cover-picker / .cover-swatch（色板选择）
      - .vol / .vol-head / .vol-arrow / .chapters（折叠面板）
    颜色全部取自 theme.css 令牌；品牌态用 color-mix 从 --brand 派生，
    不使用 html.sage / html.honey，也不硬编码品牌色，四主题通用。
-   前缀 wf-：根 wf-listitem / wf-swatch / wf-accordion；
+   前缀 wf-：根 wf-swatch / wf-accordion；
    元素 __*；状态 is-active / is-disabled / is-open。
    ============================================================ */
-
-/* ---------- ListItem 列表行 ----------
-   原型：.list-item（.list-avatar / .list-meta / .list-name / .list-sub / .list-tag）
-   与 .chapter（可选中行；激活时标题转品牌色）。 */
-.wf-listitem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: var(--r-xs);
-  text-align: left;
-  color: var(--text-dim);
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.1s var(--ease);
-}
-
-.wf-listitem:hover:not(.is-disabled) {
-  background: var(--soft-solid);
-}
-
-.wf-listitem.is-active {
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
-  font-weight: 600;
-}
-
-.wf-listitem.is-active .wf-listitem__title {
-  color: var(--brand);
-}
-
-.wf-listitem:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
-  outline-offset: -1px;
-}
-
-.wf-listitem.is-disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.wf-listitem__avatar {
-  flex: none;
-  display: grid;
-  place-items: center;
-}
-
-.wf-listitem__body {
-  flex: 1;
-  min-width: 0;
-}
-
-.wf-listitem__title {
-  display: block;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.wf-listitem__subtitle {
-  display: block;
-  font-size: 10.5px;
-  color: var(--text-mute);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.wf-listitem__extra {
-  flex: none;
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
 
 /* ---------- ColorSwatchPicker 色板选择 ----------
    原型：.cover-picker（换行容器）+ .cover-swatch（26px 圆角色块，
@@ -247,7 +168,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wf-listitem,
   .wf-swatch__item,
   .wf-accordion__head,
   .wf-accordion__arrow,

@@ -48,27 +48,6 @@
   margin-bottom: 0;
 }
 
-/* ---------- 列表行（大纲 / 人物 / 世界观 / 笔记） ---------- */
-.list-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 120px;
-  max-height: 240px;
-  padding: 8px 10px;
-  border-radius: var(--r-xs);
-  cursor: pointer;
-  transition: background 0.1s var(--ease);
-}
-
-.list-item:hover {
-  background: var(--soft-hover-solid);
-}
-
-.list-item.is-active {
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
-}
-
 .list-avatar {
   width: 28px;
   height: 28px;
