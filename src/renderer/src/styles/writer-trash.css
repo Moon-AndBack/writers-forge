@@ -226,6 +226,21 @@
   background: var(--control-on-soft);
 }
 
+/* 行尾操作组悬浮在行右缘，底色同步换软底控件令牌，避免与行 hover 分层。 */
+.trash-view--split .trash-row-actions {
+  background: var(--control-on-soft);
+}
+
+/* 分栏选中行：操作组底色与选中行同口径（卡底 --soft-solid 混品牌 12%）。 */
+.trash-view--split .trash-row.is-selected .trash-row-actions {
+  background: color-mix(in srgb, var(--brand) 12%, var(--soft-solid));
+}
+
+/* 分栏选中行 hover：回退软底控件令牌，避免品牌底与悬停底叠加。 */
+.trash-view--split .trash-row.is-selected:hover .trash-row-actions {
+  background: var(--control-on-soft);
+}
+
 /* ---------- 详情区 ---------- */
 .trash-detail__empty {
   display: flex;
@@ -356,6 +371,9 @@
   padding-left: 4px;
   visibility: hidden;
   opacity: 0;
+  /* 容器底色 = 行 hover 底（按钮仅在行 hover / 聚焦时可见），遮住下方文字残影；
+     口径同章节 / 大纲左栏 `.chapter-actions`。 */
+  background: var(--soft-hover-solid);
   border-radius: var(--r-xs);
   transition: opacity var(--dur-fast) var(--ease);
 }
@@ -364,6 +382,16 @@
 .trash-row:focus-within .trash-row-actions {
   visibility: visible;
   opacity: 1;
+}
+
+/* 选中行：操作组底色取选中行同一混色，保持视觉连续（同左栏选中章行）。 */
+.trash-row.is-selected .trash-row-actions {
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+}
+
+/* 选中行 hover：回退中性悬停底，避免品牌底上叠加第二层品牌色。 */
+.trash-row.is-selected:hover .trash-row-actions {
+  background: var(--soft-hover-solid);
 }
 
 /* hover / 聚焦时主名让位 = 操作组宽 46px + right 6px，避免被按钮覆盖。 */
