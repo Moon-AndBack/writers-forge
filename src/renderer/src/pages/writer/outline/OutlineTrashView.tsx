@@ -100,8 +100,8 @@ export default function OutlineTrashView({ bookId, onChanged }: OutlineTrashView
     name: labels.outlineVolumeLabel(volume, tOutline('unnamedVolume')),
     count: deletedItemCounts.get(volume.id) ?? 0,
     // 已删卷可还原 / 彻底删除；未删收拢卷仅作容器，无卷级操作（共享组件按此隐藏）。
-    inTrash: volume.deletedAt !== null,
-    emphasis: volume.kind === 'custom'
+    // 数据层只返回大纲可见卷（normal / group），无 custom 卷的 emphasis 分支。
+    inTrash: volume.deletedAt !== null
   }))
   const items: TrashRow[] = content.items.map((item) => ({
     id: item.id,

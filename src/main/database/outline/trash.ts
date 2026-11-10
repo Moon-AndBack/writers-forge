@@ -36,6 +36,8 @@ const TRASH_VOLUME_ORDER_SQL = `(deleted_at IS NULL), CASE kind WHEN 'group' THE
  * `scope='volume'` 行（一次查询，避免逐卷 N+1）；未删收拢卷的 `contentJson` 恒为 `null`。
  *
  * 条目补原归属卷名与父卷状态（`volumeKind` / `volumeInTrash`），与章节域回收站行对齐。
+ * 条目只返回独立条目（`volume_id IS NULL`）或父卷存在且为大纲可见 kind 的条目；
+ * 挂 `custom` 卷 / 父卷缺失的异常条目不展示（数据保留，不物理删除）。
  */
 export function listDeletedOutline(bookId: string): DeletedOutlineContent {
   const db = getDb()
@@ -91,13 +93,20 @@ export function listDeletedOutline(bookId: string): DeletedOutlineContent {
            (SELECT v.deleted_at FROM volumes v WHERE v.id = outline_items.volume_id) AS volumeDeletedAt
          FROM outline_items
          WHERE book_id = ? AND scope = 'entry' AND deleted_at IS NOT NULL
+           AND (
+             volume_id IS NULL
+             OR EXISTS (
+               SELECT 1 FROM volumes v
+               WHERE v.id = outline_items.volume_id AND v.kind IN ('normal', 'group')
+             )
+           )
          ORDER BY (volume_id IS NULL) DESC, volume_id, sort_order, id`
       )
       .all(bookId) as DeletedItemJoinRow[]
   ).map((row) => ({
     ...toOutlineItem(row),
     volumeTitle: row.volumeTitle,
-    // 卷缺失（被物理删除）保留 null 语义；仅对存在的卷归一化异常 kind。
+    // 挂卷条目的父卷已被查询过滤为存在且为大纲可见 kind；null 仅对应独立条目。
     volumeKind: row.volumeKind === null ? null : coerceVolumeKind(row.volumeKind),
     volumeInTrash: row.volumeDeletedAt !== null
   }))
