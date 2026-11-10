@@ -75,7 +75,7 @@ src/
     appPaths.ts  logger.ts  security.ts  theme.ts
     window.ts  windowMaterial.ts  windowState.ts  resizeSnap.ts
     database/                    # 连接单例、schema/、迁移、种子、诊断（117 个 .ts）
-    ipc/                         # 27 个 .ts，聚合 148 个 handle 通道
+    ipc/                         # 32 个 .ts，聚合 177 个 handle 通道
   preload/                       # index.ts + api/ + types/ + index.d.ts（22 个文件）
   renderer/
     index.html
@@ -97,7 +97,7 @@ src/
 | 渲染层 `pages/` + `components/`  | 均已建立；`components/` 不再是预留目录        | `src/renderer/src/App.tsx:130-150`   |
 | 跨层共享放 `shared/`             | 已建 3 个纯模块，双端引用                     | `src/shared/worldRelationCodes.ts:1` |
 
-规模基线：渲染层 `src/renderer/src` 下共 331 个 TS/TSX（`.tsx` 171 个、`.ts` 160 个），另 67 个 CSS；`pages/` 共 171 个文件，按域分为 `writer` 140、`settings` 17、`bookshelf` 10、`welcome` 1，另有 `Bookshelf.tsx` / `Welcome.tsx` / `Writer.tsx` 3 个根级页面。主进程根目录 9 个模块，`database/` 117 个 `.ts`，`ipc/` 27 个 `.ts`，preload 22 个文件。
+规模基线：渲染层 `src/renderer/src` 下共 331 个 TS/TSX（`.tsx` 171 个、`.ts` 160 个），另 67 个 CSS；`pages/` 共 171 个文件，按域分为 `writer` 140、`settings` 17、`bookshelf` 10、`welcome` 1，另有 `Bookshelf.tsx` / `Welcome.tsx` / `Writer.tsx` 3 个根级页面。主进程根目录 9 个模块，`database/` 117 个 `.ts`，`ipc/` 32 个 `.ts`，preload 22 个文件。
 
 分层原则（`AGENTS.md:54-57`）：一屏 / 一路由一个文件放 `pages/`；跨页面复用 UI 上提到 `components/`；主进程按职责拆模块，入口不堆业务逻辑；preload 只做桥。
 
@@ -216,15 +216,15 @@ settings 敏感键过滤（`src/main/ipc/settings.ts:8-24`）：`ai:`（加密�
 | 卡片 hover     | 禁用位移 / 缩放，只允许颜色 / 描边 / 阴影，统一边缘光晕                  | `AGENTS.md:104-105`     |
 | 验证方式       | 日常验收只做静态检查与代码审查，完成后不写冒烟测试                       | `AGENTS.md:90-93`       |
 
-当前 i18n 共 19 个命名空间，由 `zh-CN` 汇总文件登记并作为 key 真源（`src/renderer/src/i18n/locales/zh-CN/index.ts:27-47`）；支持语言固定 `zh-CN` / `en`（`src/renderer/src/i18n/config.ts:12-17`）。
+当前 i18n 共 21 个命名空间，由 `zh-CN` 汇总文件登记并作为 key 真源（`src/renderer/src/i18n/locales/zh-CN/index.ts:27-47`）；支持语言固定 `zh-CN` / `en`（`src/renderer/src/i18n/config.ts:12-17`）。
 
 ## 9. 延伸阅读
 
 文档索引与推荐阅读顺序维护在 [`docs/README.md:22-57`](../README.md)，本文是「新人入门」路径的第一站。
 
 - 数据层：[`database.md`](./database.md) — 连接单例、schema 装配、迁移、种子与诊断。
-- 通信层：[`ipc-preload.md`](./ipc-preload.md) — 148 个 `ipcMain.handle` 通道（分布于 `src/main/ipc/`）与 preload 命名空间。
+- 通信层：[`ipc-preload.md`](./ipc-preload.md) — 177 个 `ipcMain.handle` 通道（分布于 `src/main/ipc/`）与 preload 命名空间。
 - 窗口层：[`ui/window.md`](../ui/window.md) — 尺寸持久化、材质、标题栏、宽度磁吸。
 - 规范：[`conventions/i18n.md`](../conventions/i18n.md) — 命名空间与双语同步细则。
 
-最后核对：2026-10-31
+最后核对：2026-11-10
