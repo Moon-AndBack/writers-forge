@@ -45,28 +45,28 @@
 
 ### 2.1 字号白名单
 
-| 字号      | 用途                                       | 代表位置                                                                   |
-| --------- | ------------------------------------------ | -------------------------------------------------------------------------- |
-| 9.5px     | 行内微徽标（草稿等）                       | `styles/writer-side-chapters.css:118`                                      |
-| 10px      | 极小标签 / 眉题 / 计数                     | `styles/writer-trash.css:59`、`components/surface.css:223`                 |
-| 10.5px    | 状态栏数字、元信息、胶囊文字               | `styles/statusbar.css:50`                                                  |
-| 11px      | 空态说明、紧凑提示                         | `components/empty-state.css:65`、`styles/statusbar.css:24`                 |
-| 11.5px    | 辅助元信息、次级说明                       | `styles/settings.css:68`、`styles/statusbar-widgets.css:269`               |
-| 12px      | 小号表单控件、紧凑正文                     | `components/form.css:95`、`components/surface.css:135`                     |
-| 12.5px    | 卡片正文、列表主名、分段项                 | `components/surface.css:125`、`components/segmented.css:35`                |
-| 13px      | **界面基准**：输入、按钮、普通 UI 文本     | `components/form.css:36`、`components/button.css:15`                       |
-| 13.5px    | 行标题、章节 / 大纲条目名                  | `styles/writer-side-chapters.css:88`、`styles/writer-right-panels.css:254` |
-| 14px      | 卡片标题、大号输入                         | `components/entity-card.css:59`、`components/form.css:99`                  |
-| 15px      | 弹窗标题、空态标题                         | `components/window.css:70`、`components/empty-state.css:26`                |
-| 12.8px    | 右栏只读通用底座（非正文跟随）             | `styles/writer-right-outline.css:87`                                       |
-| 18×zoom   | 文档正文（`calc(18px * var(--doc-zoom))`） | `styles/writer-editor-doc.css:3`、`styles/writer-right-outline.css:103`    |
-| 20 / 22px | 欢迎页标题 / 视口占位标题                  | `styles/welcome.css:40`、`styles/shell.css:206`                            |
-| 28px      | 文档 H1                                    | `styles/writer-editor-head.css:50`                                         |
+| 字号      | 用途                                               | 代表位置                                                                                                                                                                 |
+| --------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 9.5px     | 行内微徽标（草稿等）                               | `styles/writer-side-chapters.css:118`                                                                                                                                    |
+| 10px      | 极小标签 / 眉题 / 计数                             | `styles/writer-trash.css:59`、`components/surface.css:223`                                                                                                               |
+| 10.5px    | 状态栏数字、元信息、胶囊文字                       | `styles/statusbar.css:50`                                                                                                                                                |
+| 11px      | 空态说明、紧凑提示                                 | `components/empty-state.css:65`、`styles/statusbar.css:24`                                                                                                               |
+| 11.5px    | 辅助元信息、次级说明                               | `styles/settings.css:68`、`styles/statusbar-widgets.css:269`                                                                                                             |
+| 12px      | 小号表单控件、紧凑正文                             | `components/form.css:95`、`components/surface.css:135`                                                                                                                   |
+| 12.5px    | 卡片正文、列表主名、分段项                         | `components/surface.css:125`、`components/segmented.css:35`                                                                                                              |
+| 13px      | **界面基准**：输入、按钮、普通 UI 文本             | `components/form.css:36`、`components/button.css:15`                                                                                                                     |
+| 13.5px    | 行标题、章节 / 大纲条目名                          | `styles/writer-side-chapters.css:88`、`styles/writer-right-panels.css:254`                                                                                               |
+| 14px      | 卡片标题、大号输入                                 | `components/entity-card.css:59`、`components/form.css:99`                                                                                                                |
+| 15px      | 弹窗标题、空态标题                                 | `components/window.css:70`、`components/empty-state.css:26`                                                                                                              |
+| 12.8px    | 右栏只读通用底座（非正文跟随；时间线场景详情除外） | `styles/writer-right-outline.css:87`                                                                                                                                     |
+| 18×zoom   | 文档正文（`calc(18px * var(--doc-zoom))`）         | `styles/writer-editor-doc.css:3`、`styles/writer-right-outline.css:103`、`styles/writer-timeline.css:78`（起点编辑器）、`styles/writer-timeline.css:177`（场景详情正文） |
+| 20 / 22px | 欢迎页标题 / 视口占位标题                          | `styles/welcome.css:40`、`styles/shell.css:206`                                                                                                                          |
+| 28px      | 文档 H1                                            | `styles/writer-editor-head.css:50`                                                                                                                                       |
 
 ### 2.2 规则
 
 - **MUST** 界面字号只允许上表白名单；**禁止新增 16px 或其他中间档**。当前全库 `font-size: 16px` 为 0 处（2026-11-09 grep 核实）。
-- **MUST** 正文容器（编辑器、右栏大纲、回收站详情）使用 `--doc-font` + `calc(18px * var(--doc-zoom))` + `--doc-line` + `--doc-letter`；右栏只读通用底座用 12.8px / 1.75，不得把两档混用。
+- **MUST** 正文容器（编辑器、右栏大纲、时间线右栏的起点编辑器与场景详情正文、回收站详情）使用 `--doc-font` + `calc(18px * var(--doc-zoom))` + `--doc-line` + `--doc-letter`；右栏只读通用底座（如伏笔详情）用 12.8px / 1.75，不得把两档混用。
 - **MUST** 文本层级：`--text` 主文本；`--text-dim` 次级文本 / 只读正文；`--text-mute` 元信息 / 占位 / 禁用提示。不得用 `opacity` 代替 `--text-mute`。
 - **MUST** 字重只允许 400 / 500 / 600 / 700：400 正文；500 控件标签、分段项；600 卡片标题、选中行主名、小节标签；700 页面标题、大数字、强调。
 - **SHOULD** 同一层级标题只用一档字号 + 一档字重；不得靠「字号 + 字重 + 字色」三变量叠加制造层级。

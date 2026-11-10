@@ -71,6 +71,15 @@
   text-indent: 2em;
 }
 
+/* 起点内容卡：正文排版跟随状态栏（字体 / 行距 / 字距 / 缩放）。
+   仅作用于时间线起点字段，不影响伏笔描述 / 新建时间线弹窗等通用短字段。 */
+.rp-view[data-view='timeline'] .timeline-origin-card {
+  font-family: var(--doc-font);
+  font-size: calc(18px * var(--doc-zoom));
+  line-height: var(--doc-line);
+  letter-spacing: var(--doc-letter);
+}
+
 /* 保存条：与剧情 / 设定档案 / 伏笔同款外观（--soft-solid 软底 + --line 描边 +
    --r-lg 圆角）；`SaveBar` 内部按钮自带 `margin-left: auto` 靠右。
    `.rp-body` 已有 8px gap，故不再叠 `margin-top`。 */
@@ -160,6 +169,13 @@
    故不会出现列表项或表头跟着缩进。作用域限定本场景内容卡，不影响其它右栏。 */
 .rp-view[data-view='timeline'] .timeline-scene-detail .rp-read .ProseMirror > p {
   text-indent: 2em;
+}
+
+/* 场景详情正文：跟随正文排版（口径同右栏大纲 `.rp-outline`）。
+   `.rp-read` 基础规则已提供 `--doc-font` / `--doc-letter`，这里补齐字号与行高。 */
+.rp-view[data-view='timeline'] .timeline-scene-detail .rp-read .ProseMirror {
+  font-size: calc(18px * var(--doc-zoom));
+  line-height: var(--doc-line);
 }
 
 /* ---------- 进场 ----------
