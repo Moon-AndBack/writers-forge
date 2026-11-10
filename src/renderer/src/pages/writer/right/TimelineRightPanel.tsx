@@ -1,4 +1,4 @@
-import type { ReactElement, RefObject } from 'react'
+import { Fragment, type ReactElement, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
 import type { RichTextBodyValue } from '../../../components/editor/useRichTextBodyEditor'
@@ -9,7 +9,7 @@ import { useEntityHover } from '../entities/useEntityHover'
 import { plotSceneTime, plotSceneTitle, type PlotSceneRow } from '../plot/plotTree'
 import TimelineOriginPanel from '../timeline/TimelineOriginPanel'
 
-/** 独立时间线右栏的选中场景详情卡（只读：卡头标题 + 时间、只读正文）。 */
+/** 独立时间线右栏的选中场景区（只读：卡头卡标题 + 时间、内容卡只读正文）。 */
 function TimelineSceneDetail({
   scene,
   bookId,
@@ -41,29 +41,33 @@ function TimelineSceneDetail({
         ? plainTextToDocJson(scene.description)
         : null
   return (
-    // key 随选中场景变化：同一个 `<section>` 复用时只换文本不会重播进场动画，按场景重建即可。
-    <section key={scene.id} className="timeline-card timeline-scene-detail">
-      {/* 卡头透明（不套 `.wf-readonly-block` 值块），仅卡身正文保留值块底。 */}
-      <div className="timeline-card__head">
-        <span className="timeline-card__title">{plotSceneTitle(scene, t('unnamedScene'))}</span>
-        {/* 时间弱化在卡头右侧（不再单列一个字段），窄栏下允许换行。 */}
-        <span className="timeline-card__meta">
-          {plotSceneTime(scene, t('undatedScene'), eraLabels)}
-        </span>
-      </div>
-      {/* 正文区：只读富文本正文（空正文由组件统一显示占位），值块复用共享
+    // key 挂在 Fragment 上：切场景时卡头卡与内容卡一起重建，进场动画一起重播。
+    <Fragment key={scene.id}>
+      <section className="timeline-card timeline-scene-head">
+        {/* 卡头透明（不套 `.wf-readonly-block` 值块），标题 + 时间落在卡片软底上。 */}
+        <div className="timeline-card__head">
+          <span className="timeline-card__title">{plotSceneTitle(scene, t('unnamedScene'))}</span>
+          {/* 时间弱化在卡头右侧（不再单列一个字段），窄栏下允许换行。 */}
+          <span className="timeline-card__meta">
+            {plotSceneTime(scene, t('undatedScene'), eraLabels)}
+          </span>
+        </div>
+      </section>
+      {/* 内容卡：正文区只读富文本正文（空正文由组件统一显示占位），值块复用共享
           `.wf-readonly-block`（--control-on-soft 底 + 内描边），与伏笔只读详情同口径。 */}
-      <div className="timeline-detail__section">
-        <EntityReadonlyRichText
-          key={bookId}
-          bookId={bookId}
-          json={bodyJson}
-          emptyText={tTimeline('sceneBodyEmpty')}
-          className="wf-readonly-block"
-          hoverCard={hoverCard}
-        />
-      </div>
-    </section>
+      <section className="timeline-card timeline-scene-detail">
+        <div className="timeline-detail__section">
+          <EntityReadonlyRichText
+            key={bookId}
+            bookId={bookId}
+            json={bodyJson}
+            emptyText={tTimeline('sceneBodyEmpty')}
+            className="wf-readonly-block"
+            hoverCard={hoverCard}
+          />
+        </div>
+      </section>
+    </Fragment>
   )
 }
 
@@ -83,8 +87,8 @@ export interface TimelineRightPanelProps {
 }
 
 /**
- * 独立时间线右栏内容：按选中项**只渲染一张卡**——选中起点时渲染起点编辑卡；
- * 选中场景时渲染该场景的只读详情卡；两者都没选（场景已删 / 显式清空）时由
+ * 独立时间线右栏内容：按选中项只渲染**一组卡**（卡头卡 + 内容卡）——选中起点时渲染起点区；
+ * 选中场景时渲染该场景的只读区；两者都没选（场景已删 / 显式清空）时由
  * `TimelineSceneDetail` 的 null 分支渲染现有空态。
  */
 export function TimelineRightPanel({

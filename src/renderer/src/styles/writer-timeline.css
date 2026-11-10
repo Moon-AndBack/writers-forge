@@ -1,25 +1,26 @@
 /* ============================================================
    写作视图 · 独立时间线右栏
    ------------------------------------------------------------------
-   右栏自上而下两张卡：「起点」卡（富文本可编辑 + 卡外底部 `SaveBar`，读写当前选中时间线）
-   与「选中场景详情卡」（只读）：卡头（标题 + 时间）+ 只读正文值块，
-   无面板头（模块标题由中栏承载）。底座与其它右栏同口径：
+   右栏为「卡头卡 + 内容卡」的两卡结构：「起点」区（卡头卡 = 标题 + 说明，
+   内容卡 = 富文本编辑器 + 卡外底部 `SaveBar`，读写当前选中时间线）与
+   「选中场景」区（卡头卡 = 标题 + 时间，内容卡 = 只读正文值块），
+   无面板头（模块标题由中栏承载）。两卡间距沿用 `.rp-body` 的 8px；底座与其它右栏同口径：
    `--soft-solid` + 1px `--line` + `--r-lg` + 14px 内衬；
    正文值块复用通用 `.wf-readonly-block`（components/surface.css）。
    剧情模块共用的 `.plot-editor` / `.plot-field` 等类留在
    writer-plot-editor.css，本文件只放时间线专属规则。
    ============================================================ */
 
-/* 右栏纵向流：详情卡吃掉栏内剩余高度；
+/* 右栏纵向流：内容卡吃掉栏内剩余高度（卡头卡按内容高度，两卡间距 8px）；
    高度链：`.rp-view`（flex: 1 + min-height: 0）→ `.rp-body`（flex: 1 + min-height: 0）→
-   详情卡（flex: 1 1 auto + min-height: 0）→ `.timeline-detail__section` → `.rp-read`。
+   内容卡（flex: 1 1 auto + min-height: 0）→ `.timeline-detail__section` → `.rp-read`。
    每层都带 `min-height: 0`，否则 flex 项的最小内容高度会把卡片撑破。 */
 .rp-view[data-view='timeline'] .rp-body {
   display: flex;
   flex-direction: column;
   min-height: 0;
   gap: 8px;
-  /* 滚动全部由内层（起点卡富文本字段 / 详情卡 `.rp-read`）承担，外层不产生滚动条。 */
+  /* 滚动全部由内层（起点内容卡富文本字段 / 场景内容卡 `.rp-read`）承担，外层不产生滚动条。 */
   overflow: hidden;
 }
 
@@ -35,25 +36,29 @@
   border-radius: var(--r-lg);
 }
 
-/* ---------- 起点卡（富文本 + 卡外保存条） ---------- */
-/* 起点卡吃掉右栏剩余高度（`SaveBar` 在卡外、按内容高度），高度链：
-   `.rp-body`（flex column + min-height 0）→ 起点卡（flex 1 1 auto + min-height 0）
+/* ---------- 卡头卡（起点 / 场景共用） ---------- */
+/* 标题 + 说明或时间，按内容高度，不参与剩余空间分配。 */
+.timeline-origin-head,
+.timeline-scene-head {
+  flex: none;
+}
+
+/* 起点卡头：标题 + 说明两行（说明替代字段标签）；场景卡头仍为横向。 */
+.timeline-origin-head > .timeline-card__head {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+
+/* ---------- 起点内容卡（编辑器 + 卡外保存条） ---------- */
+/* 起点内容卡吃掉右栏剩余高度（`SaveBar` 在卡外、按内容高度），高度链：
+   `.rp-body`（flex column + min-height 0）→ 起点内容卡（flex 1 1 auto + min-height 0）
    → 字段（flex 1）→ 控件容器（flex column）→ `.short-rich-field--fill`。
    每层都带 `min-height: 0`，内容超高时由富文本字段自身滚动（与伏笔右栏同口径）。
    容器挂 `.on-soft`：富文本字段换用 `--control-on-soft` 底 + 描边（见 form / short-rich-field.css）。 */
 .timeline-origin-card {
   flex: 1 1 auto;
   min-height: 0;
-  gap: 10px;
-}
-
-/* 起点卡卡头：标题 + 说明两行（说明替代字段标签），按内容高度、
-   不参与剩余空间分配；仅作用于起点卡，场景详情卡卡头仍为横向。 */
-.timeline-origin-card > .timeline-card__head {
-  flex: none;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
 }
 
 /* 描述字段是卡内唯一伸缩项。 */
@@ -127,8 +132,8 @@
   overflow-wrap: anywhere;
 }
 
-/* ---------- 详情卡卡身 ---------- */
-/* 详情卡在 `.rp-body` 里吃掉整栏剩余高度（覆盖 `.timeline-card` 的
+/* ---------- 场景内容卡卡身 ---------- */
+/* 场景内容卡在 `.rp-body` 里吃掉整栏剩余高度（覆盖 `.timeline-card` 的
    `flex: none`）；`min-height: 0` 允许在栏高不足时收缩，把空间让给正文区，
    由 `.rp-read` 内滚而不是撑破卡片。 */
 .rp-view[data-view='timeline'] .timeline-scene-detail {
@@ -136,8 +141,8 @@
   min-height: 0;
 }
 
-/* 正文区：吃掉卡的剩余高度（卡头 + 正文两段）。
-   `flex: 1 1 auto` + `min-height: 0`：卡头按内容高度，正文区吸收其余空间。 */
+/* 正文区：吃掉内容卡的剩余高度（内容卡内只有正文一段）。
+   `flex: 1 1 auto` + `min-height: 0`：正文区吸收卡片其余空间。 */
 .timeline-detail__section {
   flex: 1 1 auto;
   min-height: 0;
@@ -160,15 +165,16 @@
 /* 首行缩进：只作用于文档顶层段落（`.ProseMirror > p` 直接子级）。
    列表项 / 引用 / 表格内的段落是嵌套节点，标题是 h1–h6、代码块是 pre，
    均不匹配；其 `text-indent` 仍由 `.rp-read .ProseMirror p` 的 0 兜底，
-   故不会出现列表项或表头跟着缩进。作用域限定本详情卡，不影响其它右栏。 */
+   故不会出现列表项或表头跟着缩进。作用域限定本场景内容卡，不影响其它右栏。 */
 .rp-view[data-view='timeline'] .timeline-scene-detail .rp-read .ProseMirror > p {
   text-indent: 2em;
 }
 
 /* ---------- 进场 ----------
-   `TimelineRightPanel` 的详情根挂 `key={scene.id}`，切换场景即重建 → 动画重播。
-   只动透明度（wf-enter-fade）：纵向位移会瞬时撑出可滚动区域、闪一下滚动条。
-   时长 / 缓动 / fill-mode 口径同其它右栏详情卡。 */
+   `TimelineRightPanel` 的场景根 Fragment 挂 `key={scene.id}`，切换场景时两张卡一起
+   重建 → 动画一起重播。只动透明度（wf-enter-fade）：纵向位移会瞬时撑出可滚动区域、
+   闪一下滚动条。时长 / 缓动 / fill-mode 口径同其它右栏详情卡。 */
+.rp-view[data-view='timeline'] .timeline-scene-head,
 .rp-view[data-view='timeline'] .timeline-scene-detail {
   animation: wf-enter-fade var(--dur-base) var(--ease) backwards;
 }

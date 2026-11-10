@@ -33,7 +33,7 @@ export interface TimelineOriginPanelProps {
 }
 
 /**
- * 独立时间线右栏「起点」卡：读写**当前选中时间线**的起点描述（富文本）。
+ * 独立时间线右栏「起点」区（卡头卡 + 内容卡）：读写**当前选中时间线**的起点描述（富文本）。
  *
  * - 起点时间（年份 0 / 「元年」）固定不可编辑，本卡不展示时间行，只有描述字段；
  * - 数据按 `bookId` 定位 `timeline:list:<bookId>`，再以 `activeTimelineId` 选中条目；
@@ -150,13 +150,18 @@ export default function TimelineOriginPanel({
 
   return (
     <>
-      <section className="timeline-card timeline-origin-card on-soft" aria-label={t('originTitle')}>
-        {/* 卡头透明（不套 `.wf-readonly-block` 值块），标题 + 说明两行直接落在卡片软底上；
-            说明替代原字段标签，字段改用 `aria-label` + 占位符承载可读提示。 */}
+      {/* 卡头卡：标题 + 说明（说明替代字段标签），按内容高度。 */}
+      <section className="timeline-card timeline-origin-head" aria-label={t('originTitle')}>
         <div className="timeline-card__head">
           <span className="timeline-card__title">{t('originTitle')}</span>
           <p className="timeline-card__desc">{t('originDesc')}</p>
         </div>
+      </section>
+      {/* 内容卡：编辑器吃掉剩余高度；字段改用 `aria-label` + 占位符承载可读提示。 */}
+      <section
+        className="timeline-card timeline-origin-card on-soft"
+        aria-label={t('originDescLabel')}
+      >
         {/* 首读完成后再挂字段：`initialJson` 只在挂载时读取一次，必须先拿到归一基线。 */}
         {loaded ? (
           <FormField>
