@@ -3,10 +3,10 @@
    ------------------------------------------------------------------
    右栏为「卡头卡 + 内容卡」的两卡结构：「起点」区（卡头卡 = 标题 + 说明，
    内容卡 = 富文本编辑器 + 卡外底部 `SaveBar`，读写当前选中时间线）与
-   「选中场景」区（卡头卡 = 标题 + 时间，内容卡 = 只读正文值块），
+   「选中场景」区（卡头卡 = 标题 + 时间，内容卡 = 只读正文），
    无面板头（模块标题由中栏承载）。两卡间距沿用 `.rp-body` 的 8px；底座与其它右栏同口径：
    `--soft-solid` + 1px `--line` + `--r-lg` + 14px 内衬；
-   正文值块复用通用 `.wf-readonly-block`（components/surface.css）。
+   场景正文直接铺在卡片软底上（`.rp-read` 内滚），不再套 `.wf-readonly-block` 值块。
    剧情模块共用的 `.plot-editor` / `.plot-field` 等类留在
    writer-plot-editor.css，本文件只放时间线专属规则。
    ============================================================ */
@@ -152,14 +152,16 @@
   min-width: 0;
 }
 
-/* 只读正文：吃掉值块剩余高度，内容超出时在 `.rp-read` 内滚（内衬由值块
-   `.wf-readonly-block` 统一提供 10 / 12）。`flex: 1 1 auto` 覆盖 `.rp-read` 的
+/* 只读正文：吃掉内容卡剩余高度，内容超出时在 `.rp-read` 内滚（正文直接铺
+   卡片软底，内衬归零与卡头标题左缘对齐）。`flex: 1 1 auto` 覆盖 `.rp-read` 的
    `flex: 1` 基数，`min-height: 0` 保证滚动链路成立；`.rp-read__doc` 是
    `flex: 1 0 auto`（不收缩），因此文档按内容排高、由外层 `.rp-read` 滚动。 */
 .rp-view[data-view='timeline'] .timeline-scene-detail .rp-read {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  /* 正文直接铺卡片软底：内衬归零，左缘与卡头标题（卡片 14px 内衬）对齐。 */
+  padding: 0;
 }
 
 /* 首行缩进：只作用于文档顶层段落（`.ProseMirror > p` 直接子级）。

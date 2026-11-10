@@ -53,8 +53,8 @@ function TimelineSceneDetail({
           </span>
         </div>
       </section>
-      {/* 内容卡：正文区只读富文本正文（空正文由组件统一显示占位），值块复用共享
-          `.wf-readonly-block`（--control-on-soft 底 + 内描边），与伏笔只读详情同口径。 */}
+      {/* 内容卡：正文直接铺在卡片软底上，不再套 `.wf-readonly-block` 值块
+          （空正文由组件统一显示占位）。 */}
       <section className="timeline-card timeline-scene-detail">
         <div className="timeline-detail__section">
           <EntityReadonlyRichText
@@ -62,7 +62,6 @@ function TimelineSceneDetail({
             bookId={bookId}
             json={bodyJson}
             emptyText={tTimeline('sceneBodyEmpty')}
-            className="wf-readonly-block"
             hoverCard={hoverCard}
           />
         </div>
