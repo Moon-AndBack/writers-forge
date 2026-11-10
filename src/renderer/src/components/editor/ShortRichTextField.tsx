@@ -32,6 +32,11 @@ export interface ShortRichTextFieldProps {
    * 最小 82px、最大 200px，超出后内部滚动（弹窗等短字段场景）。
    */
   fill?: boolean
+  /**
+   * 根元素标签：默认 `div`；右栏可为 `section`，让字段自身承担区块 + 输入框语义
+   * （如时间线起点内容卡）。`EditorContent` 仍固定多一层 `div` 承载 `.ProseMirror`。
+   */
+  as?: 'div' | 'section'
   /** 附加类名（样式覆写用）。 */
   className?: string
 }
@@ -55,6 +60,7 @@ export function ShortRichTextField({
   disabled = false,
   extensions,
   fill = false,
+  as = 'div',
   className
 }: ShortRichTextFieldProps) {
   // 底座 + 调用方追加扩展：`useEditor` 需恒等引用，故按 `extensions` 引用缓存。
@@ -83,8 +89,10 @@ export function ShortRichTextField({
     .filter(Boolean)
     .join(' ')
 
+  const Root = as ?? 'div'
+
   return (
-    <div className={classes} role="group" aria-label={ariaLabel} aria-disabled={disabled}>
+    <Root className={classes} role="group" aria-label={ariaLabel} aria-disabled={disabled}>
       <EditorContent
         editor={editor}
         className="short-rich-field__body"
@@ -94,7 +102,7 @@ export function ShortRichTextField({
           } as CSSProperties
         }
       />
-    </div>
+    </Root>
   )
 }
 

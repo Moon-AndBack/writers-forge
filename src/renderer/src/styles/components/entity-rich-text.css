@@ -3,7 +3,7 @@
    委托、弹窗内卡片会被遮罩挡住，二者都不渲染此壳，高度直接交给父级 flex。
    布局上透明传递父级 flex 高度链：
    - `OutlinePicker` / `TimelineSceneDetail`：`.rp-read` 依赖外层 flex 分配剩余高度；
-   - `TimelineOriginPanel`：`.short-rich-field--fill` 依赖 `.wf-field__control` 的高度链。
+   - `TimelineOriginPanel`：`.short-rich-field--fill` 依赖右栏 `.rp-body` 的纵向 flex 高度链。
    外壳自身不生成滚动 / 内衬 / 边框，视觉全部由内部组件决定。 */
 
 .entity-rich-text-shell {

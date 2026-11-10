@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { RichTextBodyValue } from '../../../components/editor/useRichTextBodyEditor'
-import { FormField } from '../../../components/ui'
 import EntityShortRichTextField from '../entities/EntityShortRichTextField'
 import SaveBar from '../SaveBar'
 import {
@@ -157,29 +156,27 @@ export default function TimelineOriginPanel({
           <p className="timeline-card__desc">{t('originDesc')}</p>
         </div>
       </section>
-      {/* 内容卡：编辑器吃掉剩余高度；字段改用 `aria-label` + 占位符承载可读提示。 */}
-      <section
-        className="timeline-card timeline-origin-card on-soft"
-        aria-label={t('originDescLabel')}
-      >
-        {/* 首读完成后再挂字段：`initialJson` 只在挂载时读取一次，必须先拿到归一基线。 */}
-        {loaded ? (
-          <FormField>
-            <EntityShortRichTextField
-              bookId={bookId ?? ''}
-              hoverCard={hoverCard}
-              initialJson={initialJson}
-              onChange={(value) => {
-                draftRef.current = value
-                setDraft(value)
-              }}
-              placeholder={t('originPlaceholder')}
-              ariaLabel={t('originDescLabel')}
-              fill
-            />
-          </FormField>
-        ) : null}
-      </section>
+      {/* 内容卡：字段自身即输入框根（section），`aria-label` + 占位符承载可读提示。
+          首读完成后再挂字段（`initialJson` 只在挂载时读取一次）；未完成时用同宽空
+          section 占位，避免 SaveBar 上移跳动。 */}
+      {loaded ? (
+        <EntityShortRichTextField
+          as="section"
+          className="timeline-origin-card"
+          bookId={bookId ?? ''}
+          hoverCard={hoverCard}
+          initialJson={initialJson}
+          onChange={(value) => {
+            draftRef.current = value
+            setDraft(value)
+          }}
+          placeholder={t('originPlaceholder')}
+          ariaLabel={t('originDescLabel')}
+          fill
+        />
+      ) : (
+        <section className="timeline-origin-card" aria-hidden="true" />
+      )}
       <SaveBar
         className="timeline-save-bar"
         dirty={dirty}

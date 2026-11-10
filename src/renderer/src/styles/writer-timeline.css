@@ -4,11 +4,13 @@
    右栏为「卡头卡 + 内容卡」的两卡结构：「起点」区（卡头卡 = 标题 + 说明，
    内容卡 = 富文本编辑器 + 卡外底部 `SaveBar`，读写当前选中时间线）与
    「选中场景」区（卡头卡 = 标题 + 时间，内容卡 = 只读正文），
-   无面板头（模块标题由中栏承载）。两卡间距沿用 `.rp-body` 的 8px；底座与其它右栏同口径：
-   `--soft-solid` + 1px `--line` + `--r-lg` + 14px 内衬；
-   场景正文直接铺在卡片软底上（`.rp-read` 内滚），不再套 `.wf-readonly-block` 值块。
-   剧情模块共用的 `.plot-editor` / `.plot-field` 等类留在
-   writer-plot-editor.css，本文件只放时间线专属规则。
+   无面板头（模块标题由中栏承载）。两卡间距沿用 `.rp-body` 的 8px；
+   `.timeline-card`（卡头卡 / 场景卡）底座为 `--soft-solid` + 1px `--line` +
+   `--r-lg` + 14px 内衬；起点内容卡直接以 `.short-rich-field` 控件底座作根
+   （`--soft-solid` + `--r-lg` + 10×12 内衬，hover / 聚焦环由控件提供），
+   不再套卡片 chrome。场景正文直接铺在卡片软底上（`.rp-read` 内滚），
+   不再套 `.wf-readonly-block` 值块。剧情模块共用的 `.plot-editor` /
+   `.plot-field` 等类留在 writer-plot-editor.css，本文件只放时间线专属规则。
    ============================================================ */
 
 /* 右栏纵向流：内容卡吃掉栏内剩余高度（卡头卡按内容高度，两卡间距 8px）；
@@ -51,33 +53,21 @@
 }
 
 /* ---------- 起点内容卡（编辑器 + 卡外保存条） ---------- */
-/* 起点内容卡吃掉右栏剩余高度（`SaveBar` 在卡外、按内容高度），高度链：
+/* 起点内容卡即字段根（`section.short-rich-field--fill`），吃掉右栏剩余高度
+   （`SaveBar` 在卡外、按内容高度），高度链：
    `.rp-body`（flex column + min-height 0）→ 起点内容卡（flex 1 1 auto + min-height 0）
-   → 字段（flex 1）→ 控件容器（flex column）→ `.short-rich-field--fill`。
-   每层都带 `min-height: 0`，内容超高时由富文本字段自身滚动（与伏笔右栏同口径）。
-   容器挂 `.on-soft`：富文本字段换用 `--control-on-soft` 底 + 描边（见 form / short-rich-field.css）。 */
+   → `.short-rich-field__body`（flex column）→ `.ProseMirror`。
+   每层都带 `min-height: 0`，内容超高时由字段自身滚动（与伏笔右栏同口径）。
+   卡片外观（`--soft-solid` 底 / 10×12 内衬 / `--r-lg` / hover / 聚焦环）由
+   `.short-rich-field` 控件底座提供，本类只负责高度分配。 */
 .timeline-origin-card {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-/* 描述字段是卡内唯一伸缩项。 */
-.timeline-origin-card > .wf-field {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-/* 控件容器同步转纵向 flex（默认 block 无法把高度分给富文本字段）。 */
-.timeline-origin-card > .wf-field > .wf-field__control {
-  display: flex;
-  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
 }
 
 /* 首行缩进：只作用于文档顶层段落（`.ProseMirror > p` 直接子级）；
    列表项 / 引用 / 代码块内的嵌套段落不匹配，不影响其它右栏。 */
-.timeline-origin-card .short-rich-field .ProseMirror > p {
+.timeline-origin-card .ProseMirror > p {
   text-indent: 2em;
 }
 

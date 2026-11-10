@@ -18,7 +18,7 @@ import '../../../styles/components/entity-rich-text.css'
  * - `hoverCard=false` 供右栏面板 / 弹窗使用：右栏面板根容器已统一挂一个 `HoverCard`；
  *   弹窗层 `z-index: 1000` 高于悬停卡 `--z-hover-card`（970），卡片会被遮罩挡住。此时
  *   直接渲染 `ShortRichTextField`，不渲染 `.entity-rich-text-shell` 外壳、不挂事件委托
- *   （少一层纯传递 DOM），高度由父级 `.wf-field__control` 的纵向 flex 直接传递。
+ *   （少一层纯传递 DOM），高度由父级 flex 容器（右栏 `.rp-body`）直接传递。
  */
 export interface EntityShortRichTextFieldProps {
   /** 归属书 id；空串 = 不启用实体高亮（仍正常编辑）。 */
@@ -39,6 +39,10 @@ export interface EntityShortRichTextFieldProps {
   hoverCard?: boolean
   /** 创建后是否补一次整篇匹配（默认 `true`；初始空文档可传 `false`）。 */
   matchOnCreate?: boolean
+  /** 根元素标签（默认 `div`；起点内容卡传 `section`，让字段自身承担区块语义）。 */
+  as?: 'div' | 'section'
+  /** 追加类名（透传给 `ShortRichTextField`，用于调用点样式覆写）。 */
+  className?: string
 }
 
 export function EntityShortRichTextField({
@@ -50,7 +54,9 @@ export function EntityShortRichTextField({
   fill = false,
   disabled = false,
   hoverCard = true,
-  matchOnCreate = true
+  matchOnCreate = true,
+  as,
+  className
 }: EntityShortRichTextFieldProps): ReactElement {
   const hover = useEntityHover()
 
@@ -82,11 +88,13 @@ export function EntityShortRichTextField({
       extensions={extensions}
       fill={fill}
       disabled={disabled}
+      as={as}
+      className={className}
     />
   )
 
   // 不挂悬停卡时无需外壳：既无事件委托也无 `HoverCard` 挂载点，直接渲染字段本体，
-  // 少一层纯传递 DOM；高度由父级 `.wf-field__control` 的纵向 flex 直接传给字段。
+  // 少一层纯传递 DOM；高度由父级 flex 容器直接传给字段。
   if (!hoverCard) return field
 
   return (
