@@ -16,7 +16,9 @@ import '../../../styles/components/entity-rich-text.css'
  * 故默认 `matchOnCreate: true`；初始空文档（如新建弹窗）可传 `false` 省一次空匹配。
  *
  * - `hoverCard=false` 供右栏面板 / 弹窗使用：右栏面板根容器已统一挂一个 `HoverCard`；
- *   弹窗层 `z-index: 1000` 高于悬停卡 `--z-hover-card`（970），卡片会被遮罩挡住。
+ *   弹窗层 `z-index: 1000` 高于悬停卡 `--z-hover-card`（970），卡片会被遮罩挡住。此时
+ *   直接渲染 `ShortRichTextField`，不渲染 `.entity-rich-text-shell` 外壳、不挂事件委托
+ *   （少一层纯传递 DOM），高度由父级 `.wf-field__control` 的纵向 flex 直接传递。
  */
 export interface EntityShortRichTextFieldProps {
   /** 归属书 id；空串 = 不启用实体高亮（仍正常编辑）。 */
@@ -71,25 +73,31 @@ export function EntityShortRichTextField({
     ? { onMouseOver: hover.onMouseOver, onMouseLeave: hover.onMouseLeave }
     : {}
 
+  const field = (
+    <ShortRichTextField
+      initialJson={initialJson}
+      onChange={onChange}
+      placeholder={placeholder}
+      ariaLabel={ariaLabel}
+      extensions={extensions}
+      fill={fill}
+      disabled={disabled}
+    />
+  )
+
+  // 不挂悬停卡时无需外壳：既无事件委托也无 `HoverCard` 挂载点，直接渲染字段本体，
+  // 少一层纯传递 DOM；高度由父级 `.wf-field__control` 的纵向 flex 直接传给字段。
+  if (!hoverCard) return field
+
   return (
     <div className="entity-rich-text-shell" {...hoverHandlers}>
-      <ShortRichTextField
-        initialJson={initialJson}
-        onChange={onChange}
-        placeholder={placeholder}
-        ariaLabel={ariaLabel}
-        extensions={extensions}
-        fill={fill}
-        disabled={disabled}
+      {field}
+      <HoverCard
+        anchor={hover.anchor}
+        onClose={hover.close}
+        onPointerEnter={hover.cancelHide}
+        onPointerLeave={hover.onMouseLeave}
       />
-      {hoverCard ? (
-        <HoverCard
-          anchor={hover.anchor}
-          onClose={hover.close}
-          onPointerEnter={hover.cancelHide}
-          onPointerLeave={hover.onMouseLeave}
-        />
-      ) : null}
     </div>
   )
 }

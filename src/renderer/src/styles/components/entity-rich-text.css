@@ -1,5 +1,7 @@
 /* ---------- 实体高亮富文本外壳 ----------
-   只做事件委托容器与 hover 卡挂载点，布局上透明传递父级 flex 高度链：
+   仅在 `hoverCard=true` 时渲染（事件委托容器 + hover 卡挂载点）；右栏面板由父级统一
+   委托、弹窗内卡片会被遮罩挡住，二者都不渲染此壳，高度直接交给父级 flex。
+   布局上透明传递父级 flex 高度链：
    - `OutlinePicker` / `TimelineSceneDetail`：`.rp-read` 依赖外层 flex 分配剩余高度；
    - `TimelineOriginPanel`：`.short-rich-field--fill` 依赖 `.wf-field__control` 的高度链。
    外壳自身不生成滚动 / 内衬 / 边框，视觉全部由内部组件决定。 */
