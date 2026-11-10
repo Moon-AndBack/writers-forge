@@ -1,4 +1,10 @@
+import { toCleanWordCategory } from './cleanWordCategories'
+import type { CleanWordCategory } from './cleanWordCategories'
 import { getDb } from './index'
+
+// 单一真源在 `./cleanWordCategories.ts`：此处 re-export，供 preload / IPC 沿用原导入路径。
+export type { CleanWordCategory } from './cleanWordCategories'
+export { CLEAN_WORD_CATEGORIES } from './cleanWordCategories'
 
 /**
  * 违禁词库数据访问（`clean_word_list`）。
@@ -12,9 +18,6 @@ import { getDb } from './index'
  *   若允许删除，下次更新会被重新导入（「删了又回来」），故统一用 `enabled = 0`
  *   表达「用户不想要它」，删除只对用户自建词开放。
  */
-
-/** 违禁词类别（与表级 CHECK 逐字对应）。 */
-export type CleanWordCategory = 'political' | 'sexual' | 'violence' | 'ads' | 'profanity' | 'other'
 
 /** 词条来源（与表级 CHECK 逐字对应）。 */
 export type CleanWordSource = 'builtin' | 'user'
@@ -65,16 +68,6 @@ export interface CleanWordCount {
   count: number
 }
 
-/** 合法类别清单（供上层做参数校验 / 下拉枚举）。 */
-export const CLEAN_WORD_CATEGORIES: readonly CleanWordCategory[] = [
-  'political',
-  'sexual',
-  'violence',
-  'ads',
-  'profanity',
-  'other'
-]
-
 /** 合法来源清单。 */
 export const CLEAN_WORD_SOURCES: readonly CleanWordSource[] = ['builtin', 'user']
 
@@ -100,13 +93,6 @@ interface CleanWordScanRow {
   replacement: string
 }
 
-/** 类别窄化：脏数据（绕过 CHECK 的老库 / 手工改库）回退 `other`。 */
-function toCategory(value: string): CleanWordCategory {
-  return (CLEAN_WORD_CATEGORIES as readonly string[]).includes(value)
-    ? (value as CleanWordCategory)
-    : 'other'
-}
-
 /** 来源窄化：未知来源按用户自建处理（可删除，不会被内置更新复活）。 */
 function toSource(value: string): CleanWordSource {
   return (CLEAN_WORD_SOURCES as readonly string[]).includes(value)
@@ -119,7 +105,7 @@ function toCleanWordRow(row: CleanWordDbRow): CleanWordRow {
   return {
     id: row.id,
     word: row.word,
-    category: toCategory(row.category),
+    category: toCleanWordCategory(row.category),
     source: toSource(row.source),
     replacement: row.replacement,
     enabled: row.enabled === 1,
@@ -157,7 +143,7 @@ export function listActiveCleanWords(): ActiveCleanWord[] {
     .all() as CleanWordScanRow[]
   return rows.map((row) => ({
     word: row.word,
-    category: toCategory(row.category),
+    category: toCleanWordCategory(row.category),
     replacement: row.replacement
   }))
 }
@@ -285,7 +271,7 @@ export function countCleanWords(): CleanWordCount[] {
     .all() as Array<{ source: string; category: string; count: number }>
   return rows.map((row) => ({
     source: toSource(row.source),
-    category: toCategory(row.category),
+    category: toCleanWordCategory(row.category),
     count: row.count
   }))
 }

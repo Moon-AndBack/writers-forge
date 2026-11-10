@@ -6,23 +6,29 @@ import type { CleanWordCategory, CleanWordSource } from '../../../../preload/typ
    中 `BUILTIN_CLEAN_WORDS_META` 的镜像（渲染层不能直接 import 主进程模块）。
    ============================================================ */
 
-/** 合法类别（镜像主进程 `CLEAN_WORD_CATEGORIES`：值导入会把主进程模块打进渲染包）。 */
+/** 合法类别（镜像主进程 `cleanWordCategories.ts`：值导入会把主进程模块打进渲染包）。 */
 export const CATEGORIES = [
-  'political',
   'sexual',
+  'minorSexual',
+  'gambling',
+  'drug',
+  'fraud',
   'violence',
-  'ads',
-  'profanity',
+  'weapon',
+  'minor',
   'other'
 ] as const satisfies readonly CleanWordCategory[]
 
 /** 类别文案 key（`chapters` ns）。 */
 export const CATEGORY_LABEL_KEYS = {
-  political: 'cleanWords.category.political',
   sexual: 'cleanWords.category.sexual',
+  minorSexual: 'cleanWords.category.minorSexual',
+  gambling: 'cleanWords.category.gambling',
+  drug: 'cleanWords.category.drug',
+  fraud: 'cleanWords.category.fraud',
   violence: 'cleanWords.category.violence',
-  ads: 'cleanWords.category.ads',
-  profanity: 'cleanWords.category.profanity',
+  weapon: 'cleanWords.category.weapon',
+  minor: 'cleanWords.category.minor',
   other: 'cleanWords.category.other'
 } as const
 

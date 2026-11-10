@@ -125,7 +125,7 @@ const common = {
   },
   /**
    * 编辑器正文右键「选区菜单」通用项（搜索选中文字 / 加入违禁词库）。
-   * 六个违禁词类别名不在此处：复用 `chapters` ns 的 `cleanWords.category.*`（词库单一真源）。
+   * 九个违禁词类别名不在此处：复用 `chapters` ns 的 `cleanWords.category.*`（词库单一真源）。
    */
   selectionMenu: {
     title: '选中文字',

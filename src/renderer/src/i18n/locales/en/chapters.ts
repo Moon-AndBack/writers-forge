@@ -67,11 +67,14 @@ const chapters = {
     categoryAria: 'Filter by category',
     categoryAll: 'All categories',
     category: {
-      political: 'Political',
       sexual: 'Sexual',
+      minorSexual: 'Minor sexual',
+      gambling: 'Gambling',
+      drug: 'Drugs',
+      fraud: 'Fraud',
       violence: 'Violence',
-      ads: 'Advertising',
-      profanity: 'Profanity',
+      weapon: 'Weapons',
+      minor: 'Minor',
       other: 'Other'
     },
     hoverCategory: 'Type: {{category}}',

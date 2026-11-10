@@ -77,11 +77,14 @@ const chapters = {
     categoryAria: '按类别筛选',
     categoryAll: '全部类别',
     category: {
-      political: '政治',
       sexual: '色情',
+      minorSexual: '未成年性',
+      gambling: '赌博',
+      drug: '毒品',
+      fraud: '诈骗',
       violence: '暴力',
-      ads: '广告',
-      profanity: '辱骂',
+      weapon: '武器',
+      minor: '未成年',
       other: '其他'
     },
     hoverCategory: '类型：{{category}}',
