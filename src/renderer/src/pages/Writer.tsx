@@ -230,21 +230,16 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
 
   /* 时间线切换 / 新建 / 删除都会改 `activeTimelineId`，右栏起点卡随之重建、未提交草稿丢失：
      统一「先补存（`flushModule('timeline')`，内部已记日志、失败不阻断）再过剧情守卫」，
-     补存必须先于 `setActiveId`（`updateDescription` 按闭包捕获的旧 `activeId` 定位目标条目）。
+     补存必须先于 `setActiveId`（`updateOrigin` 按闭包捕获的旧 `activeId` 定位目标条目）。
      动作实现集中在 `useTimelinePageActions`，本页只装配依赖。 */
-  const {
-    handleSelectTimeline,
-    handleCreateTimeline,
-    handleRenameTimeline,
-    handleRenameTimelineOrigin,
-    handleDeleteTimeline
-  } = useTimelinePageActions(
-    timeline,
-    plot.guardSwitch,
-    flushModule,
-    showSaveFailed,
-    tCommon('saveFailed')
-  )
+  const { handleSelectTimeline, handleCreateTimeline, handleRenameTimeline, handleDeleteTimeline } =
+    useTimelinePageActions(
+      timeline,
+      plot.guardSwitch,
+      flushModule,
+      showSaveFailed,
+      tCommon('saveFailed')
+    )
 
   // 设定档案右栏正文编辑器聚焦态（真源在本页）：右栏 `DossierBodyEditor` 经通用注册表上报。
   const [dossierEditing, setDossierEditing] = useState(false)
@@ -411,9 +406,7 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
               timelineScene={timelineScene}
               timelineOriginSelected={timelineOriginSelected}
               activeTimelineId={timeline.activeId}
-              timelineOriginName={timeline.originName}
-              onRenameTimelineOrigin={handleRenameTimelineOrigin}
-              onUpdateTimelineDescription={timeline.updateDescription}
+              onUpdateTimelineOrigin={timeline.updateOrigin}
               timelineFlushRef={timelineFlushRef}
               dossier={dossierBundle}
               foreshadow={foreshadowBundle}

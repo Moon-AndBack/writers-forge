@@ -14,6 +14,14 @@ import { countPlotLinesByTimeline } from './timelinePlotCounts'
 /** 缺省时间线名称：留空，由展示层经 `t('timeline.defaultName')` 兜底（不落库中文默认名）。 */
 const DEFAULT_TIMELINE_NAME = ''
 
+/** 起点保存补丁：字段为 `undefined` 表示不改，只提交实际变更的列（避免半保存）。 */
+export interface TimelineOriginPatch {
+  /** 起点卡片标题（已 trim；空串 = 清空，展示层回退 `t('originTitle')`）。 */
+  originName?: string
+  /** 起点描述：同时写派生纯文本与富文本真源两列。 */
+  description?: RichTextBodyValue
+}
+
 export interface TimelineWorkspace {
   /** 全书时间线列表（settings JSON）。 */
   list: TimelineEntry[]
@@ -36,21 +44,16 @@ export interface TimelineWorkspace {
   /** 新建时间线（追加并选中；name 为空 → 空名，展示层经 `t('timeline.defaultName')` 兜底）。 */
   createTimeline: (name: string, description?: RichTextBodyValue) => Promise<TimelineEntry | null>
   /**
-   * 更新**当前选中时间线**的起点描述（只改对应条目，其余条目原样写回）。
-   * 入参为编辑器归一值：同时写 `description`（派生纯文本）与 `descriptionJson`（富文本真源）；
-   * 起点时间（origin）固定不可编辑；写入成功后同步列表态；返回是否落库成功。
+   * 更新**当前选中时间线**的起点（只改对应条目，其余条目原样写回）。
+   * 补丁里出现的字段才写入：`originName` 与 `description` 合并为一次 `settings.set`
+   * （原子，避免半保存）；起点时间（origin）固定不可编辑；返回是否落库成功。
    */
-  updateDescription: (value: RichTextBodyValue) => Promise<boolean>
+  updateOrigin: (patch: TimelineOriginPatch) => Promise<boolean>
   /**
    * 重命名指定时间线：读磁盘最新列表 → 只改目标条目的 `name` → 原样写回。
    * 空名回退默认空名（展示层经 `t('timeline.defaultName')` 兜底）；返回是否落库成功。
    */
   renameTimeline: (id: string, name: string) => Promise<boolean>
-  /**
-   * 重命名起点卡标题：读磁盘最新列表 → 只改目标条目的 `originName` → 原样写回。
-   * 空名（trim 后为空）落空串，展示层回退 `t('originTitle')`；返回是否落库成功。
-   */
-  renameOrigin: (id: string, name: string) => Promise<boolean>
   /**
    * 删除指定时间线：读磁盘最新列表 → 移除目标条目 → 原样写回。
    * 至少保留一条（删最后一条返回 false）；该时间线下仍有剧情线时拒绝删除（返回 false，
@@ -148,7 +151,7 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
         description: entryDescription,
         descriptionJson: entryDescriptionJson
       }
-      // 与 `updateDescription` / `renameTimeline` 同款「磁盘最新列表 → 改 → 写回」：以磁盘为准，
+      // 与 `updateOrigin` / `renameTimeline` 同款「磁盘最新列表 → 改 → 写回」：以磁盘为准，
       // 避免内存列表过期时覆盖其它已落库的条目；磁盘为空时回退内存列表。
       let base: TimelineEntry[]
       try {
@@ -188,21 +191,29 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
     [list, listKey, activeKey]
   )
 
-  // 起点描述保存：先按磁盘最新列表做读-改-写，避免内存列表过期时覆盖其它时间线的改动；
-  // 只替换当前选中条目的描述两列（`description` 派生纯文本 + `descriptionJson` 富文本真源），
-  // 其余条目（含固定 origin）原样写回。
-  const updateDescription = useCallback(
-    async (value: RichTextBodyValue): Promise<boolean> => {
+  // 起点保存：先按磁盘最新列表做读-改-写，避免内存列表过期时覆盖其它时间线的改动；
+  // 只覆盖补丁里出现的字段（`originName` / 描述两列），其余条目（含固定 origin）原样写回。
+  // 名字与描述合并为**单次** `settings.set`：一次落库，不会出现「名字存了、描述没存」的半保存。
+  const updateOrigin = useCallback(
+    async (patch: TimelineOriginPatch): Promise<boolean> => {
+      if (patch.originName === undefined && patch.description === undefined) return true
       const listRaw = await window.api?.settings.get(listKey)
       const current = parseTimelineList(listRaw ?? null)
       const base = current.length > 0 ? current : list
       const target = resolveActiveEntry(base, activeId)
       if (target === null) return false
-      const nextDescription = value.text.trim()
-      const nextDescriptionJson = value.json ?? ''
       const nextList = base.map((entry) =>
         entry.id === target.id
-          ? { ...entry, description: nextDescription, descriptionJson: nextDescriptionJson }
+          ? {
+              ...entry,
+              ...(patch.originName !== undefined ? { originName: patch.originName.trim() } : {}),
+              ...(patch.description !== undefined
+                ? {
+                    description: patch.description.text.trim(),
+                    descriptionJson: patch.description.json ?? ''
+                  }
+                : {})
+            }
           : entry
       )
       try {
@@ -228,7 +239,7 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
   const descriptionJson =
     activeEntry === null ? '' : (resolveEntryDescriptionJson(activeEntry) ?? '')
 
-  // 重命名：与 `updateDescription` 同款「磁盘最新列表 → 读-改-写」，避免内存列表过期时
+  // 重命名：与 `updateOrigin` 同款「磁盘最新列表 → 读-改-写」，避免内存列表过期时
   // 覆盖其它条目的改动；只替换目标条目的 `name`，空名回退默认空名（展示层兜底）。
   const renameTimeline = useCallback(
     async (id: string, name: string): Promise<boolean> => {
@@ -238,29 +249,6 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
       if (!base.some((entry) => entry.id === id)) return false
       const nextName = name.trim() !== '' ? name.trim() : DEFAULT_TIMELINE_NAME
       const nextList = base.map((entry) => (entry.id === id ? { ...entry, name: nextName } : entry))
-      try {
-        await window.api?.settings.set(listKey, serializeTimelineList(nextList))
-        setList(nextList)
-        return true
-      } catch {
-        return false
-      }
-    },
-    [list, listKey]
-  )
-
-  // 起点卡标题重命名：与 `renameTimeline` 同款「磁盘最新列表 → 读-改-写」，只替换目标条目的
-  // `originName`（trim 后空串即清空，展示层回退「起点」），不改 `origin` 时间语义。
-  const renameOrigin = useCallback(
-    async (id: string, name: string): Promise<boolean> => {
-      const listRaw = await window.api?.settings.get(listKey)
-      const current = parseTimelineList(listRaw ?? null)
-      const base = current.length > 0 ? current : list
-      if (!base.some((entry) => entry.id === id)) return false
-      const nextOriginName = name.trim()
-      const nextList = base.map((entry) =>
-        entry.id === id ? { ...entry, originName: nextOriginName } : entry
-      )
       try {
         await window.api?.settings.set(listKey, serializeTimelineList(nextList))
         setList(nextList)
@@ -325,9 +313,8 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
     loaded,
     selectTimeline,
     createTimeline,
-    updateDescription,
+    updateOrigin,
     renameTimeline,
-    renameOrigin,
     removeTimeline,
     reload: load
   }

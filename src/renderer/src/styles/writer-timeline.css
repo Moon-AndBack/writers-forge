@@ -1,7 +1,7 @@
 /* ============================================================
    写作视图 · 独立时间线右栏
    ------------------------------------------------------------------
-   右栏为「卡头卡 + 内容卡」的两卡结构：「起点」区（卡头卡 = 标题 + 说明，
+   右栏为「卡头卡 + 内容卡」的两卡结构：「起点」区（卡头卡 = 常驻名字输入框，
    内容卡 = 富文本编辑器 + 卡外底部 `SaveBar`，读写当前选中时间线）与
    「选中场景」区（卡头卡 = 标题 + 时间，内容卡 = 只读正文），
    无面板头（模块标题由中栏承载）。两卡间距沿用 `.rp-body` 的 8px；
@@ -39,17 +39,10 @@
 }
 
 /* ---------- 卡头卡（起点 / 场景共用） ---------- */
-/* 标题 + 说明或时间，按内容高度，不参与剩余空间分配。 */
+/* 起点为名字输入框、场景为标题 + 时间，均按内容高度，不参与剩余空间分配。 */
 .timeline-origin-head,
 .timeline-scene-head {
   flex: none;
-}
-
-/* 起点卡头：标题 + 说明两行（说明替代字段标签）；场景卡头仍为横向。 */
-.timeline-origin-head > .timeline-card__head {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
 }
 
 /* ---------- 起点内容卡（编辑器 + 卡外保存条） ---------- */
@@ -92,15 +85,6 @@
   background: var(--soft-solid);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-}
-
-/* 说明文案：12px 弱化，长文案可换行。 */
-.timeline-card__desc {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--text-mute);
-  overflow-wrap: anywhere;
 }
 
 /* 卡头：标题 14 / 600，时间等辅助信息弱化右对齐（窄栏允许换行，不挤压标题）。 */
@@ -252,35 +236,4 @@
 .timeline-item:hover .timeline-rename,
 .timeline-item:focus-within .timeline-rename {
   margin-right: 50px;
-}
-
-/* ---------- 起点卡头：行内改名（标题 + 22×22 铅笔） ----------
-   铅笔按 §8.5 行操作按钮口径：非 hover / 聚焦时 hidden + opacity 0，
-   hover / focus-within 浮现；只过渡透明度（无 transform）。 */
-.timeline-origin-head .timeline-card__title-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-}
-
-.timeline-origin-rename-btn {
-  flex: none;
-  visibility: hidden;
-  opacity: 0;
-  transition: opacity var(--dur-fast) var(--ease);
-}
-
-.timeline-origin-head:hover .timeline-origin-rename-btn,
-.timeline-origin-head:focus-within .timeline-origin-rename-btn {
-  visibility: visible;
-  opacity: 1;
-}
-
-/* 编辑输入：沿用 `.timeline-rename` 底座，字号 / 字重 / 行高与卡头标题一致。 */
-.timeline-rename.timeline-origin-rename {
-  flex: 1;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.4;
 }

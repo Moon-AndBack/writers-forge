@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../components/ui'
-import type { RichTextBodyValue } from '../../components/editor/useRichTextBodyEditor'
 import type { WriterModule } from '../../shell/activityBar'
 import type { ChapterRow, VolumeRow } from './chapters/chapterTree'
 import { useChapterLabels } from './chapters/useChapterLabels'
@@ -29,6 +28,7 @@ import {
   type RightPaneTab
 } from './right/rightPaneTabSets'
 import type { TimelineEntry } from './timeline/timelineOrigin'
+import type { TimelineOriginPatch } from './timeline/useTimelineWorkspace'
 
 /** 调用方未传保存入口时的占位 ref（仅保证必填契约，编辑器写入无副作用）。 */
 const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { current: null }
@@ -90,9 +90,7 @@ export function RightPane({
   timelineScene = null,
   timelineOriginSelected = false,
   activeTimelineId = null,
-  timelineOriginName = '',
-  onRenameTimelineOrigin,
-  onUpdateTimelineDescription,
+  onUpdateTimelineOrigin,
   timelineFlushRef,
   dossier = null,
   foreshadow = null,
@@ -153,12 +151,8 @@ export function RightPane({
   timelineOriginSelected?: boolean
   /** 当前选中时间线 id（右栏 origin 面板跟随切换）。 */
   activeTimelineId?: string | null
-  /** 当前选中时间线的起点卡片标题（右栏起点卡头显示；空串回退「起点」）。 */
-  timelineOriginName?: string
-  /** 重命名当前时间线的起点卡片标题（右栏卡头铅笔；返回是否落库成功）。 */
-  onRenameTimelineOrigin?: (name: string) => Promise<boolean>
-  /** 写回当前选中时间线的起点描述（右栏「起点」卡保存；入参为编辑器归一值）。 */
-  onUpdateTimelineDescription: (value: RichTextBodyValue) => Promise<boolean>
+  /** 保存当前选中时间线的起点补丁（名字 + 描述合并为一次落库；返回是否写入成功）。 */
+  onUpdateTimelineOrigin: (patch: TimelineOriginPatch) => Promise<boolean>
   /** 时间线起点卡关闭前 flush 入口（页面层聚合调用）。 */
   timelineFlushRef?: RefObject<(() => Promise<void>) | null>
   /** 设定档案五域装配包（仅活动模块为五域之一时非空；详情面板消费）。 */
@@ -318,9 +312,7 @@ export function RightPane({
         <TimelineRightPanel
           bookId={bookId}
           activeTimelineId={activeTimelineId}
-          originName={timelineOriginName}
-          onRenameOrigin={onRenameTimelineOrigin}
-          onUpdateDescription={onUpdateTimelineDescription}
+          onUpdateOrigin={onUpdateTimelineOrigin}
           flushRef={timelineFlushRef}
           scene={timelineScene}
           originSelected={timelineOriginSelected}

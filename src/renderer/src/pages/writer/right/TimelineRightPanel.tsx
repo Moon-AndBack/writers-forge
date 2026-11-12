@@ -1,13 +1,13 @@
 import { Fragment, type ReactElement, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
-import type { RichTextBodyValue } from '../../../components/editor/useRichTextBodyEditor'
 import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
 import { EntityReadonlyRichText } from '../entities/EntityReadonlyRichText'
 import { HoverCard } from '../entities/HoverCard'
 import { useEntityHover } from '../entities/useEntityHover'
 import { plotSceneTime, plotSceneTitle, type PlotSceneRow } from '../plot/plotTree'
 import TimelineOriginPanel from '../timeline/TimelineOriginPanel'
+import type { TimelineOriginPatch } from '../timeline/useTimelineWorkspace'
 
 /** 独立时间线右栏的选中场景区（只读：卡头卡标题 + 时间、内容卡只读正文）。 */
 function TimelineSceneDetail({
@@ -75,12 +75,8 @@ export interface TimelineRightPanelProps {
   bookId?: string
   /** 当前选中时间线 id；切换时起点卡重新加载对应条目。 */
   activeTimelineId?: string | null
-  /** 起点卡片标题（页面层派生；空串 → 展示回退「起点」）。 */
-  originName?: string
-  /** 重命名起点卡片标题（页面层包装 `useTimelineWorkspace.renameOrigin`）。 */
-  onRenameOrigin?: (name: string) => Promise<boolean>
-  /** 写回当前选中时间线的起点描述（页面层 `useTimelineWorkspace.updateDescription`，入参为编辑器归一值）。 */
-  onUpdateDescription: (value: RichTextBodyValue) => Promise<boolean>
+  /** 保存起点补丁（页面层 `useTimelineWorkspace.updateOrigin`；名字 + 描述一次落库）。 */
+  onUpdateOrigin: (patch: TimelineOriginPatch) => Promise<boolean>
   /** 关闭前统一 flush 入口（起点卡挂载时写入；页面层聚合调用）。 */
   flushRef?: RefObject<(() => Promise<void>) | null>
   /** 时间线选中场景（只读详情）；null = 未选中场景（originSelected 为 false 时渲染空态）。 */
@@ -97,9 +93,7 @@ export interface TimelineRightPanelProps {
 export function TimelineRightPanel({
   bookId,
   activeTimelineId,
-  originName = '',
-  onRenameOrigin,
-  onUpdateDescription,
+  onUpdateOrigin,
   flushRef,
   scene,
   originSelected = false
@@ -118,9 +112,7 @@ export function TimelineRightPanel({
           bookId={bookId}
           hoverCard={false}
           activeTimelineId={activeTimelineId}
-          originName={originName}
-          onRenameOrigin={onRenameOrigin}
-          onSaveDescription={onUpdateDescription}
+          onSaveOrigin={onUpdateOrigin}
           flushRef={flushRef}
         />
       ) : (

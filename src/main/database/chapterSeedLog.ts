@@ -11,10 +11,22 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v134'
+export const CHAPTER_SEED_VERSION = 'v135'
 
 /**
- * 最近版本变更日志（v134；更早版本见上述历史文件）。
+ * 最近版本变更日志（v135；更早版本见上述历史文件）。
+ *
+ * `v135`（时间线起点名常驻输入框批）：时间线右栏「起点」卡头改为**常驻名字输入框**——
+ * 删除卡头说明文字（`timeline` ns 的 `originDesc` 双端删除）与铅笔行内改名
+ * （`originRename` 双端删除，新增 `originNameLabel`）；卡头只剩 `Input size="md"`
+ * （38px，规范三档之一）+ `.on-soft`，文字直接输入，无 Enter / Esc / 失焦提交。
+ * 名字进本地草稿，脏态 = 名字两侧 trim 比较 || 描述归一 JSON 比较；点底部保存条时
+ * 与描述合并为**单次** `settings.set`（`useTimelineWorkspace.updateOrigin(patch)` 替换
+ * `updateDescription`，`renameOrigin` 及其 page-action / prop 链一并删除），失败补
+ * `common.saveFailed` toast。中栏元年卡仍读已保存值，时间列仍为「元年」。
+ * **零新 IPC、无 DB 迁移**；`timeline:list` 不在重灌范围，用户已改的起点名 / 描述不会被覆盖。
+ * 教学文案同步（卷三「主时间线：只读聚合」「多时间线」、大纲「主时间线只读聚合」
+ * 「多时间线与过滤」），键提升让老库也能看到新文案。
  *
  * `v134`（时间线起点卡标题改名批）：时间线「起点」卡标题由 i18n 固定文案改为可改名——
  * `timeline:list:<bookId>` JSON 的 `TimelineEntry` 新增 `originName`（渲染层必填、解析时空串
