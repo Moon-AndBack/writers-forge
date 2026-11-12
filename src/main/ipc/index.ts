@@ -3,6 +3,7 @@ import { registerAiIpc } from './ai'
 import { registerAiCatalogIpc } from './aiCatalog'
 import { registerAiCompleteIpc } from './aiComplete'
 import { registerAiCompressionIpc } from './aiCompression'
+import { registerBackupIpc } from './backup'
 import { registerBooksIpc } from './books'
 import { registerCategoriesIpc } from './categories'
 import { registerChapterSearchIpc } from './chapterSearch'
@@ -36,6 +37,7 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
   registerAiCatalogIpc()
   registerAiCompleteIpc()
   registerAiCompressionIpc()
+  registerBackupIpc()
   registerBooksIpc()
   registerCategoriesIpc()
   registerChaptersIpc()

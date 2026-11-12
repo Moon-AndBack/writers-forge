@@ -74,6 +74,7 @@ import { chipColorsApi } from './api/chipColors'
 import { aiApi } from './api/ai'
 import { cleanWordsApi } from './api/cleanWords'
 import { onedriveApi } from './api/onedrive'
+import { backupApi } from './api/backup'
 
 /** 封面图读取结果：`data` 为 Uint8Array（structured clone 跨 IPC 传输形式）。 */
 export interface CoverPayload {
@@ -424,6 +425,8 @@ const api = {
   cleanWords: cleanWordsApi,
   /** OneDrive 备份：授权 / 状态 / 手动备份 + 进度订阅（错误以结构化 code 回传） */
   onedrive: onedriveApi,
+  /** 本地备份 / 恢复：列表 / 立即备份 / 恢复 / 整库导出 / 打开目录 / 删除 */
+  backup: backupApi,
   titleBar: {
     setOverlay: (options: TitleBarOverlayOptions): Promise<boolean> =>
       ipcRenderer.invoke('window:titlebar:set-overlay', options)

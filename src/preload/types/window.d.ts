@@ -74,6 +74,7 @@ import type {
 import type { ChipColorRow } from './chipColors'
 import type { CleanWordsApi } from './cleanWords'
 import type { OneDriveApi } from './onedrive'
+import type { BackupApi } from './backup'
 import type { AiApi } from './ai'
 import type { ImagePayload, ImageRow } from './images'
 import type {
@@ -420,6 +421,8 @@ export interface Api {
   cleanWords: CleanWordsApi
   /** OneDrive 备份：授权 / 状态 / 手动备份 + 进度订阅（错误以结构化 code 回传） */
   onedrive: OneDriveApi
+  /** 本地备份 / 恢复：列表 / 立即备份 / 恢复 / 整库导出 / 打开目录 / 删除 */
+  backup: BackupApi
   stats: {
     /** 全书累计有效字数 */
     totalWords: () => Promise<number>

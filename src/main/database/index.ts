@@ -65,10 +65,15 @@ const log = logger.scope('db')
 // 惰性单例：首次访问时打开数据库并建表
 let db: Database.Database | null = null
 
+/** 数据库文件绝对路径（备份 / 恢复域复用的单一真源）。 */
+export function getDatabasePath(): string {
+  return join(app.getPath('userData'), 'writers-forge.db')
+}
+
 export function getDb(): Database.Database {
   if (db) return db
 
-  const dbPath = join(app.getPath('userData'), 'writers-forge.db')
+  const dbPath = getDatabasePath()
   let instance: Database.Database
   try {
     instance = new Database(dbPath)

@@ -1,12 +1,12 @@
 import { app } from 'electron'
-import { mkdir, readdir, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
-import { getDb } from '../database/index'
+import { createSnapshot as createDatabaseSnapshot, removeFileQuietly } from '../backup/snapshot'
+import { MANUAL_BACKUP_PREFIX } from '../backup/types'
+import type { Snapshot } from '../backup/types'
 import { logger } from '../logger'
 import { getValidAccessToken } from './auth'
 import { uploadFile } from './upload'
 import { describeError } from './http'
-import { safePath } from './logSafe'
 import { OneDriveError } from './types'
 import type {
   OneDriveBackupProgress,
@@ -32,104 +32,28 @@ const log = logger.scope('onedrive:backup')
 const SNAPSHOT_DIR_NAME = 'writers-forge-backups'
 /** 遗留快照判定阈值：6 小时（进程崩溃等场景下的兜底清理）。 */
 const STALE_SNAPSHOT_MS = 6 * 60 * 60 * 1000
-/** 快照文件名前缀 / 后缀。 */
-const SNAPSHOT_PREFIX = 'writers-forge-'
-const SNAPSHOT_SUFFIX = '.db'
-
-/** 一次快照的本地信息。 */
-interface Snapshot {
-  filePath: string
-  fileName: string
-  sizeBytes: number
-}
 
 /** 当前进行中的备份任务（互斥用）。 */
 let activeBackup: Promise<OneDriveBackupResult> | null = null
 
-/** 两位补零。 */
-function pad2(value: number): string {
-  return value.toString().padStart(2, '0')
-}
-
-/** 本地时间戳 `YYYYMMDD-HHmmss`。 */
-function formatTimestamp(date: Date): string {
-  const datePart = `${date.getFullYear()}${pad2(date.getMonth() + 1)}${pad2(date.getDate())}`
-  const timePart = `${pad2(date.getHours())}${pad2(date.getMinutes())}${pad2(date.getSeconds())}`
-  return `${datePart}-${timePart}`
-}
-
-/** 判定是否为本模块生成的快照文件名。 */
-function isSnapshotName(name: string): boolean {
-  return name.startsWith(SNAPSHOT_PREFIX) && name.endsWith(SNAPSHOT_SUFFIX)
-}
-
-/** 清理超过阈值的历史遗留快照（best-effort）。 */
-async function cleanStaleSnapshots(directory: string, nowMs: number): Promise<void> {
-  let entries: string[]
-  try {
-    entries = await readdir(directory)
-  } catch {
-    return
-  }
-
-  await Promise.all(
-    entries.filter(isSnapshotName).map(async (name) => {
-      const filePath = join(directory, name)
-      try {
-        const info = await stat(filePath)
-        if (nowMs - info.mtimeMs < STALE_SNAPSHOT_MS) return
-        await rm(filePath, { force: true })
-        log.warn('已清理遗留的数据库快照', { filePath: safePath(filePath) })
-      } catch (error) {
-        log.warn('清理遗留快照失败', { filePath: safePath(filePath), error: describeError(error) })
-      }
-    })
-  )
-}
-
 /**
- * 把当前数据库复制为一致性快照（异步 API，WAL 模式下安全）。
+ * 把当前数据库复制为系统临时目录下的一致性快照（复用 `backup/snapshot` 共享实现）。
  *
- * 失败统一抛 `snapshot_failed`。
+ * 失败统一抛 `snapshot_failed`；共享层已负责清理半成品文件。
  */
 async function createSnapshot(now: Date = new Date()): Promise<Snapshot> {
-  const directory = join(app.getPath('temp'), SNAPSHOT_DIR_NAME)
-  const fileName = `${SNAPSHOT_PREFIX}${formatTimestamp(now)}${SNAPSHOT_SUFFIX}`
-  const filePath = join(directory, fileName)
-
   try {
-    await mkdir(directory, { recursive: true })
-    await cleanStaleSnapshots(directory, now.getTime())
-    await getDb().backup(filePath)
+    return await createDatabaseSnapshot({
+      directory: join(app.getPath('temp'), SNAPSHOT_DIR_NAME),
+      fileNamePrefix: MANUAL_BACKUP_PREFIX,
+      now,
+      staleAfterMs: STALE_SNAPSHOT_MS
+    })
   } catch (error) {
-    await removeSnapshot(filePath)
     throw new OneDriveError('snapshot_failed', {
       message: `Failed to create the database snapshot: ${describeError(error)}`,
       cause: error
     })
-  }
-
-  let sizeBytes: number
-  try {
-    sizeBytes = (await stat(filePath)).size
-  } catch (error) {
-    await removeSnapshot(filePath)
-    throw new OneDriveError('snapshot_failed', {
-      message: `Failed to stat the database snapshot: ${describeError(error)}`,
-      cause: error
-    })
-  }
-
-  log.info('数据库快照已生成', { filePath: safePath(filePath), sizeBytes })
-  return { filePath, fileName, sizeBytes }
-}
-
-/** 删除临时快照（失败只记日志）。 */
-async function removeSnapshot(filePath: string): Promise<void> {
-  try {
-    await rm(filePath, { force: true })
-  } catch (error) {
-    log.warn('删除临时快照失败', { filePath: safePath(filePath), error: describeError(error) })
   }
 }
 
@@ -196,7 +120,7 @@ async function executeBackup(options: RunBackupOptions): Promise<OneDriveBackupR
       ...(uploaded.webUrl ? { webUrl: uploaded.webUrl } : {})
     }
   } finally {
-    await removeSnapshot(snapshot.filePath)
+    await removeFileQuietly(snapshot.filePath)
   }
 }
 
