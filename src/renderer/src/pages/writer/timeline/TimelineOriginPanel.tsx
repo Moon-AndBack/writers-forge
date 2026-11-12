@@ -190,12 +190,9 @@ export default function TimelineOriginPanel({
 
   return (
     <>
-      {/* 卡头卡：常驻名字输入框（`Input size="md"` = 38px，规范三档之一）。
-          `on-soft` 让输入框自动换 `--control-on-soft` 底座，无需新增样式规则。 */}
-      <section
-        className="timeline-card timeline-origin-head on-soft"
-        aria-label={t('originNameLabel')}
-      >
+      {/* 卡头：与下方起点内容区同款字段底座（section 自身承担底色 / 透明边 /
+          圆角 / 10×12 内衬），内部输入框透明化，视觉边界只由 section 一层承担。 */}
+      <section className="timeline-origin-head" aria-label={t('originNameLabel')}>
         <Input
           size="md"
           value={draftName}

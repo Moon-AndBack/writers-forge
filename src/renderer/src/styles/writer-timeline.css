@@ -1,32 +1,33 @@
 /* ============================================================
    写作视图 · 独立时间线右栏
    ------------------------------------------------------------------
-   右栏为「卡头卡 + 内容卡」的两卡结构：「起点」区（卡头卡 = 常驻名字输入框，
-   内容卡 = 富文本编辑器 + 卡外底部 `SaveBar`，读写当前选中时间线）与
+   右栏为「卡头 + 内容」的两段结构：「起点」区（卡头 = 常驻名字输入框，
+   内容 = 富文本编辑器 + 卡外底部 `SaveBar`，读写当前选中时间线）与
    「选中场景」区（卡头卡 = 标题 + 时间，内容卡 = 只读正文），
-   无面板头（模块标题由中栏承载）。两卡间距沿用 `.rp-body` 的 8px；
-   `.timeline-card`（卡头卡 / 场景卡）底座为 `--soft-solid` + 1px `--line` +
-   `--r-lg` + 14px 内衬；起点内容卡直接以 `.short-rich-field` 控件底座作根
-   （`--soft-solid` + `--r-lg` + 10×12 内衬，hover / 聚焦环由控件提供），
-   不再套卡片 chrome。场景正文直接铺在卡片软底上（`.rp-read` 内滚），
+   无面板头（模块标题由中栏承载）。段间距沿用 `.rp-body` 的 8px；
+   起点卡头与内容区统一用字段底座（`--soft-solid` + 透明边 + `--r-lg`，
+   hover / 聚焦环由底座提供）：卡头为 section 底座 + 内部透明输入框，
+   内容区直接以 `.short-rich-field` 控件底座作根。场景两卡仍用
+   `.timeline-card`（`--soft-solid` + 1px `--line` + `--r-lg` + 14px 内衬）。
+   场景正文直接铺在卡片软底上（`.rp-read` 内滚），
    不再套 `.wf-readonly-block` 值块。剧情模块共用的 `.plot-editor` /
    `.plot-field` 等类留在 writer-plot-editor.css，本文件只放时间线专属规则。
    ============================================================ */
 
-/* 右栏纵向流：内容卡吃掉栏内剩余高度（卡头卡按内容高度，两卡间距 8px）；
+/* 右栏纵向流：内容区吃掉栏内剩余高度（卡头按内容高度，段间距 8px）；
    高度链：`.rp-view`（flex: 1 + min-height: 0）→ `.rp-body`（flex: 1 + min-height: 0）→
-   内容卡（flex: 1 1 auto + min-height: 0）→ `.timeline-detail__section` → `.rp-read`。
+   内容区（flex: 1 1 auto + min-height: 0）→ `.timeline-detail__section` → `.rp-read`。
    每层都带 `min-height: 0`，否则 flex 项的最小内容高度会把卡片撑破。 */
 .rp-view[data-view='timeline'] .rp-body {
   display: flex;
   flex-direction: column;
   min-height: 0;
   gap: 8px;
-  /* 滚动全部由内层（起点内容卡富文本字段 / 场景内容卡 `.rp-read`）承担，外层不产生滚动条。 */
+  /* 滚动全部由内层（起点内容区富文本字段 / 场景内容卡 `.rp-read`）承担，外层不产生滚动条。 */
   overflow: hidden;
 }
 
-/* ---------- 卡片底座 ---------- */
+/* ---------- 场景卡片底座 ---------- */
 .timeline-card {
   flex: none;
   display: flex;
@@ -38,20 +39,62 @@
   border-radius: var(--r-lg);
 }
 
-/* ---------- 卡头卡（起点 / 场景共用） ---------- */
+/* ---------- 卡头（起点 / 场景） ---------- */
 /* 起点为名字输入框、场景为标题 + 时间，均按内容高度，不参与剩余空间分配。 */
 .timeline-origin-head,
 .timeline-scene-head {
   flex: none;
 }
 
-/* ---------- 起点内容卡（编辑器 + 卡外保存条） ---------- */
-/* 起点内容卡即字段根（`section.short-rich-field--fill`），吃掉右栏剩余高度
+/* 例外：起点卡头复用下方内容区（`.short-rich-field`）的字段底座外观——
+   section 自身承担底色 / 透明边 / 圆角 / 10×12 内衬与 hover / 聚焦环，
+   内部输入框完全透明化，避免「描边卡片 + 深底描边输入框」的双层边界。 */
+.timeline-origin-head {
+  padding: 10px 12px;
+  background: var(--soft-solid);
+  border: 1px solid transparent;
+  border-radius: var(--r-lg);
+  transition:
+    background var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease),
+    box-shadow var(--dur-base) var(--ease),
+    color var(--dur-base) var(--ease);
+}
+
+.timeline-origin-head:hover {
+  background: var(--soft-hover-solid);
+}
+
+/* 聚焦态与 `.short-rich-field:focus-within` 同款：--pane 底 + 品牌描边 + 3.5px 环。 */
+.timeline-origin-head:focus-within {
+  background: var(--pane);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+}
+
+/* 例外：起点卡头内的输入框只承担文本输入，外观由 section 承担——
+   去掉底色 / 边框 / 内衬 / 固定高度与自身 hover / 聚焦态，
+   字号与行高对齐内容区（13px / 1.65）。 */
+.timeline-origin-head .wf-input,
+.timeline-origin-head .wf-input:hover:not(:disabled):not(:read-only):not([aria-readonly='true']),
+.timeline-origin-head .wf-input:focus {
+  height: auto;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ---------- 起点内容区（编辑器 + 卡外保存条） ---------- */
+/* 起点内容区即字段根（`section.short-rich-field--fill`），吃掉右栏剩余高度
    （`SaveBar` 在卡外、按内容高度），高度链：
-   `.rp-body`（flex column + min-height 0）→ 起点内容卡（flex 1 1 auto + min-height 0）
+   `.rp-body`（flex column + min-height 0）→ 起点内容区（flex 1 1 auto + min-height 0）
    → `.short-rich-field__body`（flex column）→ `.ProseMirror`。
    每层都带 `min-height: 0`，内容超高时由字段自身滚动（与伏笔右栏同口径）。
-   卡片外观（`--soft-solid` 底 / 10×12 内衬 / `--r-lg` / hover / 聚焦环）由
+   字段外观（`--soft-solid` 底 / 10×12 内衬 / `--r-lg` / hover / 聚焦环）由
    `.short-rich-field` 控件底座提供，本类只负责高度分配。 */
 .timeline-origin-card {
   flex: 1 1 auto;
