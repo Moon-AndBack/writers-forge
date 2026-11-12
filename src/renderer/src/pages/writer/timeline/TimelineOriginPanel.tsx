@@ -75,7 +75,7 @@ export default function TimelineOriginPanel({
   const storedRef = useRef('')
   const storedNameRef = useRef('')
   const loadedRef = useRef(false)
-  const inFlightSaveRef = useRef<Promise<boolean> | null>(null)
+  const inFlightSaveRef = useRef<Promise<void> | null>(null)
   const handleSaveRef = useRef<() => Promise<void>>(async () => undefined)
 
   const listKey = timelineListKey(bookId)
@@ -143,25 +143,38 @@ export default function TimelineOriginPanel({
     if (jsonChanged) patch.description = draftRef.current
     savingRef.current = true
     setSaving(true)
-    const task = onSaveOrigin(patch)
+    // 在途任务自身吞掉落库失败与异常（统一 toast），保证 `flushSave` await 到的
+    // promise 不会 reject；`finally` 必定复位保存态并清空在途引用。
+    const task = (async (): Promise<void> => {
+      try {
+        const ok = await onSaveOrigin(patch)
+        if (!ok) {
+          showToast(tCommon('saveFailed'))
+          return
+        }
+        // 保存成功不回写输入框（避免光标跳动），只推进基线。
+        if (nameChanged) {
+          storedNameRef.current = nextName
+          setStoredName(nextName)
+        }
+        if (jsonChanged) {
+          storedRef.current = nextJson
+          setStoredJson(nextJson)
+        }
+      } catch {
+        // 同步抛出 / Promise reject 与返回 false 走同一条失败提示；基线不前进。
+        showToast(tCommon('saveFailed'))
+      } finally {
+        inFlightSaveRef.current = null
+        savingRef.current = false
+        setSaving(false)
+      }
+    })()
     inFlightSaveRef.current = task
-    const ok = await task
-    inFlightSaveRef.current = null
-    savingRef.current = false
-    setSaving(false)
-    if (!ok) {
-      showToast(tCommon('saveFailed'))
-      return
-    }
-    // 保存成功不回写输入框（避免光标跳动），只推进基线。
-    if (nameChanged) {
-      storedNameRef.current = nextName
-      setStoredName(nextName)
-    }
-    if (jsonChanged) {
-      storedRef.current = nextJson
-      setStoredJson(nextJson)
-    }
+    // 兜底：若 `onSaveOrigin` 同步抛异常，内部 `finally` 会先于上面的赋值执行，
+    // 这里按引用一致再清一次，避免残留已结束的任务。
+    await task
+    if (inFlightSaveRef.current === task) inFlightSaveRef.current = null
   }, [onSaveOrigin, showToast, tCommon])
 
   // 每次渲染刷新 flush 用的保存入口（闭包捕获最新落库值 / 保存函数）。
@@ -172,7 +185,15 @@ export default function TimelineOriginPanel({
   // 关闭前 flush：先等在途保存结束，再按最新草稿与已落库基线判定是否补存。
   // 无脏内容 / 未加载 / 已与落库值一致时为空操作（幂等，不重复写）。
   const flushSave = useCallback(async (): Promise<void> => {
-    if (inFlightSaveRef.current) await inFlightSaveRef.current
+    // 在途保存的失败 / 异常已由 `handleSave` 内部提示；此处兜底吞掉，保证 flush 链
+    // 不中断，后续仍按最新草稿与基线比对（必要时补存）。
+    if (inFlightSaveRef.current) {
+      try {
+        await inFlightSaveRef.current
+      } catch {
+        // 忽略：保存态已由 `handleSave` 的 finally 复位。
+      }
+    }
     if (!loadedRef.current) return
     const nameChanged = draftNameRef.current.trim() !== storedNameRef.current.trim()
     const jsonChanged = (draftRef.current.json ?? '') !== storedRef.current

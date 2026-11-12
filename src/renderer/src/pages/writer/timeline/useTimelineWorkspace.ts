@@ -197,26 +197,29 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
   const updateOrigin = useCallback(
     async (patch: TimelineOriginPatch): Promise<boolean> => {
       if (patch.originName === undefined && patch.description === undefined) return true
-      const listRaw = await window.api?.settings.get(listKey)
-      const current = parseTimelineList(listRaw ?? null)
-      const base = current.length > 0 ? current : list
-      const target = resolveActiveEntry(base, activeId)
-      if (target === null) return false
-      const nextList = base.map((entry) =>
-        entry.id === target.id
-          ? {
-              ...entry,
-              ...(patch.originName !== undefined ? { originName: patch.originName.trim() } : {}),
-              ...(patch.description !== undefined
-                ? {
-                    description: patch.description.text.trim(),
-                    descriptionJson: patch.description.json ?? ''
-                  }
-                : {})
-            }
-          : entry
-      )
+      // 读盘、解析与写入同处一个 try：`settings.get` 的 IPC reject 同样会抛出，
+      // 若只包写入，异常会穿透到调用方（起点卡 `handleSave`）导致保存态不复位。
       try {
+        // 读盘失败 → 统一 false：不拿可能过期的内存列表硬写，避免覆盖其它条目的改动。
+        const listRaw = await window.api?.settings.get(listKey)
+        const current = parseTimelineList(listRaw ?? null)
+        const base = current.length > 0 ? current : list
+        const target = resolveActiveEntry(base, activeId)
+        if (target === null) return false
+        const nextList = base.map((entry) =>
+          entry.id === target.id
+            ? {
+                ...entry,
+                ...(patch.originName !== undefined ? { originName: patch.originName.trim() } : {}),
+                ...(patch.description !== undefined
+                  ? {
+                      description: patch.description.text.trim(),
+                      descriptionJson: patch.description.json ?? ''
+                    }
+                  : {})
+              }
+            : entry
+        )
         await window.api?.settings.set(listKey, serializeTimelineList(nextList))
         setList(nextList)
         return true
