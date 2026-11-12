@@ -120,6 +120,12 @@
   color: var(--text-mute);
 }
 
+/* 角色年龄块辅助行：推算出生年 / 未设置说明（沿用 --text-mute 小字，不新增色值）。 */
+.dossier-age-hint {
+  font-size: 12px;
+  color: var(--text-mute);
+}
+
 .dossier-rel-add {
   display: flex;
   flex-direction: column;

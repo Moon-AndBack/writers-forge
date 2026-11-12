@@ -3,6 +3,7 @@ import { getDb } from './index'
 import { resolveEntitySubtype } from './worldSubtypes'
 import { replaceWorldAliases, replaceWorldTags, writeWorldText } from './worldEntityMeta'
 import type {
+  CharacterAgeAnchor,
   CreateWorldEntityInput,
   UpdateWorldEntityPatch,
   WorldCustomFieldInput,
@@ -18,6 +19,7 @@ import {
 } from './worldEntitySubtypeFields'
 import { writeGradeRank } from './worldItemGradeRank'
 import { writePowerSystemKind } from './worldPowerWrites'
+import { replaceCharacterAges } from './worldCharacterAge'
 import { NO_SUBTYPE, NOW, WV_SUBTYPE_TABLE } from './worldEntityShared'
 import { getWorldEntity } from './worldEntityQueries'
 import { deleteWorldRefsForEntity } from './worldRefs'
@@ -82,6 +84,8 @@ function applyChildFields(
   subtype: WorldEntitySubtypeRef,
   fields: {
     role?: string
+    /** 角色年龄锚点（整体替换）；非 character 静默忽略。 */
+    characterAges?: CharacterAgeAnchor[]
     grade?: string
     rank?: number
     worldviewFields?: Record<string, string>
@@ -95,6 +99,11 @@ function applyChildFields(
   const db = getDb()
   if (fields.role !== undefined) {
     db.prepare('UPDATE world_character SET role = ? WHERE entity_id = ?').run(fields.role, entityId)
+  }
+  if (fields.characterAges !== undefined && entityType === 'character') {
+    // 年龄锚点挂在角色子表语义下：先补角色行（触发器通常已建，老数据可能缺失），再全量替换。
+    db.prepare('INSERT OR IGNORE INTO world_character (entity_id) VALUES (?)').run(entityId)
+    replaceCharacterAges(db, entityId, fields.characterAges)
   }
   if (fields.powerKind !== undefined && entityType === 'power_system') {
     writePowerSystemKind(entityId, fields.powerKind)
@@ -148,6 +157,7 @@ export function createWorldEntity(input: CreateWorldEntityInput): WorldEntityDet
     // `input.kind` 已废弃：不再向下传递，仅保留类型兼容（种子仍传）。
     applyChildFields(input.entityType, id, subtype, {
       role: input.role,
+      characterAges: input.characterAges,
       grade: input.grade,
       rank: input.rank,
       worldviewFields: input.worldviewFields,
@@ -241,6 +251,7 @@ export function updateWorldEntity(
     // `patch.kind` 已废弃：不再向下传递（IPC 亦不再解析）。
     applyChildFields(existing.entityType, id, newSubtype, {
       role: patch.role,
+      characterAges: patch.characterAges,
       grade: patch.grade,
       rank: patch.rank,
       worldviewFields: patch.worldviewFields,

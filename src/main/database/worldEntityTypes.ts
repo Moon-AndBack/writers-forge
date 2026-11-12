@@ -212,12 +212,31 @@ export {
 } from '../../shared/worldSubtypeFields'
 
 /**
+ * 角色年龄锚点：某条时间线上的「绝对年 → 年龄」。
+ *
+ * 不存出生年，只存一个可反推出生年的锚点：
+ * `出生年 = anchorYear - age`；同一年龄 = `age + (目标年 - anchorYear)`。
+ * 绝对年口径与剧情场景一致：纪前为负、元年 0、纪后为正。
+ */
+export interface CharacterAgeAnchor {
+  timelineId: string
+  anchorYear: number
+  age: number
+}
+
+/**
  * 实体详情：主表行 + 五类子表专属字段（扁平化，未命中类型时为默认值）
  * + 别名 / 标签 / 正文。
  */
 export interface WorldEntityDetail extends WorldEntityRow {
   /** 角色专属（`world_character.role`）。 */
   role: string
+  /**
+   * 角色年龄锚点（`world_character_age`，按时间线独立）。
+   *
+   * 仅 `entityType = 'character'` 有值，其余实体为 `[]`。
+   */
+  characterAges: CharacterAgeAnchor[]
   /**
    * @deprecated 批 L1 起废弃，恒为 `''`。
    *
@@ -267,6 +286,8 @@ export interface CreateWorldEntityInput {
    */
   subtypeId?: number | null
   role?: string
+  /** 角色年龄锚点（整体替换：提交的数组即全部时间线的锚点；缺省表示不改动）。 */
+  characterAges?: CharacterAgeAnchor[]
   /**
    * @deprecated 批 L1 起废弃，数据层忽略、IPC 不再解析。
    *
@@ -293,6 +314,8 @@ export interface UpdateWorldEntityPatch {
   /** 子类分类外键（可空，`null` = 置为未分类）；缺省表示不变更。 */
   subtypeId?: number | null
   role?: string
+  /** 角色年龄锚点（整体替换：提交的数组即全部时间线的锚点；缺省表示不变更）。 */
+  characterAges?: CharacterAgeAnchor[]
   /** @deprecated 批 L1 起废弃，数据层忽略、IPC 不再解析；子类真源为 `subtypeId`。 */
   kind?: string
   /**

@@ -1,4 +1,4 @@
-import type { WorldCustomFieldInput, WorldEntityType } from './worldEntities'
+import type { CharacterAgeAnchor, WorldCustomFieldInput, WorldEntityType } from './worldEntities'
 
 /**
  * 教学书「Writer's Forge · 使用指南」的统一设定库 demo 实体数据
@@ -31,6 +31,8 @@ export interface SeedEntity {
   subTypeName: string
   name: string
   role?: string
+  /** 角色年龄锚点（按时间线独立；示范数据只挂默认时间线）。 */
+  characterAges?: CharacterAgeAnchor[]
   /** 仅境界体系使用（体系类型：线性 / 多途径 / 果位）；物品 / 势力子类走 `subTypeName`。 */
   kind?: string
   grade?: string
@@ -108,6 +110,7 @@ export const DEMO_ENTITIES: ReadonlyArray<SeedEntity> = [
     subTypeName: '主角',
     name: '砚秋',
     role: '主角',
+    characterAges: [{ timelineId: 'default', anchorYear: 123, age: 12 }],
     aliases: ['砚秋先生'],
     tags: ['人物'],
     body: '砚秋是抄书阁的抄书人，也是本指南的示范主角。角色条目可在卡片铅笔弹窗里改名称、类别（主角 / 配角 / 龙套 / 反派）与别名；角色卡片也有「关联关系」入口，可把角色挂到势力下（属于），或与物品建立「物品属于角色」。'
@@ -118,6 +121,7 @@ export const DEMO_ENTITIES: ReadonlyArray<SeedEntity> = [
     subTypeName: '配角',
     name: '笔灵',
     role: '配角',
+    characterAges: [{ timelineId: 'default', anchorYear: 123, age: 10 }],
     aliases: ['笔灵子'],
     tags: ['人物'],
     body: '笔灵寄居在锻笔剑中，负责在正文里提醒错字，是本指南的示范配角。角色分 主角 / 配角 / 龙套 / 反派 四类，可在新建与编辑弹窗的「类别」里随时切换；角色卡片有「关联关系」入口，与物品之间的关系会按「物品属于角色」记录。'

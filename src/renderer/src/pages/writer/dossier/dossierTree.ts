@@ -13,6 +13,7 @@
  */
 import type { RefObject } from 'react'
 import type {
+  CharacterAgeAnchor,
   WorldCustomField,
   WorldCustomFieldInput,
   WorldEntityDetail as UnifiedEntityDetail,
@@ -30,6 +31,7 @@ import {
 } from '../../../shell/activityBarModules'
 
 export type {
+  CharacterAgeAnchor,
   WorldCustomField,
   WorldCustomFieldInput,
   WorldEntityType,
@@ -188,6 +190,8 @@ export interface DossierUpdatePatch {
   bodyJson?: string
   /** 境界体系类型（`world_power_system.kind`）；仅境界体系条目写入，其余类型忽略。 */
   powerKind?: string
+  /** 角色年龄锚点（整体替换：提交的数组即全部时间线的锚点；非角色忽略）。 */
+  characterAges?: CharacterAgeAnchor[]
   worldviewFields?: Record<string, string>
   itemFields?: Record<string, string>
   /** 物品品阶（等级显示标签）；仅物品预设子类（weapon/skill/pill/talent/equipment）写入。 */

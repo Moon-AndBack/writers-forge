@@ -7,6 +7,7 @@
  * - `worldRefs.ts`：通用引用（出 / 入边、语义码字典）；
  * - `worldPowerQueries.ts`：境界体系只读；
  * - `worldItemGradeRank.ts`：物品品阶（`grade` / `rank`）读写（第 3 批起落在物品子分类表）。
+ * - `worldCharacterAge.ts`：角色年龄锚点（`world_character_age`，按时间线独立）。
  * - `worldEntityQueries.ts`：主表只读路径（列表 / 详情）；
  * - `worldEntityWrites.ts`：主表写路径（增 / 改 / 软删 + 子表字段）。
  * 主表 + 模块子表（character / power_system）+ 子类字段的读写在上述两文件内，
@@ -35,5 +36,6 @@ export * from './worldEntityMeta'
 export * from './worldRefs'
 export * from './worldPowerQueries'
 export * from './worldPowerWrites'
+export * from './worldCharacterAge'
 export * from './worldEntityQueries'
 export * from './worldEntityWrites'

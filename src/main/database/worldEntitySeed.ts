@@ -130,6 +130,8 @@ function createSubtypeResolver(
 function seedEntities(bookId: string): Map<string, number> {
   const idByKey = new Map<string, number>()
   const resolveSubtypeId = createSubtypeResolver(bookId)
+  // 示范锚点声明为默认时间线；老库若已切换激活时间线，改挂到当前激活线，保证演示可见。
+  const activeTimelineId = getSetting(`timeline:active:${bookId}`) || 'default'
   for (const demo of DEMO_ENTITIES) {
     const created = createWorldEntity({
       bookId,
@@ -137,6 +139,9 @@ function seedEntities(bookId: string): Map<string, number> {
       subtypeId: resolveSubtypeId(demo.entityType, demo.subTypeName),
       name: demo.name,
       role: demo.role,
+      characterAges: demo.characterAges?.map((anchor) =>
+        anchor.timelineId === 'default' ? { ...anchor, timelineId: activeTimelineId } : anchor
+      ),
       grade: demo.grade,
       rank: demo.rank,
       aliases: demo.aliases,

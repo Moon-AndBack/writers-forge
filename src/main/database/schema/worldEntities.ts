@@ -3,7 +3,7 @@ import type Database from 'better-sqlite3'
 /**
  * 统一设定库 schema：世界观 / 角色 / 物品功法 / 势力 / 境界体系 五类**统一寻址**。
  *
- * 结构（8 表 + 10 索引 + 2 触发器）：
+ * 结构（10 表 + 10 索引 + 2 触发器）：
  * - **统一主表** `world_entities`：五类共用的身份 / 元信息（类型、子类分类外键、
  *   名称、修订号、软删除），`book_id` 外键 ON DELETE CASCADE；
  *   子类真源为 `subtype_id` → `world_subtypes(id)`，展示名 / 预设路由键经 JOIN 取得；
@@ -110,6 +110,18 @@ export function createWorldEntitiesSchema(db: Database.Database): void {
     CREATE TABLE IF NOT EXISTS world_character (
       entity_id INTEGER PRIMARY KEY REFERENCES world_entities(id) ON DELETE CASCADE,
       role TEXT NOT NULL DEFAULT ''
+    )
+  `)
+  // 角色年龄锚点：每条时间线独立一个「绝对年 → 年龄」锚点（不存出生年）。
+  // 绝对年口径与剧情场景一致：纪前为负、元年 0、纪后为正；年龄为周岁（非负）。
+  // 新表无需补列：老库启动时本函数幂等执行到此处即自动建表。
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS world_character_age (
+      entity_id INTEGER NOT NULL REFERENCES world_entities(id) ON DELETE CASCADE,
+      timeline_id TEXT NOT NULL DEFAULT 'default',
+      anchor_year INTEGER NOT NULL,
+      age INTEGER NOT NULL,
+      PRIMARY KEY (entity_id, timeline_id)
     )
   `)
 

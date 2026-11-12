@@ -98,6 +98,19 @@ const dossier = {
     gradePlaceholder: '如：上品',
     rankLabel: '档位',
     rankPlaceholder: '如：3',
+    /** 角色年龄锚点（仅角色右栏；按时间线独立，不存出生年）。 */
+    characterAge: {
+      title: '年龄',
+      timeline: '时间线',
+      era: '纪元',
+      eraUnset: '未设置',
+      year: '年份',
+      yearPlaceholder: '如：123',
+      age: '年龄',
+      agePlaceholder: '如：12',
+      birthYear: '推算出生于 {{year}}',
+      unsetHint: '每条时间线独立记录；填好纪元、年份与年龄后，点底部「保存」落库。'
+    },
     /** 境界体系唯一专属字段（`world_power_system.kind`）。 */
     powerKindLabel: '体系类型',
     powerKindPlaceholder: '如：线性 / 多途径 / 果位',

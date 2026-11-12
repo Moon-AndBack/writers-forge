@@ -1,9 +1,14 @@
-import type { DossierDetail as DossierDetailData, DossierUpdatePatch } from './dossierTree'
+import type {
+  CharacterAgeAnchor,
+  DossierDetail as DossierDetailData,
+  DossierUpdatePatch
+} from './dossierTree'
+import { characterAgesEqual, sortCharacterAges } from './characterAge'
 import { keyValueInputs, keyValuesEqual, toKeyValueRows, type KeyValueRow } from './keyValueRows'
 
 /**
- * 设定档案右栏「子类字段」草稿：品阶 / 档位（原文）+ 三组专属字段 + 自定义键值行。
- * 与 `DossierDetail`（条目详情）分离，改字段只改草稿，点保存才落库。
+ * 设定档案右栏「子类字段」草稿：品阶 / 档位（原文）+ 三组专属字段 + 自定义键值行
+ * + 角色年龄锚点。与 `DossierDetail`（条目详情）分离，改字段只改草稿，点保存才落库。
  */
 export interface DossierSubtypeValues {
   /** 物品品阶（等级显示标签）。 */
@@ -19,8 +24,10 @@ export interface DossierSubtypeValues {
   customFields: KeyValueRow[]
 }
 
-/** 右栏全部可编辑内容的草稿（正文 + 子类字段）。 */
+/** 右栏全部可编辑内容的草稿（正文 + 子类字段 + 角色年龄）。 */
 export interface DossierDraft extends DossierSubtypeValues {
+  /** 角色年龄锚点（按时间线独立；非角色恒为空数组）。 */
+  characterAges: CharacterAgeAnchor[]
   /** 正文纯文本摘要（`world_texts.body`）。 */
   body: string
   /** 正文整条块级 JSON 真源（`world_texts.body_json`，`''` = 空正文）。 */
@@ -44,6 +51,7 @@ export function createSubtypeValues(detail: DossierDetailData): DossierSubtypeVa
 export function createDossierDraft(detail: DossierDetailData): DossierDraft {
   return {
     ...createSubtypeValues(detail),
+    characterAges: detail.characterAges.map((anchor) => ({ ...anchor })),
     body: detail.body,
     bodyJson: detail.bodyJson
   }
@@ -85,6 +93,10 @@ export function buildDossierPatch(
   const rank = parseRank(draft.rankText)
   if (rank !== detail.rank) patch.rank = rank
   if (draft.powerKind !== detail.powerKind) patch.powerKind = draft.powerKind
+  if (!characterAgesEqual(draft.characterAges, detail.characterAges)) {
+    // 按 timelineId 规范化顺序后整组提交（数据层全量替换）。
+    patch.characterAges = sortCharacterAges(draft.characterAges)
+  }
   if (!sameFields(draft.worldviewFields, detail.worldviewFields)) {
     patch.worldviewFields = { ...draft.worldviewFields }
   }

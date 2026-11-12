@@ -8,6 +8,7 @@
  */
 
 import type {
+  CharacterAgeAnchor,
   CreateWorldEntityInput as MainCreateWorldEntityInput,
   UpdateWorldEntityPatch as MainUpdateWorldEntityPatch,
   UpdateWorldPowerSystemPatch,
@@ -36,6 +37,7 @@ export type CreateWorldEntityInput = Omit<MainCreateWorldEntityInput, 'kind'>
 export type UpdateWorldEntityPatch = Omit<MainUpdateWorldEntityPatch, 'kind'>
 
 export type {
+  CharacterAgeAnchor,
   WorldEntityType,
   WorldEntityRow,
   WorldEntityDetail,

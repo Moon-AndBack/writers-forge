@@ -18,6 +18,7 @@ import {
   updateWorldEntity
 } from '../database/worldEntities'
 import type {
+  CharacterAgeAnchor,
   CreateWorldEntityInput,
   UpdateWorldEntityPatch,
   WorldEntitySubtypeRef,
@@ -85,6 +86,30 @@ function readOptionalString(value: unknown): string | null | undefined {
   return typeof value === 'string' ? value : null
 }
 
+/**
+ * 解析角色年龄锚点数组：未提供 → undefined；非法 → null（整项拒绝）。
+ *
+ * 与既有 parse 风格一致：任一项非法（非对象 / timelineId 空或重复 / anchorYear 非整数 /
+ * age 非非负整数）即拒绝整个入参，不做「丢弃坏项后部分写入」——避免用户以为已保存。
+ */
+function readCharacterAges(value: unknown): CharacterAgeAnchor[] | null | undefined {
+  if (value === undefined) return undefined
+  if (!Array.isArray(value)) return null
+  const result: CharacterAgeAnchor[] = []
+  const seen = new Set<string>()
+  for (const item of value) {
+    if (!isRecord(item)) return null
+    if (typeof item.timelineId !== 'string') return null
+    const timelineId = item.timelineId.trim()
+    if (timelineId === '' || seen.has(timelineId)) return null
+    if (typeof item.anchorYear !== 'number' || !Number.isInteger(item.anchorYear)) return null
+    if (!isNonNegativeInt(item.age)) return null
+    seen.add(timelineId)
+    result.push({ timelineId, anchorYear: item.anchorYear, age: item.age })
+  }
+  return result
+}
+
 /** 可选 id 字段（子类分类 id）：未提供 → { ok: true }；显式 null → value null；非法 → { ok: false }。 */
 function readOptionalId(value: unknown): { ok: boolean; value?: number | null } {
   if (value === undefined) return { ok: true }
@@ -109,6 +134,9 @@ function parseCreateInput(input: unknown): CreateWorldEntityInput | null {
   const role = readOptionalString(input.role)
   if (role === null) return null
   if (role !== undefined) parsed.role = role
+  const characterAges = readCharacterAges(input.characterAges)
+  if (characterAges === null) return null
+  if (characterAges !== undefined) parsed.characterAges = characterAges
   // `kind` 已废弃：IPC 不再解析，入参中即使出现也被忽略。
   const grade = readOptionalString(input.grade)
   if (grade === null) return null
@@ -178,6 +206,9 @@ function parseUpdatePatch(input: unknown): UpdateWorldEntityPatch | null {
     if (typeof input.role !== 'string') return null
     patch.role = input.role
   }
+  const characterAges = readCharacterAges(input.characterAges)
+  if (characterAges === null) return null
+  if (characterAges !== undefined) patch.characterAges = characterAges
   // `kind` 已废弃：IPC 不再解析，入参中即使出现也被忽略。
   if (input.powerKind !== undefined) {
     if (typeof input.powerKind !== 'string') return null

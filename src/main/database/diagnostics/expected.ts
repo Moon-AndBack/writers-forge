@@ -327,6 +327,11 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
     name: 'world_character',
     columns: ['entity_id', 'role']
   },
+  // 角色年龄锚点（按时间线独立）：绝对年 + 年龄，主键 (entity_id, timeline_id)。
+  {
+    name: 'world_character_age',
+    columns: ['entity_id', 'timeline_id', 'anchor_year', 'age']
+  },
   // 物品功法 / 势力子类专属子表（批 L1，物品前 5 张含 grade / rank）：
   // 见 `./expectedItemFactionSubtypes`
   ...EXPECTED_ITEM_SUBTYPE_TABLES,

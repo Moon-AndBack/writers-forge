@@ -79,6 +79,19 @@ const dossier = {
     gradePlaceholder: 'e.g. superior',
     rankLabel: 'Rank',
     rankPlaceholder: 'e.g. 3',
+    characterAge: {
+      title: 'Age',
+      timeline: 'Timeline',
+      era: 'Era',
+      eraUnset: 'Not set',
+      year: 'Year',
+      yearPlaceholder: 'e.g. 123',
+      age: 'Age',
+      agePlaceholder: 'e.g. 12',
+      birthYear: 'Estimated birth: {{year}}',
+      unsetHint:
+        'Each timeline stores its own anchor. Fill in era, year and age, then click Save at the bottom.'
+    },
     powerKindLabel: 'System type',
     powerKindPlaceholder: 'e.g. linear / multi-path / fruition',
     aliasesLabel: 'Aliases',

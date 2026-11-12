@@ -10,6 +10,7 @@ import type {
 import { WORLD_ENTITY_TYPES, WORLDVIEW_SUBTYPE_FIELDS } from './worldEntityTypes'
 import { loadCustomFields, loadFactionFields, loadItemFields } from './worldEntitySubtypeFields'
 import { loadGradeRank, loadGradeRankMap } from './worldItemGradeRank'
+import { loadCharacterAges } from './worldCharacterAge'
 import type { ItemGradeRank } from './worldItemGradeRank'
 import { loadRelationSummaryMap } from './worldRefs'
 import { WV_SUBTYPE_TABLE } from './worldEntityShared'
@@ -205,6 +206,8 @@ export function getWorldEntity(id: number): WorldEntityDetail | null {
       loadRelationSummaryMap([id]).get(id) ?? []
     ),
     role: row.role,
+    // 角色年龄锚点（按时间线独立）：仅角色读取，其余类型（含类型迁移后的残留行）恒为空。
+    characterAges: row.entityType === 'character' ? loadCharacterAges(getDb(), id) : [],
     // 详情独占：富文本正文 JSON（列表不返回，避免传输膨胀）。
     bodyJson: row.bodyJson,
     // 批 L1：`kind` 已废弃，恒返回空串（子类真源为 `subtypeId`），仅保留字段避免类型破坏。

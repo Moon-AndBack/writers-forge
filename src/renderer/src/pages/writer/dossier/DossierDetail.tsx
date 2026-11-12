@@ -14,11 +14,13 @@ import {
   type DossierSubtypeValues
 } from './dossierDraft'
 import type {
+  CharacterAgeAnchor,
   DossierDetail as DossierDetailData,
   DossierModule,
   DossierUpdatePatch
 } from './dossierTree'
 import DossierBodyEditor from './DossierBodyEditor'
+import CharacterAgeFields from './CharacterAgeFields'
 import SubtypeFieldsPanel from './SubtypeFieldsPanel'
 
 export interface DossierDetailProps {
@@ -30,7 +32,7 @@ export interface DossierDetailProps {
   detailPending: boolean
   /** 右栏上报的未保存改动（保存按钮禁用态；真源为本面板草稿比对）。 */
   dirty: boolean
-  /** 更新（正文 / 子类字段 / 品阶档位 / 自定义键值补丁；返回值 = 是否落库成功，供「保存中」态与守卫判定）。 */
+  /** 更新（正文 / 子类字段 / 品阶档位 / 自定义键值 / 角色年龄补丁；返回值 = 是否落库成功，供「保存中」态与守卫判定）。 */
   onUpdate: (id: number, patch: DossierUpdatePatch) => Promise<boolean>
   /** 脏态上报（切换守卫 + 保存按钮共用）。 */
   onDirtyChange: (dirty: boolean) => void
@@ -44,7 +46,8 @@ export interface DossierDetailProps {
  *
  * - **上段** `.dossier-fields-panel`：只放**子类表内字段**——世界观 / 物品功法 / 势力
  *   各自的专属字段组、物品预设子类的品阶 / 档位、自定义子类的键值字段，以及境界体系的
- *   「体系类型」（`world_power_system.kind`）（`SubtypeFieldsPanel`）。名称 / 类别 / 别名
+ *   「体系类型」（`world_power_system.kind`）（`SubtypeFieldsPanel`）；角色没有子类字段，
+ *   改放按时间线独立的**年龄锚点**（`CharacterAgeFields`）。名称 / 类别 / 别名
  *   不在右栏展示（编辑入口在中栏卡片铅笔弹窗 `DossierEditDialog`）；标签与关系同样不在
  *   右栏展示；删除只在中栏卡片垃圾桶。
  * - **下段** `.dossier-body-panel`：富文本正文 `DossierBodyEditor`，
@@ -52,7 +55,7 @@ export interface DossierDetailProps {
  * - **底部** `.dossier-save-bar`：独立底色卡片，内含手动保存按钮（无脏禁用 / 保存中 loading）。
  *
  * **保存口径（批 B 手动）**：本面板集中持有草稿（正文 + 子类字段 + 品阶档位 + 体系类型 +
- * 自定义键值），子组件全部受控；草稿与 `detail` 原值比对得出脏态并上报，点保存才组装
+ * 自定义键值 + 角色年龄锚点），子组件全部受控；草稿与 `detail` 原值比对得出脏态并上报，点保存才组装
  * 「仅变更字段」补丁一次提交（正文两列成对）。未保存时切换条目由 `useDossierWorkspace`
  * 弹两态确认；切模块则由 workspace 在右栏卸载前自动保存兜底。
  */
@@ -154,6 +157,11 @@ function DossierDetailForm({
     setDraft((prev) => ({ ...prev, ...next }))
   }, [])
 
+  // 角色年龄锚点变更（受控回传，只写草稿；落库走底部保存条）。
+  const handleCharacterAgesChange = useCallback((characterAges: CharacterAgeAnchor[]): void => {
+    setDraft((prev) => ({ ...prev, characterAges }))
+  }, [])
+
   // 正文变更（编辑器已归一：空文档 → `''` / `null`）：只写草稿，落库走保存按钮。
   const handleBodyChange = useCallback((value: { text: string; json: string | null }): void => {
     setDraft((prev) => ({ ...prev, body: value.text, bodyJson: value.json ?? '' }))
@@ -194,12 +202,23 @@ function DossierDetailForm({
         {/* `on-soft`：本卡片为 --soft-solid 底色，内部子类字段控件需换用
             --control-on-soft 令牌，否则输入框与卡片同色、边界不可辨（见 form.css）。 */}
         <div className="dossier-fields-panel on-soft">
-          <SubtypeFieldsPanel
-            detail={detail}
-            values={draft}
-            onChange={handleFieldsChange}
-            showEmptyHint
-          />
+          {/* 角色没有子类专属字段，上段改为「年龄」锚点块；其它四域维持子类字段面板。
+              两者互斥，避免角色同时出现年龄输入与「暂无可填写的子类专属字段」空态。 */}
+          {detail.entityType === 'character' ? (
+            <CharacterAgeFields
+              bookId={detail.bookId}
+              entityId={detail.id}
+              values={draft.characterAges}
+              onChange={handleCharacterAgesChange}
+            />
+          ) : (
+            <SubtypeFieldsPanel
+              detail={detail}
+              values={draft}
+              onChange={handleFieldsChange}
+              showEmptyHint
+            />
+          )}
         </div>
         <div className="dossier-body-panel">
           <DossierBodyEditor
