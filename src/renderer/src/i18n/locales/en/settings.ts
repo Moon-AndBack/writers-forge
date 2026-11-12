@@ -53,6 +53,8 @@ const settings = {
       restoreFile: 'Restore from file…',
       restoreFileHint: 'Choose any .db file to restore the whole database',
       restoreAria: 'Restore backup “{{name}}”',
+      renameAria: 'Rename backup “{{name}}”',
+      renamePlaceholder: 'Backup name',
       deleteAria: 'Delete backup “{{name}}”',
       deleteConfirmTitle: 'Delete backup',
       deleteConfirmMessage: 'Delete the backup “{{name}}”? This cannot be undone.',
@@ -93,13 +95,15 @@ const settings = {
       copy_failed: 'Failed to copy the backup file. Check disk space and permissions.',
       safe_copy_failed: 'Failed to create the pre-restore safety copy. Restore was aborted.',
       restore_failed: 'Restore failed; current data was not replaced.',
-      invalid_name: 'The backup file name is invalid.',
-      not_found: 'The backup file does not exist; it may have been moved or deleted.',
+      invalid_name: 'The backup folder name is invalid.',
+      not_found: 'The backup does not exist; it may have been moved or deleted.',
       list_failed: 'Failed to read the backup list.',
       delete_failed: 'Failed to delete the backup. Please retry.',
       export_failed: 'Failed to export the database file.',
       open_failed: 'Failed to open the backup folder.',
-      canceled: 'Operation canceled.'
+      canceled: 'Operation canceled.',
+      conflict: 'A backup with this name already exists. Choose another name.',
+      rename_failed: 'Failed to rename the backup. Please retry.'
     }
   },
   categories: {

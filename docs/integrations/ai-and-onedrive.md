@@ -237,7 +237,7 @@ onedrive:signIn / onedrive:backup（ipc/onedrive.ts）
 
 ## 8. 备份流程
 
-> 恢复边界：OneDrive 链路**只负责上传**，不提供远端列表 / 下载 / 恢复。需要拿回数据时使用设置「数据与备份」分区的本地备份（`backup:*` IPC）：从列表恢复或从任意 `.db` 文件恢复，主进程会先自动创建 `pre-restore-*` 安全副本，成功后自动重启应用。
+> 恢复边界：OneDrive 链路**只负责上传**，不提供远端列表 / 下载 / 恢复。需要拿回数据时使用设置「数据与备份」分区的本地备份（`backup:*` IPC）：从列表恢复（按备份文件夹，读取其中的 `snapshot.db`）或从任意 `.db` 文件恢复，主进程会先自动创建一个恢复前安全副本文件夹（`kind = pre-restore`），成功后自动重启应用。
 
 ### 8.1 打包内容
 
@@ -322,4 +322,4 @@ const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
 - **OneDrive `configured` 恒为 `true`**：因为默认 clientId 始终存在，该字段已无法区分「用户是否自定义过」，需要比较原始 settings 值（`credentials.ts:217-225` 已注明）。
 - **`unsupported_provider` 为历史值**：`AiKeyWriteError` 保留它仅为兼容旧 IPC 载荷，当前流程不会再产生（`ai/types.ts:88-94`）。
 
-最后核对：2026-11-01
+最后核对：2026-11-13

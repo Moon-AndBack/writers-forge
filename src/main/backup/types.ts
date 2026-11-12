@@ -5,32 +5,41 @@
  * preload 类型层安全引用。错误只以语言中立的 `code` 回传，文案由渲染层 i18n 负责。
  */
 
-/** 备份文件后缀。 */
+/** 备份文件后缀（整库导出 / 候选文件校验）。 */
 export const BACKUP_EXTENSION = '.db'
 
-/** 手动备份文件名前缀。 */
+/** 手动备份文件名前缀（仅整库导出的默认文件名使用）。 */
 export const MANUAL_BACKUP_PREFIX = 'writers-forge-'
-
-/** 恢复前自动安全副本文件名前缀。 */
-export const PRE_RESTORE_PREFIX = 'pre-restore-'
 
 /** 备份来源：手动备份 / 恢复前自动安全副本。 */
 export type BackupKind = 'manual' | 'pre-restore'
 
-/** 备份列表项（按文件系统 mtime 倒序返回）。 */
-export interface BackupItem {
-  /** 文件名（不含目录）。 */
+/** 备份文件夹 `meta.json` 的落盘结构。 */
+export interface BackupMeta {
+  /** 用户命名；未命名为空串。 */
   name: string
-  /** 绝对路径。 */
-  path: string
-  /** 文件字节数。 */
-  size: number
-  /** 创建时间（ISO 8601；优先文件名时间戳，解析失败回退 mtime）。 */
+  /** 创建时间（ISO 8601）。 */
   createdAt: string
+  /** 备份来源。 */
+  kind: BackupKind
+  /** 快照字节数（读取列表时以 `stat` 为准，不信任此旧值）。 */
+  size: number
+}
+
+/** 备份列表项（按 `createdAt` 倒序返回）。 */
+export interface BackupItem {
+  /** 备份文件夹名（列表操作与恢复的唯一标识）。 */
+  folder: string
+  /** 用户命名；未命名为空串（UI 回退显示时间）。 */
+  name: string
+  /** 创建时间（ISO 8601）。 */
+  createdAt: string
+  /** `snapshot.db` 字节数。 */
+  size: number
   kind: BackupKind
 }
 
-/** 一次数据库在线快照的本地信息。 */
+/** 一次数据库在线快照的本地信息（OneDrive 临时快照使用）。 */
 export interface Snapshot {
   filePath: string
   fileName: string
@@ -53,6 +62,8 @@ export type BackupErrorCode =
   | 'export_failed'
   | 'open_failed'
   | 'canceled'
+  | 'conflict'
+  | 'rename_failed'
 
 /** 结构化失败载荷。 */
 export interface BackupFailure {
@@ -62,6 +73,7 @@ export interface BackupFailure {
 
 export type BackupListResult = { ok: true; items: BackupItem[] } | BackupFailure
 export type BackupCreateResult = { ok: true; item: BackupItem } | BackupFailure
+export type BackupRenameResult = { ok: true; item: BackupItem } | BackupFailure
 export type BackupRestoreResult = { ok: true; safeCopyPath: string } | BackupFailure
 export type BackupExportResult = { ok: true; path: string } | BackupFailure
 export type BackupOkResult = { ok: true } | BackupFailure

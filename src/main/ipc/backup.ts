@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron'
 import type { IpcMainInvokeEvent, OpenDialogOptions, SaveDialogOptions } from 'electron'
-import { rm } from 'node:fs/promises'
+import { rm, stat } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { logger } from '../logger'
 import { isBackupRunning } from '../onedrive/backup'
@@ -12,8 +12,10 @@ import {
   getBackupDir,
   isRestoreRunning,
   listBackups,
-  resolveBackupFilePath,
+  renameBackup,
+  resolveBackupFolder,
   restoreDatabase,
+  SNAPSHOT_FILE_NAME,
   tryStartBackupJob
 } from '../backup'
 import { getDatabasePath, getDb } from '../database'
@@ -22,6 +24,7 @@ import type {
   BackupExportResult,
   BackupListResult,
   BackupOkResult,
+  BackupRenameResult,
   BackupRestoreResult
 } from '../backup'
 
@@ -29,13 +32,14 @@ import type {
  * 本地备份 / 恢复 IPC（通道前缀 `backup:`）。
  *
  * 通道：
- * - backup:list        ()            → { ok, items }（mtime 倒序）
- * - backup:create      ()            → { ok, item } / { ok:false, code }
- * - backup:restore     ({ name })    → { ok, safeCopyPath } / { ok:false, code }
- * - backup:restoreFile ()            → 主进程弹打开对话框后走同一恢复流程
- * - backup:export      ()            → 主进程弹保存对话框，导出整库 .db
- * - backup:openFolder  ()            → 打开备份目录
- * - backup:delete      ({ name })    → 删除备份目录内的指定文件
+ * - backup:list        ()                        → { ok, items }（createdAt 倒序）
+ * - backup:create      ()                        → { ok, item } / { ok:false, code }
+ * - backup:restore     ({ folder })              → { ok, safeCopyPath } / { ok:false, code }
+ * - backup:restoreFile ()                        → 主进程弹打开对话框后走同一恢复流程
+ * - backup:export      ()                        → 主进程弹保存对话框，导出整库 .db
+ * - backup:openFolder  ()                        → 打开备份目录
+ * - backup:rename      ({ folder, name })        → { ok, item } / { ok:false, code }
+ * - backup:delete      ({ folder })              → 删除整个备份文件夹
  *
  * 恢复成功后**先返回结果**，再用 300ms 延时 `app.relaunch()` + `app.exit(0)`，
  * 保证 IPC 响应先回到渲染层。可预期错误一律返回 `{ ok:false, code }`，
@@ -47,11 +51,19 @@ const log = logger.scope('backup:ipc')
 /** 恢复成功到重启之间的延时（ms）：确保 IPC 响应先送达渲染层。 */
 const RELAUNCH_DELAY_MS = 300
 
-/** 从 `{ name }` 载荷读取备份文件名；非法返回 null。 */
-function readBackupName(payload: unknown): string | null {
+/** 从 `{ folder }` 载荷读取备份文件夹名；非法返回 null。 */
+function readBackupFolder(payload: unknown): string | null {
   if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) return null
-  const { name } = payload as Record<string, unknown>
-  return typeof name === 'string' ? name : null
+  const { folder } = payload as Record<string, unknown>
+  return typeof folder === 'string' ? folder : null
+}
+
+/** 从 `{ folder, name }` 载荷读取重命名入参；非法返回 null。 */
+function readRenamePayload(payload: unknown): { folder: string; name: string } | null {
+  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) return null
+  const { folder, name } = payload as Record<string, unknown>
+  if (typeof folder !== 'string' || typeof name !== 'string') return null
+  return { folder, name }
 }
 
 /** 取发起调用的窗口作为对话框父窗口（窗口已销毁时为 null）。 */
@@ -93,7 +105,7 @@ export function registerBackupIpc(): void {
     try {
       const result = await createLocalBackup()
       if (result.ok) {
-        log.info('backup:create 完成', { filePath: safePath(result.item.path) })
+        log.info('backup:create 完成', { folder: result.item.folder })
       } else {
         log.warn('backup:create 失败', { code: result.code })
       }
@@ -106,19 +118,19 @@ export function registerBackupIpc(): void {
   ipcMain.handle(
     'backup:restore',
     async (_event, payload: unknown): Promise<BackupRestoreResult> => {
-      const name = readBackupName(payload)
-      if (name === null) {
+      const folder = readBackupFolder(payload)
+      if (folder === null) {
         log.warn('backup:restore 入参非法')
         return { ok: false, code: 'invalid_name' }
       }
 
-      const guarded = resolveBackupFilePath(name)
+      const guarded = resolveBackupFolder(folder)
       if (!guarded.ok) {
-        log.warn('backup:restore 文件名未通过路径守卫')
+        log.warn('backup:restore 文件夹名未通过路径守卫')
         return guarded
       }
 
-      return scheduleRelaunch(await restoreDatabase(guarded.path))
+      return scheduleRelaunch(await restoreDatabase(join(guarded.path, SNAPSHOT_FILE_NAME)))
     }
   )
 
@@ -153,7 +165,7 @@ export function registerBackupIpc(): void {
     try {
       const win = senderWindow(event)
       const options: SaveDialogOptions = {
-        defaultPath: join(app.getPath('documents'), buildBackupFileName('manual')),
+        defaultPath: join(app.getPath('documents'), buildBackupFileName()),
         filters: [{ name: 'SQLite Database', extensions: ['db'] }]
       }
       const saved = win
@@ -195,27 +207,48 @@ export function registerBackupIpc(): void {
     }
   })
 
+  ipcMain.handle('backup:rename', (_event, payload: unknown): BackupRenameResult => {
+    const input = readRenamePayload(payload)
+    if (input === null) {
+      log.warn('backup:rename 入参非法')
+      return { ok: false, code: 'invalid_name' }
+    }
+
+    const result = renameBackup(input.folder, input.name)
+    if (result.ok) {
+      log.info('backup:rename 完成', { folder: result.item.folder })
+    } else {
+      log.warn('backup:rename 失败', { code: result.code })
+    }
+    return result
+  })
+
   ipcMain.handle('backup:delete', async (_event, payload: unknown): Promise<BackupOkResult> => {
-    const name = readBackupName(payload)
-    if (name === null) {
+    const folder = readBackupFolder(payload)
+    if (folder === null) {
       log.warn('backup:delete 入参非法')
       return { ok: false, code: 'invalid_name' }
     }
 
-    const guarded = resolveBackupFilePath(name)
+    const guarded = resolveBackupFolder(folder)
     if (!guarded.ok) {
-      log.warn('backup:delete 文件名未通过路径守卫')
+      log.warn('backup:delete 文件夹名未通过路径守卫')
       return guarded
     }
 
     try {
-      await rm(guarded.path)
-      log.info('备份文件已删除', { filePath: safePath(guarded.path) })
+      const info = await stat(guarded.path)
+      if (!info.isDirectory()) {
+        log.warn('backup:delete 目标不是文件夹', { folder })
+        return { ok: false, code: 'not_found' }
+      }
+      await rm(guarded.path, { recursive: true, force: true })
+      log.info('备份文件夹已删除', { folder })
       return { ok: true }
     } catch (error) {
       const code =
         (error as NodeJS.ErrnoException).code === 'ENOENT' ? 'not_found' : 'delete_failed'
-      log.warn('删除备份文件失败', { code, error: safeError(error) })
+      log.warn('删除备份文件夹失败', { folder, code, error: safeError(error) })
       return { ok: false, code }
     }
   })

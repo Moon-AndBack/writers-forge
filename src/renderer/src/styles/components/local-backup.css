@@ -81,8 +81,13 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  /* 让位右缘两个 22×22 操作按钮（§8.5）。 */
-  margin-right: 56px;
+  /* 让位右缘三个 22×22 操作按钮（§8.5）。 */
+  margin-right: 80px;
+}
+
+/* 编辑态隐藏操作按钮，输入框用满整行宽度。 */
+.settings-backup__main--renaming {
+  margin-right: 0;
 }
 
 .settings-backup__name {
@@ -92,6 +97,25 @@
   font-size: 12px;
   font-weight: 500;
   color: var(--text);
+}
+
+/* 行内重命名输入框：接替主名段占位，与写作页行内改名同款交互。 */
+.settings-backup__rename {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 6px;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--pane);
+  border: 1px solid var(--brand);
+  border-radius: var(--r-xs);
+  outline: none;
+}
+
+.settings-backup__time {
+  font-variant-numeric: tabular-nums;
 }
 
 .settings-backup__meta {

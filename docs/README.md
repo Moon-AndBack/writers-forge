@@ -25,7 +25,7 @@
 | ---------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | [`architecture/overview.md`](./architecture/overview.md)               | 进程模型、启动时序、安全边界、目录分层                                |
 | [`architecture/database.md`](./architecture/database.md)               | 连接单例、建表装配、迁移、种子、诊断                                  |
-| [`architecture/ipc-preload.md`](./architecture/ipc-preload.md)         | 184 个 IPC 通道、6 个主→渲染事件、preload 24 个命名空间               |
+| [`architecture/ipc-preload.md`](./architecture/ipc-preload.md)         | 185 个 IPC 通道、6 个主→渲染事件、preload 24 个命名空间               |
 | [`ui/window.md`](./ui/window.md)                                       | 窗口创建、尺寸持久化、材质（仅 acrylic / none）、自绘标题栏、宽度磁吸 |
 | [`ui/components.md`](./ui/components.md)                               | `components/ui/` 下 23 项通用组件与钩子的 API                         |
 | [`ui/design-language.md`](./ui/design-language.md)                     | 表面层级、排版、间距、控件高度、选中态、三态、浮层、动效、例外与债务  |
@@ -103,4 +103,4 @@
 
 `build/` 整体不入库（见 `.gitignore`），需先执行 `npm run icon` 生成图标：否则开发态窗口图标缺失，`npm run build:win` 也会因缺少 `build/icon.ico` 失败。安装依赖、镜像配置与更多环境说明见仓库根目录 [`README.md`](../README.md)。
 
-最后核对：2026-11-10
+最后核对：2026-11-13

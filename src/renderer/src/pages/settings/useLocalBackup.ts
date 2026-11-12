@@ -24,9 +24,10 @@ import { useConfirm } from '../writer/chapters/useConfirm'
 export type LocalBackupStatus = 'loading' | 'ready' | 'error'
 
 /** 当前进行中的操作；`none` 之外全部禁用操作按钮。 */
-export type LocalBackupBusy = 'none' | 'creating' | 'restoring' | 'exporting' | 'deleting'
+export type LocalBackupBusy =
+  'none' | 'creating' | 'restoring' | 'exporting' | 'deleting' | 'renaming'
 
-/** 错误码 → `settings` ns 文案 key（覆盖主进程全部 14 个错误码）。 */
+/** 错误码 → `settings` ns 文案 key（覆盖主进程全部 16 个错误码）。 */
 export const BACKUP_ERROR_KEYS = {
   backup_in_progress: 'data.error.backup_in_progress',
   snapshot_failed: 'data.error.snapshot_failed',
@@ -41,7 +42,9 @@ export const BACKUP_ERROR_KEYS = {
   delete_failed: 'data.error.delete_failed',
   export_failed: 'data.error.export_failed',
   open_failed: 'data.error.open_failed',
-  canceled: 'data.error.canceled'
+  canceled: 'data.error.canceled',
+  conflict: 'data.error.conflict',
+  rename_failed: 'data.error.rename_failed'
 } as const satisfies Record<BackupErrorCode, string>
 
 export interface LocalBackupActions {
@@ -49,12 +52,14 @@ export interface LocalBackupActions {
   refresh: () => void
   create: () => void
   /** 从列表恢复：先弹确认框，确认后落盘并覆盖整库。 */
-  restore: (name: string) => void
+  restore: (folder: string, label: string) => void
   /** 从任意 `.db` 文件恢复：先弹确认框，确认后再弹系统文件选择框。 */
   restoreFile: () => void
   exportDb: () => void
   openFolder: () => void
-  remove: (name: string) => void
+  /** 重命名备份；成功返回 true（文件夹已改名，列表会刷新）。 */
+  rename: (folder: string, name: string) => Promise<boolean>
+  remove: (folder: string, label: string) => void
 }
 
 export interface LocalBackupController {
@@ -180,7 +185,7 @@ export function useLocalBackup(): LocalBackupController {
         if (!mountedRef.current) return
 
         if (result.ok) {
-          showToast(t('data.create.successToast', { name: result.item.name }))
+          showToast(t('data.create.successToast', { name: result.item.name || result.item.folder }))
           await load('silent')
         } else if (result.code !== 'canceled') {
           setErrorCode(result.code)
@@ -239,17 +244,17 @@ export function useLocalBackup(): LocalBackupController {
   )
 
   const restore = useCallback(
-    (name: string): void => {
+    (folder: string, label: string): void => {
       if (!api || busyRef.current !== 'none') return
 
       requestConfirm(
         {
           title: t('data.restore.title'),
-          message: restoreMessage(name),
+          message: restoreMessage(label),
           confirmText: t('data.restore.confirm'),
           tone: 'danger'
         },
-        () => runRestore(() => api.restore(name))
+        () => runRestore(() => api.restore(folder))
       )
     },
     [api, requestConfirm, restoreMessage, runRestore, t]
@@ -313,14 +318,47 @@ export function useLocalBackup(): LocalBackupController {
       })
   }, [api, showToast, t])
 
+  const rename = useCallback(
+    async (folder: string, name: string): Promise<boolean> => {
+      if (!api || busyRef.current !== 'none') return false
+
+      setErrorCode(null)
+      setBusy('renaming')
+
+      try {
+        const result = await api.rename(folder, name)
+        if (!mountedRef.current) return false
+
+        if (result.ok) {
+          // 文件夹名已变，旧 folder 标识失效，必须重新读取列表。
+          await load('silent')
+          return true
+        }
+        if (result.code === 'canceled') return false
+        if (result.code === 'conflict' || result.code === 'rename_failed') {
+          showToast(t(BACKUP_ERROR_KEYS[result.code]))
+        } else {
+          setErrorCode(result.code)
+        }
+        return false
+      } catch {
+        if (mountedRef.current) showToast(t(BACKUP_ERROR_KEYS.rename_failed))
+        return false
+      } finally {
+        if (mountedRef.current) setBusy('none')
+      }
+    },
+    [api, load, setBusy, showToast, t]
+  )
+
   const remove = useCallback(
-    (name: string): void => {
+    (folder: string, label: string): void => {
       if (!api || busyRef.current !== 'none') return
 
       requestConfirm(
         {
           title: t('data.backups.deleteConfirmTitle'),
-          message: t('data.backups.deleteConfirmMessage', { name }),
+          message: t('data.backups.deleteConfirmMessage', { name: label }),
           confirmText: t('data.backups.delete'),
           tone: 'danger'
         },
@@ -329,11 +367,11 @@ export function useLocalBackup(): LocalBackupController {
           setBusy('deleting')
 
           try {
-            const result = await api.delete(name)
+            const result = await api.delete(folder)
             if (!mountedRef.current) return
 
             if (result.ok) {
-              showToast(t('data.backups.deletedToast', { name }))
+              showToast(t('data.backups.deletedToast', { name: label }))
               await load('silent')
             } else if (result.code !== 'canceled') {
               setErrorCode(result.code)
@@ -355,7 +393,7 @@ export function useLocalBackup(): LocalBackupController {
     busy,
     errorCode,
     restarting,
-    actions: { refresh, create, restore, restoreFile, exportDb, openFolder, remove },
+    actions: { refresh, create, restore, restoreFile, exportDb, openFolder, rename, remove },
     confirmNode,
     toastNode
   }

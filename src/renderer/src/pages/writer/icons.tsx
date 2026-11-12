@@ -4,7 +4,12 @@ import type { ReactElement } from 'react'
  * 写作页内联 SVG 图标（18/15px，随 currentColor 着色）。
  * 路径逐条对齐 template/index.html 写作视图内的图标：
  * 加号（新建卷 / 新建章节）、卷展开箭头、图片 / 文档（素材卡）。
+ *
+ * `PencilIcon` 已上移至共享层 `components/icons`（设置页备份列表也用），
+ * 此处转出以保持写作页内既有导入路径不变。
  */
+
+export { PencilIcon } from '../../components/icons'
 
 const stroke = {
   fill: 'none',
@@ -57,16 +62,6 @@ export function DocIcon({ width = 34 }: { width?: number }): ReactElement {
     <svg viewBox="0 0 24 24" strokeWidth="1.6" width={width} height={width} {...stroke}>
       <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
       <path d="M14 3v6h6" />
-    </svg>
-  )
-}
-
-/** 钢笔（重命名）：卷 hover「重命名」。 */
-export function PencilIcon({ width = 15 }: { width?: number }): ReactElement {
-  return (
-    <svg viewBox="0 0 24 24" strokeWidth="1.9" width={width} height={width} {...stroke}>
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
     </svg>
   )
 }

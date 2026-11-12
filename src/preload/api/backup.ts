@@ -10,9 +10,10 @@ import type { BackupApi } from '../types/backup'
 export const backupApi = {
   list: () => ipcRenderer.invoke('backup:list'),
   create: () => ipcRenderer.invoke('backup:create'),
-  restore: (name) => ipcRenderer.invoke('backup:restore', { name }),
+  restore: (folder) => ipcRenderer.invoke('backup:restore', { folder }),
   restoreFile: () => ipcRenderer.invoke('backup:restoreFile'),
   export: () => ipcRenderer.invoke('backup:export'),
   openFolder: () => ipcRenderer.invoke('backup:openFolder'),
-  delete: (name) => ipcRenderer.invoke('backup:delete', { name })
+  rename: (folder, name) => ipcRenderer.invoke('backup:rename', { folder, name }),
+  delete: (folder) => ipcRenderer.invoke('backup:delete', { folder })
 } satisfies BackupApi

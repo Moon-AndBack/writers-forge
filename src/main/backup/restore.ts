@@ -1,13 +1,18 @@
 import { app } from 'electron'
-import { copyFileSync, renameSync, rmSync } from 'node:fs'
+import { copyFileSync, mkdirSync, renameSync, rmSync, statSync } from 'node:fs'
 import { copyFile } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 import { closeDb, getDatabasePath, getDb } from '../database'
 import { logger } from '../logger'
 import { isBackupRunning } from '../onedrive/backup'
 import { safeError, safePath } from '../onedrive/logSafe'
-import { buildBackupFileName, getBackupDir } from './paths'
-import { removeFileQuietly, verifyDatabaseFile } from './snapshot'
+import { buildBackupFolderName, getBackupDir, SNAPSHOT_FILE_NAME, writeBackupMeta } from './paths'
+import {
+  formatTimestamp,
+  removeDirectoryQuietly,
+  removeFileQuietly,
+  verifyDatabaseFile
+} from './snapshot'
 import { BACKUP_EXTENSION } from './types'
 import type { BackupRestoreResult } from './types'
 import { finishBackupJob, tryStartBackupJob } from './lock'
@@ -19,7 +24,7 @@ import { finishBackupJob, tryStartBackupJob } from './lock'
  * 1. `isBackupRunning()` / 本地任务锁拒绝并发；
  * 2. 候选文件只读校验（后缀、`quick_check`、核心表）；
  * 3. 异步复制到 `<userData>/restore-staging.db`，并二次校验；
- * 4. 用 `db.backup()` 生成恢复前安全副本 `pre-restore-<ts>.db`，失败即中止；
+ * 4. 创建恢复前安全副本文件夹（`kind = pre-restore`），失败即中止；
  * 5. `closeDb()`；
  * 6. 删除 `writers-forge.db-wal` / `-shm`；
  * 7. `renameSync` staging → 正式库，失败回退 `copyFileSync`；
@@ -127,12 +132,23 @@ async function runRestore(sourcePath: string): Promise<BackupRestoreResult> {
   }
 
   // 4. 恢复前安全副本：失败必须中止，绝不在没有回滚点的情况下替换正式库。
-  const safeCopyPath = join(getBackupDir(), buildBackupFileName('pre-restore'))
+  const safeTimestamp = formatTimestamp(new Date())
+  const safeFolder = buildBackupFolderName({ timestamp: safeTimestamp, name: '' })
+  const safeFolderPath = join(getBackupDir(), safeFolder)
+  const safeCopyPath = join(safeFolderPath, SNAPSHOT_FILE_NAME)
   try {
+    mkdirSync(safeFolderPath, { recursive: true })
     await getDb().backup(safeCopyPath)
+    const safeSize = statSync(safeCopyPath).size
+    writeBackupMeta(safeFolderPath, {
+      name: '',
+      createdAt: new Date().toISOString(),
+      kind: 'pre-restore',
+      size: safeSize
+    })
   } catch (error) {
     log.error('创建恢复前安全副本失败，已中止恢复', { error: safeError(error) })
-    await removeFileQuietly(safeCopyPath)
+    await removeDirectoryQuietly(safeFolderPath)
     await removeFileQuietly(stagingPath)
     return { ok: false, code: 'safe_copy_failed' }
   }

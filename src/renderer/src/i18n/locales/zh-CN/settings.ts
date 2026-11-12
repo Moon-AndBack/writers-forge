@@ -53,6 +53,8 @@ const settings = {
       restoreFile: '从文件恢复…',
       restoreFileHint: '选择任意 .db 文件恢复整库',
       restoreAria: '恢复备份「{{name}}」',
+      renameAria: '重命名备份「{{name}}」',
+      renamePlaceholder: '备份名称',
       deleteAria: '删除备份「{{name}}」',
       deleteConfirmTitle: '删除备份',
       deleteConfirmMessage: '确定删除备份「{{name}}」？此操作不可恢复。',
@@ -92,13 +94,15 @@ const settings = {
       copy_failed: '复制备份文件失败，请检查磁盘空间与权限。',
       safe_copy_failed: '创建恢复前安全副本失败，已中止恢复。',
       restore_failed: '恢复失败，当前数据未被替换。',
-      invalid_name: '备份文件名不合法。',
-      not_found: '备份文件不存在，可能已被移动或删除。',
+      invalid_name: '备份文件夹名不合法。',
+      not_found: '备份不存在，可能已被移动或删除。',
       list_failed: '读取备份列表失败。',
       delete_failed: '删除备份失败，请重试。',
       export_failed: '导出数据库文件失败。',
       open_failed: '打开备份文件夹失败。',
-      canceled: '操作已取消。'
+      canceled: '操作已取消。',
+      conflict: '已存在同名备份，请换一个名称。',
+      rename_failed: '重命名备份失败，请重试。'
     }
   },
   categories: {

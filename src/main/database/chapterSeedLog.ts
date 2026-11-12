@@ -11,10 +11,22 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v138'
+export const CHAPTER_SEED_VERSION = 'v139'
 
 /**
- * 最近版本变更日志（v138；更早版本见上述历史文件）。
+ * 最近版本变更日志（v139；更早版本见上述历史文件）。
+ *
+ * `v139`（本地备份文件夹化 / 可命名批）：本地备份从平铺
+ * `writers-forge-<ts>.db` 改为一次备份一个文件夹
+ * `<userData>/backups/<YYYYMMDD-HHmmss>[-名称]/`，内含 `snapshot.db` 与
+ * `meta.json`（name / createdAt / kind / size）。列表只扫描目录，meta 或快照
+ * 缺失 / 损坏的目录跳过；旧平铺 `.db` 保留在磁盘但不再显示。新增
+ * `backup:rename`：重命名同步改文件夹名（时间戳前缀 + slug）并把原始名称写入
+ * meta；目标已存在返回 `conflict` 不覆盖。恢复 / 删除参数由文件名改为文件夹名，
+ * 删除移除整个目录；恢复前安全副本同样改为文件夹（kind = pre-restore，名称由
+ * UI 按类型显示）。渲染层列表行新增铅笔行内重命名（Enter / blur 提交、Esc 取消、
+ * isComposing 保护，空名回退时间）。教学文案同步文件夹结构与旧格式说明。
+ * 无 DB 迁移；备份目录为用户数据，删除需显式确认。
  *
  * `v138`（设置页本地备份 / 恢复接通批）：设置「数据与备份」分区由禁用占位改为
  * 可用：立即备份 / 备份列表（时间、大小、类型：手动备份 / 恢复前安全副本）/

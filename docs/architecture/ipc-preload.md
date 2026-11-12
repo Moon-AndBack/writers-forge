@@ -80,14 +80,14 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 - `docLimit.ts`：单篇正文上限 `MAX_DOC_CHARS = 200_000` 与有效字数计算。
 - `worldSubtypeFields.ts`：子类字段白名单与规范化，只被 `worldSubtypes.ts` 调用。
 
-## 3. 184 个 handle 通道总表
+## 3. 185 个 handle 通道总表
 
-实测 `ipcMain.handle` 共 **184** 个（含 `onedrive:backup`、`outline:saveContent`、`worldEntity:list` / `saveText` / `listIncomingRefs` 等跨行书写的 7 个）。按一级前缀（域）分布：
+实测 `ipcMain.handle` 共 **185** 个（含 `onedrive:backup`、`outline:saveContent`、`worldEntity:list` / `saveText` / `listIncomingRefs` 等跨行书写的 8 个）。按一级前缀（域）分布：
 
 | 域             | 文件                                                            | 数量    |
 | -------------- | --------------------------------------------------------------- | ------- |
 | `ai`           | `ai.ts` + `aiCatalog.ts` + `aiComplete.ts` + `aiCompression.ts` | 20      |
-| `backup`       | `backup.ts`                                                     | 7       |
+| `backup`       | `backup.ts`                                                     | 8       |
 | `books`        | `books.ts`                                                      | 8       |
 | `categories`   | `categories.ts`                                                 | 4       |
 | `chapters`     | `chapters.ts` + `chapterSearch.ts`                              | 28      |
@@ -107,7 +107,7 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 | `window`       | `window.ts` + `snap.ts`                                         | 7       |
 | `worldEntity`  | `worldEntities.ts` + `worldRefs.ts` + `worldPowers.ts`          | 19      |
 | `worldSubtype` | `worldSubtypes.ts`                                              | 5       |
-| **合计**       | 26 个注册文件                                                   | **184** |
+| **合计**       | 26 个注册文件                                                   | **185** |
 
 ### 3.1 AI / 书稿 / 内容类（84）
 
@@ -198,12 +198,12 @@ cleanWords:import · cleanWords:toggle · cleanWords:setCategoryEnabled
 cleanWords:delete
 ```
 
-### 3.3 系统 / 设置 / 统计类（31）
+### 3.3 系统 / 设置 / 统计类（32）
 
 ```text
-# backup（7）
+# backup（8）
 backup:list · backup:create · backup:restore · backup:restoreFile
-backup:export · backup:openFolder · backup:delete
+backup:export · backup:openFolder · backup:rename · backup:delete
 
 # settings（4）
 settings:get · settings:set · settings:all · settings:delete
@@ -305,7 +305,7 @@ interface AiError {
 | 命名空间         | 成员数 | 代表方法                                            | 对应通道前缀                                      |
 | ---------------- | ------ | --------------------------------------------------- | ------------------------------------------------- |
 | `app`            | 2      | `onBeforeClose` / `notifyCloseReady`                | `app:*`                                           |
-| `backup`         | 7      | `list` / `create` / `restore`                       | `backup:*`                                        |
+| `backup`         | 8      | `list` / `create` / `restore` / `rename`            | `backup:*`                                        |
 | `books`          | 9      | `list` / `cover.set` / `statsAll`                   | `books:*`（`statsAll` 复用 `stats:bookStatsAll`） |
 | `categories`     | 4      | `list` / `delete`                                   | `categories:*`                                    |
 | `chapters`       | 28     | `getParagraphs` / `saveParagraphs` / `replaceAll`   | `chapters:*`                                      |
@@ -329,7 +329,7 @@ interface AiError {
 | `windowSnap`     | 4      | `set` / `clear` / `boundsWidth`                     | `window:snap:*`、`window:bounds:get`              |
 | `systemTheme`    | 2      | `getAccentColor` / `onAccentChange`                 | `theme:accent:*`                                  |
 
-合计 **190 个成员** = 185 个 invoke 调用点 + 3 个订阅方法（`ai.chat.onStream`、`onedrive.onProgress`、`systemTheme.onAccentChange`）+ 2 个 `app` 生命周期方法（`onBeforeClose` / `notifyCloseReady`）。调用点比通道多 1，是因为 `stats:bookStatsAll` 同时挂在 `books.statsAll` 与 `stats.bookStatsAll` 两个入口（书架批量取数，避免逐书 N+1）。
+合计 **191 个成员** = 186 个 invoke 调用点 + 3 个订阅方法（`ai.chat.onStream`、`onedrive.onProgress`、`systemTheme.onAccentChange`）+ 2 个 `app` 生命周期方法（`onBeforeClose` / `notifyCloseReady`）。调用点比通道多 1，是因为 `stats:bookStatsAll` 同时挂在 `books.statsAll` 与 `stats.bookStatsAll` 两个入口（书架批量取数，避免逐书 N+1）。
 
 - 大域拆文件：`ai` / `cleanWords` / `onedrive` / `worldEntity` / `worldSubtype` / `chipColors` 在 `api/*.ts`，用 `satisfies AiApi` / `satisfies Api['worldEntity']` 做结构校验，签名真源在 `types/*.d.ts`。
 - preload 可以**收紧**契约：`cleanWords.import` 把 `source: 'user'` 写死，渲染层无法把词写进 `builtin`；`ai` / `onedrive` 不暴露任何密钥明文或 token。
@@ -417,4 +417,4 @@ registerWorldPowersIpc() // worldEntity:updatePowerSystem
 | 类型检查报命名空间缺方法                 | `index.ts` 与 `Api` 不同步，或 `satisfies` 约束未满足                       |
 | 事件回调触发多次                         | 订阅时注册监听而非复用顶层 Set 分发；或组件卸载未调用退订函数               |
 
-最后核对：2026-11-10
+最后核对：2026-11-13

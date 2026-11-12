@@ -1,28 +1,46 @@
 import { app } from 'electron'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { readdir, stat } from 'node:fs/promises'
 import { basename, isAbsolute, join, resolve, sep } from 'node:path'
 import { formatTimestamp } from './snapshot'
-import { BACKUP_EXTENSION, MANUAL_BACKUP_PREFIX, PRE_RESTORE_PREFIX } from './types'
-import type { BackupItem, BackupKind } from './types'
+import { BACKUP_EXTENSION, MANUAL_BACKUP_PREFIX } from './types'
+import type { BackupItem, BackupMeta } from './types'
 
 /**
- * 本地备份目录与文件路径规则。
+ * 本地备份目录、文件夹命名与路径守卫。
  *
- * 目录结构：`<userData>/backups/`
- * 文件名：
- * - 手动备份：`writers-forge-<YYYYMMDD-HHmmss>.db`
- * - 恢复前安全副本：`pre-restore-<YYYYMMDD-HHmmss>.db`
+ * 目录结构：`<userData>/backups/<YYYYMMDD-HHmmss>[-<slug>]/`
+ * - `snapshot.db` 整库在线快照；
+ * - `meta.json`   名称 / 创建时间 / 来源 / 大小。
  *
- * 安全边界：从备份列表恢复 / 删除时只接受**备份目录内**的纯文件名，
- * 拒绝 `..`、绝对路径、路径分隔符与非 `.db` 文件（见 `resolveBackupFilePath`）。
+ * 文件夹名由时间戳与用户名称组成；`meta.name` 保存**原始输入**，文件夹名里的
+ * 名称部分只是便于在文件管理器中识别。旧版平铺 `writers-forge-*.db` 仍留在
+ * 磁盘，但**不参与列表扫描**。
+ *
+ * 安全边界：从备份列表恢复 / 删除 / 重命名时只接受**备份目录内**的纯文件夹名，
+ * 拒绝 `..`、绝对路径、路径分隔符（见 `resolveBackupFolder`）。
  */
 
 /** 备份目录名（位于 userData 下）。 */
 const BACKUP_DIR_NAME = 'backups'
 
-/** 文件名内本地时间戳：`YYYYMMDD-HHmmss.db`。 */
-const FILE_TIME_PATTERN = /(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})\.db$/i
+/** 备份文件夹内的整库快照文件名。 */
+export const SNAPSHOT_FILE_NAME = 'snapshot.db'
+
+/** 备份文件夹内的元信息文件名。 */
+export const META_FILE_NAME = 'meta.json'
+
+/** 文件夹名时间戳前缀固定长度：`YYYYMMDD-HHmmss`。 */
+const TIMESTAMP_LENGTH = 15
+
+/** 文件夹名时间戳格式。 */
+const TIMESTAMP_PATTERN = /^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})$/
+
+/** Windows 文件夹名非法字符。 */
+const INVALID_FOLDER_CHARS = /[\\/:*?"<>|]/g
+
+/** 名称部分最大字符数（按 Unicode 码点计）。 */
+const FOLDER_NAME_LIMIT = 40
 
 /** 备份目录绝对路径；目录不存在时自动创建。 */
 export function getBackupDir(): string {
@@ -31,20 +49,42 @@ export function getBackupDir(): string {
   return directory
 }
 
-/** 按来源生成备份文件名（本地时间）。 */
-export function buildBackupFileName(kind: BackupKind, now: Date = new Date()): string {
-  const prefix = kind === 'pre-restore' ? PRE_RESTORE_PREFIX : MANUAL_BACKUP_PREFIX
-  return `${prefix}${formatTimestamp(now)}${BACKUP_EXTENSION}`
+/** 整库导出的默认文件名（`writers-forge-<YYYYMMDD-HHmmss>.db`，本地时间）。 */
+export function buildBackupFileName(now: Date = new Date()): string {
+  return `${MANUAL_BACKUP_PREFIX}${formatTimestamp(now)}${BACKUP_EXTENSION}`
 }
 
-/** 由文件名前缀判定来源。 */
-export function classifyBackupKind(name: string): BackupKind {
-  return name.startsWith(PRE_RESTORE_PREFIX) ? 'pre-restore' : 'manual'
+/** 把用户输入规整为文件夹名可用的 slug；为空返回空串。 */
+function slugifyBackupName(name: string): string {
+  const cleaned = name
+    .replace(INVALID_FOLDER_CHARS, '')
+    .replace(/\s+/g, '-')
+    .replace(/^[\s.]+|[\s.]+$/g, '')
+  // 按码点截断，避免把 emoji 等代理对切一半；截断后可能留下尾部空格 / 点。
+  return Array.from(cleaned)
+    .slice(0, FOLDER_NAME_LIMIT)
+    .join('')
+    .replace(/^[\s.]+|[\s.]+$/g, '')
 }
 
-/** 从文件名解析本地时间；格式不符或日期非法返回 null。 */
-export function parseBackupTime(name: string): Date | null {
-  const match = FILE_TIME_PATTERN.exec(name)
+/**
+ * 构建备份文件夹名：`<timestamp>`，名称非空时追加 `-<slug>`。
+ * slug 为空（例如只输入非法字符）时回退纯时间戳。
+ */
+export function buildBackupFolderName(input: { timestamp: string; name: string }): string {
+  const slug = slugifyBackupName(input.name)
+  return slug === '' ? input.timestamp : `${input.timestamp}-${slug}`
+}
+
+/**
+ * 从文件夹名解析时间戳前缀（固定 15 字符），日期非法返回 null。
+ * 重命名时用它保留创建时间前缀，不允许用户改时间。
+ */
+export function parseFolderTimestamp(folder: string): string | null {
+  const prefix = folder.slice(0, TIMESTAMP_LENGTH)
+  if (prefix.length !== TIMESTAMP_LENGTH) return null
+
+  const match = TIMESTAMP_PATTERN.exec(prefix)
   if (!match) return null
 
   const [, yearText, monthText, dayText, hourText, minuteText, secondText] = match
@@ -68,62 +108,106 @@ export function parseBackupTime(name: string): Date | null {
   ) {
     return null
   }
-  return date
+  return prefix
 }
 
-/** 组装列表项：`createdAt` 优先取文件名时间，否则回退文件 mtime。 */
-export function toBackupItem(
-  name: string,
-  filePath: string,
-  size: number,
-  mtimeMs: number
-): BackupItem {
-  const parsed = parseBackupTime(name)
+/** 把任意 JSON 值规范为 `BackupMeta`；字段缺失 / 非法返回 null。 */
+function normalizeBackupMeta(value: unknown): BackupMeta | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null
+
+  const record = value as Record<string, unknown>
+  const { name, createdAt, kind, size } = record
+  if (typeof name !== 'string' || typeof createdAt !== 'string') return null
+  if (kind !== 'manual' && kind !== 'pre-restore') return null
+
+  const created = new Date(createdAt)
+  if (Number.isNaN(created.getTime())) return null
+
   return {
     name,
-    path: filePath,
-    size,
-    createdAt: (parsed ?? new Date(mtimeMs)).toISOString(),
-    kind: classifyBackupKind(name)
+    createdAt: created.toISOString(),
+    kind,
+    size: typeof size === 'number' && Number.isFinite(size) ? size : 0
   }
 }
 
-/** 列出备份目录内全部 `.db` 文件（按 mtime 倒序）。 */
+/** 读取备份文件夹的 `meta.json`；缺失 / 损坏返回 null（调用方跳过该目录）。 */
+export function readBackupMeta(folderPath: string): BackupMeta | null {
+  let raw: string
+  try {
+    raw = readFileSync(join(folderPath, META_FILE_NAME), 'utf8')
+  } catch {
+    return null
+  }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  return normalizeBackupMeta(parsed)
+}
+
+/** 写入备份文件夹的 `meta.json`（失败抛给调用方决定错误码）。 */
+export function writeBackupMeta(folderPath: string, meta: BackupMeta): void {
+  writeFileSync(join(folderPath, META_FILE_NAME), `${JSON.stringify(meta, null, 2)}\n`, 'utf8')
+}
+
+/**
+ * 列出备份目录内的备份文件夹。
+ *
+ * - 只扫描目录，忽略旧版平铺 `.db`；
+ * - 目录必须同时存在 `snapshot.db` 与合法的 `meta.json`，否则跳过；
+ * - `size` 以 `snapshot.db` 的 `stat.size` 为准；
+ * - 按 `createdAt` 倒序，相同时间按文件夹名倒序。
+ */
 export async function listBackups(): Promise<BackupItem[]> {
   const directory = getBackupDir()
   const entries = await readdir(directory, { withFileTypes: true })
-  const rows: Array<{ item: BackupItem; mtimeMs: number }> = []
+  const items: BackupItem[] = []
 
   for (const entry of entries) {
-    if (!entry.isFile()) continue
-    if (!entry.name.toLowerCase().endsWith(BACKUP_EXTENSION)) continue
+    if (!entry.isDirectory()) continue
 
-    const filePath = join(directory, entry.name)
+    const folderPath = join(directory, entry.name)
     try {
-      const info = await stat(filePath)
-      if (!info.isFile()) continue
-      rows.push({
-        item: toBackupItem(entry.name, filePath, info.size, info.mtimeMs),
-        mtimeMs: info.mtimeMs
+      const snapshotInfo = await stat(join(folderPath, SNAPSHOT_FILE_NAME))
+      if (!snapshotInfo.isFile()) continue
+
+      const meta = readBackupMeta(folderPath)
+      if (!meta) continue
+
+      items.push({
+        folder: entry.name,
+        name: meta.name,
+        createdAt: meta.createdAt,
+        size: snapshotInfo.size,
+        kind: meta.kind
       })
     } catch {
-      // 列表期间文件被删除 / 无权限：跳过该行，不影响其它备份。
+      // 目录不完整 / 读取期间被删除 / 无权限：跳过该行，不影响其它备份。
     }
   }
 
-  rows.sort((a, b) => b.mtimeMs - a.mtimeMs)
-  return rows.map((row) => row.item)
+  items.sort((a, b) => {
+    const diff = Date.parse(b.createdAt) - Date.parse(a.createdAt)
+    if (diff !== 0) return diff
+    return a.folder < b.folder ? 1 : a.folder > b.folder ? -1 : 0
+  })
+  return items
 }
 
-export type BackupPathResolution = { ok: true; path: string } | { ok: false; code: 'invalid_name' }
+export type BackupFolderResolution =
+  { ok: true; path: string } | { ok: false; code: 'invalid_name' }
 
 /**
- * 路径守卫：把备份列表里的文件名解析为备份目录内的绝对路径。
+ * 路径守卫：把备份列表里的文件夹名解析为备份目录内的绝对路径。
  *
- * 只接受纯文件名（不含 `/` / `\`、非绝对路径、非 `.` / `..`、以 `.db` 结尾）；
+ * 只接受纯文件夹名（不含 `/` / `\`、非绝对路径、非 `.` / `..`）；
  * 再用 `resolve` 后前缀校验兜底，拒绝任何逃逸出备份目录的路径。
  */
-export function resolveBackupFilePath(name: string): BackupPathResolution {
+export function resolveBackupFolder(name: string): BackupFolderResolution {
   if (typeof name !== 'string' || name.length === 0) {
     return { ok: false, code: 'invalid_name' }
   }
@@ -131,9 +215,6 @@ export function resolveBackupFilePath(name: string): BackupPathResolution {
   if (name.includes('/') || name.includes('\\')) return { ok: false, code: 'invalid_name' }
   if (isAbsolute(name)) return { ok: false, code: 'invalid_name' }
   if (basename(name) !== name) return { ok: false, code: 'invalid_name' }
-  if (!name.toLowerCase().endsWith(BACKUP_EXTENSION)) {
-    return { ok: false, code: 'invalid_name' }
-  }
 
   const directory = resolve(getBackupDir())
   const target = resolve(directory, name)

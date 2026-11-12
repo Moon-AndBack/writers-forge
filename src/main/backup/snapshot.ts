@@ -43,6 +43,15 @@ export async function removeFileQuietly(filePath: string): Promise<void> {
   }
 }
 
+/** 递归删除目录（失败只记日志，不掩盖调用方原始错误）。 */
+export async function removeDirectoryQuietly(directory: string): Promise<void> {
+  try {
+    await rm(directory, { recursive: true, force: true })
+  } catch (error) {
+    log.warn('删除目录失败', { directory: safePath(directory), error: safeError(error) })
+  }
+}
+
 /** 清理同前缀、超过阈值的历史快照（best-effort，仅临时目录使用）。 */
 async function cleanStaleSnapshots(
   directory: string,
