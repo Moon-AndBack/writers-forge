@@ -58,7 +58,7 @@ export interface RelationDraftState {
   typeCode: string
   /** 备注草稿。 */
   note: string
-  /** 改模块：清空类别 / 项目，并把类型切到新组合首项。 */
+  /** 改模块：类别默认「全部」、清空项目，并把类型切到新组合首项。 */
   setTargetModule: (next: RelationTargetModule | '') => void
   /** 改类别：清空已选项目。 */
   setTargetCategory: (next: string) => void
@@ -235,9 +235,14 @@ export function useRelationDraft({
   const targetValid = categoryCandidates.some((row) => String(row.id) === targetId)
   const canAdd = targetValid && typeCode !== ''
 
+  /**
+   * 切模块后类别默认「全部」：项目组合框直接列出该模块全部实体，用户可再收窄到
+   * 具体分类；清空模块（`''`）时类别也必须回到空串，否则 `disabled` 状态下会残留
+   * 「全部」。
+   */
   const setTargetModule = (next: RelationTargetModule | ''): void => {
     setTargetModuleState(next)
-    setTargetCategoryState('')
+    setTargetCategoryState(next === '' ? '' : CATEGORY_ALL)
     setTargetId('')
     // 组合变更即重选类型：切到新组合首项（如角色 → 物品自动落到「属于」）。
     setTypeCode(
