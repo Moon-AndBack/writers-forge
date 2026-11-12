@@ -74,14 +74,16 @@
 
 /* 例外：起点卡头内的输入框只承担文本输入，外观由 section 承担——
    去掉底色 / 边框 / 内衬 / 固定高度与自身 hover / 聚焦态，
-   字号与行高对齐内容区（13px / 1.65）。 */
+   字体 / 字号 / 字距跟随状态栏，行高固定 1.4（单行输入不适合多行行距）。 */
 .timeline-origin-head .wf-input,
 .timeline-origin-head .wf-input:hover:not(:disabled):not(:read-only):not([aria-readonly='true']),
 .timeline-origin-head .wf-input:focus {
   height: auto;
   padding: 0;
-  font-size: 13px;
-  line-height: 1.65;
+  font-family: var(--doc-font);
+  font-size: calc(18px * var(--doc-zoom));
+  line-height: 1.4;
+  letter-spacing: var(--doc-letter);
   background: transparent;
   border: 0;
   border-radius: 0;
