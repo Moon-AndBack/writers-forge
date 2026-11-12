@@ -269,17 +269,20 @@ ON CONFLICT(id) DO NOTHING
 
 ## 9. 数据文件位置
 
-| 内容         | 路径                                                                    |
-| ------------ | ----------------------------------------------------------------------- |
-| 数据库主文件 | `<userData>/writers-forge.db`                                           |
-| WAL 日志     | `<userData>/writers-forge.db-wal`（运行期存在）                         |
-| 共享内存索引 | `<userData>/writers-forge.db-shm`（运行期存在）                         |
-| 主进程日志   | `<userData>/logs/main.log`                                              |
-| 备份临时快照 | `<系统临时目录>/writers-forge-backups/writers-forge-YYYYMMDD-HHmmss.db` |
-| 云端备份     | OneDrive 应用专属目录 `backups/` 下同名 `.db` 文件                      |
+| 内容         | 路径                                                                                                       |
+| ------------ | ---------------------------------------------------------------------------------------------------------- |
+| 数据库主文件 | `<userData>/writers-forge.db`                                                                              |
+| WAL 日志     | `<userData>/writers-forge.db-wal`（运行期存在）                                                            |
+| 共享内存索引 | `<userData>/writers-forge.db-shm`（运行期存在）                                                            |
+| 主进程日志   | `<userData>/logs/main.log`                                                                                 |
+| 本地备份     | `<userData>/backups/writers-forge-YYYYMMDD-HHmmss.db`（恢复前安全副本为 `pre-restore-YYYYMMDD-HHmmss.db`） |
+| 备份临时快照 | `<系统临时目录>/writers-forge-backups/writers-forge-YYYYMMDD-HHmmss.db`（仅 OneDrive 上传流程）            |
+| 云端备份     | OneDrive 应用专属目录 `backups/` 下同名 `.db` 文件                                                         |
 
 `userData` 目录：打包安装态为系统 AppData 下的 `Writer's Forge`，本地开发态为项目根下的 `user_data/`（`src/main/appPaths.ts`）。排查前先确认当前是哪个目录，两者数据完全独立。
 
-备份入口：设置弹窗「OneDrive 云备份」分区（`onedrive:backup` IPC）。流程为 `getDb().backup()` 生成一致性快照 → 上传到 OneDrive approot 的 `backups/`；快照生成在 WAL 模式下是安全的，**不要**用文件复制替代。当前没有本地手动导出入口，「数据与备份」分区仍是禁用占位。
+本地备份与恢复入口：设置弹窗「数据与备份」分区（`backup:*` IPC）。「立即备份」用在线快照在 `<userData>/backups/` 生成一致性副本；恢复先校验候选文件（只读打开 + `quick_check` + 核心表），复制到 staging 并再校验，随后用 `getDb().backup()` 创建 `pre-restore-<时间戳>.db` 安全副本，关闭连接、清理 WAL / SHM、原子替换并重开验证；成功后主进程在 300ms 后 `app.relaunch()` + `app.exit(0)`。**不要**在应用运行时直接复制 `writers-forge.db`：WAL 模式下可能得到不一致副本，请使用「立即备份」，或先退出应用再复制整个数据目录。整库导出同样通过 `getDb().backup()` 生成 `.db`，不提供 Markdown 导出。
 
-最后核对：2026-11-10
+OneDrive 备份入口：设置弹窗「OneDrive 云备份」分区（`onedrive:backup` IPC）。流程为 `getDb().backup()` 生成一致性快照 → 上传到 OneDrive approot 的 `backups/`；快照生成在 WAL 模式下是安全的，**不要**用文件复制替代。OneDrive 只负责上传，下载 / 恢复请走本地备份分区。
+
+最后核对：2026-11-12

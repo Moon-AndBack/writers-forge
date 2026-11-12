@@ -2,9 +2,9 @@
 
 Writer's Forge 的渲染层不直接接触 Node / Electron 能力：所有数据读写、系统能力调用都经 `ipcRenderer.invoke` 打到主进程，由 `ipcMain.handle` 承接；主进程主动推送只有 6 个事件。preload 用 `contextBridge` 暴露单个 `window.api` 对象，是渲染层唯一的跨进程入口。
 
-- 主进程通道实现：`src/main/ipc/`（32 个文件、4,721 行）
+- 主进程通道实现：`src/main/ipc/`（33 个文件、4,950 行）
 - 聚合注册：`src/main/ipc/index.ts` 的 `registerIpc(report)`
-- preload 暴露面：`src/preload/index.ts` + `src/preload/api/`（22 个文件、1,827 行）
+- preload 暴露面：`src/preload/index.ts` + `src/preload/api/`（24 个文件、1,898 行）
 - 类型真源：`src/preload/index.d.ts` + `src/preload/types/*.d.ts`
 
 > 口径：代码是唯一真源。本文的通道名、事件名、settings 键名、方法数均与源码逐字核对；与代码冲突时以代码为准。
@@ -38,7 +38,7 @@ Writer's Forge 的渲染层不直接接触 Node / Electron 能力：所有数据
 ```ts
 export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
   registerAiIpc()
-  // …共 25 个 register 函数
+  // …共 26 个 register 函数
   registerWorldEntitiesIpc() // 内部再调 worldRefs / worldPowers
   registerWorldSubtypesIpc()
 }
@@ -50,42 +50,44 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 | 2   | `registerAiCatalogIpc`           | `aiCatalog.ts`     | 4              |
 | 3   | `registerAiCompleteIpc`          | `aiComplete.ts`    | 1              |
 | 4   | `registerAiCompressionIpc`       | `aiCompression.ts` | 2              |
-| 5   | `registerBooksIpc`               | `books.ts`         | 8              |
-| 6   | `registerCategoriesIpc`          | `categories.ts`    | 4              |
-| 7   | `registerChaptersIpc`            | `chapters.ts`      | 25             |
-| 8   | `registerChapterSearchIpc`       | `chapterSearch.ts` | 3              |
-| 9   | `registerChipColorsIpc`          | `chipColors.ts`    | 1              |
-| 10  | `registerCleanWordsIpc`          | `cleanWords.ts`    | 7              |
-| 11  | `registerDiagnosticsIpc(report)` | `diagnostics.ts`   | 1              |
-| 12  | `registerEntitiesIpc`            | `entities.ts`      | 8              |
-| 13  | `registerForeshadowsIpc`         | `foreshadows.ts`   | 13             |
-| 14  | `registerImagesIpc`              | `images.ts`        | 3              |
-| 15  | `registerInspirationsIpc`        | `inspirations.ts`  | 5              |
-| 16  | `registerOneDriveIpc`            | `onedrive.ts`      | 7              |
-| 17  | `registerOutlineIpc`             | `outline.ts`       | 21             |
-| 18  | `registerPlotIpc`                | `plot.ts`          | 11             |
-| 19  | `registerSettingsIpc`            | `settings.ts`      | 4              |
-| 20  | `registerSnapIpc`                | `snap.ts`          | 4              |
-| 21  | `registerStatsIpc`               | `stats.ts`         | 4              |
-| 22  | `registerThemeIpc`               | `theme.ts`         | 1              |
-| 23  | `registerWindowIpc`              | `window.ts`        | 3              |
-| 24  | `registerWorldEntitiesIpc`       | `worldEntities.ts` | 12（另间接 7） |
-| 25  | `registerWorldSubtypesIpc`       | `worldSubtypes.ts` | 5              |
+| 5   | `registerBackupIpc`              | `backup.ts`        | 7              |
+| 6   | `registerBooksIpc`               | `books.ts`         | 8              |
+| 7   | `registerCategoriesIpc`          | `categories.ts`    | 4              |
+| 8   | `registerChaptersIpc`            | `chapters.ts`      | 25             |
+| 9   | `registerChapterSearchIpc`       | `chapterSearch.ts` | 3              |
+| 10  | `registerChipColorsIpc`          | `chipColors.ts`    | 1              |
+| 11  | `registerCleanWordsIpc`          | `cleanWords.ts`    | 7              |
+| 12  | `registerDiagnosticsIpc(report)` | `diagnostics.ts`   | 1              |
+| 13  | `registerEntitiesIpc`            | `entities.ts`      | 8              |
+| 14  | `registerForeshadowsIpc`         | `foreshadows.ts`   | 13             |
+| 15  | `registerImagesIpc`              | `images.ts`        | 3              |
+| 16  | `registerInspirationsIpc`        | `inspirations.ts`  | 5              |
+| 17  | `registerOneDriveIpc`            | `onedrive.ts`      | 7              |
+| 18  | `registerOutlineIpc`             | `outline.ts`       | 21             |
+| 19  | `registerPlotIpc`                | `plot.ts`          | 11             |
+| 20  | `registerSettingsIpc`            | `settings.ts`      | 4              |
+| 21  | `registerSnapIpc`                | `snap.ts`          | 4              |
+| 22  | `registerStatsIpc`               | `stats.ts`         | 4              |
+| 23  | `registerThemeIpc`               | `theme.ts`         | 1              |
+| 24  | `registerWindowIpc`              | `window.ts`        | 3              |
+| 25  | `registerWorldEntitiesIpc`       | `worldEntities.ts` | 12（另间接 7） |
+| 26  | `registerWorldSubtypesIpc`       | `worldSubtypes.ts` | 5              |
 
-32 个文件 = `index.ts` + 上述 25 个注册文件 + `worldRefs.ts` / `worldPowers.ts`（间接注册，见 §9）+ 4 个无通道的辅助模块：
+33 个文件 = `index.ts` + 上述 26 个注册文件 + `worldRefs.ts` / `worldPowers.ts`（间接注册，见 §9）+ 4 个无通道的辅助模块：
 
 - `aiChat.ts`：在途对话表 `activeChats`、租约 `claimChat`、`abortChat`、`sendStreamEvent`（3 个 `ai:chat:*` 推送的唯一出口）。
 - `aiValidate.ts`：AI 域入参校验纯函数集合，零 electron 依赖。
 - `docLimit.ts`：单篇正文上限 `MAX_DOC_CHARS = 200_000` 与有效字数计算。
 - `worldSubtypeFields.ts`：子类字段白名单与规范化，只被 `worldSubtypes.ts` 调用。
 
-## 3. 177 个 handle 通道总表
+## 3. 184 个 handle 通道总表
 
-实测 `ipcMain.handle` 共 **177** 个（含 `onedrive:backup`、`outline:saveContent`、`worldEntity:list` / `saveText` / `listIncomingRefs` 等跨行书写的 7 个）。按一级前缀（域）分布：
+实测 `ipcMain.handle` 共 **184** 个（含 `onedrive:backup`、`outline:saveContent`、`worldEntity:list` / `saveText` / `listIncomingRefs` 等跨行书写的 7 个）。按一级前缀（域）分布：
 
 | 域             | 文件                                                            | 数量    |
 | -------------- | --------------------------------------------------------------- | ------- |
 | `ai`           | `ai.ts` + `aiCatalog.ts` + `aiComplete.ts` + `aiCompression.ts` | 20      |
+| `backup`       | `backup.ts`                                                     | 7       |
 | `books`        | `books.ts`                                                      | 8       |
 | `categories`   | `categories.ts`                                                 | 4       |
 | `chapters`     | `chapters.ts` + `chapterSearch.ts`                              | 28      |
@@ -105,7 +107,7 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 | `window`       | `window.ts` + `snap.ts`                                         | 7       |
 | `worldEntity`  | `worldEntities.ts` + `worldRefs.ts` + `worldPowers.ts`          | 19      |
 | `worldSubtype` | `worldSubtypes.ts`                                              | 5       |
-| **合计**       | 25 个注册文件                                                   | **177** |
+| **合计**       | 26 个注册文件                                                   | **184** |
 
 ### 3.1 AI / 书稿 / 内容类（84）
 
@@ -196,9 +198,13 @@ cleanWords:import · cleanWords:toggle · cleanWords:setCategoryEnabled
 cleanWords:delete
 ```
 
-### 3.3 系统 / 设置 / 统计类（24）
+### 3.3 系统 / 设置 / 统计类（31）
 
 ```text
+# backup（7）
+backup:list · backup:create · backup:restore · backup:restoreFile
+backup:export · backup:openFolder · backup:delete
+
 # settings（4）
 settings:get · settings:set · settings:all · settings:delete
 
@@ -292,13 +298,14 @@ interface AiError {
 
 `AiError` 只出现在 `ai:models:list` / `ai:test` 的 `{ ok: false, error }` 与 `ai:chat:error` 事件中。跨 IPC 会丢失 `Error` 自定义字段（只剩 `name` / `message`），所以 AI 与 OneDrive 都改为返回结构化对象，`code` 才是渲染层 i18n 映射的唯一依据。`message` 已脱敏，不含密钥与用户正文。日志同样只记键名 / 长度 / 类型（见 `settings:set` 与 `ai:config:set`），不落正文与密钥。
 
-## 6. preload 的 23 个命名空间
+## 6. preload 的 24 个命名空间
 
-`contextBridge.exposeInMainWorld('api', api)` 暴露一个对象，含 23 个命名空间 + `versions` / `ping` 两个非 IPC 成员（静态版本号与 `'pong'`）。`export type Api = typeof api` 让渲染层拿到精确签名。
+`contextBridge.exposeInMainWorld('api', api)` 暴露一个对象，含 24 个命名空间 + `versions` / `ping` 两个非 IPC 成员（静态版本号与 `'pong'`）。`export type Api = typeof api` 让渲染层拿到精确签名。
 
 | 命名空间         | 成员数 | 代表方法                                            | 对应通道前缀                                      |
 | ---------------- | ------ | --------------------------------------------------- | ------------------------------------------------- |
 | `app`            | 2      | `onBeforeClose` / `notifyCloseReady`                | `app:*`                                           |
+| `backup`         | 7      | `list` / `create` / `restore`                       | `backup:*`                                        |
 | `books`          | 9      | `list` / `cover.set` / `statsAll`                   | `books:*`（`statsAll` 复用 `stats:bookStatsAll`） |
 | `categories`     | 4      | `list` / `delete`                                   | `categories:*`                                    |
 | `chapters`       | 28     | `getParagraphs` / `saveParagraphs` / `replaceAll`   | `chapters:*`                                      |
@@ -322,7 +329,7 @@ interface AiError {
 | `windowSnap`     | 4      | `set` / `clear` / `boundsWidth`                     | `window:snap:*`、`window:bounds:get`              |
 | `systemTheme`    | 2      | `getAccentColor` / `onAccentChange`                 | `theme:accent:*`                                  |
 
-合计 **183 个成员** = 178 个 invoke 调用点 + 3 个订阅方法（`ai.chat.onStream`、`onedrive.onProgress`、`systemTheme.onAccentChange`）+ 2 个 `app` 生命周期方法（`onBeforeClose` / `notifyCloseReady`）。调用点比通道多 1，是因为 `stats:bookStatsAll` 同时挂在 `books.statsAll` 与 `stats.bookStatsAll` 两个入口（书架批量取数，避免逐书 N+1）。
+合计 **190 个成员** = 185 个 invoke 调用点 + 3 个订阅方法（`ai.chat.onStream`、`onedrive.onProgress`、`systemTheme.onAccentChange`）+ 2 个 `app` 生命周期方法（`onBeforeClose` / `notifyCloseReady`）。调用点比通道多 1，是因为 `stats:bookStatsAll` 同时挂在 `books.statsAll` 与 `stats.bookStatsAll` 两个入口（书架批量取数，避免逐书 N+1）。
 
 - 大域拆文件：`ai` / `cleanWords` / `onedrive` / `worldEntity` / `worldSubtype` / `chipColors` 在 `api/*.ts`，用 `satisfies AiApi` / `satisfies Api['worldEntity']` 做结构校验，签名真源在 `types/*.d.ts`。
 - preload 可以**收紧**契约：`cleanWords.import` 把 `source: 'user'` 写死，渲染层无法把词写进 `builtin`；`ai` / `onedrive` 不暴露任何密钥明文或 token。

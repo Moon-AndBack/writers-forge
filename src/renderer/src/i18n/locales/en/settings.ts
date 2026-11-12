@@ -38,16 +38,68 @@ const settings = {
   },
   data: {
     title: 'Data & backup',
-    description: 'Local data location and data export',
-    location: {
-      label: 'Local data storage',
-      description: 'Current files are saved on your local disk',
-      action: 'Open folder'
+    description: 'Local backup, restore and full-database export',
+    create: {
+      label: 'Back up now',
+      description: 'Create a local snapshot of the whole database',
+      action: 'Back up now',
+      successToast: 'Backup created: {{name}}'
+    },
+    backups: {
+      title: 'Backup list',
+      count: '{{count}} backup(s)',
+      loading: 'Reading local backups…',
+      empty: 'No local backups yet',
+      restoreFile: 'Restore from file…',
+      restoreFileHint: 'Choose any .db file to restore the whole database',
+      restoreAria: 'Restore backup “{{name}}”',
+      deleteAria: 'Delete backup “{{name}}”',
+      deleteConfirmTitle: 'Delete backup',
+      deleteConfirmMessage: 'Delete the backup “{{name}}”? This cannot be undone.',
+      delete: 'Delete',
+      deletedToast: 'Deleted backup “{{name}}”',
+      kindManual: 'Manual backup',
+      kindPreRestore: 'Pre-restore safety copy'
     },
     export: {
-      label: 'Export all data',
-      description: 'Export all manuscripts as Markdown',
-      action: 'Export data'
+      label: 'Export',
+      description: 'Export the whole database file (.db)',
+      action: 'Export database file',
+      successToast: 'Database file exported'
+    },
+    location: {
+      label: 'Data folder',
+      description: 'Backups and app data are stored on this device',
+      action: 'Open backup folder',
+      successToast: 'Opened the backup folder'
+    },
+    restore: {
+      title: 'Restore backup',
+      confirm: 'Overwrite and restore',
+      confirmCover: 'The backup “{{name}}” will overwrite all current data.',
+      confirmCoverFile: 'The selected backup file will overwrite all current data.',
+      confirmSafeCopy:
+        'A safety copy will be created automatically before restoring, so the current data can be rolled back.',
+      confirmRestart: 'The app will restart automatically after a successful restore.',
+      confirmFlush: 'Unsaved edits will be saved first.',
+      restarting: 'Restoring and restarting…',
+      successToast: 'Restore complete, the app is about to restart'
+    },
+    error: {
+      backup_in_progress: 'A backup or restore task is already running. Please try again later.',
+      snapshot_failed: 'Failed to create a database snapshot. Please retry.',
+      invalid_file: 'The selected file is not a valid backup file.',
+      corrupt: 'The backup file is corrupted and cannot be restored.',
+      copy_failed: 'Failed to copy the backup file. Check disk space and permissions.',
+      safe_copy_failed: 'Failed to create the pre-restore safety copy. Restore was aborted.',
+      restore_failed: 'Restore failed; current data was not replaced.',
+      invalid_name: 'The backup file name is invalid.',
+      not_found: 'The backup file does not exist; it may have been moved or deleted.',
+      list_failed: 'Failed to read the backup list.',
+      delete_failed: 'Failed to delete the backup. Please retry.',
+      export_failed: 'Failed to export the database file.',
+      open_failed: 'Failed to open the backup folder.',
+      canceled: 'Operation canceled.'
     }
   },
   categories: {

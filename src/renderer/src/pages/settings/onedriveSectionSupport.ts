@@ -55,22 +55,5 @@ export const NOTICE_KEYS = {
 
 export type OneDriveNotice = keyof typeof NOTICE_KEYS
 
-/**
- * 字节数格式化（语言中立单位，不参与翻译）。
- * 三位有效数字以内，避免 `12.34 MB` 这类噪声。
- */
-export function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B'
-
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'] as const
-  let value = bytes
-  let unitIndex = 0
-
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024
-    unitIndex += 1
-  }
-
-  const digits = unitIndex === 0 || value >= 100 ? 0 : 1
-  return `${value.toFixed(digits)} ${units[unitIndex]}`
-}
+/** 字节数格式化已上提至共享工具，此处保留转发以兼容既有导入。 */
+export { formatBytes } from '../../lib/formatBytes'

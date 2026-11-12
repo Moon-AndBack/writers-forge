@@ -124,11 +124,6 @@
   width: var(--settings-control-w);
 }
 
-/* 「即将推出」占位：按钮禁用，外层 span 承载 Tooltip 锚点（见 DataSection）。 */
-.settings-soon {
-  display: inline-flex;
-}
-
 /* 危险操作文本按钮（如「删除」分类）：保留 ghost 变体，仅把文字与 hover / 按压
    底色改为危险色；双类选择器压过 `.wf-btn--ghost`，不依赖样式导入顺序
    （同 book-form.css 的 .bf-footer__danger）。 */

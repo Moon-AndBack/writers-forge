@@ -11,10 +11,23 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v137'
+export const CHAPTER_SEED_VERSION = 'v138'
 
 /**
- * 最近版本变更日志（v137；更早版本见上述历史文件）。
+ * 最近版本变更日志（v138；更早版本见上述历史文件）。
+ *
+ * `v138`（设置页本地备份 / 恢复接通批）：设置「数据与备份」分区由禁用占位改为
+ * 可用：立即备份 / 备份列表（时间、大小、类型：手动备份 / 恢复前安全副本）/
+ * 从列表恢复 / 从文件恢复 / 导出整库 `.db` / 打开备份文件夹。
+ * 新增 7 个 `backup:*` IPC：list / create / restore / restoreFile / export /
+ * openFolder / delete；主进程单实例锁（`backup_in_progress`），恢复前自动创建
+ * `pre-restore-*` 安全副本，恢复成功后 300ms `app.relaunch()` + `app.exit(0)`。
+ * 恢复为破坏性操作：渲染层确认框说明覆盖全部数据 / 自动安全副本 / 成功后自动
+ * 重启 / 先统一落盘；`canceled` 不报错、不 toast。
+ * 纠正旧教学文案「可自行整体复制备份」：WAL 模式下直接复制主文件会得到不一致
+ * 副本，应使用「立即备份」，或先退出应用再复制整个数据目录。
+ * 导出由「Markdown」承诺改为整库 `.db`；Markdown 导出尚未提供。无 DB 迁移；
+ * 备份文件为用户数据，删除需显式确认。
  *
  * `v137`（角色年龄锚点批）：角色原无年龄字段。新增 `world_character_age` 表，按
  * 「实体 + 时间线」存一个年龄锚点（绝对年 + 年龄），不存出生年；老库启动由

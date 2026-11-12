@@ -237,6 +237,8 @@ onedrive:signIn / onedrive:backup（ipc/onedrive.ts）
 
 ## 8. 备份流程
 
+> 恢复边界：OneDrive 链路**只负责上传**，不提供远端列表 / 下载 / 恢复。需要拿回数据时使用设置「数据与备份」分区的本地备份（`backup:*` IPC）：从列表恢复或从任意 `.db` 文件恢复，主进程会先自动创建 `pre-restore-*` 安全副本，成功后自动重启应用。
+
 ### 8.1 打包内容
 
 不是「导出业务数据」，而是**整库快照**：用 better-sqlite3 的 `db.backup(dest)` 把当前数据库（WAL 安全、异步）复制到系统临时目录 `writers-forge-backups/`，文件名即远端文件名 `writers-forge-<YYYYMMDD-HHmmss>.db`（本地时间）。避免直接上传正在写入的库文件（`backup.ts:18-27`、`95-125`）。

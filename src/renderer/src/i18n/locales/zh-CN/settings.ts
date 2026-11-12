@@ -38,16 +38,67 @@ const settings = {
   },
   data: {
     title: '数据与备份',
-    description: '本地数据位置与数据导出',
-    location: {
-      label: '本地数据存储位置',
-      description: '当前文件保存在本地磁盘中',
-      action: '打开文件夹'
+    description: '本地备份、恢复与整库导出',
+    create: {
+      label: '立即备份',
+      description: '创建一份本地整库快照',
+      action: '立即备份',
+      successToast: '备份已创建：{{name}}'
+    },
+    backups: {
+      title: '备份列表',
+      count: '共 {{count}} 份',
+      loading: '正在读取本地备份…',
+      empty: '还没有本地备份',
+      restoreFile: '从文件恢复…',
+      restoreFileHint: '选择任意 .db 文件恢复整库',
+      restoreAria: '恢复备份「{{name}}」',
+      deleteAria: '删除备份「{{name}}」',
+      deleteConfirmTitle: '删除备份',
+      deleteConfirmMessage: '确定删除备份「{{name}}」？此操作不可恢复。',
+      delete: '删除',
+      deletedToast: '已删除备份「{{name}}」',
+      kindManual: '手动备份',
+      kindPreRestore: '恢复前安全副本'
     },
     export: {
-      label: '导出全部数据',
-      description: '将所有文稿导出为 Markdown 格式',
-      action: '导出数据'
+      label: '导出',
+      description: '导出整库数据库文件（.db）',
+      action: '导出数据库文件',
+      successToast: '数据库文件已导出'
+    },
+    location: {
+      label: '数据目录',
+      description: '备份与应用数据存放在本机',
+      action: '打开备份文件夹',
+      successToast: '已打开备份文件夹'
+    },
+    restore: {
+      title: '恢复备份',
+      confirm: '覆盖并恢复',
+      confirmCover: '将用备份「{{name}}」覆盖当前全部数据。',
+      confirmCoverFile: '将用所选备份文件覆盖当前全部数据。',
+      confirmSafeCopy: '恢复前会自动创建一份安全副本，当前数据可回退。',
+      confirmRestart: '恢复成功后应用会自动重启。',
+      confirmFlush: '未保存的编辑会先尝试保存。',
+      restarting: '正在恢复并重启…',
+      successToast: '恢复完成，应用即将重启'
+    },
+    error: {
+      backup_in_progress: '已有备份或恢复任务正在进行，请稍后再试。',
+      snapshot_failed: '生成数据库快照失败，请重试。',
+      invalid_file: '所选文件不是有效的备份文件。',
+      corrupt: '备份文件已损坏，无法恢复。',
+      copy_failed: '复制备份文件失败，请检查磁盘空间与权限。',
+      safe_copy_failed: '创建恢复前安全副本失败，已中止恢复。',
+      restore_failed: '恢复失败，当前数据未被替换。',
+      invalid_name: '备份文件名不合法。',
+      not_found: '备份文件不存在，可能已被移动或删除。',
+      list_failed: '读取备份列表失败。',
+      delete_failed: '删除备份失败，请重试。',
+      export_failed: '导出数据库文件失败。',
+      open_failed: '打开备份文件夹失败。',
+      canceled: '操作已取消。'
     }
   },
   categories: {
