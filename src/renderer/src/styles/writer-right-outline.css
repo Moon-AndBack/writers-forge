@@ -76,7 +76,7 @@
   align-items: center;
   justify-content: center;
   padding: 12px 9px;
-  font-size: 11px;
+  font-size: var(--fs-caption);
   line-height: 1.6;
   text-align: center;
   color: var(--text-mute);
@@ -85,7 +85,7 @@
 .rp-read .ProseMirror {
   outline: none;
   font-family: var(--doc-font);
-  font-size: 12.8px;
+  font-size: var(--fs-body);
   line-height: 1.75;
   letter-spacing: var(--doc-letter);
   color: var(--text-dim);
@@ -315,7 +315,7 @@
   border: 1px dashed var(--line);
   border-radius: var(--r-xs);
   background: var(--pane);
-  font-size: 11px;
+  font-size: var(--fs-caption);
   line-height: 1.6;
   color: var(--text-mute);
   user-select: none;

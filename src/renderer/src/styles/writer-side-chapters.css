@@ -87,7 +87,7 @@
 /* 章行前缀段「第X章」：默认字体、不斜体（与卷行「卷X」同口径）。 */
 .chapter-prefix {
   flex: none;
-  font-size: 13.5px;
+  font-size: var(--fs-title);
   line-height: 1.5;
   color: var(--text-dim);
   white-space: nowrap;
@@ -96,7 +96,7 @@
 .chapter-name {
   flex: 1;
   min-width: 0;
-  font-size: 13.5px;
+  font-size: var(--fs-title);
   line-height: 1.5;
   color: var(--text-dim);
   white-space: nowrap;
@@ -117,7 +117,7 @@
   flex: none;
   padding: 1px 6px;
   border-radius: var(--r-xs);
-  font-size: 9.5px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   color: var(--warn);
   background: color-mix(in srgb, var(--warn) 16%, var(--pane));
@@ -144,9 +144,12 @@
    两侧 margin -3px 收紧：口径同 .vol-sep（gap 10px → 有效 ≈7px）。 */
 .chapter-sep {
   flex: none;
-  font-size: 6px;
-  line-height: 1;
-  color: var(--text-mute);
+  width: 4px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--text-mute);
+  color: transparent;
   opacity: 0.7;
   margin: 0 -3px;
 }

@@ -77,7 +77,7 @@
 .trash-tree-group > .trash-row > .trash-row-name {
   flex: 1;
   min-width: 0;
-  font-size: 13.5px;
+  font-size: var(--fs-title);
   font-weight: 600;
   line-height: 1.5;
   color: var(--text-dim);
@@ -92,7 +92,7 @@
 .trash-tree-residual .trash-row-name {
   flex: 1;
   min-width: 0;
-  font-size: 13.5px;
+  font-size: var(--fs-title);
   font-weight: 400;
   line-height: 1.5;
   color: var(--text-dim);
@@ -121,7 +121,7 @@
   flex: none;
   margin-left: auto;
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: var(--fs-caption);
   color: var(--text-mute);
 }
 
@@ -160,7 +160,7 @@
 
 .trash-row-prefix {
   flex: none;
-  font-size: 13.5px;
+  font-size: var(--fs-title);
   line-height: 1.5;
   color: var(--text-dim);
   white-space: nowrap;
@@ -173,9 +173,12 @@
 
 .trash-row-sep {
   flex: none;
-  font-size: 6px;
-  line-height: 1;
-  color: var(--text-mute);
+  width: 4px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--text-mute);
+  color: transparent;
   opacity: 0.7;
   margin: 0 -3px;
 }

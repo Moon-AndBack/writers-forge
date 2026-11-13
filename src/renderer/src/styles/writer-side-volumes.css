@@ -40,7 +40,7 @@
 /* 卷行前缀段「卷X」：默认字体、不斜体（与章行「第X章」同口径）。 */
 .vol-prefix {
   flex: none;
-  font-size: 13.5px;
+  font-size: var(--fs-title);
   line-height: 1.5;
   color: var(--text-dim);
   white-space: nowrap;
@@ -50,7 +50,7 @@
   flex: 1;
   min-width: 0;
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: var(--fs-title);
   line-height: 1.5;
   color: var(--text-dim);
   white-space: nowrap;
@@ -68,9 +68,12 @@
    两段文字的有效间距 ≈ 7px（调小 3px，落在 2–4px 区间），更贴合「前缀 ● 名」。 */
 .vol-sep {
   flex: none;
-  font-size: 6px;
-  line-height: 1;
-  color: var(--text-mute);
+  width: 4px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--text-mute);
+  color: transparent;
   opacity: 0.7;
   margin: 0 -3px;
 }
@@ -84,7 +87,7 @@
 .vol-count {
   margin-left: auto;
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: var(--fs-caption);
   color: var(--text-mute);
 }
 
@@ -95,7 +98,7 @@
   min-width: 0;
   padding: 0 4px;
   border-radius: var(--r-xs);
-  font-size: 13.5px;
+  font-size: var(--fs-title);
   font-weight: 600;
   line-height: 1.5;
   color: var(--text-dim);

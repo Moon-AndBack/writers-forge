@@ -86,20 +86,20 @@
 }
 
 .foreshadow-item.wf-entity-card--compact .wf-entity-card__title {
-  font-size: 13px;
+  font-size: var(--fs-body);
 }
 
 .foreshadow-item.wf-entity-card--compact .foreshadow-item__place-label {
-  font-size: 10.5px;
+  font-size: var(--fs-caption);
 }
 
 .foreshadow-item.wf-entity-card--compact .foreshadow-item__place-value {
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
 }
 
 .foreshadow-item.wf-entity-card--compact .foreshadow-item__desc {
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   line-height: 1.55;
 }

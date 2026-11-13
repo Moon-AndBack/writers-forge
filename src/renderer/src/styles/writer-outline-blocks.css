@@ -284,7 +284,7 @@
   padding: 2px 8px;
   border: 1px dashed var(--line);
   border-radius: var(--r-xs);
-  font-size: 12px;
+  font-size: var(--fs-body-sm);
   line-height: 1.6;
   color: var(--text-mute);
   background: var(--soft-solid);
@@ -292,5 +292,5 @@
 }
 
 .ep-view[data-view='outline'] .doc-body .ProseMirror .wf-editor-image-missing__glyph {
-  font-size: 13px;
+  font-size: var(--fs-body);
 }
