@@ -30,7 +30,7 @@ export function listPlotScenes(bookId: string): PlotSceneRow[] {
      WHERE book_id = ? AND deleted_at IS NULL
      ORDER BY
       CASE WHEN (time_era = 'zero' OR (time_era IN ('bc', 'ad') AND time_year IS NOT NULL)) THEN 0 ELSE 1 END,
-      CASE WHEN time_era = 'bc' THEN -time_year WHEN time_era = 'zero' THEN 0 WHEN time_era = 'ad' THEN time_year ELSE NULL END,
+      CASE WHEN time_era = 'bc' THEN -ABS(time_year) WHEN time_era = 'zero' THEN 0 WHEN time_era = 'ad' THEN ABS(time_year) ELSE NULL END,
       sort_order, id`
   )
   return statement.all(bookId)

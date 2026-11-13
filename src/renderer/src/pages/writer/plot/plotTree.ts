@@ -205,7 +205,7 @@ export function plotSceneTime(
     head = label
     // 元年无年份（编辑器在 zero 下禁用年份框并清空）；纪前 / 纪后有整数年才拼年份。
     if (era !== 'zero' && typeof scene.timeYear === 'number' && Number.isInteger(scene.timeYear)) {
-      head = `${label} ${scene.timeYear}${eraLabels ? eraLabels.yearUnit : ''}`
+      head = `${label} ${Math.abs(scene.timeYear)}${eraLabels ? eraLabels.yearUnit : ''}`
     }
   }
   const structured = head !== '' && desc !== '' ? `${head} · ${desc}` : head !== '' ? head : desc
@@ -227,8 +227,9 @@ export function scenesOfLine(scenes: readonly PlotSceneRow[], lineId: number): P
 
 /**
  * 场景绝对年换算（`timeEra` / `timeYear` → 可排序键）：
- * bc 纪前 → `-year` / zero 元年 → `0`（年份恒忽略，编辑器已清空）/ ad 纪后 → `+year`；
+ * bc 纪前 → `-abs(year)` / zero 元年 → `0`（年份恒忽略，编辑器已清空）/ ad 纪后 → `+abs(year)`；
  * 未设置（纪元 '' 或纪前 / 纪后缺整数年）回 `null`（= 未定年组，沉底）。
+ * 年份取绝对值：兜底老数据里的负年份（写入侧已禁止负数）。
  */
 export function plotAbsoluteYear(scene: Pick<PlotSceneRow, 'timeEra' | 'timeYear'>): number | null {
   if (scene.timeEra === 'zero') return 0
@@ -237,7 +238,7 @@ export function plotAbsoluteYear(scene: Pick<PlotSceneRow, 'timeEra' | 'timeYear
     typeof scene.timeYear === 'number' &&
     Number.isInteger(scene.timeYear)
   ) {
-    return scene.timeEra === 'bc' ? -scene.timeYear : scene.timeYear
+    return scene.timeEra === 'bc' ? -Math.abs(scene.timeYear) : Math.abs(scene.timeYear)
   }
   return null
 }

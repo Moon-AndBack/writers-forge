@@ -172,9 +172,9 @@ export function normalizeTimeEra(value: unknown): string {
   return PLOT_TIME_ERAS.includes(value) ? value : ''
 }
 
-/** 归一化年份入参：整数透传，其余一律回退 null（未设置）。 */
+/** 归一化年份入参：非负整数透传，其余（含负数）一律回退 null（未设置）。 */
 export function normalizeTimeYear(value: unknown): number | null {
-  return typeof value === 'number' && Number.isInteger(value) ? value : null
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : null
 }
 
 /** 解析时间线 origin 自由文本 → 结构化时间四字段。 */

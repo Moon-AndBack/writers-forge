@@ -68,10 +68,12 @@ function isOptionalTimeEra(value: unknown): value is string | null | undefined {
   )
 }
 
-/** 校验结构化年份：undefined / null（未设置）/ 整数。 */
+/** 校验结构化年份：undefined / null（未设置）/ 非负整数（负数视为非法）。 */
 function isOptionalTimeYear(value: unknown): value is number | null | undefined {
   return (
-    value === undefined || value === null || (typeof value === 'number' && Number.isInteger(value))
+    value === undefined ||
+    value === null ||
+    (typeof value === 'number' && Number.isInteger(value) && value >= 0)
   )
 }
 

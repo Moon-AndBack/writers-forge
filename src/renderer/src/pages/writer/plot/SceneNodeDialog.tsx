@@ -22,18 +22,19 @@ export interface SceneNodeDialogProps {
 }
 
 /**
- * 解析年份输入：空串 → null（清空）；整数文本 → 数值；其余 → undefined（非法，落库侧按 null 兜底）。
+ * 解析年份输入：空串 → null（清空）；非负整数文本 → 数值；其余（含负数）→ undefined
+ *（非法，落库侧按 null 兜底）。
  */
 function parseYearInput(text: string): number | null | undefined {
   const trimmed = text.trim()
   if (trimmed === '') return null
-  if (!/^-?\d+$/.test(trimmed)) return undefined
+  if (!/^\d+$/.test(trimmed)) return undefined
   return Number.parseInt(trimmed, 10)
 }
 
 /**
  * 剧情节点「新建 / 编辑」共用弹窗（仿 `PlotLineDialog`：Modal sm + 通用取消 / 确定 footer）。
- * 字段：时间（纪元 Select + 年份数字框，元年禁用并清空）+ 时间描述 + 标题。
+ * 字段：时间（纪元 Select + 年份数字框，纪元未设置 / 元年时禁用、元年清空）+ 时间描述 + 标题。
  * Enter 提交，Esc / 遮罩关闭（Modal 内建）；弹窗本体经 Modal portal 挂 body。
  */
 export default function SceneNodeDialog({
@@ -46,7 +47,9 @@ export default function SceneNodeDialog({
   const { t: tCommon } = useTranslation('common')
   const [timeEra, setTimeEra] = useState(initial?.timeEra ?? '')
   const [timeYearText, setTimeYearText] = useState(
-    initial?.timeYear === null || initial?.timeYear === undefined ? '' : String(initial.timeYear)
+    initial?.timeYear === null || initial?.timeYear === undefined
+      ? ''
+      : String(Math.abs(initial.timeYear))
   )
   const [timeDesc, setTimeDesc] = useState(initial?.timeDesc ?? '')
   const [titleText, setTitleText] = useState(initial?.title ?? '')
@@ -74,6 +77,18 @@ export default function SceneNodeDialog({
       event.preventDefault()
       submit()
     }
+  }
+
+  /**
+   * 年份框按键拦截：负号 / 正号 / 科学计数法 / 小数点一律拒绝。
+   * `type="number"` 下按 `-` 时 `target.value` 可能变成空串，故按键是主防线（onChange 兜底粘贴）。
+   */
+  const handleYearKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
+    if (['-', '+', 'e', 'E', '.'].includes(event.key)) {
+      event.preventDefault()
+      return
+    }
+    submitOnEnter(event)
   }
 
   return (
@@ -115,12 +130,17 @@ export default function SceneNodeDialog({
             <Input
               value={timeYearText}
               type="number"
-              disabled={timeEra === 'zero'}
+              min={0}
+              step={1}
+              disabled={timeEra === '' || timeEra === 'zero'}
               aria-label={t('editor.fieldTimeYear')}
               placeholder={t('editor.timeYearPlaceholder')}
               spellCheck={false}
-              onChange={(event) => setTimeYearText(event.target.value)}
-              onKeyDown={submitOnEnter}
+              onChange={(event) => {
+                // 兜底粘贴 / 输入法：只接受纯数字（type="number" 下按 - 时 value 可能变空串）。
+                if (/^\d*$/.test(event.target.value)) setTimeYearText(event.target.value)
+              }}
+              onKeyDown={handleYearKeyDown}
             />
           </div>
         </FormField>
