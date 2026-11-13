@@ -874,7 +874,7 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 </Tag>
 ```
 
-`action` 位于约 23px 高的 Tag 内，只能放 14px 级微操作按钮（如 `.dossier-rel-pill__action`）；36px 的 `IconButton size="sm"` 会溢出，不要使用。
+`action` 位于 22px 高的 Tag 内，只能放 14px 级微操作按钮（如 `.dossier-rel-pill__action`）；36px 的 `IconButton size="sm"` 会溢出，不要使用。
 
 ### 3.18 Textarea
 
