@@ -2,7 +2,7 @@
 
 本文描述 `src/renderer/src/styles/theme.css` 的令牌体系：单一真源的组织、主题标识与 `system` 解析、主题无关令牌、四套主题的分组与差异、不透明令牌与窗口材质的配合、系统强调色、主题切换过渡、样式导入顺序与使用规约。
 
-- 令牌定义：`src/renderer/src/styles/theme.css`（355 行，152 条声明）
+- 令牌定义：`src/renderer/src/styles/theme.css`（363 行，156 条声明）
 - 主题标识 / 解析：`theme/themes.ts`、`theme/ThemeProvider.tsx`；系统强调色：`theme/useSystemAccent.ts`、`theme/color.ts`、`src/main/theme.ts`、`src/main/ipc/theme.ts`
 - 切换过渡：`theme/themeReveal.ts`、`styles/components/motion.css`；材质 / 外壳：`styles/acrylic.css`、`styles/shell.css`；入口：`styles/index.css`、`App.tsx`
 
@@ -94,6 +94,7 @@
 | 分组            | light  | dark   | sage   | honey  | 说明                                        |
 | --------------- | ------ | ------ | ------ | ------ | ------------------------------------------- |
 | 桌面 / 窗口表面 | 8      | 5      | 8      | 8      | dark 无 `--desk-glow-*`                     |
+| 写作中栏        | 1      | 1      | 1      | 1      | `--doc-surface`（sage / honey 为护眼纸色）  |
 | 交互底色        | 2      | 2      | 2      | 2      | `--soft` / `--line`                         |
 | 不透明交互底色  | 5      | 5      | 5      | 5      | `--*-solid`                                 |
 | 控件 on-soft    | 3      | 3      | 3      | 3      | `--control-on-soft*`                        |
@@ -103,21 +104,22 @@
 | 阴影 / 描边     | 3      | 3      | 1      | 1      | sage / honey 省略 `--sh-xs`、`--sh-sm`      |
 | 浮层遮罩        | 1      | 1      | 0      | 0      | sage / honey 继承亮色块                     |
 | 文本选区        | 0      | 1      | 0      | 1      | light / sage 用 `:root` 的 22%              |
-| **合计**        | **32** | **30** | **29** | **30** | —                                           |
+| **合计**        | **33** | **31** | **30** | **31** | —                                           |
 
 ### 4.2 桌面与窗口表面
 
-| 变量                | light                | dark      | sage         | honey        |
-| ------------------- | -------------------- | --------- | ------------ | ------------ |
-| `--desk-1`          | `#dfe4f2`            | `#1c1c2b` | `#dbe9dc`    | `#ece3cd`    |
-| `--desk-2`          | `#eef0f6`            | `#1c1c2b` | `#e9f1ea`    | `#f5edd9`    |
-| `--desk-3`          | `#e6e9f4`            | `#19202b` | `#e0ebe2`    | `#eee5d1`    |
-| `--desk-solid`      | `#eef0f6`            | `#161616` | `#e9f1ea`    | `#f5edd9`    |
-| `--desk-glow-1/2/3` | 紫 / 蓝 / 白，α≈0.04 | **无**    | 绿系，α≈0.03 | 金系，α≈0.03 |
-| `--pane`            | `#ffffff`            | `#202020` | `#fcfffc`    | `#fffef9`    |
+| 变量                | light                | dark          | sage         | honey        |
+| ------------------- | -------------------- | ------------- | ------------ | ------------ |
+| `--desk-1`          | `#dfe4f2`            | `#1c1c2b`     | `#dbe9dc`    | `#ece3cd`    |
+| `--desk-2`          | `#eef0f6`            | `#1c1c2b`     | `#e9f1ea`    | `#f5edd9`    |
+| `--desk-3`          | `#e6e9f4`            | `#19202b`     | `#e0ebe2`    | `#eee5d1`    |
+| `--desk-solid`      | `#eef0f6`            | `#161616`     | `#e9f1ea`    | `#f5edd9`    |
+| `--desk-glow-1/2/3` | 紫 / 蓝 / 白，α≈0.04 | **无**        | 绿系，α≈0.03 | 金系，α≈0.03 |
+| `--pane`            | `#ffffff`            | `#202020`     | `#fcfffc`    | `#fffef9`    |
+| `--doc-surface`     | `var(--pane)`        | `var(--pane)` | `#f0f8f0`    | `#faf6e8`    |
 
 - `.shell` 桌面底 = 三层 radial 光斑 + `linear-gradient(150deg, --desk-1, --desk-2 45%, --desk-3)`（`shell.css:30-34`）；dark 由 `[data-theme='dark'] .shell` 覆盖为 4 层不透明色带（`#1c1c2b` / `#161616` / `#19202b`）。**这不是全库唯一例外**：书籍封面 / 状态胶囊固定色（`bookshelf.css:245-271`）、主题预览镜像（`theme-switcher.css:153-199`）、品牌标（`shell.css:142-145`）、头像白字、滚动条、胶囊预设色板、固定态活动栏磨砂等均已登记在 `design-language.md` 的「例外登记表」。
-- `--desk-solid` 在 light / sage / honey 恒等于各自 `--desk-2`，dark 单独定为 `#161616`。窗口底色由主进程按材质写死（acrylic 开 → `#00000000`，关 → `#f3f3f3`），不随主题变化；原 `--win-rgb` 无任何消费，已删除。`--pane` 是左右栏 / 面板 / 编辑区的不透明底（约 150 处，频次最高）。原先作为左右栏底色契约保留的 `--win-surface` 已无消费点，已于本次清理删除。
+- `--desk-solid` 在 light / sage / honey 恒等于各自 `--desk-2`，dark 单独定为 `#161616`。窗口底色由主进程按材质写死（acrylic 开 → `#00000000`，关 → `#f3f3f3`），不随主题变化；原 `--win-rgb` 无任何消费，已删除。`--pane` 是左右栏 / 面板 / 编辑区的不透明底（约 150 处，频次最高）。`--doc-surface` 是写作中栏（章节 / 大纲的 `.editor-pane` 整层，含回收站）专用底色：light / dark 与 `--pane` 同值，sage / honey 分别为 `#f0f8f0` / `#faf6e8` 护眼纸色；纸面作用域内的 `--soft-solid` 等 5 个软底令牌在 `writer.css` 按本主题基色重派生。原先作为左右栏底色契约保留的 `--win-surface` 已无消费点，已于本次清理删除。
 
 ### 4.3 交互底色与控件底色
 
@@ -167,13 +169,13 @@
 2. **交互底色方向**：light 用黑 α 压暗，dark 用白 α 提亮（`--soft` 3.7% → 5%，`--line` 8% → 10%）。
 3. **`--soft-solid` 基数**：light 6/6/9/5/8.5%，dark 5/8/11/7/12%（dark 无「容器卡加深到 6%」偏移）；控件 on-soft 亦相反（light 10/14/37，dark 14/19/22）。
 4. **阴影与描边**：light `--sh-xs` 5%、`--sh-sm` 6% + 4.5%；dark 30% / 30% + 25%，`--panel-ring` 由黑环变白环。
-5. **光标与选区**：`--caret` light 混 `--doc-text`、dark 直接 `--brand`；选区 22% vs 30%；条数 32 vs 30（dark 少 3 条光斑、多 1 条选区）。
+5. **光标与选区**：`--caret` light 混 `--doc-text`、dark 直接 `--brand`；选区 22% vs 30%；条数 33 vs 31（dark 少 3 条光斑、多 1 条选区）。
 
 ---
 
 ## 5. 不透明令牌与材质协同
 
-`--*-solid` 组（light 122-126、dark 197-201、sage 262-266、honey 318-322）是组件自身填充专用：**alpha 恒为 1**，用 `color-mix` 把原半透明档的比例混入不透明 `--pane`。
+`--*-solid` 组（light 124-128、dark 201-205、sage 268-272、honey 326-330）是组件自身填充专用：**alpha 恒为 1**，用 `color-mix` 把原半透明档的比例混入不透明 `--pane`。
 
 | 令牌                                        | 语义                         | 典型消费                                             |
 | ------------------------------------------- | ---------------------------- | ---------------------------------------------------- |

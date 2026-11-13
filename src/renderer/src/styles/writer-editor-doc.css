@@ -36,7 +36,8 @@
 .doc-body p:focus,
 .doc-body .ProseMirror p:focus {
   outline: none;
-  background: color-mix(in srgb, var(--brand) 8%, var(--pane));
+  /* 纸面基线：sage / honey 中栏为 --doc-surface，不能混 --pane 否则焦点底与纸面同色。 */
+  background: color-mix(in srgb, var(--brand) 8%, var(--doc-surface));
 }
 
 /* ---------- 斜体（CJK 无真斜体面 → Chromium 合成 oblique）两侧留白 ----------

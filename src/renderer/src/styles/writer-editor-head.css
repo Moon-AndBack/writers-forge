@@ -63,7 +63,7 @@
 }
 
 .doc-title:focus {
-  background: color-mix(in srgb, var(--brand) 8%, var(--pane));
+  background: color-mix(in srgb, var(--brand) 8%, var(--doc-surface));
 }
 
 /* 章节视图头部标题输入（.editor-head > .editor-inner > input.doc-title）：
@@ -208,12 +208,12 @@
 
 .editor-head .doc-status.is-draft {
   color: var(--warn);
-  background: color-mix(in srgb, var(--warn) 16%, var(--pane));
+  background: color-mix(in srgb, var(--warn) 16%, var(--doc-surface));
 }
 
 .editor-head .doc-status.is-done {
   color: var(--ok);
-  background: color-mix(in srgb, var(--ok) 16%, var(--pane));
+  background: color-mix(in srgb, var(--ok) 16%, var(--doc-surface));
 }
 
 .editor-head .doc-status:disabled {

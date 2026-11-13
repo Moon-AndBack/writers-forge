@@ -11,10 +11,22 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v144'
+export const CHAPTER_SEED_VERSION = 'v145'
 
 /**
- * 最近版本变更日志（v144；更早版本见上述历史文件）。
+ * 最近版本变更日志（v145；更早版本见上述历史文件）。
+ *
+ * `v145`（浅绿 / 浅黄写作中栏护眼底色批）：写作中栏（章节 / 大纲的 `.editor-pane`
+ * 整层，含编辑头 / 正文区 / 脚注 / 回收站）不再直接用面板底 `--pane`，新增专用令牌
+ * `--doc-surface`：light / dark 与 `--pane` 同值（视觉不变），sage `#f0f8f0`、
+ * honey `#faf6e8`。护眼纸面上全局软底会与纸面糊平（段落焦点底 1.00:1、代码块 /
+ * 表头约 1.03:1），故在 `.editor-head` / `.editor-scroll` / `.editor-foot` /
+ * `.trash-view` 作用域内按本主题基色重派生 `--soft-solid` / `--soft-hover-solid` /
+ * `--soft-press-solid` / `--control-on-soft` / `--control-on-soft-hover`；搜索浮窗
+ * （`.ep-search`，白 `--pane`）是滚动区兄弟节点，不被染色。`p:focus`、标题聚焦底与
+ * 草稿 / 定稿胶囊的混色基底改 `--doc-surface`。`EditorPane` 的 `<main>` 加
+ * `data-module` 供作用域选择。左右栏 / 弹窗 / `--pane` 均未改。教学文案同步（卷五
+ * 「主题外观」、大纲「主题与排版」）。纯渲染层 + 教学文案改动：无 DB 迁移，升版本只重灌教学书。
  *
  * `v144`（场景年份非负批）：剧情节点年份框原接受负号，给「纪前」填 `-1` 会被
  * `plotAbsoluteYear` 取反成 `+1`，排到纪后位置并显示为「纪前 -1年」。现在解析只接受

@@ -203,13 +203,48 @@ body.is-resizing .splitter {
   display: flex;
   flex-direction: column;
   position: relative; /* 提供包含块：章节搜索浮窗锚定中栏右上（.ep-search 绝对定位） */
-  background: var(--pane);
+  /* 写作中栏专用底色：light / dark 等于 --pane；sage / honey 为护眼纸色。 */
+  background: var(--doc-surface);
   border-radius: var(--r-lg);
   box-shadow: var(--sh-sm), var(--panel-ring);
   overflow: hidden;
   contain: layout paint;
   /* 无 transition：原有两条（background / box-shadow）只服务于主题切换，
      已随「主题切换整体瞬变」一并移除；本栏无布局 / 显隐过渡需求。 */
+}
+
+/* ---------- 护眼纸面内的软底重派生（sage / honey） ----------
+   中栏铺纸色后，全局软底（以 --pane 为基底）会与纸面几乎同色：段落焦点底
+   仅 1.00:1、代码块 / 表头约 1.03:1、段 hover 约 1.065:1，回收站卡片与控件
+   深浅关系也会反转。故在纸面作用域内按本主题基色重新派生这 5 个令牌，
+   保持与原主题相同的层级差。
+   **不要挂在 `.editor-pane` 整层**：章节搜索浮窗（`.ep-search`，白 --pane）
+   是 `.editor-scroll` 的兄弟节点，挂在整层会把浮窗内部也染成纸面色阶。
+   只挂铺纸的四个容器：编辑头 / 正文滚动区 / 脚注 / 回收站。 */
+[data-theme='sage']
+  .editor-pane[data-module='chapters']
+  :is(.editor-head, .editor-scroll, .editor-foot, .trash-view),
+[data-theme='sage']
+  .editor-pane[data-module='outline']
+  :is(.editor-head, .editor-scroll, .editor-foot, .trash-view) {
+  --soft-solid: color-mix(in srgb, rgb(20, 60, 30) 6%, var(--doc-surface));
+  --soft-hover-solid: color-mix(in srgb, rgb(20, 60, 30) 8%, var(--doc-surface));
+  --soft-press-solid: color-mix(in srgb, rgb(20, 60, 30) 11%, var(--doc-surface));
+  --control-on-soft: color-mix(in srgb, rgb(20, 60, 30) 10%, var(--doc-surface));
+  --control-on-soft-hover: color-mix(in srgb, rgb(20, 60, 30) 14%, var(--doc-surface));
+}
+
+[data-theme='honey']
+  .editor-pane[data-module='chapters']
+  :is(.editor-head, .editor-scroll, .editor-foot, .trash-view),
+[data-theme='honey']
+  .editor-pane[data-module='outline']
+  :is(.editor-head, .editor-scroll, .editor-foot, .trash-view) {
+  --soft-solid: color-mix(in srgb, rgb(80, 60, 10) 6%, var(--doc-surface));
+  --soft-hover-solid: color-mix(in srgb, rgb(80, 60, 10) 7%, var(--doc-surface));
+  --soft-press-solid: color-mix(in srgb, rgb(80, 60, 10) 10%, var(--doc-surface));
+  --control-on-soft: color-mix(in srgb, rgb(80, 60, 10) 10%, var(--doc-surface));
+  --control-on-soft-hover: color-mix(in srgb, rgb(80, 60, 10) 14%, var(--doc-surface));
 }
 
 .rightpane {

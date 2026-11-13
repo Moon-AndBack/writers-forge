@@ -321,7 +321,7 @@ function EditorPaneComponent({
   }, [outlineSelection, outlineVolumes, outlineItems, labels, tOutline])
 
   return (
-    <main className="editor-pane">
+    <main className="editor-pane" data-module={module}>
       {/* 章节视图常驻（有 props 与编辑器生命周期）；回收站打开时仅以 is-active 隐藏，
           保持标题栏按钮组注册不中断（关闭回收站后可立即切回编辑器）。 */}
       <div

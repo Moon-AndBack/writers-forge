@@ -17,7 +17,7 @@
 | 层   | 类 / 选择器                                             | 背景                                                      | 描边                                              | 圆角            | 内衬                                                              | 阴影                            |
 | ---- | ------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------- | --------------- | ----------------------------------------------------------------- | ------------------------------- |
 | L0   | `.shell` 桌面                                           | `--desk-1/2/3` 渐变；dark 为固定色带                      | —                                                 | —               | —                                                                 | —                               |
-| L1   | `.rp-panel`、编辑区、左右栏                             | `--pane`                                                  | `--line` / 渐隐线                                 | —               | 8px                                                               | —                               |
+| L1   | `.rp-panel`、编辑区、左右栏                             | `--pane`；写作中栏 sage / honey 用 `--doc-surface`        | `--line` / 渐隐线                                 | —               | 8px                                                               | —                               |
 | L2   | `.pane-region` 分区容器                                 | `--soft-solid`                                            | 无                                                | `--r-lg`（8px） | 6px                                                               | 无                              |
 | L3   | `.wf-card`、`.wf-entity-card` 卡片                      | `--soft-solid`                                            | `--panel-ring` / `inset 0 0 0 1px --line`（变体） | `--r-lg`（8px） | 14px × 16px                                                       | `--sh-sm`（实体卡为 `--sh-xs`） |
 | L4   | `.wf-input`、`.wf-readonly-block` 控件 / 只读块         | `--soft-solid`（普通）/ `--control-on-soft`（软底容器内） | `--control-on-soft-line`（`inset`）               | `--r-lg`（8px） | 输入 9×12 / 只读块 10×12                                          | 聚焦品牌环；不叠外投影          |
@@ -25,6 +25,7 @@
 
 代表位置：
 
+- L1：左右栏 / 面板用 `--pane`；写作中栏（`.editor-pane`，章节 / 大纲，含回收站）用 `--doc-surface`（`theme.css`）——light / dark 与 `--pane` 同值，sage / honey 为护眼纸色 `#f0f8f0` / `#faf6e8`。纸面作用域（`.editor-head` / `.editor-scroll` / `.editor-foot` / `.trash-view`）内的 `--soft-solid` 等 5 个软底令牌按本主题基色重派生（`writer.css`），避免焦点底与块级底和纸面同色。
 - L2：`.pane-region`（`src/renderer/src/styles/components/surface.css:145-149`，`--soft-solid` + `padding: 6px` + `--r-lg`）。
 - L3：`.wf-card`（`surface.css:16-28`）、`.wf-card__body`（`surface.css:122-127`，`padding: 14px 16px`）、`.wf-entity-card`（`components/entity-card.css:16-26`）。
 - L4：`.on-soft .wf-input`（`components/form.css:125-130`）、`.wf-readonly-block`（`surface.css:155-160`，`10px 12px` + `--control-on-soft-line` inset 环）。
