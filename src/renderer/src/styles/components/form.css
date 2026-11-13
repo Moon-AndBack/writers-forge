@@ -289,7 +289,7 @@
 .wf-switch {
   display: inline-flex;
   align-items: center;
-  /* 命中区按控件档位撑开（md 38）：轨道本身尺寸不变，由 align-items 居中。
+  /* 命中区按控件档位撑开（36）：轨道本身尺寸不变，由 align-items 居中。
      轨道最大仅 24px，不撑开会导致点击区域小于同排控件。 */
   min-height: var(--control-h-md);
   gap: 9px;

@@ -320,92 +320,6 @@
 }
 
 /* ============================================================
-   Stepper（− / 值 / + 步进器）
-   ============================================================ */
-.wf-stepper {
-  display: inline-flex;
-  align-items: center;
-  gap: 1px;
-  height: var(--control-h-md);
-  padding: 2px;
-  background: var(--pill-bg-solid);
-  border-radius: var(--r-xs);
-}
-.wf-stepper.is-disabled {
-  opacity: 0.6;
-}
-.wf-stepper__btn {
-  display: grid;
-  place-items: center;
-  align-self: stretch;
-  width: calc(var(--control-h-md) - 4px);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--text-dim);
-  background: transparent;
-  border-radius: var(--r-xs);
-  transition:
-    background var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
-}
-.wf-stepper__btn:hover:not(:disabled) {
-  color: var(--text);
-  background: var(--soft-hover-solid);
-}
-.wf-stepper__btn:active:not(:disabled) {
-  background: var(--soft-press-solid);
-}
-.wf-stepper__btn:disabled {
-  color: var(--text-mute);
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-.wf-stepper__btn:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
-  outline-offset: -1px;
-}
-.wf-stepper__value {
-  min-width: 44px;
-  padding: 0 6px;
-  font-family: var(--mono);
-  font-size: 11.5px;
-  font-weight: 600;
-  text-align: center;
-  color: var(--text-dim);
-  border-radius: var(--r-xs);
-  user-select: none;
-}
-.wf-stepper__value.is-editable {
-  cursor: text;
-  transition:
-    background var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
-}
-.wf-stepper__value.is-editable:hover {
-  color: var(--text);
-  background: var(--soft-hover-solid);
-}
-.wf-stepper__value.is-editable:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
-  outline-offset: -1px;
-}
-.wf-stepper__input {
-  width: 54px;
-  padding: 2px 4px;
-  font-family: var(--mono);
-  font-size: 11.5px;
-  font-weight: 600;
-  text-align: center;
-  color: var(--text);
-  background: var(--pane);
-  border: 1px solid color-mix(in srgb, var(--brand) 45%, transparent);
-  border-radius: var(--r-xs);
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 11%, transparent);
-}
-
-/* ============================================================
    FormField（字段容器）
    ============================================================ */
 .wf-field {
@@ -450,9 +364,7 @@
   .wf-search,
   .wf-search__clear,
   .wf-chipinput__field,
-  .wf-chipinput__chip-close,
-  .wf-stepper__btn,
-  .wf-stepper__value.is-editable {
+  .wf-chipinput__chip-close {
     transition: none;
   }
 }

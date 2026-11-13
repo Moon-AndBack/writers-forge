@@ -111,7 +111,7 @@ import '../../styles/components/button.css'
 | `overlay.css`        | 256  | Dropdown（另含已移除 Drawer 的残留规则）                                                                                    |
 | `form.css`           | 408  | Input / Textarea / Switch / Select / Combobox（首行 `@import './form-select.css'`；另含已移除 Checkbox / Radio 的残留规则） |
 | `form-select.css`    | 180  | Select / Combobox（经 `form.css` 转发引入）                                                                                 |
-| `form-extras.css`    | 446  | SearchInput / ChipInput / FormField（另含已移除 Stepper 的残留规则）                                                        |
+| `form-extras.css`    | 370  | SearchInput / ChipInput / FormField                                                                                         |
 | `display-extras.css` | 223  | ColorSwatchPicker（另含已移除 Accordion 的残留规则）                                                                        |
 | `segmented.css`      | 105  | Segmented                                                                                                                   |
 | `toast.css`          | 52   | useToast                                                                                                                    |
@@ -258,7 +258,7 @@ import { Button } from '@renderer/components/ui'
 | 名称       | 类型                                           | 默认值        | 说明                                        |
 | ---------- | ---------------------------------------------- | ------------- | ------------------------------------------- |
 | `variant`  | `'primary' / 'secondary' / 'ghost' / 'danger'` | `'secondary'` | 视觉变体                                    |
-| `size`     | `'sm' / 'md' / 'lg'`                           | `'md'`        | 尺寸；`md` 不额外输出尺寸类（高 38px）      |
+| `size`     | `'sm' / 'md' / 'lg'`                           | `'md'`        | 尺寸；`md` 不额外输出尺寸类（高 36px）      |
 | `iconOnly` | `boolean`                                      | `false`       | 方形图标按钮（内容为单个图标）              |
 | `loading`  | `boolean`                                      | `false`       | 加载中：显示 spinner、禁用交互、`aria-busy` |
 | `disabled` | `boolean`                                      | `undefined`   | 原生禁用；与 `loading` 取或                 |
@@ -874,7 +874,7 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 </Tag>
 ```
 
-`action` 位于约 23px 高的 Tag 内，只能放 14px 级微操作按钮（如 `.dossier-rel-pill__action`）；30px 的 `IconButton size="sm"` 会溢出，不要使用。
+`action` 位于约 23px 高的 Tag 内，只能放 14px 级微操作按钮（如 `.dossier-rel-pill__action`）；36px 的 `IconButton size="sm"` 会溢出，不要使用。
 
 ### 3.18 Textarea
 
@@ -1263,11 +1263,11 @@ const { anchorRef, anchorProps, tooltip } = useTooltip<HTMLButtonElement>({
 - `components/ui/index.ts` 顶部注释写「已核对 23 个组件」，与实际 23 个模块数一致；严格口径为
   21 个组件 + 2 个钩子，无需再改数字。
 - `Card interactive` 只提供视觉，不提供按钮语义，需调用方补齐。
-- 已移除的 Accordion / Avatar / Checkbox / Divider / Drawer / Radio / Stepper 仍有
-  CSS 残留（`surface.css`、`display-extras.css`、`overlay.css`、`form.css`、`form-extras.css`），
+- 已移除的 Accordion / Avatar / Checkbox / Divider / Drawer / Radio 仍有
+  CSS 残留（`surface.css`、`display-extras.css`、`overlay.css`、`form.css`），
   组件层无 TSX 调用点；清理计划见 `design-language.md` §10。
-- `common` 命名空间的 `stepper*` 键为已移除 Stepper 的历史遗留，待清理。
+- Stepper 的 CSS 已删除（2026-11-13）；`common` 命名空间的 `stepper*` 键为历史遗留，待清理。
 
 ---
 
-最后核对：2026-11-09
+最后核对：2026-11-13

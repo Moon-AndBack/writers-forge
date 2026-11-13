@@ -267,7 +267,7 @@
 
 /* 百分比与左右按钮同高同口径居中：三者均为 24px 高 + line-height:1，
    消除原先继承 body line-height:1.55 造成的行盒高度差（错位根因）。
-   font-size 与 .wf-stepper__value 同口径（11.5px）。 */
+   font-size 与状态栏数值同口径（11.5px）。 */
 .st-zoom-val {
   display: grid;
   place-items: center;

@@ -179,6 +179,7 @@
 
 .ep-search-more {
   margin: 4px 0 2px;
+  min-height: var(--control-h-md);
   padding: 7px;
   border-radius: var(--r-xs);
   font-size: 11.5px;
