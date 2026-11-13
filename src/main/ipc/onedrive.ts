@@ -129,7 +129,7 @@ export function registerOneDriveIpc(): void {
       return { ok: true, value: status }
     } catch (error) {
       if (isOneDriveError(error)) {
-        log.warn('onedrive:signIn 失败', { code: error.code, status: error.status })
+        log.warn('onedrive:signIn 失败', safeError(error))
         return toFailure(error)
       }
       log.error('onedrive:signIn 意外异常', { error: safeError(error) })
@@ -182,7 +182,7 @@ export function registerOneDriveIpc(): void {
         return { ok: true, value: result }
       } catch (error) {
         if (isOneDriveError(error)) {
-          log.warn('onedrive:backup 失败', { code: error.code, status: error.status })
+          log.warn('onedrive:backup 失败', safeError(error))
           return toFailure(error)
         }
         log.error('onedrive:backup 意外异常', { error: safeError(error) })
@@ -208,7 +208,7 @@ export function registerOneDriveIpc(): void {
       return { ok: true, value: items }
     } catch (error) {
       if (isOneDriveError(error)) {
-        log.warn('onedrive:listBackups 失败', { code: error.code, status: error.status })
+        log.warn('onedrive:listBackups 失败', safeError(error))
         return toFailure(error)
       }
       log.error('onedrive:listBackups 意外异常', { error: safeError(error) })
@@ -252,7 +252,7 @@ export function registerOneDriveIpc(): void {
         return { ok: true, value: result }
       } catch (error) {
         if (isOneDriveError(error)) {
-          log.warn('onedrive:restoreBackup 失败', { code: error.code, status: error.status })
+          log.warn('onedrive:restoreBackup 失败', safeError(error))
           return toFailure(error)
         }
         log.error('onedrive:restoreBackup 意外异常', { error: safeError(error) })

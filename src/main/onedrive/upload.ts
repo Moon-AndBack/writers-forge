@@ -287,6 +287,12 @@ async function uploadFileSmall(
   const body = new Uint8Array(data.byteLength)
   body.set(data)
 
+  log.info('开始单次 PUT 上传', {
+    method: 'PUT',
+    fileName: safePath(fileName),
+    totalBytes
+  })
+
   const response = await graphRequest(contentUrl(fileName), {
     accessToken: options.accessToken,
     method: 'PUT',
@@ -309,6 +315,11 @@ async function uploadFileSession(
   totalBytes: number,
   options: UploadFileOptions
 ): Promise<OneDriveUploadedFile> {
+  log.info('开始创建上传会话', {
+    fileName: safePath(fileName),
+    totalBytes
+  })
+
   const sessionResponse = await graphRequest(createSessionUrl(fileName), {
     accessToken: options.accessToken,
     method: 'POST',
@@ -328,6 +339,11 @@ async function uploadFileSession(
   }
 
   const chunkSize = resolveChunkSize(totalBytes)
+  log.info('上传会话已创建，开始分片上传', {
+    fileName: safePath(fileName),
+    totalBytes,
+    chunkSize
+  })
   let handle: FileHandle
   try {
     handle = await open(filePath, 'r')
@@ -412,11 +428,13 @@ export async function uploadFile(
     strategy: totalBytes > SMALL_UPLOAD_LIMIT ? 'session' : 'single-put'
   })
 
+  log.info('上传前检查备份目录', { fileName: safePath(fileName) })
   await ensureBackupFolder({
     accessToken: options.accessToken,
     signal: options.signal,
     timeoutMs: options.timeoutMs
   })
+  log.info('备份目录就绪', { fileName: safePath(fileName) })
 
   const uploaded =
     totalBytes > SMALL_UPLOAD_LIMIT
