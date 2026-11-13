@@ -61,9 +61,9 @@
 | `--fs-title`           | `14px`                                     | 卡片 / 详情 / 弹窗标题                                             |
 | `--fs-display`         | `20px`                                     | 展示档：欢迎标题 / 视口占位                                        |
 | `--fs-display-lg`      | `26px`                                     | 展示档：文档标题                                                   |
-| `--r-xs`               | `4px`                                      | 小圆角（最常用，70+ 处）                                           |
-| `--r-lg`               | `8px`                                      | 大圆角                                                             |
-| `--r-window`           | `8px`                                      | 窗口级圆角（预留）                                                 |
+| `--r-xs`               | `4px`                                      | 微圆角（列表行 / Tag / Badge / ≤22px 微控件）                      |
+| `--r-lg`               | `8px`                                      | 面板档（卡片 / 浮层 / 36px 控件与按钮）                            |
+| `--r-pill`             | `999px`                                    | 通用胶囊全圆（开关轨道 / 进度条 / 胶囊标记）                       |
 | `--control-h-sm/md/lg` | `36px`                                     | 控件高度单档；三值同名仅为兼容旧引用                               |
 | `--font`               | Segoe UI Variable / 微软雅黑 / PingFang 栈 | 界面字体（挂在 `body`）                                            |
 | `--serif`              | 宋体 / Source Han Serif / Georgia 栈       | 衬线字体（书封、摘录）                                             |

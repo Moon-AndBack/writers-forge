@@ -21,7 +21,7 @@
   /* 纵向内衬只参与 thumb 的高度 / 位移计算，避免压缩按钮命中区。 */
   --wf-seg-inset-y: 3px;
   padding: 0 3px;
-  border-radius: 6px;
+  border-radius: var(--r-lg);
   background: var(--soft-solid);
 }
 
@@ -40,7 +40,8 @@
     var(--wf-seg-x, 0px),
     calc(var(--wf-seg-y, 0px) + var(--wf-seg-inset-y, 3px))
   );
-  border-radius: 3px;
+  /* 同心：容器 8 − 横向内衬 3 = 5（改前 6−3=3，角部视觉间距不变）。 */
+  border-radius: 5px;
   background: color-mix(in srgb, var(--brand) 12%, var(--pane));
   box-shadow:
     var(--sh-xs),
@@ -68,7 +69,8 @@
   height: 100%;
   padding: 5px 14px;
   border: 0;
-  border-radius: 4px;
+  /* 同心：thumb 5 − 1 = 6（与容器 8 / 内衬 3 的角部间距一致）。 */
+  border-radius: 6px;
 
   /* 高亮由容器内 .wf-seg__thumb 承载（absolute + pointer-events: none），
      item 抬到 thumb 之上，保证点击命中与文字始终在上层。 */
@@ -116,8 +118,13 @@
   --wf-seg-inset-y: 2px;
   padding: 0 2px;
 }
+/* sm 档内衬 2px：同心重算为 thumb 8−2=6、item 6−1=5（md 档为 5 / 6）。 */
+.wf-seg--sm .wf-seg__thumb {
+  border-radius: 6px;
+}
 .wf-seg--sm .wf-seg__item {
   padding: 3px 10px;
+  border-radius: 5px;
   font-size: var(--fs-micro);
 }
 

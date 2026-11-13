@@ -103,7 +103,7 @@
   font-size: var(--fs-body);
   text-align: left;
   background: var(--soft-solid);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   cursor: pointer;
   transition: box-shadow var(--ease) 0.15s;
 }

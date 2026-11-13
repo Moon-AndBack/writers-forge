@@ -19,7 +19,7 @@
   max-width: 240px;
   padding: 5px 9px;
   background: var(--pane);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   box-shadow:
     var(--sh-popup),
     0 0 0 1px var(--line);
@@ -55,7 +55,7 @@
   max-width: 260px;
   padding: 6px 10px;
   background: var(--pane);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   box-shadow:
     var(--sh-popup),
     0 0 0 1px var(--line);

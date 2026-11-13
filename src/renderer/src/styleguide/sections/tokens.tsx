@@ -43,7 +43,7 @@ const COLOR_GROUPS: readonly ColorGroup[] = [
   { title: '语义', tokens: ['--ok', '--warn', '--danger', '--overlay-mask'] }
 ]
 
-const RADIUS_TOKENS = ['--r-xs', '--r-lg', '--r-window', '--chip-pill-radius'] as const
+const RADIUS_TOKENS = ['--r-xs', '--r-lg', '--r-pill', '--chip-pill-radius'] as const
 const SHADOW_TOKENS = ['--sh-xs', '--sh-sm', '--sh-popup', '--sh-float', '--panel-ring'] as const
 
 /** 界面字号 3 档令牌（AGENTS §8.3）。 */
@@ -97,7 +97,7 @@ export function TokensSection() {
         </Demo>
       ))}
 
-      <Demo name="圆角 · --r-xs / --r-lg / --r-window / --chip-pill-radius" classes="border-radius">
+      <Demo name="圆角 · --r-xs / --r-lg / --r-pill / --chip-pill-radius" classes="border-radius">
         <div className="sg-radius-grid">
           {RADIUS_TOKENS.map((token) => (
             <div key={token} className="sg-radius-item">

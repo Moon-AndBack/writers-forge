@@ -134,7 +134,7 @@
   min-height: var(--control-h-sm);
   padding: 0 8px;
   border: 1px solid transparent;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-family: inherit;
   font-size: var(--fs-body);
   font-weight: 500;
@@ -228,7 +228,7 @@
   height: var(--control-h-sm);
   padding: 0 8px;
   border: 1px solid var(--line);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-family: inherit;
   font-size: var(--fs-body);
   color: var(--text);
@@ -246,7 +246,7 @@
   height: var(--control-h-sm);
   padding: 0 8px;
   border: 1px solid var(--line);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-family: inherit;
   font-size: var(--fs-body);
   color: var(--text);
@@ -383,7 +383,7 @@
   width: 16px;
   height: 3px;
   margin-left: -8px;
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   /* 指示条内描边：色块承载任意字色，需固定的「暗向」对比细边；
      #000 18% 与主题 / 品牌无关（不随明暗翻转），故不取主题令牌。 */
   box-shadow: inset 0 0 0 1px color-mix(in srgb, #000 18%, transparent);

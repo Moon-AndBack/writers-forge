@@ -201,7 +201,7 @@
   place-items: center;
   width: var(--control-h-sm);
   height: var(--control-h-sm);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-size: var(--fs-title);
   line-height: 1;
   color: var(--text-dim);

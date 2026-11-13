@@ -123,7 +123,7 @@ span.entity-highlight:hover {
 .entity-card-type {
   flex: none;
   padding: 1px 8px;
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   font-size: var(--fs-micro);
   font-weight: 600;
   /* 配色跟随数据库模块色（.chip-m-* 提供 --chip-bg / --chip-fg）；

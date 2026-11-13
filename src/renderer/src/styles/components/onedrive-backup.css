@@ -29,7 +29,7 @@
   flex: none;
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--text-mute);
 }
 

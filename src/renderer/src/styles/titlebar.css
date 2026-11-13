@@ -48,7 +48,7 @@
   width: 1px;
   height: 16px;
   margin: 0 4px;
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   background: var(--line);
 }
 

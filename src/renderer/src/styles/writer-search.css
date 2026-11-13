@@ -181,7 +181,7 @@
   margin: 4px 0 2px;
   min-height: var(--control-h-md);
   padding: 7px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-size: var(--fs-micro);
   font-weight: 500;
   color: var(--text-dim);

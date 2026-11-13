@@ -23,7 +23,7 @@
   min-height: var(--wf-btn-h);
   padding: 0 var(--wf-btn-px);
   border: 0;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
 
   font-family: inherit;
   font-size: var(--wf-btn-fs);

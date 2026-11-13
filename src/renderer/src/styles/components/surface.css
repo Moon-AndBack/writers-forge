@@ -31,7 +31,7 @@
   min-height: 120px;
   max-height: 240px;
   background: var(--soft-solid);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   box-shadow: none;
 }
 
@@ -407,7 +407,7 @@
   position: relative;
   width: 100%;
   overflow: hidden;
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   background: var(--soft-solid);
 }
 
@@ -426,7 +426,7 @@
 .wf-progress__bar {
   display: block;
   height: 100%;
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   background: linear-gradient(90deg, var(--brand), var(--brand-2));
   transition: width 0.4s var(--ease);
 }

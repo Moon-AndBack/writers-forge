@@ -311,7 +311,7 @@
    只改圆角 / 间距，不做位移（§8）。 */
 .wf-tag.ai-msg__chip {
   margin-bottom: 6px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 
 /* 携带内容预览：分隔线区分「用户输入」与「选中正文 / 卷章名」。 */

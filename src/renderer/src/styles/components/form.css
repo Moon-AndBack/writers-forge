@@ -47,7 +47,7 @@
   height: var(--control-h-md);
   padding: 0 12px;
   line-height: 1.4;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   /* 边框改由内阴影表达：不占盒高，36px 全部用于内容区（border-box 下 1px 边框
      会让可见填充区只剩 34px，125% 缩放时表现为上下各 0.8）。视觉与 1px 边框一致；
      聚焦环与内描边合并为同一条 box-shadow，避免互相覆盖。 */
@@ -350,7 +350,7 @@
   background: color-mix(in srgb, var(--text) 24%, var(--pane));
   border: 1px solid color-mix(in srgb, var(--text-dim) 80%, var(--pane));
   box-shadow: inset 0 1px 2px color-mix(in srgb, var(--text) 8%, transparent);
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   transition:
     background 0.18s var(--ease),
     border-color 0.18s var(--ease),

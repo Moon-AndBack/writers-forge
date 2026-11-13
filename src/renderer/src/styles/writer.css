@@ -82,7 +82,7 @@
   transform: translate(-50%, -50%);
   width: 3px;
   height: 36px;
-  border-radius: 99px;
+  border-radius: var(--r-pill);
   background: transparent;
   transition:
     background 0.16s var(--ease),
@@ -355,12 +355,13 @@ body.is-resizing .splitter {
   gap: 2px;
   padding: 2px;
   background: var(--soft-solid);
-  border-radius: 6px;
+  border-radius: var(--r-lg);
 }
 
+/* 同心：容器 8px − 内衬 2px = 6px（保持改前 6−2=4 的角部视觉间距）。 */
 .mini-seg button {
   padding: 3px 10px;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: var(--fs-micro);
   font-weight: 500;
   color: var(--text-dim);

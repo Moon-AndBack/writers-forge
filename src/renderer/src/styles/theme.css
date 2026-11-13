@@ -23,9 +23,11 @@
   --fs-display: 20px; /* 欢迎标题 / 视口占位 */
   --fs-display-lg: 26px; /* 文档标题 */
 
+  /* 圆角三档：面板 / 卡片 / 浮层 / 36px 控件用 --r-lg；
+     列表行、Tag / Badge、≤22px 微控件用 --r-xs；胶囊全圆用 --r-pill。 */
   --r-xs: 4px;
   --r-lg: 8px;
-  --r-window: 8px;
+  --r-pill: 999px;
 
   /* 控件高度统一为单档 36（AGENTS §8.4）：Button / IconButton / Input / Select /
      Combobox / SearchInput / ChipInput / Segmented 共用 36px；三档变量名保留仅为

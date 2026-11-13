@@ -45,7 +45,7 @@
 .wf-tag.dossier-rel-pill {
   gap: 5px;
   padding: 3px 6px 3px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid color-mix(in srgb, var(--rel-pill) 45%, transparent);
   color: var(--chip-fg);
   /* 实色优先（同 chip-pill.css 口径）：注入命中时用 --chip-bg，未注入回落浅混合底。 */
