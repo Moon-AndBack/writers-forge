@@ -199,11 +199,11 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
 | `credentials.ts`     | 217  | settings 键、加密读写、`getOneDriveAuthStatus`           |
 | `clientIdCleanup.ts` | 50   | 启动时一次性清理旧 `onedrive:clientId` 并清除凭据        |
 | `download.ts`        | 332  | Range 分块下载、预签名 URL 刷新、重试与取消              |
-| `graph.ts`           | 207  | `graphRequest`、`/me`、`approot` 根路径、URL 构造        |
+| `graph.ts`           | 191  | `graphRequest`、`/me`、`approot` 根路径与子项、URL 构造  |
 | `http.ts`            | 192  | 与 AI 域平行的最小 HTTP 工具（不引 `openai` SDK）        |
 | `index.ts`           | 50   | 对外导出面                                               |
 | `logSafe.ts`         | 82   | `maskEmail` / `safePath` / `safeError`                   |
-| `remote.ts`          | 127  | 列出 `approot` 根路径中的快照并归一化                    |
+| `remote.ts`          | 158  | 列出 `approot` 根路径中的快照并归一化、404 探测          |
 | `restoreRemote.ts`   | 124  | 下载 → 校验 → 恢复编排、临时文件清理                     |
 | `types.ts`           | 200  | 错误码、凭据、进度、结果类型                             |
 | `upload.ts`          | 432  | 大小分流、分片、重试、416 纠偏、会话取消                 |
@@ -280,7 +280,7 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
 
 ### 8.5 远端列表
 
-`onedrive:listBackups` 调 `listRemoteBackups()`：带 Authorization 请求 `approot:/children`，按 `@odata.nextLink` 翻页（最多 10 页），404（app folder 尚不存在）视为空数组；列表按 `lastModifiedDateTime` 倒序。每项只回传 `itemId` / `name` / `sizeBytes` / `modifiedAt` / `webUrl?`，不含下载地址或 token。早期版本曾尝试在 `approot` 下创建 `backups/` 子目录，但该请求始终返回 400 `invalidRequest`、从未成功，因此没有需要迁移的旧备份；若曾用其它方式把文件放进 `approot:/backups/`，新列表不会显示，需要时可自行在 OneDrive 侧移动。
+`onedrive:listBackups` 调 `listRemoteBackups()`：带 Authorization 请求 `approot/children`（special 文件夹列子项用 `/children`；`:` 仅用于路径寻址，如 `approot:/{name}:/content`），按 `@odata.nextLink` 翻页（最多 20 页，单页上限 200）。列表 404 时再探测 `approot` 本体：本体也 404 才视为 app folder 尚不存在、返回空数组；本体存在则说明子项路径或权限异常，抛 `list_failed` 并 `warn` 记录原始 status，不再静默伪装成空列表。列表按 `lastModifiedDateTime` 倒序。每项只回传 `itemId` / `name` / `sizeBytes` / `modifiedAt` / `webUrl?`，不含下载地址或 token。早期版本曾尝试在 `approot` 下创建 `backups/` 子目录，但该请求始终返回 400 `invalidRequest`、从未成功，因此没有需要迁移的旧备份；若曾用其它方式把文件放进 `approot:/backups/`，新列表不会显示，需要时可自行在 OneDrive 侧移动。
 
 ### 8.6 下载与恢复
 

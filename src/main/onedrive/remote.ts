@@ -1,6 +1,6 @@
 import { logger } from '../logger'
 import { getValidAccessToken } from './auth'
-import { backupChildrenUrl, graphRequest } from './graph'
+import { appRootUrl, backupChildrenUrl, drain, graphRequest } from './graph'
 import { isRecord, readNumber, readString } from './http'
 import { OneDriveError } from './types'
 import type { RemoteBackupItem } from './types'
@@ -9,13 +9,17 @@ import type { RemoteBackupItem } from './types'
  * 远端备份列表（app folder 根路径）。
  *
  * - 跟随 `@odata.nextLink` 分页，最多 20 页（防上游异常导致死循环）；
- * - app folder 尚不存在（404）视为空列表：首次访问 special 命名空间前尚未 provision；
+ * - 列表 404 时再探测 approot 本体：本体也 404 才算空列表（首次访问 special
+ *   命名空间前尚未 provision）；本体存在则视为路径 / 权限异常并抛 `list_failed`；
  * - 只保留带 `file` facet 且文件名符合 `writers-forge-<YYYYMMDD-HHmmss>.db`
  *   的项，避免把目录 / 用户手动放入的其它文件当成可恢复备份；
  * - 按 `lastModifiedDateTime` 倒序返回。
  */
 
 const log = logger.scope('onedrive:remote')
+
+/** 单页上限（Graph 默认 200；与分页上限配合防死循环）。 */
+const PAGE_SIZE = 200
 
 /** 分页上限（防御性，Graph 单页 200 项已足够）。 */
 const MAX_PAGES = 20
@@ -70,15 +74,16 @@ function timestamp(value: string): number {
 /**
  * 列出远端备份（按修改时间倒序）。
  *
- * 404（目录不存在）返回空数组；401 / 403 与其它 HTTP 失败由 `graphRequest`
- * 归一化为域内错误码抛出。
+ * 列表 404 时探测 approot 本体做区分：本体也 404 → 空数组；本体存在 →
+ * `list_failed`（路径 / 权限异常）；探测本身非 404 失败则原样上抛。
+ * 401 / 403 与其它 HTTP 失败由 `graphRequest` 归一化为域内错误码抛出。
  */
 export async function listRemoteBackups(
   options: ListRemoteBackupsOptions = {}
 ): Promise<RemoteBackupItem[]> {
   const accessToken = await getValidAccessToken({ signal: options.signal })
   const items: RemoteBackupItem[] = []
-  let url: string | null = backupChildrenUrl()
+  let url: string | null = backupChildrenUrl(PAGE_SIZE)
   let page = 0
 
   while (url !== null && page < MAX_PAGES) {
@@ -94,8 +99,30 @@ export async function listRemoteBackups(
       payload = await response.json().catch(() => null)
     } catch (error) {
       if (error instanceof OneDriveError && error.code === 'not_found') {
-        log.info('OneDrive app folder 不存在，视为空列表')
-        return []
+        // 再探一次 approot 本体：区分「首次使用（真没有）」与「children 路径异常」。
+        // 若 approot 本体也存在但 children 404，说明路径或权限异常，必须报错而不是假装空列表。
+        try {
+          const probe = await graphRequest(appRootUrl(), {
+            accessToken,
+            signal: options.signal,
+            fallback: 'list_failed'
+          })
+          await drain(probe)
+        } catch (probeError) {
+          if (probeError instanceof OneDriveError && probeError.code === 'not_found') {
+            log.info('OneDrive 尚未创建 app folder，返回空列表')
+            return []
+          }
+          throw probeError
+        }
+
+        log.warn('OneDrive app folder 本体存在，但子项列表返回 404，疑似路径或权限异常', {
+          status: error.status ?? 404
+        })
+        throw new OneDriveError('list_failed', {
+          status: error.status ?? 404,
+          message: 'OneDrive app folder exists but listing its children returned 404'
+        })
       }
       throw error
     }
@@ -122,6 +149,10 @@ export async function listRemoteBackups(
   }
 
   items.sort((a, b) => timestamp(b.modifiedAt) - timestamp(a.modifiedAt))
-  log.info('OneDrive 远端备份列表读取完成', { pages: page, count: items.length })
+  log.info('OneDrive 远端备份列表读取完成', {
+    pages: page,
+    count: items.length,
+    pageSize: PAGE_SIZE
+  })
   return items
 }

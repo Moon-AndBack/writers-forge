@@ -159,15 +159,25 @@ export async function getAccountProfile(options: GraphAuthOptions): Promise<OneD
   return displayName ? { email, displayName } : { email }
 }
 
+/** 构造 app folder 根路径本体（`GET` 用于探测文件夹是否已 provision）。 */
+export function appRootUrl(): string {
+  return `${GRAPH_BASE}/me/drive/special/approot`
+}
+
 /** 构造 app folder 根路径下 `<name>` 的 content 地址。 */
 export function contentUrl(fileName: string): string {
   return `${GRAPH_BASE}/me/drive/special/approot:/${encodeURIComponent(fileName)}:/content`
 }
 
-/** 构造 app folder 根路径的子项列表地址（`$top` 为单页上限，Graph 默认 200）。 */
+/**
+ * 构造 app folder 根路径的子项列表地址（`$top` 为单页上限，Graph 默认 200）。
+ *
+ * 注意：special 文件夹列子项用 `/approot/children`（文档「Get Special Folders」写法）；
+ * 冒号仅用于路径寻址（`:/{path}:/children`、`:/{path}:/content`），不能用于根路径列子项。
+ */
 export function backupChildrenUrl(top = 200): string {
   const select = 'id,name,size,createdDateTime,lastModifiedDateTime,file,folder,webUrl'
-  return `${GRAPH_BASE}/me/drive/special/approot:/children?$select=${select}&$top=${top}`
+  return `${GRAPH_BASE}/me/drive/special/approot/children?$select=${select}&$top=${top}`
 }
 
 /** 构造单个 driveItem 的元信息地址（含预签名 `@microsoft.graph.downloadUrl`）。 */
