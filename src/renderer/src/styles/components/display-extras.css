@@ -91,7 +91,7 @@
   padding: 7px 8px;
   border-radius: var(--r-xs);
   text-align: left;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   font-weight: 600;
   color: var(--text-dim);
   background: transparent;
@@ -162,7 +162,7 @@
 
 .wf-accordion__content {
   padding: 4px 8px 8px;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.7;
   color: var(--text-dim);
 }

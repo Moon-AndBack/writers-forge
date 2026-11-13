@@ -149,7 +149,7 @@
 /* 关系区说明文案（「被引用」区可改可删说明 / 入边类型语义提示）。 */
 .dossier-rel-hint {
   color: var(--text-mute);
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
 }
 
 /* 例外：删除关系按钮为自定义字段键值行微操作（18×18），不落控件档；关系胶囊使用通用

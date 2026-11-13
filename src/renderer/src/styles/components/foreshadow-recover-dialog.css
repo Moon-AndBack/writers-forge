@@ -67,7 +67,7 @@
 /* 空态 / 搜索无结果 / 加载中 / 加载失败：列表区域内的说明文字。 */
 .foreshadow-recover-note {
   padding: 18px 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.6;
   text-align: center;
   color: var(--text-mute);

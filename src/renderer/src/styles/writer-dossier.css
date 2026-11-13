@@ -84,7 +84,7 @@
 .dossier-subtype__notice {
   grid-column: 1 / -1;
   margin: 0;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--text-dim);
 }
@@ -117,14 +117,14 @@
 }
 
 .dossier-detail__empty {
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   color: var(--text-mute);
 }
 
 /* 角色年龄块辅助行：推算出生年 / 未设置说明（沿用 --text-mute 小字，不新增色值）。 */
 .dossier-age-hint {
   margin: 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   color: var(--text-mute);
 }
 
@@ -151,7 +151,7 @@
 /* 角色 → 物品的自动反向提示（只读说明，不参与布局居中）。 */
 .dossier-rel-add__hint {
   color: var(--text-mute);
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
 }
 
 /* ---------- 自定义子类键值字段编辑器（第 5 批） ---------- */
@@ -162,7 +162,7 @@
 }
 
 .dossier-kv-hint {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: var(--text-mute);
 }
 

@@ -285,7 +285,7 @@
   justify-content: space-between;
   gap: 14px;
   padding: 10px 22px 14px;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: var(--text-mute);
 }
 
@@ -300,11 +300,11 @@
   padding: 0;
   margin: 0;
   line-height: 1;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
 }
 
 .editor-foot .st-save b {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
 }
 
 /* 右侧字数额：靠右放置，内部文字水平居中；盒尺寸与左侧 .st-save 对齐
@@ -315,7 +315,7 @@
   padding: 0;
   margin: 0;
   line-height: 1;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
 }
 
 .editor-foot-count b {

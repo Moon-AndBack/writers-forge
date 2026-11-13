@@ -43,7 +43,7 @@
    布局仍由 writer-dossier.css 负责，此处不重复声明。 */
 .dossier-card__type {
   padding: 1px 8px;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   font-weight: 500;
   line-height: 1.6;
 }

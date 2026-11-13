@@ -43,7 +43,7 @@
 }
 
 .ep-search-title {
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   font-weight: 700;
   color: var(--text);
 }
@@ -62,7 +62,7 @@
 .ep-search-count {
   margin-left: auto;
   font-family: var(--mono);
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: var(--text-mute);
 }
 
@@ -124,7 +124,7 @@
 }
 
 .ep-search-row-chapter {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -133,7 +133,7 @@
 }
 
 .ep-search-row-context {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--text-mute);
   overflow: hidden;
@@ -168,7 +168,7 @@
 .ep-search-note {
   padding: 18px 8px;
   text-align: center;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: var(--text-mute);
 }
 
@@ -182,7 +182,7 @@
   min-height: var(--control-h-md);
   padding: 7px;
   border-radius: var(--r-xs);
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   font-weight: 500;
   color: var(--text-dim);
   background: var(--soft-solid);
@@ -204,7 +204,7 @@
 .ep-search-error {
   padding: 6px 8px;
   border-radius: var(--r-xs);
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 12%, var(--pane));
 }

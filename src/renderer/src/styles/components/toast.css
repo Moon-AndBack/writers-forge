@@ -17,7 +17,7 @@
   margin: 0 auto;
   padding: 10px 16px;
   border-radius: var(--r-lg);
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.5;
   color: var(--text);
   background: var(--pane);

@@ -61,7 +61,7 @@
 .inspiration-card.wf-entity-card--compact .inspiration-card__desc {
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.55;
 }
 
@@ -141,7 +141,7 @@
 .inspiration-readonly__content {
   flex: 1 1 auto;
   min-height: 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.7;
   color: var(--text-dim);
   white-space: pre-wrap;

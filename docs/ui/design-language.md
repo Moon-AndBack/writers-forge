@@ -6,7 +6,7 @@
 >
 > 真源顺序：`src/renderer/src/styles/theme.css`（主题 / 语义令牌）→ 本文档（组合公式与档位）→ 页面 / 组件 CSS。代码与本文档不一致时：实现偏差按本文档收敛；文档过期则修正本文档。
 >
-> 最后核对：2026-11-13（控件单档 36、界面字号 5 档令牌；基线 HEAD `7789c4d`）
+> 最后核对：2026-11-13（控件单档 36、字号 5 档令牌；基线 HEAD `7789c4d`）
 
 ---
 
@@ -45,23 +45,22 @@
 
 ### 2.1 字号令牌
 
-> 真源：`styles/theme.css:20-29`。界面字号统一为 5 档语义令牌；展示档只用于已登记位置；封面装饰首字为例外（§9）。
+> 真源：`styles/theme.css:18-26`。字号统一为 5 档语义令牌（界面 3 + 展示 2）；展示档只用于已登记位置；封面装饰首字为例外（§9）。
 
-| 令牌                    | 值                             | 用途                                     | 代表位置                                                                                     |
-| ----------------------- | ------------------------------ | ---------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `--fs-micro`            | 10px                           | Badge / 徽标 / 关闭图标                  | `components/surface.css:224`、`styles/writer-side-chapters.css:120`                          |
-| `--fs-caption`          | 11px                           | 元信息 / 提示 / 计数 / 状态栏            | `components/surface.css:112`、`styles/settings.css:68`、`styles/statusbar.css:24`            |
-| `--fs-body-sm`          | 12px                           | 紧凑正文 / 小号控件                      | `components/surface.css:125`、`components/form.css:115`、`components/segmented.css:69`       |
-| `--fs-body`             | 13px                           | **界面基准**：输入 / 按钮 / 普通 UI 文本 | `components/form.css:36`、`components/button.css:15`、`styles/base.css:22`                   |
-| `--fs-title`            | 14px                           | 卡片 / 详情 / 弹窗标题                   | `components/entity-card.css:59`、`components/window.css:70`、`components/empty-state.css:26` |
-| `--fs-display-sm/md/lg` | 20 / 22 / 28px                 | 展示档：欢迎页 / 视口占位 / 文档标题     | `styles/welcome.css:40`、`styles/shell.css:206`、`styles/writer-editor-head.css:50`          |
-| 正文                    | `calc(18px * var(--doc-zoom))` | 文档正文（随 `--doc-zoom` 缩放）         | `styles/writer-editor-doc.css:3`、`styles/writer-right-outline.css:105`                      |
+| 令牌              | 值                             | 用途                                       | 代表位置                                                                                     |
+| ----------------- | ------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `--fs-micro`      | 10px                           | 微字：Badge / 徽标 / 关闭图标 / 元信息提示 | `components/surface.css:112`、`styles/settings.css:68`、`styles/statusbar.css:24`            |
+| `--fs-body`       | 12px                           | **界面基准**：输入 / 按钮 / 紧凑正文       | `components/form.css:36`、`components/button.css:15`、`styles/base.css:22`                   |
+| `--fs-title`      | 14px                           | 卡片 / 详情 / 弹窗标题                     | `components/entity-card.css:59`、`components/window.css:70`、`components/empty-state.css:26` |
+| `--fs-display`    | 20px                           | 展示档：欢迎页 / 视口占位                  | `styles/welcome.css:40`、`styles/shell.css:206`                                              |
+| `--fs-display-lg` | 26px                           | 展示档：文档标题                           | `styles/writer-editor-head.css:50`                                                           |
+| 正文              | `calc(18px * var(--doc-zoom))` | 文档正文（随 `--doc-zoom` 缩放）           | `styles/writer-editor-doc.css:3`、`styles/writer-right-outline.css:105`                      |
 
 > 封面装饰首字不属界面字阶：`.bf-cover__char` 34px（`styles/book-form.css:85`）、`.book-cover__char` 56px（`styles/bookshelf.css:205`），按卡片比例取值，已登记于 §9 例外表。
 
 ### 2.2 规则
 
-- **MUST** 界面字号只允许 §2.1 的 5 档令牌（`--fs-micro` / `--fs-caption` / `--fs-body-sm` / `--fs-body` / `--fs-title`）；**界面 CSS 不得再写 `font-size` 数值字面量**，也不得新增 16px 或其他中间档。封面装饰首字 34 / 56 为已登记例外（§9）。
+- **MUST** 界面字号只允许 §2.1 的 5 档令牌（`--fs-micro` / `--fs-body` / `--fs-title` / `--fs-display` / `--fs-display-lg`）；**界面 CSS 不得再写 `font-size` 数值字面量**，也不得新增 16px 或其他中间档。封面装饰首字 34 / 56 为已登记例外（§9）。
 - **MUST** 正文容器（编辑器、右栏大纲、时间线右栏的起点编辑器与场景详情正文、回收站详情）使用 `--doc-font` + `calc(18px * var(--doc-zoom))` + `--doc-line` + `--doc-letter`；右栏只读通用底座（如伏笔详情）用 `--doc-font` + `--fs-body` / 1.75，不得把两档混用。
 - **MUST** 文本层级：`--text` 主文本；`--text-dim` 次级文本 / 只读正文；`--text-mute` 元信息 / 占位 / 禁用提示。不得用 `opacity` 代替 `--text-mute`。
 - **MUST** 字重只允许 400 / 500 / 600 / 700：400 正文；500 控件标签、分段项；600 卡片标题、选中行主名、小节标签；700 页面标题、大数字、强调。
@@ -232,12 +231,12 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 36 
 
 ### 5.2 组件与规格
 
-| 状态    | 组件 / 类                                               | 规格                                                                                                        | 代表位置                                       |
-| ------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| loading | 暂无统一组件；现有 `.xx-loading` 文案 / `role="status"` | `--fs-body-sm` / `--fs-caption` + `--text-mute`；中栏 `24px 0` 居中，弹窗内左对齐单行；首帧加载不得先闪空态 | `components/dialogs/CleanWordsTable.tsx:69-72` |
-| error   | `LoadErrorState`                                        | `EmptyState` + `is-error`；`--danger` 标题 + 重试按钮；`role="alert"`                                       | `components/LoadErrorState.tsx:22-45`          |
-| empty   | `EmptyState`                                            | 常规 `min-height: 260px`；`compact` 为 `180px`；图标 40 / 30px                                              | `components/empty-state.css:13,51`             |
-| content | 列表 / 表格 / 详情                                      | 错误 / 空态不得进入 `role="list"` 容器                                                                      | `CleanWordsTable.tsx:91-93`                    |
+| 状态    | 组件 / 类                                               | 规格                                                                                                   | 代表位置                                       |
+| ------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
+| loading | 暂无统一组件；现有 `.xx-loading` 文案 / `role="status"` | `--fs-body` / `--fs-micro` + `--text-mute`；中栏 `24px 0` 居中，弹窗内左对齐单行；首帧加载不得先闪空态 | `components/dialogs/CleanWordsTable.tsx:69-72` |
+| error   | `LoadErrorState`                                        | `EmptyState` + `is-error`；`--danger` 标题 + 重试按钮；`role="alert"`                                  | `components/LoadErrorState.tsx:22-45`          |
+| empty   | `EmptyState`                                            | 常规 `min-height: 260px`；`compact` 为 `180px`；图标 40 / 30px                                         | `components/empty-state.css:13,51`             |
+| content | 列表 / 表格 / 详情                                      | 错误 / 空态不得进入 `role="list"` 容器                                                                 | `CleanWordsTable.tsx:91-93`                    |
 
 ### 5.3 规则
 
@@ -393,7 +392,7 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 | 1   | 控件高度多档并存（已收敛）                     | 已统一为单档 36（2026-11-13）                                                                                            | 保持统一，新增控件走 `--control-h-md` | 见 §3.3 各行                                                   |
 | 2   | 局部控件高度魔法值（已清理）                   | `--cw-control-h` / `--ai-ctl-h` 已删除；活动栏筛选浮层改走 `--control-h-md`                                              | 禁止新增                              | `styles/theme.css:24-26`                                       |
 | 3   | 16px 中间档                                    | 当前 0 处                                                                                                                | 保持禁止                              | 2026-11-09 grep；正文 16→18 见 `73a968d`                       |
-| 4   | 字号半档密集（已收敛）                         | 已统一为 5 档语义令牌（10 / 11 / 12 / 13 / 14）；界面 CSS 无字号字面量（封面首字 34 / 56 除外）                          | 保持 5 档；新增先复用令牌             | 本文 §2.1；2026-11-13 grep                                     |
+| 4   | 字号半档密集（已收敛）                         | 已统一为 5 档语义令牌（10 / 12 / 14 / 20 / 26）；界面 CSS 无字号字面量（封面首字 34 / 56 除外）                          | 保持 5 档；新增先复用令牌             | 本文 §2.1；2026-11-13 grep                                     |
 | 5   | 裸时长                                         | `0.1s`×42、`0.15s`×43、`0.18s`×27、`0.2s`×15、`0.22s`×11、`0.25s`×1、`0.32s`×8、`0.4s`×1、`180ms`×10（含令牌定义与注释） | 全部收敛到 `--dur-*` / `--ease*`      | 2026-11-09 grep                                                |
 | 6   | z-index 字面量                                 | 仅 970/971/972 令牌化；60/100/101/900/940/980/990/1000/1040/1100 仍为字面量                                              | 收敛到 `--z-*`（见 §6.2）             | 本文 §6.2                                                      |
 | 7   | 三态顺序相反                                   | `TrashListView` error → loading；`CleanWordsTable` loading → error                                                       | 统一 loading → error → empty          | `TrashListView.tsx:237-242`、`CleanWordsTable.tsx:69-74`       |

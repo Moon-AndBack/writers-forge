@@ -14,7 +14,7 @@
 
 .inspiration-loading {
   padding: 24px 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   text-align: center;
   color: var(--text-mute);
 }

@@ -59,7 +59,7 @@
 .cw-count {
   margin: 0;
   min-width: 0;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--text-mute);
 }
@@ -112,7 +112,7 @@
 
 .cw-add__hint {
   margin: 0;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--danger);
 }
@@ -174,7 +174,7 @@
 
 .cw-row__word {
   min-width: 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   font-weight: 600;
   line-height: 1.4;
   color: var(--text);
@@ -194,7 +194,7 @@
 .cw-loading {
   margin: 0;
   padding: 10px 8px;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.5;
   color: var(--text-mute);
 }
@@ -215,7 +215,7 @@
 /* ---------- 来源说明 ---------- */
 .cw-meta {
   margin: 0;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--text-mute);
 }

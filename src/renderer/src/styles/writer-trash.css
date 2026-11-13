@@ -29,7 +29,7 @@
 
 .trash-count {
   font-family: var(--mono);
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: var(--text-mute);
 }
 
@@ -96,7 +96,7 @@
 
 .trash-row-name {
   min-width: 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   font-weight: 600;
   line-height: 1.5;
   color: var(--text);
@@ -106,7 +106,7 @@
 }
 
 .trash-row-sub {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: var(--text-mute);
   white-space: nowrap;
   overflow: hidden;
@@ -248,7 +248,7 @@
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.7;
   text-align: center;
   color: var(--text-mute);
@@ -272,7 +272,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px 14px;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.6;
   color: var(--text-mute);
 }
@@ -283,7 +283,7 @@
   border-radius: var(--r-xs);
   background: var(--control-on-soft);
   box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.6;
   color: var(--text-dim);
 }
@@ -316,7 +316,7 @@
 
 .trash-detail__hint {
   padding: 28px 0;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.7;
   text-align: center;
   color: var(--text-mute);
@@ -418,14 +418,14 @@
 /* 加载态：与伏笔 / 灵感中栏同口径。 */
 .trash-loading {
   padding: 24px 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   text-align: center;
   color: var(--text-mute);
 }
 
 /* ---------- 确认弹窗正文 ---------- */
 .confirm-msg {
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.7;
   color: var(--text-dim);
   word-break: break-word;

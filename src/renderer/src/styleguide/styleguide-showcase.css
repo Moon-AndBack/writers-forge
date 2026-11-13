@@ -153,7 +153,7 @@
 
 .sg-card-text {
   margin: 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.7;
   color: var(--text-dim);
 }

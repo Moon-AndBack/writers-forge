@@ -76,7 +76,7 @@
   align-items: center;
   justify-content: center;
   padding: 12px 9px;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.6;
   text-align: center;
   color: var(--text-mute);
@@ -315,7 +315,7 @@
   border: 1px dashed var(--line);
   border-radius: var(--r-xs);
   background: var(--pane);
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.6;
   color: var(--text-mute);
   user-select: none;

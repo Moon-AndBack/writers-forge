@@ -48,14 +48,14 @@
 
 .foreshadow-item__place-label {
   flex: none;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--text-mute);
 }
 
 .foreshadow-item__place-value {
   min-width: 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.5;
   color: var(--text-dim);
   overflow: hidden;
@@ -135,7 +135,7 @@
 
 .foreshadow-loading {
   padding: 24px 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   text-align: center;
   color: var(--text-mute);
 }
@@ -262,7 +262,7 @@
 
 .foreshadow-anchor-card__target {
   min-width: 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.5;
   color: var(--text-dim);
   overflow-wrap: anywhere;
@@ -279,7 +279,7 @@
   background: var(--pane);
   border-left: 2px solid color-mix(in srgb, var(--brand) 45%, transparent);
   border-radius: var(--r-xs);
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.6;
   color: var(--text-dim);
   overflow-wrap: anywhere;
@@ -287,7 +287,7 @@
 
 .foreshadow-anchor-card__hint {
   margin: 0;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--danger);
 }
@@ -303,7 +303,7 @@
 
 .foreshadow-anchor-card__note-text {
   margin: 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.6;
   color: var(--text-dim);
   overflow-wrap: anywhere;
@@ -413,7 +413,7 @@
    （10.5px / 1px 8px / 1.6 / 500，无 min-height；值须与 entity-card.css 保持一致）。 */
 .foreshadow-detail__entities .chip-pill {
   padding: 1px 8px;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   font-weight: 500;
   line-height: 1.6;
 }

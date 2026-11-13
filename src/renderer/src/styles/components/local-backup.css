@@ -26,14 +26,14 @@
 }
 
 .settings-backup__title {
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   font-weight: 600;
   color: var(--text);
 }
 
 .settings-backup__count {
   flex: none;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: var(--text-mute);
   font-variant-numeric: tabular-nums;
 }
@@ -45,7 +45,7 @@
   justify-content: center;
   min-height: 84px;
   margin: 0;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: var(--text-mute);
 }
 
@@ -94,7 +94,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   font-weight: 500;
   color: var(--text);
 }
@@ -114,7 +114,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: var(--text-mute);
 }
 
@@ -160,7 +160,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: var(--text-mute);
 }
 
@@ -170,7 +170,7 @@
   padding: 8px 10px;
   border-radius: var(--r-xs);
   background: color-mix(in srgb, var(--warn) 12%, var(--pane));
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--warn);
 }
@@ -180,7 +180,7 @@
   padding: 8px 10px;
   border-radius: var(--r-xs);
   background: color-mix(in srgb, var(--danger) 10%, var(--pane));
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--danger);
 }

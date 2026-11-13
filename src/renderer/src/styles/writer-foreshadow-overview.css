@@ -90,16 +90,16 @@
 }
 
 .foreshadow-item.wf-entity-card--compact .foreshadow-item__place-label {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
 }
 
 .foreshadow-item.wf-entity-card--compact .foreshadow-item__place-value {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
 }
 
 .foreshadow-item.wf-entity-card--compact .foreshadow-item__desc {
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.55;
 }

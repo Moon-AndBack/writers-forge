@@ -112,7 +112,7 @@
 .wf-input--sm {
   height: var(--control-h-sm);
   padding: 0 10px;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
 }
 .wf-input--lg {
   height: var(--control-h-lg);
@@ -122,7 +122,7 @@
 .wf-textarea--sm {
   min-height: 62px;
   padding: 8px 10px;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
 }
 .wf-textarea--lg {
   min-height: 108px;
@@ -293,7 +293,7 @@
 .wf-checkbox--sm,
 .wf-radio--sm {
   gap: 6px;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
 }
 .wf-checkbox--sm .wf-checkbox__box,
 .wf-radio--sm .wf-radio__dot {
@@ -406,7 +406,7 @@
 .wf-switch--sm {
   min-height: var(--control-h-sm);
   gap: 7px;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
 }
 .wf-switch--sm .wf-switch__track {
   width: 30px;

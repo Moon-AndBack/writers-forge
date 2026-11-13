@@ -165,7 +165,7 @@
   align-items: center;
   gap: 5px;
   padding: 3px 5px 3px 10px;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.4;
 }
 .wf-chipinput__chip-close {
@@ -218,14 +218,14 @@
 }
 .wf-chipinput__suggestions-label {
   flex: none;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--text-mute);
 }
 .wf-chipinput__suggestion {
   padding: 2px 9px;
   font-family: inherit;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.4;
   color: var(--text-dim);
   background: var(--soft-solid);
@@ -284,7 +284,7 @@
 }
 .wf-alias__empty {
   margin: 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   color: var(--text-mute);
 }
 
@@ -339,7 +339,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--text-dim);
@@ -352,12 +352,12 @@
   display: block;
 }
 .wf-field__hint {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--text-mute);
 }
 .wf-field__error {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--danger);
 }

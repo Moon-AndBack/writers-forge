@@ -20,7 +20,7 @@
 
 .od-account__email {
   display: block;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.5;
   color: var(--text-mute);
 }
@@ -41,7 +41,7 @@
 /* ---------- 提示 / 错误 ---------- */
 .od-note {
   display: block;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.5;
   color: var(--text-mute);
 }
@@ -53,7 +53,7 @@
 .od-alert {
   margin: 0;
   padding: 0 10px 8px;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.5;
   color: var(--text-mute);
 }
@@ -81,7 +81,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.5;
 }
 

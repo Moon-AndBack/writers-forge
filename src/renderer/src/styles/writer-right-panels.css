@@ -78,7 +78,7 @@
 /* ---------- 空态 ---------- */
 .rp-list-empty {
   padding: 12px 9px;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.6;
   text-align: center;
   color: var(--text-mute);
@@ -121,7 +121,7 @@
 
 .rp-plot-timeline .plot-col-time {
   padding: 13px 8px 0 0;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.4;
 }
 
@@ -179,13 +179,13 @@
 }
 
 .rp-plot-timeline .plot-scene-title {
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
 }
 
 /* 正文容器收窄字号（标题 / 时间 / 说明文案不在此列）；行高 1.6 下同步收窄
    裁切高度，保证窄栏下仍恰好 4 行。 */
 .rp-plot-timeline .plot-scene-body {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.6;
   max-height: calc(4 * 1.6em);
 }
@@ -213,7 +213,7 @@
   box-shadow:
     var(--sh-popup),
     0 0 0 1px var(--line);
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.65;
   color: var(--text-dim);
   pointer-events: none;
@@ -259,7 +259,7 @@
 }
 
 .rp-plot-hover__meta {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: var(--text-mute);
 }
 

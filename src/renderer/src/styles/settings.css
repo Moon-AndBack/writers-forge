@@ -54,7 +54,7 @@
 }
 
 /* 分区标题 / 描述：对齐 surface.css 的卡片标题规格（--fs-title / 700 与
-   --fs-caption）。 */
+   --fs-micro）。 */
 .settings-group__title {
   margin: 0;
   font-size: var(--fs-title);
@@ -65,7 +65,7 @@
 
 .settings-group__desc {
   margin: 3px 0 0;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--text-mute);
 }
@@ -101,13 +101,13 @@
 
 /* 字号对齐主题浮层行（theme-switcher.css 的 .ts-row-title / .ts-row-sub）。 */
 .settings-row__label {
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   font-weight: 600;
   color: var(--text);
 }
 
 .settings-row__desc {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.4;
   color: var(--text-mute);
 }
@@ -192,7 +192,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   color: var(--text);
 }
 
@@ -212,7 +212,7 @@
 /* 控件下方 / 说明槽内的状态行（加载、成功、错误、提示）。 */
 .ai-status {
   display: block;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.5;
   color: var(--text-mute);
 }

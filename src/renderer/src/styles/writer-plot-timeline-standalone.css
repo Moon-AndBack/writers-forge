@@ -10,7 +10,7 @@
 .timeline-loading {
   padding: 28px 12px;
   text-align: center;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   color: var(--text-mute);
 }
 

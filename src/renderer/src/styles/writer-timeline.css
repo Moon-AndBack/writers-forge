@@ -153,7 +153,7 @@
 .timeline-card__meta {
   flex: 0 1 auto;
   min-width: 0;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   text-align: right;
   color: var(--text-mute);

@@ -24,7 +24,7 @@
     var(--sh-popup),
     0 0 0 1px var(--line);
 
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   font-weight: 500;
   line-height: 1.45;
   color: var(--text);
@@ -60,7 +60,7 @@
     var(--sh-popup),
     0 0 0 1px var(--line);
 
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   font-weight: 500;
   line-height: 1.45;
   color: var(--text);

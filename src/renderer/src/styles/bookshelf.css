@@ -63,7 +63,7 @@
   min-height: var(--control-h-md);
   padding: 0 12px;
   border-radius: var(--r-xs);
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   color: var(--text-dim);
   background: var(--soft-solid);
   white-space: nowrap;
@@ -253,7 +253,7 @@
   top: 10px;
   left: 10px;
   z-index: 2;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: #fff;
   background: #5b4de8;
 }
@@ -368,7 +368,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   color: var(--text-mute);
   white-space: nowrap;
   overflow: hidden;
@@ -437,7 +437,7 @@
    的 message 依赖此行距 / 颜色样式，书架页不加载 writer 域样式，故在本页
    补一份最小等价定义（复用同一样式类名，避免改动 writer 域文件）。 */
 .confirm-msg {
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.7;
   color: var(--text-dim);
   word-break: break-word;

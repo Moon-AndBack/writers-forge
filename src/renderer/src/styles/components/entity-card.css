@@ -111,7 +111,7 @@
 .wf-entity-card__chips .wf-tag,
 .wf-entity-card__meta .wf-tag {
   padding: 1px 8px;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   font-weight: 500;
   line-height: 1.6;
 }
@@ -120,7 +120,7 @@
    由调用方 `descriptionClassName` 控制）。 */
 .wf-entity-card__desc {
   margin: 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.6;
   color: var(--text-dim);
   overflow-wrap: anywhere;

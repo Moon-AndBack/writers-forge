@@ -46,20 +46,17 @@ const COLOR_GROUPS: readonly ColorGroup[] = [
 const RADIUS_TOKENS = ['--r-xs', '--r-lg', '--r-window', '--chip-pill-radius'] as const
 const SHADOW_TOKENS = ['--sh-xs', '--sh-sm', '--sh-popup', '--sh-float', '--panel-ring'] as const
 
-/** 界面字号 5 档令牌（AGENTS §8.3）。 */
+/** 界面字号 3 档令牌（AGENTS §8.3）。 */
 const FONT_SIZES = [
   { size: 10, token: '--fs-micro' },
-  { size: 11, token: '--fs-caption' },
-  { size: 12, token: '--fs-body-sm' },
-  { size: 13, token: '--fs-body' },
+  { size: 12, token: '--fs-body' },
   { size: 14, token: '--fs-title' }
 ] as const
 
 /** 展示档（不参与界面字阶）。 */
 const DISPLAY_FONT_SIZES = [
-  { size: 20, token: '--fs-display-sm' },
-  { size: 22, token: '--fs-display-md' },
-  { size: 28, token: '--fs-display-lg' }
+  { size: 20, token: '--fs-display' },
+  { size: 26, token: '--fs-display-lg' }
 ] as const
 
 const DURATIONS = [
@@ -126,8 +123,8 @@ export function TokensSection() {
       </Demo>
 
       <Demo
-        name="字号令牌 · --fs-micro 10 / --fs-caption 11 / --fs-body-sm 12 / --fs-body 13 / --fs-title 14"
-        note="界面统一 5 档；展示档 --fs-display-sm / md / lg（20 / 22 / 28）仅限已登记位置；封面装饰首字 34 / 56 为例外，不属界面字阶。"
+        name="字号令牌 · --fs-micro 10 / --fs-body 12 / --fs-title 14"
+        note="界面统一 3 档；展示档 --fs-display / --fs-display-lg（20 / 26）仅限已登记位置；封面装饰首字 34 / 56 为例外，不属界面字阶。"
         classes="font-size"
       >
         <div className="sg-type-list">

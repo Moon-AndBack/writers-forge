@@ -52,7 +52,7 @@
 .plot-col-time {
   padding: 17px 12px 0 0;
   text-align: right;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.45;
   color: var(--text-mute);
   font-variant-numeric: tabular-nums;
@@ -263,6 +263,6 @@
 .plot-timeline-empty {
   padding: 28px 12px;
   text-align: center;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   color: var(--text-mute);
 }

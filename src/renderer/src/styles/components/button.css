@@ -132,7 +132,7 @@
 .wf-btn--sm {
   --wf-btn-h: var(--control-h-sm);
   --wf-btn-px: 10px;
-  --wf-btn-fs: var(--fs-body-sm);
+  --wf-btn-fs: var(--fs-body);
 }
 .wf-btn--lg {
   --wf-btn-h: var(--control-h-lg);

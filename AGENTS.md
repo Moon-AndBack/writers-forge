@@ -122,7 +122,7 @@ src/
 
 ### 8.3 排版
 
-- **MUST** 界面字号统一为 5 档语义令牌，取自 `theme.css` 的 `--fs-*`：`--fs-micro` 10（Badge / 徽标 / 关闭图标）、`--fs-caption` 11（元信息 / 提示 / 计数 / 状态栏）、`--fs-body-sm` 12（紧凑正文 / 小号控件）、`--fs-body` 13（界面基准 / 输入 / 按钮）、`--fs-title` 14（卡片 / 详情 / 弹窗标题）。展示档 `--fs-display-sm/md/lg`（20 / 22 / 28）仅限已登记位置；正文用 `calc(18px * var(--doc-zoom))`。
+- **MUST** 字号统一为 5 档语义令牌，取自 `theme.css` 的 `--fs-*`：`--fs-micro` 10（Badge / 徽标 / 关闭图标 / 元信息提示）、`--fs-body` 12（界面基准：输入 / 按钮 / 紧凑正文）、`--fs-title` 14（卡片 / 详情 / 弹窗标题）。展示档 `--fs-display` 20 / `--fs-display-lg` 26 仅限已登记位置；正文用 `calc(18px * var(--doc-zoom))`。
 - **MUST** 界面 CSS 不得再写 `font-size` 数值字面量，只能引用 `--fs-*` 令牌。封面装饰首字 34 / 56 为已登记例外（按卡片比例，不属界面字阶）。新字号需求先复用 5 档，确需新增时同步更新 `design-language.md` 与 `theme.css`。
 - **MUST** 正文容器（编辑器 / 右栏大纲 / 回收站详情）使用 `--doc-font` + `calc(18px * var(--doc-zoom))` + `--doc-line` + `--doc-letter`；右栏只读通用底座用 `--doc-font` + `--fs-body` / 1.75（不跟随正文缩放）。
 - **MUST** 文本层级：`--text` 主文本；`--text-dim` 次级 / 只读正文；`--text-mute` 元信息 / 占位 / 禁用提示。不得用 `opacity` 代替 `--text-mute`。

@@ -29,7 +29,7 @@
 }
 
 .placeholder-view .placeholder-desc {
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   color: var(--text-mute);
 }
 
@@ -58,9 +58,9 @@
 }
 
 .placeholder-view.is-compact .placeholder-title {
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
 }
 
 .placeholder-view.is-compact .placeholder-desc {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
 }

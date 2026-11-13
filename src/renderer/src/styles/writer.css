@@ -361,7 +361,7 @@ body.is-resizing .splitter {
 .mini-seg button {
   padding: 3px 10px;
   border-radius: 4px;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   font-weight: 500;
   color: var(--text-dim);
   transition:

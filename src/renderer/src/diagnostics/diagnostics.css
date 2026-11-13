@@ -20,14 +20,14 @@
 
 .diagnostics__meta {
   margin: 0;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.5;
   color: var(--text-mute);
 }
 
 .diagnostics__hint {
   margin: 0 0 4px;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   line-height: 1.65;
   color: var(--text-dim);
 }
@@ -51,7 +51,7 @@
 
 .diagnostics__item-title {
   margin: 0;
-  font-size: var(--fs-body-sm);
+  font-size: var(--fs-body);
   font-weight: 600;
   line-height: 1.5;
   color: var(--text);
@@ -59,7 +59,7 @@
 
 .diagnostics__item-detail {
   margin: 3px 0 0;
-  font-size: var(--fs-caption);
+  font-size: var(--fs-micro);
   line-height: 1.65;
   color: var(--text-dim);
   word-break: break-word;
