@@ -6,10 +6,10 @@ import { OneDriveError } from './types'
 import type { RemoteBackupItem } from './types'
 
 /**
- * 远端备份列表（应用专属目录 `backups/`）。
+ * 远端备份列表（app folder 根路径）。
  *
  * - 跟随 `@odata.nextLink` 分页，最多 20 页（防上游异常导致死循环）；
- * - 目录不存在（404）视为空列表：首次备份前 `backups/` 尚未创建；
+ * - app folder 尚不存在（404）视为空列表：首次访问 special 命名空间前尚未 provision；
  * - 只保留带 `file` facet 且文件名符合 `writers-forge-<YYYYMMDD-HHmmss>.db`
  *   的项，避免把目录 / 用户手动放入的其它文件当成可恢复备份；
  * - 按 `lastModifiedDateTime` 倒序返回。
@@ -94,7 +94,7 @@ export async function listRemoteBackups(
       payload = await response.json().catch(() => null)
     } catch (error) {
       if (error instanceof OneDriveError && error.code === 'not_found') {
-        log.info('OneDrive 备份目录不存在，视为空列表')
+        log.info('OneDrive app folder 不存在，视为空列表')
         return []
       }
       throw error

@@ -8,7 +8,6 @@ import {
   contentUrl,
   createSessionUrl,
   drain,
-  ensureBackupFolder,
   graphError,
   graphRequest
 } from './graph'
@@ -28,7 +27,7 @@ import { OneDriveError } from './types'
 import type { OneDriveUploadedFile, OneDriveUploadProgress } from './types'
 
 /**
- * 备份文件上传策略（应用专属目录 `backups/`）。
+ * 备份文件上传策略（app folder 根路径）。
  *
  * - ≤ 4MB：单次 `PUT …:/content`；
  * - > 4MB：`createUploadSession` + 分片 `PUT`（10MB 的整数倍、最大 60MB）；
@@ -396,7 +395,7 @@ async function uploadFileSession(
 }
 
 /**
- * 上传本地文件到应用专属目录下的 `backups/`。
+ * 上传本地文件到 app folder 根路径。
  *
  * 按文件大小自动选择单次 PUT（≤ 4MB）或分片上传（> 4MB）。
  */
@@ -427,14 +426,6 @@ export async function uploadFile(
     totalBytes,
     strategy: totalBytes > SMALL_UPLOAD_LIMIT ? 'session' : 'single-put'
   })
-
-  log.info('上传前检查备份目录', { fileName: safePath(fileName) })
-  await ensureBackupFolder({
-    accessToken: options.accessToken,
-    signal: options.signal,
-    timeoutMs: options.timeoutMs
-  })
-  log.info('备份目录就绪', { fileName: safePath(fileName) })
 
   const uploaded =
     totalBytes > SMALL_UPLOAD_LIMIT

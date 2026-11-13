@@ -11,10 +11,19 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v141'
+export const CHAPTER_SEED_VERSION = 'v142'
 
 /**
- * 最近版本变更日志（v141；更早版本见上述历史文件）。
+ * 最近版本变更日志（v142；更早版本见上述历史文件）。
+ *
+ * `v142`（OneDrive 备份改存 app folder 根路径批）：远端备份由 `approot:/backups/<name>`
+ * 改为 `approot:/<name>`——app folder 本身是应用专属目录，根目录只包含本应用文件，
+ * 无需再套 `backups/` 子目录；原实现创建该子目录的请求始终返回 400 invalidRequest，
+ * 上传因此无法进行。删除 `ensureBackupFolder` 与 `BACKUP_FOLDER` 常量，上传前不再
+ * 显式建目录（Graph 在首次访问 special 命名空间时自动 provision），远端列表改读
+ * `approot:/children`。下载 / 恢复仍按 itemId 寻址，不受路径影响；旧版本从未成功
+ * 创建子目录，没有旧备份需要迁移。教学文案同步（卷五「OneDrive 云备份」章、大纲
+ * 同项：备份位置改为应用专属目录根路径）。
  *
  * `v141`（OneDrive 自定义应用 ID 下线批）：删除设置页「应用 ID（clientId）」输入行、
  * 自定义应用 ID 的 IPC 与 settings 覆盖，主进程授权与刷新统一使用内置

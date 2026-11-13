@@ -177,7 +177,7 @@ export const VOLUME_SETTINGS: SeedVolume = {
         ]),
         seedHeading('云端备份与恢复'),
         seedParagraph(
-          '「立即备份」下方的「云端备份」区会自动列出 OneDrive 应用专属目录 backups 中的全部远端快照，按修改时间从新到旧排列，每行显示文件名、修改时间与大小；点右上角「刷新」可重新读取。'
+          '「立即备份」下方的「云端备份」区会自动列出 OneDrive 应用专属目录（approot 根路径）中的全部远端快照，按修改时间从新到旧排列，每行显示文件名、修改时间与大小；点右上角「刷新」可重新读取。'
         ),
         seedBulletList([
           '点某一行右侧的恢复按钮（悬停浮现），应用先尝试保存未保存的编辑，再弹出确认框：将用该云端备份覆盖当前全部数据、恢复前自动创建一份本地安全副本（pre-restore）、成功后应用自动重启',
@@ -190,7 +190,7 @@ export const VOLUME_SETTINGS: SeedVolume = {
           '每次备份都生成一个新文件，文件名形如 writers-forge-20261031-153000.db（本地日期时间戳），因此不会覆盖旧备份，历次快照可以并存。'
         ),
         seedBulletList([
-          '位置是 OneDrive 的「应用专属目录」下的 backups 文件夹（微软 Graph 的 special/approot），在 OneDrive 网页的常规文件列表里看不到该目录，只有本应用能访问',
+          '位置是 OneDrive 的「应用专属目录」根路径（微软 Graph 的 special/approot），在 OneDrive 网页的常规文件列表里看不到该目录，只有本应用能访问',
           '本地临时快照生成在系统临时目录，上传结束即删除；远端那份才是备份',
           '应用不会自动清理远端的历史备份，攒多了请自行到 OneDrive 侧整理'
         ])

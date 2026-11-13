@@ -56,7 +56,7 @@ export interface OneDriveApi {
   backup: () => Promise<OneDriveResult<OneDriveBackupResult>>
   /** 中断进行中的备份；返回是否发出了取消请求（无进行中任务为 false）。 */
   cancelBackup: () => Promise<boolean>
-  /** 列出远端备份（按修改时间倒序；`backups/` 不存在时返回空数组）。 */
+  /** 列出远端备份（按修改时间倒序；app folder 无备份时返回空数组）。 */
   listBackups: () => Promise<OneDriveResult<RemoteBackupItem[]>>
   /**
    * 下载并恢复指定远端备份；进度走 `onRestoreProgress`。

@@ -180,7 +180,7 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
         │     └── clientIdCleanup.ts 启动时清理旧自定义 clientId
         ├── backup.ts          快照 → 上传 → 清理（进度编排）
         │     ├── upload.ts        ≤4MB 单次 PUT / >4MB 分片会话 + 重试
-        │     └── graph.ts         Graph 请求封装 · approot / backups 目录
+        │     └── graph.ts         Graph 请求封装 · approot 根路径与 URL 构造
         ├── remote.ts          远端备份列表（按修改时间倒序）
         ├── download.ts        Range 分块下载 · 预签名 URL 续传
         ├── restoreRemote.ts   下载 → 校验 → 复用本地 restoreDatabase
@@ -199,11 +199,11 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
 | `credentials.ts`     | 217  | settings 键、加密读写、`getOneDriveAuthStatus`           |
 | `clientIdCleanup.ts` | 50   | 启动时一次性清理旧 `onedrive:clientId` 并清除凭据        |
 | `download.ts`        | 332  | Range 分块下载、预签名 URL 刷新、重试与取消              |
-| `graph.ts`           | 207  | `graphRequest`、`/me`、`approot:/backups` 目录、URL 构造 |
+| `graph.ts`           | 207  | `graphRequest`、`/me`、`approot` 根路径、URL 构造        |
 | `http.ts`            | 192  | 与 AI 域平行的最小 HTTP 工具（不引 `openai` SDK）        |
 | `index.ts`           | 50   | 对外导出面                                               |
 | `logSafe.ts`         | 82   | `maskEmail` / `safePath` / `safeError`                   |
-| `remote.ts`          | 127  | 列出 `approot:/backups` 中的快照并归一化                 |
+| `remote.ts`          | 127  | 列出 `approot` 根路径中的快照并归一化                    |
 | `restoreRemote.ts`   | 124  | 下载 → 校验 → 恢复编排、临时文件清理                     |
 | `types.ts`           | 200  | 错误码、凭据、进度、结果类型                             |
 | `upload.ts`          | 432  | 大小分流、分片、重试、416 纠偏、会话取消                 |
@@ -244,7 +244,7 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
 
 ## 8. 备份流程
 
-> 恢复能力：OneDrive 链路同时提供上传、远端列表、下载与恢复。设置页「OneDrive 云备份」分区的「云端备份」区会自动列出 `approot:/backups` 中的快照，选中一份后先统一落盘、二次确认，再下载到系统临时目录并复用本地恢复流程替换数据库。恢复前自动创建本地 `pre-restore` 安全副本，成功后应用自动重启；下载 / 恢复期间可取消。本地备份与恢复仍是独立的 `backup:*` 链路。
+> 恢复能力：OneDrive 链路同时提供上传、远端列表、下载与恢复。设置页「OneDrive 云备份」分区的「云端备份」区会自动列出 `approot` 根路径中的快照，选中一份后先统一落盘、二次确认，再下载到系统临时目录并复用本地恢复流程替换数据库。恢复前自动创建本地 `pre-restore` 安全副本，成功后应用自动重启；下载 / 恢复期间可取消。本地备份与恢复仍是独立的 `backup:*` 链路。
 
 ### 8.1 打包内容
 
@@ -259,7 +259,7 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
 | ≤ **4 MB** | 单次 `PUT …:/content`              | `graph.ts:22`       |
 | > 4 MB     | `createUploadSession` + 分片 `PUT` | `upload.ts:324-392` |
 
-分片细节：单元 **10 MB**，单分片上限 **60 MB**，以「约 10 片」为目标放大（`upload.ts:42-44`、`100-106`）。每片最多尝试 **4 次**（含首次），429 / 5xx / 网络错误按 `Retry-After` 或指数退避 **1s / 2s / 4s（上限 30 s）** 重试；`Retry-After` 取值裁剪到 **1s–60s**；416 时向会话查询 `nextExpectedRanges` 纠偏继续；失败 / 取消 `DELETE` 会话（固定 **5 s** 超时，best-effort）。上传前先 `ensureBackupFolder` 创建 `approot:/backups`（并发 409 视为成功）。
+分片细节：单元 **10 MB**，单分片上限 **60 MB**，以「约 10 片」为目标放大（`upload.ts:42-44`、`100-106`）。每片最多尝试 **4 次**（含首次），429 / 5xx / 网络错误按 `Retry-After` 或指数退避 **1s / 2s / 4s（上限 30 s）** 重试；`Retry-After` 取值裁剪到 **1s–60s**；416 时向会话查询 `nextExpectedRanges` 纠偏继续；失败 / 取消 `DELETE` 会话（固定 **5 s** 超时，best-effort）。app folder 是应用专属目录，文件直接放在 `approot` 根路径，**无需**显式创建子目录；Graph 在首次访问 special 命名空间时自动 provision。
 
 ### 8.3 进度事件
 
@@ -280,7 +280,7 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
 
 ### 8.5 远端列表
 
-`onedrive:listBackups` 调 `listRemoteBackups()`：带 Authorization 请求 `approot:/backups/children`，按 `@odata.nextLink` 翻页（最多 10 页），404（目录不存在）视为空数组；列表按 `lastModifiedDateTime` 倒序。每项只回传 `itemId` / `name` / `sizeBytes` / `modifiedAt` / `webUrl?`，不含下载地址或 token。
+`onedrive:listBackups` 调 `listRemoteBackups()`：带 Authorization 请求 `approot:/children`，按 `@odata.nextLink` 翻页（最多 10 页），404（app folder 尚不存在）视为空数组；列表按 `lastModifiedDateTime` 倒序。每项只回传 `itemId` / `name` / `sizeBytes` / `modifiedAt` / `webUrl?`，不含下载地址或 token。早期版本曾尝试在 `approot` 下创建 `backups/` 子目录，但该请求始终返回 400 `invalidRequest`、从未成功，因此没有需要迁移的旧备份；若曾用其它方式把文件放进 `approot:/backups/`，新列表不会显示，需要时可自行在 OneDrive 侧移动。
 
 ### 8.6 下载与恢复
 

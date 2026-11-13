@@ -277,12 +277,12 @@ ON CONFLICT(id) DO NOTHING
 | 主进程日志   | `<userData>/logs/main.log`                                                                      |
 | 本地备份     | `<userData>/backups/<YYYYMMDD-HHmmss>[-名称]/`，内含 `snapshot.db` 与 `meta.json`               |
 | 备份临时快照 | `<系统临时目录>/writers-forge-backups/writers-forge-YYYYMMDD-HHmmss.db`（仅 OneDrive 上传流程） |
-| 云端备份     | OneDrive 应用专属目录 `backups/` 下同名 `.db` 文件                                              |
+| 云端备份     | OneDrive 应用专属目录（approot）根路径下同名 `.db` 文件                                         |
 
 `userData` 目录：打包安装态为系统 AppData 下的 `Writer's Forge`，本地开发态为项目根下的 `user_data/`（`src/main/appPaths.ts`）。排查前先确认当前是哪个目录，两者数据完全独立。
 
 本地备份与恢复入口：设置弹窗「数据与备份」分区（`backup:*` IPC）。「立即备份」用在线快照在 `<userData>/backups/` 生成一个备份文件夹（`<时间戳>[-名称]/`），内含 `snapshot.db` 与 `meta.json`（name / createdAt / kind / size）；列表按 `meta.createdAt` 倒序，旧版平铺 `.db` 不显示（文件保留在磁盘）。恢复先校验备份文件夹内的 `snapshot.db`（只读打开 + `quick_check` + 核心表），复制到 staging 并再校验，随后创建恢复前安全副本文件夹（`kind = pre-restore`），关闭连接、清理 WAL / SHM、原子替换并重开验证；成功后主进程在 300ms 后 `app.relaunch()` + `app.exit(0)`。重命名同步改文件夹名与 `meta.name`，目标已存在返回 `conflict`；删除按文件夹移除整个目录。**不要**在应用运行时直接复制 `writers-forge.db`：WAL 模式下可能得到不一致副本，请使用「立即备份」，或先退出应用再复制整个数据目录。整库导出同样通过 `getDb().backup()` 生成 `.db`，不提供 Markdown 导出。
 
-OneDrive 备份入口：设置弹窗「OneDrive 云备份」分区（`onedrive:backup` / `onedrive:listBackups` / `onedrive:restoreBackup` IPC）。备份流程为 `getDb().backup()` 生成一致性快照 → 上传到 OneDrive approot 的 `backups/`；快照生成在 WAL 模式下是安全的，**不要**用文件复制替代。云端恢复会先下载到系统临时目录、校验后复用本地恢复流程替换数据库，恢复前自动创建 `pre-restore` 安全副本，成功后自动重启。
+OneDrive 备份入口：设置弹窗「OneDrive 云备份」分区（`onedrive:backup` / `onedrive:listBackups` / `onedrive:restoreBackup` IPC）。备份流程为 `getDb().backup()` 生成一致性快照 → 上传到 OneDrive app folder（approot）根路径；app folder 是应用专属目录，无需再套子目录，Graph 在首次访问 special 命名空间时自动 provision。快照生成在 WAL 模式下是安全的，**不要**用文件复制替代。云端恢复会先下载到系统临时目录、校验后复用本地恢复流程替换数据库，恢复前自动创建 `pre-restore` 安全副本，成功后自动重启。
 
 最后核对：2026-11-13
