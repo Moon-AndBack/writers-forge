@@ -1,3 +1,4 @@
+import { logger } from '../logger'
 import { createRequestSignal, isRecord, normalizeError, readString, resolveTimeout } from './http'
 import { OneDriveError } from './types'
 import type { OneDriveAccount, OneDriveErrorCode } from './types'
@@ -7,6 +8,8 @@ import type { OneDriveAccount, OneDriveErrorCode } from './types'
  *
  * 上传策略见 `upload.ts`；本文件不涉及分片与重试。
  */
+
+const log = logger.scope('onedrive:graph')
 
 const GRAPH_BASE = 'https://graph.microsoft.com/v1.0'
 /** 应用专属目录下的备份子目录。 */
@@ -179,21 +182,43 @@ export async function ensureBackupFolder(options: GraphAuthOptions): Promise<voi
 
   // 1) 先请求 approot 本体：文档把这一步列为 app folder 的首次创建入口。
   //    404 不阻断（目录可能在后续步骤创建）；400/403 立即上抛，避免被误判。
+  log.info('检查 app folder')
   try {
-    await graphRequest(`${GRAPH_BASE}/me/drive/special/approot`, request)
+    const appFolder = await graphRequest(`${GRAPH_BASE}/me/drive/special/approot`, request)
+    log.info('app folder 检查完成', { status: appFolder.status })
   } catch (error) {
-    if (!(error instanceof OneDriveError) || error.code !== 'not_found') throw error
+    if (!(error instanceof OneDriveError) || error.code !== 'not_found') {
+      log.warn('app folder 检查失败', {
+        code: error instanceof OneDriveError ? error.code : 'unknown',
+        status: error instanceof OneDriveError ? error.status : undefined
+      })
+      throw error
+    }
+    log.info('app folder 尚未创建，继续检查备份目录', { status: error.status })
   }
 
   // 2) backups 已存在则结束。
+  log.info('检查备份目录')
   try {
-    await graphRequest(`${GRAPH_BASE}/me/drive/special/approot:/${BACKUP_FOLDER}`, request)
+    const backupFolder = await graphRequest(
+      `${GRAPH_BASE}/me/drive/special/approot:/${BACKUP_FOLDER}`,
+      request
+    )
+    log.info('备份目录检查完成', { exists: true, status: backupFolder.status })
     return
   } catch (error) {
-    if (!(error instanceof OneDriveError) || error.code !== 'not_found') throw error
+    if (!(error instanceof OneDriveError) || error.code !== 'not_found') {
+      log.warn('备份目录检查失败', {
+        code: error instanceof OneDriveError ? error.code : 'unknown',
+        status: error instanceof OneDriveError ? error.status : undefined
+      })
+      throw error
+    }
+    log.info('备份目录不存在，准备创建', { exists: false, status: error.status })
   }
 
   // 3) 创建 backups。
+  log.info('创建备份目录')
   try {
     await graphRequest(`${GRAPH_BASE}/me/drive/special/approot/children`, {
       ...request,
@@ -205,9 +230,17 @@ export async function ensureBackupFolder(options: GraphAuthOptions): Promise<voi
       }),
       headers: { 'Content-Type': 'application/json' }
     })
+    log.info('备份目录创建完成')
   } catch (error) {
     // 并发创建时另一个请求已建好目录，视为成功。
-    if (error instanceof OneDriveError && error.status === 409) return
+    if (error instanceof OneDriveError && error.status === 409) {
+      log.info('备份目录已由并发请求创建，视为成功', { status: 409 })
+      return
+    }
+    log.warn('备份目录创建失败', {
+      code: error instanceof OneDriveError ? error.code : 'unknown',
+      status: error instanceof OneDriveError ? error.status : undefined
+    })
     throw error
   }
 }
