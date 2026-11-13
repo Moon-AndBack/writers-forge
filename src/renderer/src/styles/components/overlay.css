@@ -199,8 +199,8 @@
   flex: none;
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
   border-radius: var(--r-xs);
   font-size: 15px;
   line-height: 1;

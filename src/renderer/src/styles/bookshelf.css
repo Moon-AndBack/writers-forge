@@ -300,8 +300,9 @@
 }
 
 .book-actions .wf-iconbtn {
-  width: 26px;
-  height: 26px;
+  /* 与行操作域同口径 22×22（封面操作不另立尺寸档）。 */
+  width: 22px;
+  height: 22px;
   color: #fff;
   /* 常驻半透明暗底：移除原盒阴影后仍能托住白图标，且在任何封面
      （亮 / 暗 / 花色）上都能与图标区分；固定值不随主题变化，四主题
@@ -310,8 +311,8 @@
 }
 
 .book-actions .wf-iconbtn > svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
 }
 
 /* hover / 键盘聚焦：底色加深一档增强反馈（仅颜色变化，无描边环、无位移 /

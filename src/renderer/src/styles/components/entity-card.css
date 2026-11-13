@@ -66,8 +66,8 @@
 }
 
 /* 卡片操作按钮组（编辑 / 关联关系 / 删除等）：三个域统一由本类收口。
-   尺寸钉在 IconButton 的 `sm` 档（24px 盒 / 14px 图标），即使调用方误传
-   `md` 也不会破坏卡片标题行；tone 语义由调用方按约定传参
+   尺寸统一为行操作域 22×22（图标 14px，与 `.row-act` 同口径），即使调用方
+   传 `size="md"` 也不会破坏卡片标题行；tone 语义由调用方按约定传参
    （删除 danger / 其余默认）。hover 与 focus-visible 交给 IconButton 统一提供。 */
 .wf-entity-card__actions {
   display: flex;
@@ -78,8 +78,8 @@
 }
 
 .wf-entity-card__actions .wf-iconbtn {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
 }
 
 .wf-entity-card__actions .wf-iconbtn > svg {

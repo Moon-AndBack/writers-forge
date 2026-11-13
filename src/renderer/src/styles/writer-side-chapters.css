@@ -4,7 +4,8 @@
    自 `writer-side.css` 原样搬移（保持单文件 ≤500 行，§3）。
    卷内折叠容器（grid-template-rows）、章行、章名 / 草稿徽标 / 特殊章、
    章操作组、拖拽把手与拖拽占位线。
-   沿用 writer-side-volumes.css 定义的卷头结构与 `.row-act` 基类。
+   沿用 writer-side-volumes.css 定义的卷头结构与共享 `.row-act` 基类
+   （定义见 styles/components/row-actions.css）。
    ============================================================ */
 
 .chapters {

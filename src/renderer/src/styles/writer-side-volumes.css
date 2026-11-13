@@ -201,17 +201,6 @@
   margin-right: 71px;
 }
 
-/* 行内小图标按钮：22×22，紧贴行内容（在 .wf-iconbtn--sm 基础上再收一档）。 */
-.row-act {
-  width: 22px;
-  height: 22px;
-}
-
-.row-act > svg {
-  width: 14px;
-  height: 14px;
-}
-
 /* 章行 hover 操作改为绝对定位悬浮（同卷行 .vol-actions 模式）：
    非 hover 时不占流内空间（章名 / 草稿徽标不再被压缩），hover 时浮现在行右缘；
    章行容器 position:relative 供其定位。拖拽把手同样悬浮（right:4px），

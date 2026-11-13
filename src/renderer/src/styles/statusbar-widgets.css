@@ -76,8 +76,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* 状态栏 chrome 档：小部件控件统一 24px（与 .st-side-btn / .st-zoom* 同口径）。
+     用 height 而非纵向 padding 定高，避免行高叠加后超出 24px。 */
+  height: 24px;
   min-width: 48px;
-  padding: 4px 11px;
+  padding: 0 11px;
   border-radius: var(--r-xs);
   font-size: 11px;
   font-weight: 600;
@@ -229,8 +232,9 @@
 }
 
 .st-zoom-btn {
-  width: 22px;
-  height: 22px;
+  /* 状态栏 chrome 档：统一 24px（容器 .st-zoom 另加 2px 内衬，总高 28）。 */
+  width: 24px;
+  height: 24px;
   display: grid;
   place-items: center;
   /* 抵消数学符号（− / +）墨迹偏下与 Segoe 行布局偏置：border-box 下
@@ -256,13 +260,13 @@
   cursor: default;
 }
 
-/* 百分比与左右按钮同高同口径居中：三者均为 22px 高 + line-height:1，
+/* 百分比与左右按钮同高同口径居中：三者均为 24px 高 + line-height:1，
    消除原先继承 body line-height:1.55 造成的行盒高度差（错位根因）。
    font-size 与 .wf-stepper__value 同口径（11.5px）。 */
 .st-zoom-val {
   display: grid;
   place-items: center;
-  height: 22px;
+  height: 24px;
   min-width: 42px;
   text-align: center;
   font-family: var(--mono);

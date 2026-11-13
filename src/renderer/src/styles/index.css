@@ -23,6 +23,8 @@
 @import './components/card-grid.css';
 /* 通用实体样式卡壳（剧情 / 伏笔 / 设定档案共用）：骨架与公共视觉规格。 */
 @import './components/entity-card.css';
+/* 行内小图标按钮（.row-act）：行操作域 22×22，全库单一实现。 */
+@import './components/row-actions.css';
 @import './global.css';
 @import './chip-pill.css';
 @import './chip-preset-colors.css';

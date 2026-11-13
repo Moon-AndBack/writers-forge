@@ -162,7 +162,7 @@ export default function DataSection() {
                   {renaming ? null : (
                     <div className="settings-backup__actions">
                       <IconButton
-                        className="settings-backup__action"
+                        className="settings-backup__action row-act"
                         label={t('data.backups.renameAria', { name: label })}
                         disabled={busy}
                         onClick={() => beginRename(item.folder, item.name)}
@@ -170,7 +170,7 @@ export default function DataSection() {
                         <PencilIcon width={14} />
                       </IconButton>
                       <IconButton
-                        className="settings-backup__action"
+                        className="settings-backup__action row-act"
                         tone="danger"
                         label={t('data.backups.restoreAria', { name: label })}
                         disabled={busy}
@@ -179,7 +179,7 @@ export default function DataSection() {
                         <RestoreIcon />
                       </IconButton>
                       <IconButton
-                        className="settings-backup__action"
+                        className="settings-backup__action row-act"
                         tone="danger"
                         label={t('data.backups.deleteAria', { name: label })}
                         disabled={busy}
