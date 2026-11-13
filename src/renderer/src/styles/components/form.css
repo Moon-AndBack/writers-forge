@@ -36,7 +36,6 @@
   font-size: 13px;
   color: var(--text);
   background: var(--soft-solid);
-  border: 1px solid transparent;
   outline: none;
   transition:
     background 0.18s var(--ease),
@@ -49,11 +48,19 @@
   padding: 0 12px;
   line-height: 1.4;
   border-radius: var(--r-xs);
+  /* 边框改由内阴影表达：不占盒高，36px 全部用于内容区（border-box 下 1px 边框
+     会让可见填充区只剩 34px，125% 缩放时表现为上下各 0.8）。视觉与 1px 边框一致；
+     聚焦环与内描边合并为同一条 box-shadow，避免互相覆盖。 */
+  border: 0;
+  box-shadow: inset 0 0 0 1px transparent;
 }
 .wf-textarea {
+  /* 多行文本无固定高度（min-height 随内容撑开），不存在 36px 内容区被压的问题，
+     保留真实边框，避免内容盒整体上移 1px。 */
   min-height: 82px;
   padding: 11px 12px;
   line-height: 1.65;
+  border: 1px solid transparent;
   border-radius: var(--r-lg);
   resize: vertical;
 }
@@ -65,17 +72,28 @@
 .wf-textarea:hover:not(:disabled):not(:read-only):not([aria-readonly='true']) {
   background: var(--soft-hover-solid);
 }
-.wf-input:focus,
+.wf-input:focus {
+  background: var(--pane);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+}
 .wf-textarea:focus {
   background: var(--pane);
   border-color: color-mix(in srgb, var(--brand) 45%, transparent);
   box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
 }
-.wf-input:is([aria-invalid='true'], .is-invalid),
+.wf-input:is([aria-invalid='true'], .is-invalid) {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 55%, transparent);
+}
 .wf-textarea:is([aria-invalid='true'], .is-invalid) {
   border-color: color-mix(in srgb, var(--danger) 55%, transparent);
 }
-.wf-input:is([aria-invalid='true'], .is-invalid):focus,
+.wf-input:is([aria-invalid='true'], .is-invalid):focus {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--danger) 60%, transparent),
+    0 0 0 3.5px color-mix(in srgb, var(--danger) 14%, transparent);
+}
 .wf-textarea:is([aria-invalid='true'], .is-invalid):focus {
   border-color: color-mix(in srgb, var(--danger) 60%, transparent);
   box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--danger) 14%, transparent);
@@ -126,30 +144,48 @@
    @import 之后、与基类状态规则同权重时靠后取胜，无需 `!important`。
    ============================================================ */
 .on-soft .wf-input,
-.on-soft .wf-textarea,
 .on-soft .wf-select__trigger {
+  background: var(--control-on-soft);
+  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
+}
+.on-soft .wf-textarea {
   background: var(--control-on-soft);
   border-color: var(--control-on-soft-line);
 }
 .on-soft .wf-input:hover:not(:disabled):not(:read-only):not([aria-readonly='true']),
 .on-soft .wf-textarea:hover:not(:disabled):not(:read-only):not([aria-readonly='true']),
 .on-soft .wf-select__trigger:hover:not(:disabled) {
-  /* hover 只换填充、不写 border-color：与基类 `.wf-input:hover` 同口径，
-     让聚焦态的 `border-color`（品牌色）不被更高权重的 hover 规则压掉。 */
+  /* hover 只换填充、不写描边：与基类 `.wf-input:hover` 同口径，
+     让聚焦态的内描边（品牌色）不被更高权重的 hover 规则压掉。 */
   background: var(--control-on-soft-hover);
 }
 .on-soft .wf-input:focus,
-.on-soft .wf-textarea:focus,
 .on-soft .wf-select__trigger:focus-visible,
 .on-soft .wf-select.is-open .wf-select__trigger {
+  background: var(--pane);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+}
+.on-soft .wf-textarea:focus {
   background: var(--pane);
   border-color: color-mix(in srgb, var(--brand) 45%, transparent);
 }
 .on-soft .wf-input:disabled,
-.on-soft .wf-textarea:disabled,
 .on-soft .wf-input:read-only,
+.on-soft .wf-input[aria-readonly='true'] {
+  background: var(--control-on-soft);
+  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
+}
+/* 只读输入仍可获得焦点：描边保持 on-soft 线色，但聚焦环不能被上面的单层
+   内描边吞掉（改造前 border-color 归只读规则、box-shadow 环仍由基类聚焦态提供）。 */
+.on-soft .wf-input:is(:read-only, [aria-readonly='true']):focus {
+  box-shadow:
+    inset 0 0 0 1px var(--control-on-soft-line),
+    0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+}
+.on-soft .wf-textarea:disabled,
 .on-soft .wf-textarea:read-only,
-.on-soft .wf-input[aria-readonly='true'],
 .on-soft .wf-textarea[aria-readonly='true'] {
   background: var(--control-on-soft);
   border-color: var(--control-on-soft-line);

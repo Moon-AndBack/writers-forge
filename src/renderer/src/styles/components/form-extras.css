@@ -21,11 +21,13 @@
   height: var(--control-h-md);
   padding: 0 12px;
   background: var(--soft-solid);
-  border: 1px solid transparent;
+  /* 边框改由内阴影表达：不占盒高，36px 全部用于内容区；聚焦环与内描边合并为
+     同一条 box-shadow（与 `.wf-input` / `.wf-select__trigger` 同口径）。 */
+  border: 0;
+  box-shadow: inset 0 0 0 1px transparent;
   border-radius: var(--r-xs);
   transition:
     background 0.18s var(--ease),
-    border-color 0.18s var(--ease),
     box-shadow 0.18s var(--ease);
 }
 .wf-search:hover:not(.is-disabled) {
@@ -33,15 +35,17 @@
 }
 .wf-search:focus-within {
   background: var(--pane);
-  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
-  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
 }
 .wf-search.is-invalid {
-  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 55%, transparent);
 }
 .wf-search.is-invalid:focus-within {
-  border-color: color-mix(in srgb, var(--danger) 60%, transparent);
-  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--danger) 14%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--danger) 60%, transparent),
+    0 0 0 3.5px color-mix(in srgb, var(--danger) 14%, transparent);
 }
 .wf-search.is-disabled {
   opacity: 0.6;
@@ -291,14 +295,18 @@
    --pane，旁边名称输入框走默认填充），无条件套用会让弹窗内输入框比同级控件深一档。 */
 .on-soft .wf-alias .wf-input {
   background: var(--control-on-soft);
-  border-color: var(--control-on-soft-line);
+  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
 }
 .on-soft .wf-alias .wf-input:hover:not(:disabled):not(:read-only):not([aria-readonly='true']) {
   background: var(--control-on-soft-hover);
 }
 .on-soft .wf-alias .wf-input:focus {
   background: var(--pane);
-  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  /* 本规则特异性高于基类 `.wf-input:focus`，必须连聚焦环一并写出，
+     否则只剩内描边、3.5px 环被覆盖掉。 */
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
 }
 .on-soft .wf-alias .wf-tag--neutral {
   background: var(--control-on-soft);

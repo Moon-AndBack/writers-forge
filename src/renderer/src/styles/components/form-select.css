@@ -21,27 +21,42 @@
   text-align: left;
   color: var(--text);
   background: var(--soft-solid);
-  border: 1px solid transparent;
+  /* 边框改由内阴影表达：不占盒高，36px 全部用于内容区；与 form.css 的
+     `.wf-input` 同口径，聚焦环与内描边合并为同一条 box-shadow。 */
+  border: 0;
+  box-shadow: inset 0 0 0 1px transparent;
   border-radius: var(--r-xs);
   cursor: pointer;
   outline: none;
   transition:
     background 0.18s var(--ease),
-    border-color 0.18s var(--ease),
     box-shadow 0.18s var(--ease),
     color 0.18s var(--ease);
 }
 .wf-select__trigger:hover:not(:disabled) {
   background: var(--soft-hover-solid);
 }
-.wf-select__trigger:focus-visible,
-.wf-select.is-open .wf-select__trigger {
+.wf-select__trigger:focus-visible {
   background: var(--pane);
-  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
-  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
 }
 .wf-select__trigger:is([aria-invalid='true'], .is-invalid) {
-  border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 55%, transparent);
+}
+/* 错误态聚焦：描边取 danger、环仍取品牌色，与改造前 border-color（danger）+
+   box-shadow（品牌环）的组合一致；不写此条会被上面的单层内描边压掉聚焦环。 */
+.wf-select__trigger:is([aria-invalid='true'], .is-invalid):focus-visible {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--danger) 55%, transparent),
+    0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+}
+.wf-select.is-open .wf-select__trigger {
+  background: var(--pane);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
 }
 .wf-select__trigger:disabled {
   cursor: not-allowed;
