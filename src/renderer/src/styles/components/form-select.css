@@ -16,7 +16,7 @@
   height: var(--control-h-md);
   padding: 0 12px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--fs-body);
   line-height: 1.4;
   text-align: left;
   color: var(--text);
@@ -126,7 +126,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  font-size: 12.5px;
+  font-size: var(--fs-body-sm);
   color: var(--text-dim);
   border-radius: var(--r-xs);
   cursor: pointer;
@@ -158,19 +158,19 @@
 }
 .wf-select__empty {
   padding: 10px;
-  font-size: 12px;
+  font-size: var(--fs-body-sm);
   color: var(--text-mute);
   text-align: center;
 }
 .wf-select--sm .wf-select__trigger {
   height: var(--control-h-sm);
   padding: 0 10px;
-  font-size: 12px;
+  font-size: var(--fs-body-sm);
 }
 .wf-select--lg .wf-select__trigger {
   height: var(--control-h-lg);
   padding: 0 14px;
-  font-size: 14px;
+  font-size: var(--fs-title);
 }
 
 /* ---------- Combobox（可输入过滤的下拉） ----------

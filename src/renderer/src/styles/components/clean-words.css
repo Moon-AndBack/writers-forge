@@ -59,7 +59,7 @@
 .cw-count {
   margin: 0;
   min-width: 0;
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   line-height: 1.5;
   color: var(--text-mute);
 }
@@ -112,7 +112,7 @@
 
 .cw-add__hint {
   margin: 0;
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   line-height: 1.5;
   color: var(--danger);
 }
@@ -134,7 +134,7 @@
 
 /* 行采用四槽 grid：词条（弹性）/ 类别 Tag（固定 112）/ 开关（固定 30）/ 删除（固定 30）。
    后三列固定宽度，删除按钮的有无（内置词无删除）不再让开关 / Tag 横向漂移。
-   112px 依据：Tag 为 11.5px/500 + 左右各 10px 内边距，按 5 个中文字（约 57.5px）计
+   112px 依据：Tag 为 11px/500 + 左右各 10px 内边距，按 5 个中文字（约 57.5px）计
    中文约 78px、英文最长 "Minor sexual" 约 98px，112px 仍余 14px，zh / en 均不截断。
    开关 sm 轨道 30px、IconButton sm 36px，均取自组件实际尺寸。
    行 hover：容器已是 --soft-solid（light 下 --soft-hover-solid 与其同值 6%，
@@ -174,7 +174,7 @@
 
 .cw-row__word {
   min-width: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-body-sm);
   font-weight: 600;
   line-height: 1.4;
   color: var(--text);
@@ -194,7 +194,7 @@
 .cw-loading {
   margin: 0;
   padding: 10px 8px;
-  font-size: 12.5px;
+  font-size: var(--fs-body-sm);
   line-height: 1.5;
   color: var(--text-mute);
 }
@@ -215,7 +215,7 @@
 /* ---------- 来源说明 ---------- */
 .cw-meta {
   margin: 0;
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   line-height: 1.5;
   color: var(--text-mute);
 }

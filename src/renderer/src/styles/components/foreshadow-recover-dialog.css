@@ -55,7 +55,7 @@
 .foreshadow-recover-item__title {
   flex: 1;
   min-width: 0;
-  font-size: 13.5px;
+  font-size: var(--fs-title);
   font-weight: 600;
   line-height: 1.4;
   color: var(--text);
@@ -67,7 +67,7 @@
 /* 空态 / 搜索无结果 / 加载中 / 加载失败：列表区域内的说明文字。 */
 .foreshadow-recover-note {
   padding: 18px 0;
-  font-size: 12.5px;
+  font-size: var(--fs-body-sm);
   line-height: 1.6;
   text-align: center;
   color: var(--text-mute);

@@ -56,7 +56,7 @@
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-title);
   font-weight: 600;
   line-height: 1.4;
   color: var(--text);
@@ -102,7 +102,7 @@
 }
 
 /* 胶囊统一规格（AGENTS §9 通用化）：三种卡片（设定档案 / 伏笔 / 剧情）的底部胶囊行
-   与次级胶囊行统一以设定档案卡关系胶囊为基准——10.5px / 1px 8px / line-height 1.6 /
+   与次级胶囊行统一以设定档案卡关系胶囊为基准——11px / 1px 8px / line-height 1.6 /
    500，高度由行高 + 内衬决定，不设 min-height。域内类只保留 max-width / 换行策略等
    特有属性，勿再重复声明尺寸。`.wf-tag` 分支供设定档案卡的 `Tag` 胶囊使用
    （其未挂 `.chip-pill` 类，仅由 `chip-pill.css` 的独立选择器共用外观）。 */
@@ -111,7 +111,7 @@
 .wf-entity-card__chips .wf-tag,
 .wf-entity-card__meta .wf-tag {
   padding: 1px 8px;
-  font-size: 10.5px;
+  font-size: var(--fs-caption);
   font-weight: 500;
   line-height: 1.6;
 }
@@ -120,7 +120,7 @@
    由调用方 `descriptionClassName` 控制）。 */
 .wf-entity-card__desc {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-body-sm);
   line-height: 1.6;
   color: var(--text-dim);
   overflow-wrap: anywhere;

@@ -33,7 +33,7 @@
   display: block;
   width: 100%;
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--text);
   background: var(--soft-solid);
   outline: none;
@@ -112,22 +112,22 @@
 .wf-input--sm {
   height: var(--control-h-sm);
   padding: 0 10px;
-  font-size: 12px;
+  font-size: var(--fs-body-sm);
 }
 .wf-input--lg {
   height: var(--control-h-lg);
   padding: 0 14px;
-  font-size: 14px;
+  font-size: var(--fs-title);
 }
 .wf-textarea--sm {
   min-height: 62px;
   padding: 8px 10px;
-  font-size: 12px;
+  font-size: var(--fs-body-sm);
 }
 .wf-textarea--lg {
   min-height: 108px;
   padding: 13px 14px;
-  font-size: 14px;
+  font-size: var(--fs-title);
 }
 
 /* ============================================================
@@ -199,7 +199,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--text);
   cursor: pointer;
   user-select: none;
@@ -293,7 +293,7 @@
 .wf-checkbox--sm,
 .wf-radio--sm {
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--fs-body-sm);
 }
 .wf-checkbox--sm .wf-checkbox__box,
 .wf-radio--sm .wf-radio__dot {
@@ -303,7 +303,7 @@
 .wf-checkbox--lg,
 .wf-radio--lg {
   gap: 9px;
-  font-size: 14px;
+  font-size: var(--fs-title);
 }
 .wf-checkbox--lg .wf-checkbox__box,
 .wf-radio--lg .wf-radio__dot {
@@ -329,7 +329,7 @@
      轨道最大仅 24px，不撑开会导致点击区域小于同排控件。 */
   min-height: var(--control-h-md);
   gap: 9px;
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--text);
   cursor: pointer;
   user-select: none;
@@ -406,7 +406,7 @@
 .wf-switch--sm {
   min-height: var(--control-h-sm);
   gap: 7px;
-  font-size: 12px;
+  font-size: var(--fs-body-sm);
 }
 .wf-switch--sm .wf-switch__track {
   width: 30px;
@@ -422,7 +422,7 @@
 .wf-switch--lg {
   min-height: var(--control-h-lg);
   gap: 10px;
-  font-size: 14px;
+  font-size: var(--fs-title);
 }
 .wf-switch--lg .wf-switch__track {
   width: 44px;

@@ -14,6 +14,20 @@
   --doc-line: 2;
   --doc-zoom: 1;
   --doc-letter: 0.01em;
+
+  /* 界面字号：5 档语义令牌（AGENTS §8.3）。界面组件与页面只引用令牌，
+     不再写字面量；展示档（20 / 22 / 28）不参与界面字阶。 */
+  --fs-micro: 10px; /* Badge / 草稿徽标 / 关闭图标字形 */
+  --fs-caption: 11px; /* 元信息 / 提示 / 计数 / 状态栏 */
+  --fs-body-sm: 12px; /* 紧凑正文 / 小号控件 */
+  --fs-body: 13px; /* 界面基准 / 输入 / 按钮 */
+  --fs-title: 14px; /* 卡片 / 详情 / 弹窗标题 */
+
+  /* 展示档：不参与界面字阶。 */
+  --fs-display-sm: 20px; /* 欢迎页标题 */
+  --fs-display-md: 22px; /* 视口占位标题 */
+  --fs-display-lg: 28px; /* 文档标题 */
+
   --r-xs: 4px;
   --r-lg: 8px;
   --r-window: 8px;

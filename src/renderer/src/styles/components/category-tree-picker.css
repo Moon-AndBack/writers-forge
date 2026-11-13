@@ -38,7 +38,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: var(--fs-body-sm);
   color: var(--danger);
 }
 
@@ -46,7 +46,7 @@
   padding: 0;
   border: none;
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--fs-body-sm);
   color: var(--brand);
   background: none;
   cursor: pointer;
@@ -59,6 +59,6 @@
 /* ---------- 加载占位 ---------- */
 .ctp-loading {
   padding: 6px 2px;
-  font-size: 12px;
+  font-size: var(--fs-body-sm);
   color: var(--text-dim);
 }

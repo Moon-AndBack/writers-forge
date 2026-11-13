@@ -12,7 +12,7 @@
 .wf-btn {
   --wf-btn-h: var(--control-h-md);
   --wf-btn-px: 16px;
-  --wf-btn-fs: 13px;
+  --wf-btn-fs: var(--fs-body);
 
   position: relative;
   display: inline-flex;
@@ -132,12 +132,12 @@
 .wf-btn--sm {
   --wf-btn-h: var(--control-h-sm);
   --wf-btn-px: 10px;
-  --wf-btn-fs: 12px;
+  --wf-btn-fs: var(--fs-body-sm);
 }
 .wf-btn--lg {
   --wf-btn-h: var(--control-h-lg);
   --wf-btn-px: 22px;
-  --wf-btn-fs: 14px;
+  --wf-btn-fs: var(--fs-title);
 }
 
 /* ---------- 图标按钮（方形） ---------- */
