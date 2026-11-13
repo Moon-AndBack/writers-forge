@@ -1,0 +1,235 @@
+/* ============================================================
+   Style Guide 展示页样式 · 展示零件（由 styleguide.css 拆分）
+   ------------------------------------------------------------------
+   令牌示例网格 / 字号 / 动效 / 控件高度 / 卡片 / 状态 / 进度 /
+   窗口 / 开关 / 死代码静态框。约束同 styleguide.css：只用令牌，
+   不新增裸色值、裸圆角、裸阴影、裸时长、裸 z-index，不使用 transform。
+   ============================================================ */
+
+/* ---------- 令牌：颜色 / 圆角 / 阴影 ---------- */
+.sg-token-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px 16px;
+}
+
+.sg-token {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sg-token__swatch {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-xs);
+  box-shadow: var(--panel-ring);
+}
+
+.sg-radius-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+}
+
+.sg-radius-item,
+.sg-shadow-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.sg-radius {
+  width: 64px;
+  height: 64px;
+  background: var(--brand);
+}
+
+.sg-shadow-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 8px 4px 16px;
+}
+
+.sg-shadow {
+  width: 96px;
+  height: 56px;
+  border-radius: var(--r-lg);
+  background: var(--control-on-soft);
+}
+
+/* ---------- 令牌：字号 / 动效 / 高度 ---------- */
+.sg-type-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.sg-type-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.sg-type-row:last-child {
+  border-bottom: 0;
+}
+
+.sg-type__value {
+  flex: none;
+  min-width: 96px;
+  text-align: center;
+}
+
+.sg-motion-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.sg-motion {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 140px;
+}
+
+.sg-motion__sample {
+  display: block;
+  height: 40px;
+  border-radius: var(--r-xs);
+  background: var(--soft-solid);
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.sg-motion__sample:hover {
+  background: var(--brand);
+}
+
+.sg-motion--base .sg-motion__sample {
+  transition-duration: var(--dur-base);
+}
+
+.sg-motion--slow .sg-motion__sample {
+  transition-duration: var(--dur-slow);
+}
+
+.sg-motion__sample--out {
+  transition-timing-function: var(--ease-out);
+}
+
+.sg-height-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sg-height-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.sg-height-bar {
+  flex: none;
+  width: 120px;
+  background: var(--brand);
+  border-radius: var(--r-xs);
+}
+
+/* ---------- 卡片 / 状态 ---------- */
+.sg-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.sg-card-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-dim);
+}
+
+.sg-entity-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sg-state-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.sg-state-box {
+  overflow: hidden;
+  background: var(--soft-solid);
+  border-radius: var(--r-lg);
+}
+
+.sg-state-box--center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+}
+
+/* ---------- 进度条 / 窗口 / 开关 ---------- */
+.sg-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sg-progress-row__label {
+  flex: none;
+  width: 40px;
+  text-align: center;
+}
+
+.sg-progress-cell {
+  flex: 1;
+  min-width: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sg-window-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sg-switch__label {
+  width: 34px;
+  text-align: center;
+}
+
+/* ---------- 死代码：Divider / Drawer 静态框 ---------- */
+.sg-divider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+}
+
+.sg-drawer-frame {
+  position: relative;
+  height: 280px;
+  overflow: hidden;
+  background: var(--soft-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
