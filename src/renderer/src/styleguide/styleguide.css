@@ -7,10 +7,13 @@
          → demo(--pane) → 控件（组件自身令牌）。
    ============================================================ */
 
+/* 展示页为独立入口（styleguide.html），此处的根级规则只作用于本页：
+   锁死文档高度并禁止 html / body 滚动，全部滚动交给 .sg-content。 */
 html,
 body,
 #root {
   height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -20,7 +23,7 @@ body {
 .sg-root {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
@@ -109,11 +112,14 @@ body {
   white-space: nowrap;
 }
 
-/* ---------- 主体：导航 + 内容（内容区独立滚动，不用 sticky / fixed） ---------- */
+/* ---------- 主体：导航 + 内容（内容区独立滚动，不用 sticky / fixed） ----------
+   min-height: 0 让 flex 子项可收缩；overflow: hidden 阻断列内溢出传到外层，
+   确保 .sg-content 是页面唯一的滚动容器。 */
 .sg-main {
   flex: 1;
   min-height: 0;
   display: flex;
+  overflow: hidden;
 }
 
 .sg-nav {
