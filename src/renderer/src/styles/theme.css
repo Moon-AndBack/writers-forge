@@ -3,7 +3,6 @@
    来源：template/index.html 的 :root / html.dark / html.sage / html.honey
    切换：document.documentElement.dataset.theme = 'light' | 'dark' | 'sage' | 'honey'
    变量名沿用模板原始命名（仅把 --desk-3 的混合大小写规范为小写）。
-   文件末尾「兼容层」令牌供既有 global.css / pages 使用，映射见任务报告。
    ============================================================ */
 
 /* ---------- 主题无关令牌 ---------- */
@@ -169,10 +168,6 @@
   /* 浮层遮罩（Modal / Drawer 通用）：纯黑固定浓度，明暗同值；
      组件侧一律引用 --overlay-mask，不再硬编码 rgba。 */
   --overlay-mask: rgba(0, 0, 0, 0.32);
-
-  /* 兼容层：既有 global.css / pages 的历史令牌 */
-  --bg: #f7f7f8;
-  --fg: #1f2328;
 }
 
 /* ---------- 暗色 ---------- */
@@ -241,9 +236,6 @@
      提到 30%（#8b7ff0 30% 混 --pane 约 #403d5e，对面板底对比约 1.59:1，
      浅色主题同为 1.38:1 量级观感）。 */
   --selection-bg: color-mix(in srgb, var(--brand) 30%, transparent);
-
-  --bg: #1a1c26;
-  --fg: #ffffff;
 }
 
 /* ---------- 浅绿 ---------- */
@@ -302,9 +294,6 @@
   --sh-popup: 0 -4px 20px rgba(20, 50, 30, 0.1), 0 4px 16px rgba(20, 50, 30, 0.12);
   --sh-float: 0 12px 32px -8px rgba(20, 50, 30, 0.22), 0 4px 12px rgba(20, 50, 30, 0.08);
   --panel-ring: 0 0 0 1px rgba(30, 60, 40, 0.06);
-
-  --bg: #dbe9dc;
-  --fg: #1a2a1e;
 }
 
 /* ---------- 浅黄 ---------- */
@@ -367,7 +356,4 @@
   /* 文本选区（::selection）：品牌 #c99426 与米色面板底明度接近，22% 混出近奶油色、
      边界偏弱；提到 28%（约 #f0e0be，对面板底对比约 1.30:1）后暖黄选区清晰可辨。 */
   --selection-bg: color-mix(in srgb, var(--brand) 28%, transparent);
-
-  --bg: #ece3cd;
-  --fg: #2b2415;
 }

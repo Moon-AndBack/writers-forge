@@ -1,4 +1,4 @@
-/* 主题令牌已归并至 styles/theme.css（--bg/--fg 等）；
+/* 主题令牌统一在 styles/theme.css 定义；
    本文件仅保留既有组件 / 布局样式。 */
 
 * {
@@ -7,8 +7,8 @@
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--desk-1);
+  color: var(--text);
 }
 
 .app {

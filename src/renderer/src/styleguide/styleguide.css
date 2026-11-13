@@ -3,7 +3,7 @@
    ------------------------------------------------------------------
    约束：颜色 / 字号 / 圆角 / 阴影 / 动效时长 / 缓动一律取 styles/theme.css 令牌；
    本文件不新增裸色值、裸圆角、裸阴影、裸时长、裸 z-index，也不使用 transform。
-   层级：.sg-root(--bg) → header / nav / content(--pane) → section(--soft-solid)
+   层级：.sg-root(--desk-1) → header / nav / content(--pane) → section(--soft-solid)
          → demo(--pane) → 控件（组件自身令牌）。
    ============================================================ */
 
@@ -17,7 +17,7 @@ body,
 }
 
 body {
-  background: var(--bg);
+  background: var(--desk-1);
 }
 
 .sg-root {
@@ -25,7 +25,7 @@ body {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: var(--bg);
+  background: var(--desk-1);
   color: var(--text);
 }
 

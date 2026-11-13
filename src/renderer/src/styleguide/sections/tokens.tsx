@@ -23,7 +23,7 @@ const COLOR_GROUPS: readonly ColorGroup[] = [
       '--desk-glow-3'
     ]
   },
-  { title: '面板', tokens: ['--pane', '--bg', '--fg'] },
+  { title: '面板', tokens: ['--pane'] },
   {
     title: '交互表面',
     tokens: ['--soft', '--soft-solid', '--soft-hover-solid', '--soft-press-solid', '--line']

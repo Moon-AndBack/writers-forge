@@ -25,7 +25,7 @@
   background: color-mix(in srgb, var(--desk-solid) var(--desk-solid-alpha), transparent);
 }
 
-/* 材质态下把 body 画布底置透明：否则 body 的不透明 --bg 会垫在 .shell（@70%）
+/* 材质态下把 body 画布底置透明：否则 body 的不透明背景会垫在 .shell（@70%）
    之后，挡住 DWM Acrylic。仅清 body / 画布底，面板等组件不受影响。 */
 [data-material='acrylic'] body {
   background: transparent;
