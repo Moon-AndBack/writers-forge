@@ -59,7 +59,7 @@
   height: 9px;
   /* 功能性 transform：展开旋转 90°，与左栏 `.vol-arrow` 同口径。
      减动效由 base.css 的 prefers-reduced-motion 全局兜底。 */
-  transition: transform var(--dur-base) var(--ease);
+  transition: transform var(--dur-slow) var(--ease);
 }
 
 .trash-row-arrow[aria-expanded='true'] svg {

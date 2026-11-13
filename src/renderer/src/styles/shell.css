@@ -186,7 +186,7 @@ body,
    减动效由 base.css 的 prefers-reduced-motion 全局兜底压到 0.01ms，此处不重复
    写守卫（避免与 `*:not(...)` 压制规则产生层叠冲突）。 */
 .app-viewport > * {
-  animation: wf-enter-fade var(--dur-base) var(--ease-out) both;
+  animation: wf-enter-fade var(--dur-slow) var(--ease-out) both;
 }
 
 .viewport-placeholder {
@@ -224,7 +224,7 @@ body,
    但遵循本项目「组件填充不透明」约定：
    - 胶囊 / 活动栏 / 按钮底色一律取 --pane / --soft*-solid 等不透明色，
      不使用 rgba(...) 半透明底，也不叠加 backdrop-filter；
-   - 阴影 / 描边沿用主题令牌（--sh-sm / --sh-popup / --panel-ring）。
+   - 阴影 / 描边沿用主题令牌（--sh-sm / --panel-ring）。
    两态由 body.act-pinned 驱动：悬浮态靠 .is-shown 展开，固定态常驻竖条。
    ★唯一特例（经用户确认）：**仅固定态** .activitybar 用半透明底 +
      backdrop-filter 轻微磨砂（见下方 body.act-pinned .activitybar）；
@@ -306,7 +306,7 @@ body,
   padding: 6px;
   border-radius: var(--r-lg);
   background: var(--pane);
-  box-shadow: var(--sh-popup), var(--panel-ring);
+  box-shadow: var(--sh-sm), var(--panel-ring);
   z-index: 100;
   transform: translate(-120%, -50%);
   opacity: 0;

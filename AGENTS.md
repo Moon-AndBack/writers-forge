@@ -115,7 +115,7 @@ src/
 
 ### 8.2 表面层级
 
-- **MUST** 按五层组织：L0 桌面 `.shell`（`--desk-*`）→ L1 栏 / 编辑区（`--pane`）→ L2 分区（`--soft-solid`，内衬 6px，圆角 `--r-lg`）→ L3 卡片（`--soft-solid`，内衬 14×16，`--r-lg`，`--sh-xs` / `--sh-sm`）→ L4 控件 / 只读块（`--control-on-soft` + `--control-on-soft-line` 内描边，只读块 10×12、输入类 9×12）。浮层独立于五层，用 `--pane` + `--sh-float` / `--sh-popup`。
+- **MUST** 按五层组织：L0 桌面 `.shell`（`--desk-*`）→ L1 栏 / 编辑区（`--pane`）→ L2 分区（`--soft-solid`，内衬 6px，圆角 `--r-lg`）→ L3 卡片（`--soft-solid`，内衬 14×16，`--r-lg`，`--sh-xs` / `--sh-sm`）→ L4 控件 / 只读块（`--control-on-soft` + `--control-on-soft-line` 内描边，只读块 10×12、输入类 9×12）。浮层独立于五层，用 `--pane` + `--sh-sm`。
 - **MUST** 同色软底不得再套同色软底卡；需要再分层时改用 `--control-on-soft`、`--pane`，或仅用描边 / 间距分区。
 - **MUST** 内衬固定：栏内衬 8px、分区内衬 6px、卡片 14×16px、弹窗 body 4×20×16px（上 / 左右 / 下）；不得在同类容器另立内衬。
 - **SHOULD** 层级优先用底色 + 间距 / 描边表达，不用阴影堆叠制造伪层级。
@@ -131,8 +131,8 @@ src/
 ### 8.4 控件与间距
 
 - **MUST** 同一行（工具栏、筛选栏、表单行、弹窗底栏）的控件必须等高；以最高控件对齐，不得用 `align-items: center` 掩盖高度差。
-- **MUST** 控件高度统一为 **36px**（`--control-h-md`）；`--control-h-sm` / `--control-h-lg` 保留变量名为兼容，值同为 36。状态栏控件 24、标题栏 42 为 chrome 独立域，不受此约束。
-- **MUST** chrome 尺寸域独立于控件档：状态栏控件 **24** / 活动栏按钮 **36** / 标题栏 **42**（px）。chrome 是界面框架，不受控件 36 约束；新增 chrome 控件必须落在对应域内。
+- **MUST** 控件高度统一为 **32px**（`--control-h-md`）；`--control-h-sm` / `--control-h-lg` 保留变量名为兼容，值同为 32。状态栏控件 24、标题栏 42 为 chrome 独立域，不受此约束。
+- **MUST** chrome 尺寸域独立于控件档：状态栏控件 **24** / 活动栏按钮 **36** / 标题栏 **42**（px）。chrome 是界面框架，不受控件 32 约束；新增 chrome 控件必须落在对应域内。
 - **MUST** 禁止再写局部控件高度魔法值（如 `--cw-control-h`、`--ai-ctl-h`）；统一由组件尺寸档位或 `--wf-*` 共享变量提供。
 - **MUST** 间距以 4px 为基准网格，默认节奏 8px；允许的既有半档仅限分区内衬 6、列表行 10、卡片内衬 14×16；新增间距优先 4 / 8 / 12 / 16 / 20 / 24 / 32。
 
@@ -164,7 +164,7 @@ src/
 - **MUST** 卡片（书籍卡、主题卡及今后新增的卡片类组件）在鼠标移入 / hover 时**不得**使用位移或缩放（`transform: translate / scale / rotate` 等）；hover 反馈仅允许**颜色 / 描边 / 阴影**变化。
 - **MUST** 卡片 hover 统一采用**边缘光晕**：`0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent)` + `0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent)` + `var(--sh-sm)` + `var(--panel-ring)`；选中加强为 `0 0 0 2px color-mix(in srgb, var(--brand) 30%, transparent)` + `0 0 26px -8px color-mix(in srgb, var(--brand) 55%, transparent)` + 基础阴影。
 - **MUST** 卡片 hover 的 `transition` 只过渡 `box-shadow` / `border-color` / `background` / `color` 等属性，不得包含 `transform`。
-- **MUST** 动效时长只用 `--dur-fast` / `--dur-base` / `--dur-slow`，缓动只用 `--ease` / `--ease-out`；禁止裸 `0.1s` / `0.2s` / `180ms` 等字面量。
+- **MUST** 动效时长只用 `--dur-fast` / `--dur-slow`（反馈 / 位移与进场），缓动只用 `--ease` / `--ease-out`；禁止裸 `0.1s` / `0.2s` / `180ms` 等字面量。
 - **MUST** 功能性 `transform`（Modal 进出场、折叠箭头、Switch 滑块、按钮按压）允许，但必须包在 `@media (prefers-reduced-motion: reduce)` 的关闭分支内。
 - **SHOULD** 入场位移统一 8px（`wf-enter-up` / `wf-exit-down`），不得另造 6px / 10px 等位移量。
 
@@ -191,7 +191,7 @@ src/
   11. 用空态冒充错误，或错误态替换已有内容；
   12. 覆盖共享组件样式而不写 `/* 例外：… */` 注释与登记。
 
-- **MUST** 交付前逐条自检：① 颜色 / 圆角 / 阴影 / 时长 / 缓动全部走令牌；② 控件高度统一 36；③ 同一行控件等高；④ 列表行内衬与选中态符合 §8.5；⑤ 三态顺序 loading → error → empty；⑥ 卡片 hover 无 `transform`；⑦ 对话框走 `Modal + Window` 且浮层 z 层级用令牌；⑧ 新增字面量例外已登记；⑨ 新增 / 修改文案已走 `t()`（§10）；⑩ 组件复用而非复制（§9）。
+- **MUST** 交付前逐条自检：① 颜色 / 圆角 / 阴影 / 时长 / 缓动全部走令牌；② 控件高度统一 32；③ 同一行控件等高；④ 列表行内衬与选中态符合 §8.5；⑤ 三态顺序 loading → error → empty；⑥ 卡片 hover 无 `transform`；⑦ 对话框走 `Modal + Window` 且浮层 z 层级用令牌；⑧ 新增字面量例外已登记；⑨ 新增 / 修改文案已走 `t()`（§10）；⑩ 组件复用而非复制（§9）。
 
 ## 9. 组件通用化约束
 

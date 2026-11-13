@@ -21,7 +21,7 @@
   text-align: left;
   color: var(--text);
   background: var(--soft-solid);
-  /* 边框改由内阴影表达：不占盒高，36px 全部用于内容区；与 form.css 的
+  /* 边框改由内阴影表达：不占盒高，32px 全部用于内容区；与 form.css 的
      `.wf-input` 同口径，聚焦环与内描边合并为同一条 box-shadow。 */
   border: 0;
   box-shadow: inset 0 0 0 1px transparent;
@@ -107,7 +107,7 @@
   background: var(--pane);
   border-radius: var(--r-lg);
   box-shadow:
-    var(--sh-popup),
+    var(--sh-sm),
     0 0 0 1px var(--line);
   animation: wf-select-in 0.14s var(--ease) both;
 }

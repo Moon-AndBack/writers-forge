@@ -5,10 +5,10 @@
         .field-seg button（表单单选）。
    命名：根类 .wf-seg；项 .wf-seg__item；激活 .is-active。
    颜色一律取 theme.css 令牌。
-   尺寸：外框高 36（sm 同为 36），横向轨道内衬 3px / 2px；纵向内衬
+   尺寸：外框高 32（sm 同为 32），横向轨道内衬 3px / 2px；纵向内衬
         不再由容器 padding 承担，改由 .wf-seg__thumb 按 --wf-seg-inset-y
         计算高度与位移，按钮（__item）用 height: 100% 撑满控件高，
-        可点击区与同排 36px 控件一致。
+        可点击区与同排 32px 控件一致。
    ============================================================ */
 
 .wf-seg {
@@ -34,7 +34,7 @@
   left: 0;
   top: 0;
   width: var(--wf-seg-w, 0px);
-  /* 实测高为 item 的 36；减掉纵向内衬后仍是原滑块高（md 30 / sm 32）。 */
+  /* 实测高为 item 的 32；减掉纵向内衬后为滑块高（md 26 / sm 28）。 */
   height: calc(var(--wf-seg-h, 0px) - 2 * var(--wf-seg-inset-y, 3px));
   transform: translate(
     var(--wf-seg-x, 0px),
@@ -55,9 +55,9 @@
 
 .wf-seg[data-thumb-ready='true'] .wf-seg__thumb {
   transition:
-    transform var(--dur-base) var(--ease),
-    width var(--dur-base) var(--ease),
-    height var(--dur-base) var(--ease);
+    transform var(--dur-slow) var(--ease),
+    width var(--dur-slow) var(--ease),
+    height var(--dur-slow) var(--ease);
 }
 
 .wf-seg__item {

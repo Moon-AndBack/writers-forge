@@ -73,7 +73,7 @@ export function FormsSection() {
 
       <Demo
         name="Input · sm / md / lg"
-        note="三档高度均为 36px。"
+        note="三档高度均为 32px。"
         classes="wf-input--sm / wf-input--lg"
       >
         <div className="sg-stack">

@@ -3,7 +3,7 @@
    ------------------------------------------------------------------
    替换浏览器原生 title 气泡（原生样式由系统绘制、方角、不可控）。
    视觉与 theme-switcher.css 的 .ts-popover / statusbar-widgets.css 的
-   .st-popup 一脉：--pane 不透明底 + var(--sh-popup), 0 0 0 1px var(--line)
+   .st-popup 一脉：--pane 不透明底 + var(--sh-sm), 0 0 0 1px var(--line)
    阴影描边（单环）+ 小圆角 --r-lg + 小字号。
    颜色一律取 theme.css 令牌，四主题（light / dark / sage / honey）自适应。
    定位：由 useTooltip 以 fixed + 视口避让计算后内联 left/top；
@@ -21,7 +21,7 @@
   background: var(--pane);
   border-radius: var(--r-lg);
   box-shadow:
-    var(--sh-popup),
+    var(--sh-sm),
     0 0 0 1px var(--line);
 
   font-size: var(--fs-micro);
@@ -57,7 +57,7 @@
   background: var(--pane);
   border-radius: var(--r-lg);
   box-shadow:
-    var(--sh-popup),
+    var(--sh-sm),
     0 0 0 1px var(--line);
 
   font-size: var(--fs-micro);

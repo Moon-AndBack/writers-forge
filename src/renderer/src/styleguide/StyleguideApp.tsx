@@ -69,7 +69,7 @@ export function StyleguideApp() {
             title="按钮与操作"
             description={
               <>
-                所有交互控件高度统一 <strong>36px</strong>（sm / md / lg 只差
+                所有交互控件高度统一 <strong>32px</strong>（sm / md / lg 只差
                 padding、字号与图标尺寸）。 hover / focus 为真实交互态，直接悬停或 Tab 聚焦查看。
               </>
             }

@@ -73,7 +73,7 @@ span.entity-highlight:hover {
 }
 
 /* ---------- 悬停弹窗（fixed 定位，风格对齐 overlay.css 的浮层体系：
-   --pane 面板 + --sh-popup 阴影 + 0 0 0 1px var(--line) 描边（单环）+ --r-lg 圆角） ----------
+   --pane 面板 + --sh-sm 阴影 + 0 0 0 1px var(--line) 描边（单环）+ --r-lg 圆角） ----------
    层级：高于活动栏（100）/ 状态栏弹窗（900）/ 格式浮层（940），低于自绘 tooltip（990）
    与模态（1000）——浮窗由 body 承载，与 .shell 内元素同处根层叠上下文，故须显式越过 100。 */
 .entity-card {
@@ -89,7 +89,7 @@ span.entity-highlight:hover {
   background: var(--pane);
   border-radius: var(--r-lg);
   box-shadow:
-    var(--sh-popup),
+    var(--sh-sm),
     0 0 0 1px var(--line);
   font-size: var(--fs-body);
   line-height: 1.6;
@@ -172,7 +172,7 @@ span.entity-highlight:hover {
   background: var(--pane);
   border-radius: var(--r-lg);
   box-shadow:
-    var(--sh-popup),
+    var(--sh-sm),
     0 0 0 1px var(--line);
   animation: entity-card-in 0.14s var(--ease) both;
 }

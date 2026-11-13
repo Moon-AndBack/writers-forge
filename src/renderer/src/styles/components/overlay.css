@@ -1,8 +1,8 @@
 /* ============================================================
    通用组件样式：浮层 / 导航（下拉菜单、侧边抽屉）
    设计语言参照 template/index.html：
-   - 菜单：.st-popup / .st-popup-item / .check（--pane + --sh-popup + --r-lg）
-   - 抽屉：.book-drawer + .drawer-mask（--pane + --sh-float + --overlay-mask + blur(2px)）
+   - 菜单：.st-popup / .st-popup-item / .check（--pane + --sh-sm + --r-lg）
+   - 抽屉：.book-drawer + .drawer-mask（--pane + --sh-sm + --overlay-mask + blur(2px)）
    颜色全部取自 theme.css 令牌；品牌色半透明底用 color-mix 从变量派生，
    不使用 html.sage / html.honey，也不硬编码品牌色，保证 4 主题通用。
    前缀 wf-：根 wf-dropdown / wf-drawer；元素 __*；变体 --*；状态 is-*。
@@ -37,7 +37,7 @@
   background: var(--pane);
   border-radius: var(--r-lg);
   box-shadow:
-    var(--sh-popup),
+    var(--sh-sm),
     0 0 0 1px var(--line);
   animation: wf-dropdown-in 0.14s var(--ease) both;
 }
@@ -161,7 +161,7 @@
   overflow: hidden;
   background: var(--pane);
   box-shadow:
-    var(--sh-float),
+    var(--sh-sm),
     0 0 0 1px var(--line);
 }
 

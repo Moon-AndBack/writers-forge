@@ -33,23 +33,23 @@ const FOCUSABLE_SELECTOR = [
 
 /* ---------- 退场动画（延后卸载） ----------
    关闭不再瞬间卸载：`open` 变 false 的那次提交仍把面板留在 DOM 里并挂 `is-closing`，
-   由 `surface.css` 播放一个 --dur-base 的退场动画，到期才真正卸载。
+   由 `surface.css` 播放一个 --dur-slow 的退场动画，到期才真正卸载。
    关键约束：弹窗栈 / 背景 inert / body 滚动锁仍由下方主 effect 的 cleanup 在
    **同一提交内**撤销，不等动画结束 —— 视觉上还在淡出，逻辑上已经「关闭」，
    背景不会因为退场而多锁一个动画时长。 */
-const EXIT_FALLBACK_MS = 180 // 与 theme.css 的 --dur-base 一致，仅在令牌读不到时兜底
+const EXIT_FALLBACK_MS = 240 // 与 theme.css 的 --dur-slow 一致，仅在令牌读不到时兜底
 
-/** 退场时长：优先取 :root 的 --dur-base；系统开启「减少动态效果」时返回 0（不播放）。 */
+/** 退场时长：优先取 :root 的 --dur-slow；系统开启「减少动态效果」时返回 0（不播放）。 */
 function resolveExitDuration(): number {
   if (typeof window === 'undefined' || typeof document === 'undefined') return 0
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return 0
   const raw = window
     .getComputedStyle(document.documentElement)
-    .getPropertyValue('--dur-base')
+    .getPropertyValue('--dur-slow')
     .trim()
   const value = Number.parseFloat(raw)
   if (!Number.isFinite(value) || value <= 0) return EXIT_FALLBACK_MS
-  // 令牌以 ms 书写（--dur-base: 180ms）；顺带兼容 s 的写法。
+  // 令牌以 ms 书写（--dur-slow: 240ms）；顺带兼容 s 的写法。
   return raw.endsWith('ms') ? value : value * 1000
 }
 
@@ -210,7 +210,7 @@ export function Modal({
   const [prevOpen, setPrevOpen] = useState(open)
   /** 最近一次「打开态」的内容快照：退场期间父组件通常已把数据置空
       （如 useConfirm 关闭时把 pending 置 null），若照常渲染，面板会在淡出的
-      一个 --dur-base 里先塌成空壳。故退场时改用快照渲染，画面保持关闭那一刻的样子。 */
+      一个 --dur-slow 里先塌成空壳。故退场时改用快照渲染，画面保持关闭那一刻的样子。 */
   const [snapshot, setSnapshot] = useState<{
     title?: ReactNode
     footer?: ReactNode

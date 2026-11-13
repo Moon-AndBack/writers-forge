@@ -141,9 +141,9 @@
    两者各挂一次、用 `:is()` 合并覆盖；**不加包裹层**（会破坏 `flex: 1` 撑高链）。
    作用域取 `.rp-body--no-head`：它只出现在五域右栏（writer.css），无需枚举五个
    `data-view`，也不会误伤中栏卡片 / 弹窗里的同名节点。
-   时长 --dur-base、缓动 --ease（近线性；--ease-out 前段过快，肉眼等同瞬切）；
+   时长 --dur-slow、缓动 --ease（近线性；--ease-out 前段过快，肉眼等同瞬切）；
    fill-mode 取 backwards，动画结束不残留 transform / opacity。
    减动效由 base.css 的 prefers-reduced-motion 全局兜底，此处不重复写守卫。 */
 .rp-body--no-head > :is(.dossier-detail--split, .dossier-save-bar) {
-  animation: wf-enter-up var(--dur-base) var(--ease) backwards;
+  animation: wf-enter-up var(--dur-slow) var(--ease) backwards;
 }

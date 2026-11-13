@@ -34,9 +34,9 @@
 
 /* 剧情：切换场景时表单随 `key={scene.id}` 重建 → 挂动画即重播。
     只命中可编辑根（时间线只读详情复用 `.plot-editor` 类，故必须限定 data-view）。
-    时长 / 缓动 / fill-mode 口径同设定档案右栏（--dur-base + --ease + backwards）。 */
+    时长 / 缓动 / fill-mode 口径同设定档案右栏（--dur-slow + --ease + backwards）。 */
 .rp-view[data-view='plot'] .rp-body > .plot-editor {
-  animation: wf-enter-up var(--dur-base) var(--ease) backwards;
+  animation: wf-enter-up var(--dur-slow) var(--ease) backwards;
 }
 
 /* 表单字段分组：本批起同时承载正文卡底座（仅 plot 视图追加底色 / 描边 / 圆角，

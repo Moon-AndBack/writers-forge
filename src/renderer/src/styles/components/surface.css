@@ -24,7 +24,7 @@
   box-shadow: var(--sh-sm);
   /* 只过渡投影（hover / active 光晕）；底色 `--soft-solid` 仅随主题变化，
      不加过渡——主题切换整体瞬变，见 theme.css「主题切换不做过渡」。 */
-  transition: box-shadow var(--dur-base) var(--ease);
+  transition: box-shadow var(--dur-fast) var(--ease);
 }
 
 .wf-card--soft {
@@ -43,8 +43,8 @@
    底色过渡只在此声明，避免其余卡片因主题切换而淡入淡出。 */
 .wf-card--soft.wf-card--interactive {
   transition:
-    background var(--dur-base) var(--ease),
-    box-shadow var(--dur-base) var(--ease);
+    background var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
 }
 
 /* hover：不位移，改为品牌色边缘光晕（描边环 + 外发光），与书籍卡一致 */

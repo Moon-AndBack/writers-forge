@@ -26,7 +26,7 @@ export interface ToastController {
  *
  * 说明：本项目其余 UI 组件均为「组件 + props」形态，此处出于调用便利与
  * 与 `pages/writer/chapters/useConfirm` 一致，采用 hook 形态；样式与
- * `surface.css` 的 Modal / 卡片同源（`--pane` 底 + `--sh-float` + 描边环）。
+ * `surface.css` 的 Modal / 卡片同源（`--pane` 底 + `--sh-sm` + 描边环）。
  * 浮层经 `createPortal` 挂到 `document.body`，`document` 不存在时返回 null；
  * 淡入淡出仅用 opacity，不做位移 / 缩放。
  */

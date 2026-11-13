@@ -79,7 +79,7 @@ export function ButtonsSection() {
 
       <Demo
         name="Button · sm / md / lg"
-        note="三档高度同为 36px，只差内边距、字号与图标尺寸。"
+        note="三档高度同为 32px，只差内边距、字号与图标尺寸。"
         classes="wf-btn--sm / wf-btn--lg"
       >
         <div className="sg-row">

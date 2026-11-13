@@ -9,12 +9,12 @@
    ============================================================ */
 
 /* ---------- 活动栏模块筛选浮层（五个实体模块图标 hover 触发） ----------
-   视觉与 `.wf-tooltip` 同源（--pane 底 + --sh-popup + 单环描边），圆角跟三栏一致
+   视觉与 `.wf-tooltip` 同源（--pane 底 + --sh-sm + 单环描边），圆角跟三栏一致
    （`.sidepane` / `.editor-pane` / `.rightpane` 均用 `--r-lg`）；定位由 HoverPopupShell
    以 fixed + 视口避让内联写入，此处只管外观。层级低于 tooltip（990），高于内容与下拉（60）。
    宽度 300px：第一行要同时放下模块名 + 搜索框 + 圆形按钮，第二行分类为横向 chip，
    宽度自适应、超出自动换行（详见 `.act-filter__list`）。
-   `--filter-input-h` 是搜索框高度真源，圆形按钮尺寸同取控件 36 档。 */
+   `--filter-input-h` 是搜索框高度真源，圆形按钮尺寸同取控件 32 档。 */
 .act-filter {
   --filter-input-h: var(--control-h-md);
   position: fixed;
@@ -30,7 +30,7 @@
   background: var(--pane);
   border-radius: var(--r-lg);
   box-shadow:
-    var(--sh-popup),
+    var(--sh-sm),
     0 0 0 1px var(--line);
   animation: act-filter-in var(--dur-fast) var(--ease) both;
 }
@@ -47,7 +47,7 @@
 }
 
 /* 第一行：模块名 + 搜索框 + 圆形按钮。模块名不压缩，输入框占满剩余宽度。
-   三者同取 `--filter-input-h`（36），按钮与输入框等高，行高由控件档位直接决定。 */
+   三者同取 `--filter-input-h`（32），按钮与输入框等高，行高由控件档位直接决定。 */
 .act-filter__headrow {
   display: flex;
   align-items: center;
@@ -88,7 +88,7 @@
   padding: 0 8px 0 10px;
 }
 
-/* 搜索提交按钮为圆形，直径与输入框同取控件 36 档。
+/* 搜索提交按钮为圆形，直径与输入框同取控件 32 档。
    点击 = 把输入框里的关键词落库并切到该模块（无障碍名 + title 走 i18n）。 */
 .act-filter__search-btn {
   flex: none;

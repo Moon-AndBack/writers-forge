@@ -99,27 +99,45 @@
   width: 140px;
 }
 
+/* 动效示例：滑块在轨道内平移，只对比时长 / 缓动（非颜色）。
+   示例页的位移是演示手段，不属「卡片 hover 不得 transform」的约束范围。 */
 .sg-motion__sample {
+  position: relative;
   display: block;
   height: 40px;
+  overflow: hidden;
   border-radius: var(--r-lg);
   background: var(--soft-solid);
-  transition: background var(--dur-fast) var(--ease);
 }
 
-.sg-motion__sample:hover {
+.sg-motion__sample::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-lg);
   background: var(--brand);
+  translate: 0 0;
+  transition: translate var(--dur-fast) var(--ease);
 }
 
-.sg-motion--base .sg-motion__sample {
-  transition-duration: var(--dur-base);
+.sg-motion:hover .sg-motion__sample::after {
+  translate: 100px 0;
 }
 
-.sg-motion--slow .sg-motion__sample {
+.sg-motion--slow .sg-motion__sample::after {
   transition-duration: var(--dur-slow);
 }
 
-.sg-motion__sample--out {
+/* 缓动对比：同为 slow 时长，--ease 对称起步、--ease-out 前段更快。 */
+.sg-motion--ease .sg-motion__sample::after,
+.sg-motion--ease-out .sg-motion__sample::after {
+  transition-duration: var(--dur-slow);
+}
+
+.sg-motion--ease-out .sg-motion__sample::after {
   transition-timing-function: var(--ease-out);
 }
 

@@ -34,7 +34,7 @@
 }
 
 /* ---------- 退场（`.is-closing`） ----------
-   由 `Modal` 在 `open` 变 false 的那次提交挂上，一个 --dur-base 之后才卸载。
+   由 `Modal` 在 `open` 变 false 的那次提交挂上，一个 --dur-slow 之后才卸载。
    遮罩淡出 + 面板沿进场路径回落，与 wf-fade / wf-pop 对称（keyframes 见 motion.css）。
    容器同时禁用指针事件：逻辑上弹窗已关闭，退场中的遮罩不应再截获点击
    —— 与改动前「关闭即背景可交互」的语义保持一致（pointer-events 可继承，
@@ -44,11 +44,11 @@
 }
 
 .wf-modal__mask.is-closing {
-  animation: wf-fade-out var(--dur-base) var(--ease-out) both;
+  animation: wf-fade-out var(--dur-slow) var(--ease-out) both;
 }
 
 .wf-modal__panel.is-closing {
-  animation: wf-pop-out var(--dur-base) var(--ease-out) both;
+  animation: wf-pop-out var(--dur-slow) var(--ease-out) both;
 }
 
 /* 遮罩避开标题栏：仅供 `coverTitlebar={false}` 的弹窗（设置弹窗），

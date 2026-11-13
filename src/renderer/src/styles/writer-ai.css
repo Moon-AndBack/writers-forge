@@ -113,7 +113,7 @@
 }
 
 /* 下拉占满剩余宽度；标签单行省略（只显示会话名，不带时间后缀）。
-   行内 Select / IconButton / Button 均为 sm 档（36px），无需局部钉高。 */
+   行内 Select / IconButton / Button 均为 sm 档（32px），无需局部钉高。 */
 .ai-panel__sessionbar > .wf-select {
   flex: 1 1 auto;
   width: auto;
@@ -219,7 +219,7 @@
 }
 
 /* 控件行：模型 / 功能 / 两个上下文切换 / 发送，窄栏下按行换行（顺序不变）。
-   行内控件全部走 sm 档（36px，--control-h-sm）：Select / Button 由组件统一
+   行内控件全部走 sm 档（32px，--control-h-sm）：Select / Button 由组件统一
    给出同高，本作用域不再写局部高度覆盖。 */
 .ai-panel__controls {
   display: flex;

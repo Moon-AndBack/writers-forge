@@ -55,10 +55,10 @@
   border: 1px solid transparent;
   border-radius: var(--r-lg);
   transition:
-    background var(--dur-base) var(--ease),
-    border-color var(--dur-base) var(--ease),
-    box-shadow var(--dur-base) var(--ease),
-    color var(--dur-base) var(--ease);
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
 .timeline-origin-head:hover {
@@ -213,7 +213,7 @@
    闪一下滚动条。时长 / 缓动 / fill-mode 口径同其它右栏详情卡。 */
 .rp-view[data-view='timeline'] .timeline-scene-head,
 .rp-view[data-view='timeline'] .timeline-scene-detail {
-  animation: wf-enter-fade var(--dur-base) var(--ease) backwards;
+  animation: wf-enter-fade var(--dur-slow) var(--ease) backwards;
 }
 
 /* ============================================================

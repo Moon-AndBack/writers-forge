@@ -73,7 +73,7 @@
 - **教学书种子须随功能同步**：新增功能或不兼容变更（数据结构、按钮位置 / 快捷键 / 流程变化）必须同步 `seedGuideBook/`（必要时含 `entitySeed.ts`），教学内容与实际交互不一致视同缺陷（§7.5）。
 - **DDL 变更须双写**：任何建表 / 改表都须同步 `src/main/database/diagnostics/expected.ts` 的结构清单与 [`specs/database/table-layers.md`](./specs/database/table-layers.md)，漏写会被结构自检判为问题。
 - **卡片 hover 禁用位移 / 缩放**：卡片类组件只允许颜色、描边、阴影变化，统一使用边缘光晕，`transition` 不得包含 `transform`（§8）。
-- **视觉系统按 §8 与 `design-language.md`**：颜色 / 圆角 / 阴影 / 时长 / 缓动只取 `theme.css` 令牌；控件高度统一 36；选中态、三态、浮层层级与例外登记按 [`ui/design-language.md`](./ui/design-language.md) 执行。
+- **视觉系统按 §8 与 `design-language.md`**：颜色 / 圆角 / 阴影 / 时长 / 缓动只取 `theme.css` 令牌；控件高度统一 32；选中态、三态、浮层层级与例外登记按 [`ui/design-language.md`](./ui/design-language.md) 执行。
 
 ## 常用命令
 

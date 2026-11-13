@@ -44,7 +44,7 @@ const COLOR_GROUPS: readonly ColorGroup[] = [
 ]
 
 const RADIUS_TOKENS = ['--r-lg', '--r-pill'] as const
-const SHADOW_TOKENS = ['--sh-xs', '--sh-sm', '--sh-popup', '--sh-float', '--panel-ring'] as const
+const SHADOW_TOKENS = ['--sh-xs', '--sh-sm', '--panel-ring'] as const
 
 /** 界面字号 3 档令牌（AGENTS §8.3）。 */
 const FONT_SIZES = [
@@ -61,12 +61,16 @@ const DISPLAY_FONT_SIZES = [
 
 const DURATIONS = [
   { token: '--dur-fast', className: 'sg-motion sg-motion--fast' },
-  { token: '--dur-base', className: 'sg-motion sg-motion--base' },
   { token: '--dur-slow', className: 'sg-motion sg-motion--slow' }
 ] as const
 
+const EASINGS = [
+  { token: '--ease', className: 'sg-motion sg-motion--ease' },
+  { token: '--ease-out', className: 'sg-motion sg-motion--ease-out' }
+] as const
+
 const HEIGHTS = [
-  { label: '控件统一档', value: 36, token: '--control-h-md' },
+  { label: '控件统一档', value: 32, token: '--control-h-md' },
   { label: '状态栏控件', value: 24, token: 'chrome · statusbar' },
   { label: '活动栏按钮', value: 36, token: 'chrome · activitybar' },
   { label: '标题栏', value: 42, token: 'chrome · titlebar' },
@@ -112,10 +116,7 @@ export function TokensSection() {
         </div>
       </Demo>
 
-      <Demo
-        name="阴影 · --sh-xs / --sh-sm / --sh-popup / --sh-float / --panel-ring"
-        classes="box-shadow"
-      >
+      <Demo name="阴影 · --sh-xs / --sh-sm / --panel-ring" classes="box-shadow">
         <div className="sg-shadow-grid">
           {SHADOW_TOKENS.map((token) => (
             <div key={token} className="sg-shadow-item">
@@ -156,9 +157,9 @@ export function TokensSection() {
       </Demo>
 
       <Demo
-        name="动效 · --dur-fast / --dur-base / --dur-slow + --ease / --ease-out"
-        note="悬停下方色块观察三种时长；缓动取 --ease（通用）/ --ease-out（进场）。"
-        classes="transition: background var(--dur-*) var(--ease)"
+        name="动效 · --dur-fast / --dur-slow + --ease / --ease-out"
+        note="悬停整组观察滑块位移：fast 120ms / slow 240ms；两个缓动项同为 240ms，对比对称 --ease 与快出 --ease-out 的中段速度。"
+        classes="transition: translate var(--dur-*) var(--ease*)"
       >
         <div className="sg-motion-grid">
           {DURATIONS.map((duration) => (
@@ -167,16 +168,18 @@ export function TokensSection() {
               <code className="sg-code">{duration.token}</code>
             </div>
           ))}
-          <div className="sg-motion sg-motion--fast">
-            <span className="sg-motion__sample sg-motion__sample--out" />
-            <code className="sg-code">--ease-out</code>
-          </div>
+          {EASINGS.map((easing) => (
+            <div key={easing.token} className={easing.className}>
+              <span className="sg-motion__sample" />
+              <code className="sg-code">{easing.token}</code>
+            </div>
+          ))}
         </div>
       </Demo>
 
       <Demo
-        name="控件高度 · 36 / 24 / 36 / 42 / 22 / 23"
-        note="控件统一 36；状态栏 24 / 活动栏 36 / 标题栏 42 属 chrome 独立域；行操作 22、Tag 23 为域内定值。"
+        name="控件高度 · 32 / 24 / 36 / 42 / 22 / 22"
+        note="控件统一 32；状态栏 24 / 活动栏 36 / 标题栏 42 属 chrome 独立域；行操作 22、Tag 22 为域内定值。"
         classes="height"
       >
         <div className="sg-height-list">

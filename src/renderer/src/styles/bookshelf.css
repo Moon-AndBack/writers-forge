@@ -158,7 +158,7 @@
    重排 / 筛选不重播：列表 key 取数据 id，元素未卸载则 animation 不会重启；
    仅新挂载的卡片（新增书籍、筛选后重新出现的书）会播放一次。 */
 .book-card {
-  animation: wf-enter-up var(--dur-base) var(--ease-out) backwards;
+  animation: wf-enter-up var(--dur-slow) var(--ease-out) backwards;
 }
 
 /* hover：不位移，改为品牌色边缘光晕（描边环 + 外发光），四主题随 --brand 适配 */

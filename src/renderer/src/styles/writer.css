@@ -184,7 +184,7 @@ body.is-resizing .splitter {
   transition:
     width var(--dur-slow) var(--ease),
     min-width var(--dur-slow) var(--ease),
-    opacity var(--dur-base) var(--ease),
+    opacity var(--dur-slow) var(--ease),
     margin var(--dur-slow) var(--ease);
 }
 
@@ -232,7 +232,7 @@ body.is-resizing .splitter {
   transition:
     width var(--dur-slow) var(--ease),
     min-width var(--dur-slow) var(--ease),
-    opacity var(--dur-base) var(--ease);
+    opacity var(--dur-slow) var(--ease);
 }
 
 .rightpane.is-hidden {

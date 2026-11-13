@@ -35,7 +35,7 @@
   /* 进场：卡片挂载时淡入 + 8px 上浮，取 motion.css 的 `wf-enter-up`。
      fill-mode 取 backwards：动画结束即交还常态声明，不残留 transform / opacity。
      重排不重播由调用方稳定 key 保证。 */
-  animation: wf-enter-up var(--dur-base) var(--ease-out) backwards;
+  animation: wf-enter-up var(--dur-slow) var(--ease-out) backwards;
 }
 
 /* 最大高度：通用光晕底座（`.wf-card--halo`）默认 240px，统一壳不设上限。

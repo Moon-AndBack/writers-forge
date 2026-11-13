@@ -41,13 +41,13 @@
   background: var(--pane);
   border-radius: var(--r-lg);
   box-shadow:
-    var(--sh-popup),
+    var(--sh-sm),
     0 0 0 1px var(--line);
   -webkit-app-region: no-drag;
   transform-origin: top left;
 }
 
-/* 进场：位移 + 缩放 + 淡入，时长取 --dur-base
+/* 进场：位移 + 缩放 + 淡入，时长取 --dur-slow
    （原 0.12s 纯 opacity 太快、无方向感）。
 
    只在 `.is-placed`（定位完成、摆脱 visibility: hidden）后启动：FormatPopover 的
@@ -58,7 +58,7 @@
    幅度刻意小于模态的 `wf-pop`（translateY 8px / scale 0.98）：浮层比模态更"轻"。
    上翻（贴触发器上方）时位移方向略反，4px 幅度下不可感知，不做分支。 */
 .wf-format-pop.is-placed {
-  animation: wf-format-pop-in var(--dur-base) var(--ease-out) backwards;
+  animation: wf-format-pop-in var(--dur-slow) var(--ease-out) backwards;
 }
 
 @keyframes wf-format-pop-in {

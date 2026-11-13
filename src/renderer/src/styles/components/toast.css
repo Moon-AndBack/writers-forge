@@ -1,6 +1,6 @@
 /* ============================================================
    轻量 Toast 提示（全局浮层）
-   视觉对齐 surface.css 的 Modal / 卡片：--pane 底 + --sh-float + 描边环，
+   视觉对齐 surface.css 的 Modal / 卡片：--pane 底 + --sh-sm + 描边环，
    四主题自动适配。固定底部居中（left/right:0 + margin:auto，不用 transform
    做居中，避免与卡片「弹起」类位移混淆）；淡入淡出仅用 opacity。
    命名：根类 .wf-toast；退场修饰 .is-leaving。
@@ -21,7 +21,7 @@
   line-height: 1.5;
   color: var(--text);
   background: var(--pane);
-  box-shadow: var(--sh-float), var(--panel-ring);
+  box-shadow: var(--sh-sm), var(--panel-ring);
   word-break: break-word;
   pointer-events: none;
   animation: wf-toast-in 0.2s var(--ease) both;

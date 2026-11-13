@@ -42,7 +42,7 @@
    浏览器会重放该 animation（与 `.rp-view.is-active` 同一机制），故无需改 TSX。
    `:not([hidden])` 提升特异性并保证 `display:none` 期间不触发。 */
 .rp-tabpanel:not([hidden]) {
-  animation: wf-enter-fade var(--dur-base) var(--ease-out) both;
+  animation: wf-enter-fade var(--dur-slow) var(--ease-out) both;
 }
 
 .rp-panel {
@@ -211,7 +211,7 @@
   background: var(--pane);
   border-radius: var(--r-lg);
   box-shadow:
-    var(--sh-popup),
+    var(--sh-sm),
     0 0 0 1px var(--line);
   font-size: var(--fs-body);
   line-height: 1.65;

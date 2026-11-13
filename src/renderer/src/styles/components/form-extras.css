@@ -21,7 +21,7 @@
   height: var(--control-h-md);
   padding: 0 12px;
   background: var(--soft-solid);
-  /* 边框改由内阴影表达：不占盒高，36px 全部用于内容区；聚焦环与内描边合并为
+  /* 边框改由内阴影表达：不占盒高，32px 全部用于内容区；聚焦环与内描边合并为
      同一条 box-shadow（与 `.wf-input` / `.wf-select__trigger` 同口径）。 */
   border: 0;
   box-shadow: inset 0 0 0 1px transparent;
@@ -131,7 +131,8 @@
   align-items: center;
   gap: 6px;
   min-height: var(--control-h-md);
-  padding: 6px 8px;
+  /* 纵向内衬 5：标签行高 20 + 10 + 1px 边 = 32，与同排控件等高。 */
+  padding: 5px 8px;
   background: var(--soft-solid);
   border: 1px solid transparent;
   border-radius: var(--r-lg);

@@ -19,7 +19,7 @@ import { useCleanWordsLibrary } from './useCleanWordsLibrary'
    `PAGE_SIZE` 逐批挂载（首屏 ≤80 行），「显示更多」每次追加一页。
 
    样式：类名前缀 `cw-`，见 styles/components/clean-words.css（行内控件统一走
-   sm 档 30px，即 --control-h-sm；分区标题已删除，改用三行天然分组）。管理型弹窗无提交动作，
+   sm 档 32px，即 --control-h-sm；分区标题已删除，改用三行天然分组）。管理型弹窗无提交动作，
    故不传 `footer`，关闭入口为头部 ×。
    ============================================================ */
 

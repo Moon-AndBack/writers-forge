@@ -8,12 +8,12 @@
   caret-color: var(--caret);
   /* color 过渡已移除：正文色随主题令牌变化，主题切换整体瞬变（见 theme.css）。
      余下四项服务于「字体 / 字号 / 行距 / 字距」设置变更（状态栏排版面板），
-     与主题无关，按 --dur-base 保留（原为裸 0.2s）。 */
+     与主题无关，属尺寸 / 排版变化，按 --dur-slow 保留（原为裸 0.2s）。 */
   transition:
-    font-family var(--dur-base) var(--ease),
-    font-size var(--dur-base) var(--ease),
-    line-height var(--dur-base) var(--ease),
-    letter-spacing var(--dur-base) var(--ease);
+    font-family var(--dur-slow) var(--ease),
+    font-size var(--dur-slow) var(--ease),
+    line-height var(--dur-slow) var(--ease),
+    letter-spacing var(--dur-slow) var(--ease);
 }
 
 .doc-body p,
@@ -183,12 +183,12 @@
    减动效由 base.css 的 prefers-reduced-motion 全局兜底压到 0.01ms（本文件不重复写守卫）。 */
 .ep-view[data-view='chapters'] .editor-scroll[data-swap-phase='0'],
 .ep-view[data-view='outline'] .editor-scroll[data-swap-phase='0'] {
-  animation: wf-enter-fade var(--dur-base) var(--ease) both;
+  animation: wf-enter-fade var(--dur-slow) var(--ease) both;
 }
 
 .ep-view[data-view='chapters'] .editor-scroll[data-swap-phase='1'],
 .ep-view[data-view='outline'] .editor-scroll[data-swap-phase='1'] {
-  animation: wf-enter-fade-alt var(--dur-base) var(--ease) both;
+  animation: wf-enter-fade-alt var(--dur-slow) var(--ease) both;
 }
 
 /* wf-enter-fade 的别名（内容完全相同、名字不同）：唯一目的是让 animation-name 变化

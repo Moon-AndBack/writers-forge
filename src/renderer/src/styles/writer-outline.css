@@ -36,7 +36,7 @@
    「面板挂载一次」与「新建条目 / 分组重排后新增项的挂载」。占位线 `.drop-line`
    不参与进场。 */
 .outline-chapter {
-  animation: wf-enter-up var(--dur-base) var(--ease-out) backwards;
+  animation: wf-enter-up var(--dur-slow) var(--ease-out) backwards;
 }
 
 .outline-chapter:hover {

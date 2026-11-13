@@ -49,7 +49,7 @@
    收起），故不会在展开 / 收起卷时重播；实际可见的进场是「面板挂载一次」与
    「新建章后该行挂载」。拖拽落点线 `.chapter-drop-line` 不参与进场，避免每次拖拽重放。 */
 .chapter {
-  animation: wf-enter-up var(--dur-base) var(--ease-out) backwards;
+  animation: wf-enter-up var(--dur-slow) var(--ease-out) backwards;
 }
 
 .chapter:hover {

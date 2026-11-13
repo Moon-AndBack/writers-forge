@@ -30,12 +30,12 @@
   --r-lg: 8px;
   --r-pill: 999px;
 
-  /* 控件高度统一为单档 36（AGENTS §8.4）：Button / IconButton / Input / Select /
-     Combobox / SearchInput / ChipInput / Segmented 共用 36px；三档变量名保留仅为
+  /* 控件高度统一为单档 32（AGENTS §8.4）：Button / IconButton / Input / Select /
+     Combobox / SearchInput / ChipInput / Segmented 共用 32px；三档变量名保留仅为
      兼容既有引用，新增代码直接用 --control-h-md；同类控件同行必须等高。 */
-  --control-h-sm: 36px;
-  --control-h-md: 36px;
-  --control-h-lg: 36px;
+  --control-h-sm: 32px;
+  --control-h-md: 32px;
+  --control-h-lg: 32px;
   --font:
     'Segoe UI Variable Display', 'Segoe UI', 'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC',
     -apple-system, BlinkMacSystemFont, sans-serif;
@@ -44,9 +44,10 @@
   --mono: 'Cascadia Mono', 'Consolas', ui-monospace, SFMono-Regular, Menlo, monospace;
   --ease: cubic-bezier(0.33, 0, 0.67, 1);
 
-  /* 动效时长梯度（统一取用，禁止再写裸时长） */
+  /* 动效时长两档（统一取用，禁止再写裸时长）：
+     --dur-fast 用于状态反馈（hover / 颜色 / 背景），
+     --dur-slow 用于位置移动、尺寸变化、展开收起与进场。 */
   --dur-fast: 120ms;
-  --dur-base: 180ms;
   --dur-slow: 240ms;
 
   /* 主题切换（data-theme 变更）本身**不做 CSS transition**：整体一帧瞬变。
@@ -161,11 +162,9 @@
      与 light 强调色同相，正文区协调。 */
   --caret: color-mix(in srgb, var(--brand) 55%, var(--doc-text));
 
-  /* 阴影 / 描边 */
+  /* 阴影 / 描边：两档分工——--sh-xs 静态卡片，--sh-sm 悬停与浮层（浮层不再单独分档） */
   --sh-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
   --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.045);
-  --sh-popup: 0 -4px 20px rgba(0, 0, 0, 0.1), 0 4px 16px rgba(0, 0, 0, 0.12);
-  --sh-float: 0 12px 32px -8px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08);
   --panel-ring: 0 0 0 1px rgba(0, 0, 0, 0.05);
 
   /* 浮层遮罩（Modal / Drawer 通用）：纯黑固定浓度，明暗同值；
@@ -228,8 +227,6 @@
 
   --sh-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
   --sh-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
-  --sh-popup: 0 -4px 20px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.5);
-  --sh-float: 0 12px 32px -8px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
   --panel-ring: 0 0 0 1px rgba(255, 255, 255, 0.06);
 
   /* 浮层遮罩（Modal / Drawer 通用）：与亮色同值，遮罩浓度不随主题变化。 */
@@ -294,8 +291,6 @@
      与主题协调且对比充分。 */
   --caret: var(--brand);
 
-  --sh-popup: 0 -4px 20px rgba(20, 50, 30, 0.1), 0 4px 16px rgba(20, 50, 30, 0.12);
-  --sh-float: 0 12px 32px -8px rgba(20, 50, 30, 0.22), 0 4px 12px rgba(20, 50, 30, 0.08);
   --panel-ring: 0 0 0 1px rgba(30, 60, 40, 0.06);
 }
 
@@ -352,8 +347,6 @@
      与主题协调且对比充分。 */
   --caret: var(--brand);
 
-  --sh-popup: 0 -4px 20px rgba(80, 60, 10, 0.1), 0 4px 16px rgba(80, 60, 10, 0.12);
-  --sh-float: 0 12px 32px -8px rgba(80, 60, 10, 0.22), 0 4px 12px rgba(80, 60, 10, 0.08);
   --panel-ring: 0 0 0 1px rgba(80, 60, 10, 0.06);
 
   /* 文本选区（::selection）：品牌 #c99426 与米色面板底明度接近，22% 混出近奶油色、

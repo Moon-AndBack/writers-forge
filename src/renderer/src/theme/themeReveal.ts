@@ -16,7 +16,7 @@
  *
  * 为何由 JS（WAAPI）而不是 CSS 承担动画：
  * - `document.startViewTransition` 只能由 JS 启动，整窗快照也只有它能拍摄；
- * - 曾经由 CSS `animation` + `--dur-base`（180ms）+ `--ease-out` 驱动，
+ * - 曾经由 CSS `animation` + 180ms 的短时长 + `--ease-out` 驱动，
  *   但这条强前倾曲线在 36ms 时 y≈0.74、61ms 时 y≈0.875，前 3 帧就走完
  *   3/4 的透明度，有效可感知时长仅 50–60ms，肉眼等同瞬切；
  * - WAAPI 还免疫 CSS 的 `!important` 兜底与伪元素上 `var()` 继承问题。

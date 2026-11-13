@@ -6,7 +6,7 @@
 >
 > 真源顺序：`src/renderer/src/styles/theme.css`（主题 / 语义令牌）→ 本文档（组合公式与档位）→ 页面 / 组件 CSS。代码与本文档不一致时：实现偏差按本文档收敛；文档过期则修正本文档。
 >
-> 最后核对：2026-11-14（圆角统一为两档：界面 8 / 胶囊 999；基线 HEAD `066ba56`）
+> 最后核对：2026-11-14（圆角两档；阴影 / 动效各两档；控件高 32）
 
 ---
 
@@ -21,7 +21,7 @@
 | L2   | `.pane-region` 分区容器                                 | `--soft-solid`                                            | 无                                                | `--r-lg`（8px） | 6px                                                               | 无                              |
 | L3   | `.wf-card`、`.wf-entity-card` 卡片                      | `--soft-solid`                                            | `--panel-ring` / `inset 0 0 0 1px --line`（变体） | `--r-lg`（8px） | 14px × 16px                                                       | `--sh-sm`（实体卡为 `--sh-xs`） |
 | L4   | `.wf-input`、`.wf-readonly-block` 控件 / 只读块         | `--soft-solid`（普通）/ `--control-on-soft`（软底容器内） | `--control-on-soft-line`（`inset`）               | `--r-lg`（8px） | 输入 9×12 / 只读块 10×12                                          | 聚焦品牌环；不叠外投影          |
-| 浮层 | `.wf-window`、`.wf-select__panel`、`.wf-dropdown__menu` | `--pane`                                                  | `--panel-ring` / `0 0 0 1px --line`               | `--r-lg`（8px） | 窗口 head 16×20×12 / body 4×20×16 / footer 14×20×18；列表面板 5px | `--sh-float` / `--sh-popup`     |
+| 浮层 | `.wf-window`、`.wf-select__panel`、`.wf-dropdown__menu` | `--pane`                                                  | `--panel-ring` / `0 0 0 1px --line`               | `--r-lg`（8px） | 窗口 head 16×20×12 / body 4×20×16 / footer 14×20×18；列表面板 5px | `--sh-sm`                       |
 
 代表位置：
 
@@ -103,37 +103,37 @@
 - **MUST** 间距以 **4px 为基准网格**，默认节奏 **8px**；新增间距优先 4 / 8 / 12 / 16 / 20 / 24 / 32。
 - **MUST** 既有半档仅限已登记场景：分区内衬 6、列表行 10、卡片内衬 14×16。不得在其它场景新增 6 / 10 / 14。
 - **MUST** 同一行（工具栏、筛选栏、表单行、弹窗底栏）的控件必须**等高**；以该行最高控件对齐，不得用 `align-items: center` 掩盖高度差。
-- **MUST** 多行 `Textarea` 独占一行，不参与同行等高；同一行中的单行控件按 §3.3 的 36px 取值。
+- **MUST** 多行 `Textarea` 独占一行，不参与同行等高；同一行中的单行控件按 §3.3 的 32px 取值。
 
 ### 3.3 控件高度表
 
-> **已收敛**：全程序控件统一为单档 **36px**。高度一律由 `--control-h-sm/md/lg`（`theme.css:24-26`，三值同为 36）显式给定（`height` / `min-height`），不再由 `padding + line-height + border` 推导；变量名保留仅为兼容既有引用。
+> **已收敛**：全程序控件统一为单档 **32px**。高度一律由 `--control-h-sm/md/lg`（`theme.css:36-38`，三值同为 32）显式给定（`height` / `min-height`），不再由 `padding + line-height + border` 推导；变量名保留仅为兼容既有引用。
 
 | 控件                              | 高度   | 证据                                                                     |
 | --------------------------------- | ------ | ------------------------------------------------------------------------ |
-| Button                            | 36     | `components/button.css:13,132-140`                                       |
-| Input / Select / Combobox（单行） | 36     | `components/form.css:48,95,100`、`components/form-select.css:16,151-158` |
-| SearchInput                       | 36     | `components/form-extras.css:21`                                          |
-| IconButton                        | 36     | `components/icon-button.css:14-15,84-85`                                 |
-| Segmented                         | 36     | `components/segmented.css:16,105,122`                                    |
-| ChipInput                         | 36     | `components/form-extras.css:129`                                         |
+| Button                            | 32     | `components/button.css:13,132-140`                                       |
+| Input / Select / Combobox（单行） | 32     | `components/form.css:48,95,100`、`components/form-select.css:16,151-158` |
+| SearchInput                       | 32     | `components/form-extras.css:21`                                          |
+| IconButton                        | 32     | `components/icon-button.css:14-15,84-85`                                 |
+| Segmented                         | 32     | `components/segmented.css:20,117,140`                                    |
+| ChipInput                         | 32     | `components/form-extras.css:133`                                         |
 | Textarea（多行）                  | 不纳入 | `components/form.css:53-59,104-114`（最小高度维持 62 / 82 / 108）        |
 
-> 局部魔法值 `--cw-control-h`（违禁词弹窗）与 `--ai-ctl-h`（AI 面板）已删除：两处同行控件均走组件自身的 36px 档，不再另存高度变量。
+> 局部魔法值 `--cw-control-h`（违禁词弹窗）与 `--ai-ctl-h`（AI 面板）已删除：两处同行控件均走组件自身的 32px 档，不再另存高度变量。
 >
-> sm / md / lg 修饰类仍保留字号与内衬差异，高度一律 36；设置弹窗、右栏、工具条、主表单不再按档分工。
+> sm / md / lg 修饰类仍保留字号与内衬差异，高度一律 32；设置弹窗、右栏、工具条、主表单不再按档分工。
 
 ### 3.4 chrome 尺寸域
 
 状态栏控件 **24** / 活动栏按钮 **36** / 标题栏 **42**（px）。
 
-chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 36 约束，高度由框架自身固定：
+chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 32 约束，高度由框架自身固定：
 
 - 状态栏：本体 36（`styles/statusbar.css:22`），内部控件 24（`styles/statusbar-widgets.css:19,81,233,242,274,297`）。
 - 活动栏：模块按钮 36×36（`styles/shell.css:368-372`）。
 - 标题栏：42（`styles/shell.css:91`）；标题栏内按钮按自身尺寸规则，不参与正文控件等高。
 
-新增 chrome 控件必须落在对应域内：不得借用控件 36 档，也不得把正文控件塞进 chrome。
+新增 chrome 控件必须落在对应域内：不得借用控件 32 档，也不得把正文控件塞进 chrome。
 
 ---
 
@@ -303,13 +303,12 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 36 
 
 ### 7.1 令牌
 
-| 令牌         | 值                               | 用途                                | 定义位置              |
-| ------------ | -------------------------------- | ----------------------------------- | --------------------- |
-| `--dur-fast` | 120ms                            | hover / 图标态 / 行操作浮现         | `styles/theme.css:29` |
-| `--dur-base` | 180ms                            | 通用交互、进出场、Modal 退场        | `styles/theme.css:30` |
-| `--dur-slow` | 240ms                            | 展开 / 拖拽 / 主题淡化 / 分隔条宽度 | `styles/theme.css:31` |
-| `--ease`     | `cubic-bezier(0.33, 0, 0.67, 1)` | 对称缓动，交互与主题淡化共用        | `styles/theme.css:26` |
-| `--ease-out` | `cubic-bezier(0.22, 1, 0.36, 1)` | 进场专用（快出慢入）                | `styles/theme.css:46` |
+| 令牌         | 值                               | 用途                                           | 定义位置              |
+| ------------ | -------------------------------- | ---------------------------------------------- | --------------------- |
+| `--dur-fast` | 120ms                            | hover / 图标态 / 行操作浮现 / 颜色与背景反馈   | `styles/theme.css:48` |
+| `--dur-slow` | 240ms                            | 位移 / 尺寸变化 / 展开收起 / 进场 / Modal 退场 | `styles/theme.css:49` |
+| `--ease`     | `cubic-bezier(0.33, 0, 0.67, 1)` | 对称缓动，交互与主题淡化共用                   | `styles/theme.css:45` |
+| `--ease-out` | `cubic-bezier(0.22, 1, 0.36, 1)` | 进场专用（快出慢入）                           | `styles/theme.css:65` |
 
 ### 7.2 卡片 hover 光晕
 
@@ -333,7 +332,7 @@ box-shadow:
 
 - **MUST** 卡片 hover 只过渡 `box-shadow` / `border-color` / `background` / `color`，不得包含 `transform`。
 - **MUST** 卡片 hover 不得使用位移或缩放（`translate / scale / rotate`）。
-- **MUST** 功能性 `transform` 允许，但仅限：Modal 进出场（`translateY(8px) scale(0.98)`）、折叠箭头（`rotate(90deg)`）、Switch 滑块（`translateX`）、按钮按压（`translateY(1px)`）、拖拽把手定位、Segmented 滑动指示器（`translate` 平移 + `width` / `height`，时长 `--dur-base`、缓动 `--ease`）。
+- **MUST** 功能性 `transform` 允许，但仅限：Modal 进出场（`translateY(8px) scale(0.98)`）、折叠箭头（`rotate(90deg)`）、Switch 滑块（`translateX`）、按钮按压（`translateY(1px)`）、拖拽把手定位、Segmented 滑动指示器（`translate` 平移 + `width` / `height`，时长 `--dur-slow`、缓动 `--ease`）。
 - **MUST** 所有动效必须包在 `@media (prefers-reduced-motion: reduce)` 的关闭分支内（全局兜底见 `styles/base.css:113`，组件级见 `modal.css:70-76`、`segmented.css:128-135`）。
 - **SHOULD** 入场位移统一 8px（`wf-enter-up` / `wf-exit-down`，`styles/components/motion.css:13-34`）；不得另造 6px / 10px 等位移量。
 
@@ -402,8 +401,8 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 
 | #   | 债务                                           | 现状                                                                                                                     | 目标                                  | 证据                                                           |
 | --- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------- | -------------------------------------------------------------- |
-| 1   | 控件高度多档并存（已收敛）                     | 已统一为单档 36（2026-11-13）                                                                                            | 保持统一，新增控件走 `--control-h-md` | 见 §3.3 各行                                                   |
-| 2   | 局部控件高度魔法值（已清理）                   | `--cw-control-h` / `--ai-ctl-h` 已删除；活动栏筛选浮层改走 `--control-h-md`                                              | 禁止新增                              | `styles/theme.css:24-26`                                       |
+| 1   | 控件高度多档并存（已收敛）                     | 已统一为单档 32（2026-11-14）                                                                                            | 保持统一，新增控件走 `--control-h-md` | 见 §3.3 各行                                                   |
+| 2   | 局部控件高度魔法值（已清理）                   | `--cw-control-h` / `--ai-ctl-h` 已删除；活动栏筛选浮层改走 `--control-h-md`                                              | 禁止新增                              | `styles/theme.css:36-38`                                       |
 | 3   | 16px 中间档                                    | 当前 0 处                                                                                                                | 保持禁止                              | 2026-11-09 grep；正文 16→18 见 `73a968d`                       |
 | 4   | 字号半档密集（已收敛）                         | 已统一为 5 档语义令牌（10 / 12 / 14 / 20 / 26）；界面 CSS 无字号字面量（封面首字 34 / 56 除外）                          | 保持 5 档；新增先复用令牌             | 本文 §2.1；2026-11-13 grep                                     |
 | 5   | 裸时长                                         | `0.1s`×42、`0.15s`×43、`0.18s`×27、`0.2s`×15、`0.22s`×11、`0.25s`×1、`0.32s`×8、`0.4s`×1、`180ms`×10（含令牌定义与注释） | 全部收敛到 `--dur-*` / `--ease*`      | 2026-11-09 grep                                                |
@@ -420,7 +419,7 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 ## 11. 提交前自检
 
 - [ ] 颜色 / 圆角 / 阴影 / 时长 / 缓动是否全部来自令牌？新增字面量是否已登记例外？
-- [ ] 正文控件高度是否统一 36？chrome 是否落在 24 / 36 / 42？同一行控件是否等高？
+- [ ] 正文控件高度是否统一 32？chrome 是否落在 24 / 36 / 42？同一行控件是否等高？
 - [ ] 字号是否落在 5 档令牌内？界面 CSS 是否已无字号字面量？正文是否走 `--doc-*`？
 - [ ] 列表行内衬、选中态、hover 回落是否符合 §4？
 - [ ] 三态顺序是否为 loading → error → empty？已有数据时错误是否未替换内容？

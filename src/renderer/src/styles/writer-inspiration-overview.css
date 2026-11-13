@@ -75,7 +75,7 @@
   flex-direction: column;
   gap: 8px;
   /* 切换条目时随选中行重建 → 挂进场动画即重播（纯上浮，非 hover 态）。 */
-  animation: wf-enter-up var(--dur-base) var(--ease) backwards;
+  animation: wf-enter-up var(--dur-slow) var(--ease) backwards;
 }
 
 .inspiration-readonly__scroll {

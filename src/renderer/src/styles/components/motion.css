@@ -1,7 +1,7 @@
 /* ============================================================
    统一动效基础设施（时长令牌 · 缓动令牌 · 进场 keyframes）
    ------------------------------------------------------------------
-   令牌定义在 theme.css 的 :root：--dur-fast / --dur-base / --dur-slow
+   令牌定义在 theme.css 的 :root：--dur-fast / --dur-slow
    与 --ease-out（进场缓动）。
    本文件只提供**新增**的通用进场 / 退场关键帧与工具类，不改动任何既有
    keyframes（wf-pop / wf-fade / wf-dropdown-in / ep-search-in …）
@@ -54,7 +54,7 @@
 }
 
 /* 弹窗退场：与 surface.css 既有的 wf-pop 进场互为反向（位移 + 缩放原路收回）。
-   供 `.wf-modal__panel.is-closing` 使用，时长取 --dur-base。 */
+   供 `.wf-modal__panel.is-closing` 使用，时长取 --dur-slow。 */
 @keyframes wf-pop-out {
   from {
     opacity: 1;
@@ -70,7 +70,7 @@
    仅供新代码 / 后续收敛批次取用；当前无任何元素挂载该工具类，
    因此本文件对现有界面零视觉影响。 */
 .wf-enter-fade {
-  animation: wf-enter-fade var(--dur-base) var(--ease-out) both;
+  animation: wf-enter-fade var(--dur-slow) var(--ease-out) both;
 }
 
 /* ---------- 主题切换的整屏交叉淡化（View Transitions） ----------
@@ -95,7 +95,7 @@
    注意：快照的透明度**不在这里用 CSS animation 声明**，而是由 `themeReveal.ts`
    在 `transition.ready` 后用 `documentElement.animate(..., { pseudoElement })`
    （WAAPI）驱动。原因：CSS 侧之前用 `--ease-out`（强前倾曲线）配合
-   `--dur-base`（180ms），前 3 帧就走掉约 3/4 的透明度，有效可感知时长仅
+   180ms 的短时长，前 3 帧就走掉约 3/4 的透明度，有效可感知时长仅
    50–60ms，肉眼等同瞬切。WAAPI 还免疫 `!important` 兜底与伪元素上 `var()`
    继承的问题。因此这里只负责「关掉 UA 动画、固定 new 的起始态、选择混合模式」。
 
