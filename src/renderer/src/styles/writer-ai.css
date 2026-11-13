@@ -97,7 +97,7 @@
 
 /* ---------- 会话栏（面板头部） ----------
    一行三控件：当前会话下拉（占满剩余宽度）· 会话操作（⋯）· 新建（+）。
-   整行独立软底承载（--soft-solid + --r-lg + --line 内描边 + 4/6 内衬），
+   整行独立软底承载（--soft-solid + --r-lg + --line 内描边 + 四面 4 内衬），
    并挂 `.on-soft`：Select 触发器换 --control-on-soft 底 + 描边（见 form.css），
    与容器分层而不糊成一片。只改颜色 / 描边，无 transform（AGENTS §8）。 */
 .ai-panel__sessionbar {
@@ -106,7 +106,7 @@
   align-items: center;
   gap: 4px;
   min-width: 0;
-  padding: 4px 6px;
+  padding: 4px;
   border-radius: var(--r-lg);
   background: var(--soft-solid);
   box-shadow: inset 0 0 0 1px var(--line);
