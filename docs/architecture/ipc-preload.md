@@ -1,10 +1,10 @@
 # IPC 与 preload 架构
 
-Writer's Forge 的渲染层不直接接触 Node / Electron 能力：所有数据读写、系统能力调用都经 `ipcRenderer.invoke` 打到主进程，由 `ipcMain.handle` 承接；主进程主动推送只有 6 个事件。preload 用 `contextBridge` 暴露单个 `window.api` 对象，是渲染层唯一的跨进程入口。
+Writer's Forge 的渲染层不直接接触 Node / Electron 能力：所有数据读写、系统能力调用都经 `ipcRenderer.invoke` 打到主进程，由 `ipcMain.handle` 承接；主进程主动推送只有 7 个事件。preload 用 `contextBridge` 暴露单个 `window.api` 对象，是渲染层唯一的跨进程入口。
 
-- 主进程通道实现：`src/main/ipc/`（33 个文件、4,950 行）
+- 主进程通道实现：`src/main/ipc/`（33 个文件、5,600 行）
 - 聚合注册：`src/main/ipc/index.ts` 的 `registerIpc(report)`
-- preload 暴露面：`src/preload/index.ts` + `src/preload/api/`（24 个文件、1,898 行）
+- preload 暴露面：`src/preload/index.ts` + `src/preload/api/`（24 个文件、2,063 行）
 - 类型真源：`src/preload/index.d.ts` + `src/preload/types/*.d.ts`
 
 > 口径：代码是唯一真源。本文的通道名、事件名、settings 键名、方法数均与源码逐字核对；与代码冲突时以代码为准。
@@ -62,7 +62,7 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 | 14  | `registerForeshadowsIpc`         | `foreshadows.ts`   | 13             |
 | 15  | `registerImagesIpc`              | `images.ts`        | 3              |
 | 16  | `registerInspirationsIpc`        | `inspirations.ts`  | 5              |
-| 17  | `registerOneDriveIpc`            | `onedrive.ts`      | 7              |
+| 17  | `registerOneDriveIpc`            | `onedrive.ts`      | 10             |
 | 18  | `registerOutlineIpc`             | `outline.ts`       | 21             |
 | 19  | `registerPlotIpc`                | `plot.ts`          | 11             |
 | 20  | `registerSettingsIpc`            | `settings.ts`      | 4              |
@@ -80,9 +80,9 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 - `docLimit.ts`：单篇正文上限 `MAX_DOC_CHARS = 200_000` 与有效字数计算。
 - `worldSubtypeFields.ts`：子类字段白名单与规范化，只被 `worldSubtypes.ts` 调用。
 
-## 3. 185 个 handle 通道总表
+## 3. 188 个 handle 通道总表
 
-实测 `ipcMain.handle` 共 **185** 个（含 `onedrive:backup`、`outline:saveContent`、`worldEntity:list` / `saveText` / `listIncomingRefs` 等跨行书写的 8 个）。按一级前缀（域）分布：
+实测 `ipcMain.handle` 共 **188** 个（含 `onedrive:backup`、`outline:saveContent`、`worldEntity:list` / `saveText` / `listIncomingRefs` 等跨行书写的 8 个）。按一级前缀（域）分布：
 
 | 域             | 文件                                                            | 数量    |
 | -------------- | --------------------------------------------------------------- | ------- |
@@ -98,7 +98,7 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 | `foreshadow`   | `foreshadows.ts`                                                | 13      |
 | `images`       | `images.ts`                                                     | 3       |
 | `inspiration`  | `inspirations.ts`                                               | 5       |
-| `onedrive`     | `onedrive.ts`                                                   | 7       |
+| `onedrive`     | `onedrive.ts`                                                   | 10      |
 | `outline`      | `outline.ts`                                                    | 21      |
 | `plot`         | `plot.ts`                                                       | 11      |
 | `settings`     | `settings.ts`                                                   | 4       |
@@ -107,7 +107,7 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 | `window`       | `window.ts` + `snap.ts`                                         | 7       |
 | `worldEntity`  | `worldEntities.ts` + `worldRefs.ts` + `worldPowers.ts`          | 19      |
 | `worldSubtype` | `worldSubtypes.ts`                                              | 5       |
-| **合计**       | 26 个注册文件                                                   | **185** |
+| **合计**       | 26 个注册文件                                                   | **188** |
 
 ### 3.1 AI / 书稿 / 内容类（84）
 
@@ -198,7 +198,7 @@ cleanWords:import · cleanWords:toggle · cleanWords:setCategoryEnabled
 cleanWords:delete
 ```
 
-### 3.3 系统 / 设置 / 统计类（32）
+### 3.3 系统 / 设置 / 统计类（35）
 
 ```text
 # backup（8）
@@ -214,9 +214,10 @@ stats:totalWords · stats:todayWords · stats:streakDays · stats:bookStatsAll
 # diagnostics（1）
 diagnostics:get
 
-# onedrive（7）
+# onedrive（10）
 onedrive:status · onedrive:setClientId · onedrive:signIn
 onedrive:cancelSignIn · onedrive:signOut · onedrive:backup · onedrive:cancelBackup
+onedrive:listBackups · onedrive:restoreBackup · onedrive:cancelRestore
 
 # theme（1）
 theme:accent:get
@@ -226,24 +227,25 @@ window:titlebar:set-overlay · window:setMaterial · window:acrylicSupported
 window:snap:set · window:snap:clear · window:snap:status · window:bounds:get
 ```
 
-## 4. 6 个主→渲染推送事件
+## 4. 7 个主→渲染推送事件
 
-主进程主动下发只有以下 6 个事件，全部由 preload 包装成"订阅返回退订函数"，渲染层拿不到 `ipcRenderer`。
+主进程主动下发只有以下 7 个事件，全部由 preload 包装成"订阅返回退订函数"，渲染层拿不到 `ipcRenderer`。
 
-| 事件名                 | 载荷                                                                                                 | 订阅方式                                    | 取消订阅               | 发送方                               |
-| ---------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------- | ------------------------------------ |
-| `ai:chat:delta`        | `{ requestId: string, delta: string }`                                                               | `window.api.ai.chat.onStream(cb)`           | 返回值 `()` 调用即退订 | `event.sender.send`（仅发起窗口）    |
-| `ai:chat:done`         | `{ requestId: string, usage?: AiUsage }`                                                             | 同上                                        | 同上                   | 同上                                 |
-| `ai:chat:error`        | `{ requestId: string, error: AiError }`                                                              | 同上                                        | 同上                   | 同上                                 |
-| `onedrive:progress`    | `OneDriveBackupProgress { phase: 'snapshot' \| 'upload' \| 'done', bytesSent, totalBytes, percent }` | `window.api.onedrive.onProgress(cb)`        | 返回值调用即退订       | `event.sender.send`                  |
-| `theme:accent:changed` | `string \| null`（`#rrggbb` 或读取失败）                                                             | `window.api.systemTheme.onAccentChange(cb)` | 返回值调用即退订       | `webContents.send`（广播到所有窗口） |
-| `app:before-close`     | 无                                                                                                   | `window.api.app.onBeforeClose(cb)`          | 返回值调用即退订       | `webContents.send`（目标主窗口）     |
+| 事件名                     | 载荷                                                                                                       | 订阅方式                                    | 取消订阅               | 发送方                               |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------- | ------------------------------------ |
+| `ai:chat:delta`            | `{ requestId: string, delta: string }`                                                                     | `window.api.ai.chat.onStream(cb)`           | 返回值 `()` 调用即退订 | `event.sender.send`（仅发起窗口）    |
+| `ai:chat:done`             | `{ requestId: string, usage?: AiUsage }`                                                                   | 同上                                        | 同上                   | 同上                                 |
+| `ai:chat:error`            | `{ requestId: string, error: AiError }`                                                                    | 同上                                        | 同上                   | 同上                                 |
+| `onedrive:progress`        | `OneDriveBackupProgress { phase: 'snapshot' \| 'upload' \| 'done', bytesSent, totalBytes, percent }`       | `window.api.onedrive.onProgress(cb)`        | 返回值调用即退订       | `event.sender.send`                  |
+| `onedrive:restoreProgress` | `OneDriveRestoreProgress { phase: 'download' \| 'restore' \| 'done', bytesReceived, totalBytes, percent }` | `window.api.onedrive.onRestoreProgress(cb)` | 返回值调用即退订       | `event.sender.send`                  |
+| `theme:accent:changed`     | `string \| null`（`#rrggbb` 或读取失败）                                                                   | `window.api.systemTheme.onAccentChange(cb)` | 返回值调用即退订       | `webContents.send`（广播到所有窗口） |
+| `app:before-close`         | 无                                                                                                         | `window.api.app.onBeforeClose(cb)`          | 返回值调用即退订       | `webContents.send`（目标主窗口）     |
 
 实现约定（事件订阅同构，改动须保持一致）：
 
 - **单监听器 + Set 分发（`ai` / `onedrive` / `theme`）**：`ipcRenderer.on` 在 preload 模块顶层只注册一次，回调写进 `Set`；`onStream` / `onProgress` 只做 add / delete。若在订阅函数内注册监听，同一事件会被重复触发 N 次，且退订无法回收。
 - **`app:before-close` 是关窗握手**：`app.onBeforeClose` 直接注册 / 移除单次监听，不走 Set 分发；渲染层用 `app.notifyCloseReady()`（`ipcRenderer.send('app:close-ready')`）回执，主进程按 sender 精确比对，并有 3 秒超时强制关闭兜底。
-- **载荷逐字段复验**：`ai:chat:*` 与 `onedrive:progress` 在 preload 侧再次校验（`readAiError` / `readUsage` / `readProgress`），字段缺失或类型不符直接丢弃，不把脏载荷交给渲染层。
+- **载荷逐字段复验**：`ai:chat:*` 与 `onedrive:progress` / `onedrive:restoreProgress` 在 preload 侧再次校验（`readAiError` / `readUsage` / `readProgress` / `readRestoreProgress`），字段缺失或类型不符直接丢弃，不把脏载荷交给渲染层。
 - **分发隔离**：遍历前复制订阅者数组，单个订阅者抛错被 `try/catch` 吞掉，不影响其它订阅者（preload 无日志落盘通道，静默是刻意选择）。
 - **生命周期**：AI 在途请求按 `${webContentsId}:${requestId}` 登记在 `aiChat.ts` 的 `activeChats`，窗口 `destroyed` 时统一 abort；`requestId` 复用视为重启，先中止旧请求。`done` / `error` 到达即释放租约，保证渲染层不会永远等不到终态。下发前一律判活，`sender.isDestroyed()` 为真时静默丢弃，避免 `send` 抛错。
 
@@ -323,13 +325,13 @@ interface AiError {
 | `settings`       | 4      | `get` / `set` / `remove`                            | `settings:*`（`remove` → `settings:delete`）      |
 | `ai`             | 21     | `config.get` / `catalog.override` / `chat.onStream` | `ai:*`                                            |
 | `cleanWords`     | 7      | `import` / `toggle` / `setCategoryEnabled`          | `cleanWords:*`                                    |
-| `onedrive`       | 8      | `backup` / `onProgress`                             | `onedrive:*`                                      |
+| `onedrive`       | 12     | `backup` / `listBackups` / `onRestoreProgress`      | `onedrive:*`                                      |
 | `titleBar`       | 1      | `setOverlay`                                        | `window:titlebar:*`                               |
 | `windowMaterial` | 2      | `set` / `acrylicSupported`                          | `window:setMaterial`、`window:acrylicSupported`   |
 | `windowSnap`     | 4      | `set` / `clear` / `boundsWidth`                     | `window:snap:*`、`window:bounds:get`              |
 | `systemTheme`    | 2      | `getAccentColor` / `onAccentChange`                 | `theme:accent:*`                                  |
 
-合计 **191 个成员** = 186 个 invoke 调用点 + 3 个订阅方法（`ai.chat.onStream`、`onedrive.onProgress`、`systemTheme.onAccentChange`）+ 2 个 `app` 生命周期方法（`onBeforeClose` / `notifyCloseReady`）。调用点比通道多 1，是因为 `stats:bookStatsAll` 同时挂在 `books.statsAll` 与 `stats.bookStatsAll` 两个入口（书架批量取数，避免逐书 N+1）。
+合计 **195 个成员** = 189 个 invoke 调用点 + 4 个订阅方法（`ai.chat.onStream`、`onedrive.onProgress`、`onedrive.onRestoreProgress`、`systemTheme.onAccentChange`）+ 2 个 `app` 生命周期方法（`onBeforeClose` / `notifyCloseReady`）。调用点比通道多 1，是因为 `stats:bookStatsAll` 同时挂在 `books.statsAll` 与 `stats.bookStatsAll` 两个入口（书架批量取数，避免逐书 N+1）。
 
 - 大域拆文件：`ai` / `cleanWords` / `onedrive` / `worldEntity` / `worldSubtype` / `chipColors` 在 `api/*.ts`，用 `satisfies AiApi` / `satisfies Api['worldEntity']` 做结构校验，签名真源在 `types/*.d.ts`。
 - preload 可以**收紧**契约：`cleanWords.import` 把 `source: 'user'` 写死，渲染层无法把词写进 `builtin`；`ai` / `onedrive` 不暴露任何密钥明文或 token。

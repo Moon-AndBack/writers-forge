@@ -4,7 +4,7 @@ Writer's Forge 有两个「离开本机」的集成面：AI 服务商（OpenAI �
 
 - AI 能力层：`src/main/ai/`（6 文件，1,172 行）
 - AI 接入层：`src/main/ipc/ai.ts` + `aiValidate.ts` + `aiChat.ts`
-- OneDrive 模块：`src/main/onedrive/`（11 文件，2,210 行）
+- OneDrive 模块：`src/main/onedrive/`（14 文件，2,756 行）
 - OneDrive 接入层：`src/main/ipc/onedrive.ts`
 - 持久化：`src/main/database/schema/aiChat.ts`、`src/main/database/aiChat.ts`
 
@@ -171,7 +171,7 @@ preload 侧的白名单 `AI_ERROR_CODES` 已改为对象 + `satisfies Record<AiE
 ## 6. OneDrive 模块分层
 
 ```
-onedrive:signIn / onedrive:backup（ipc/onedrive.ts）
+onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.ts）
         │
         ├── auth.ts            PKCE 授权 · 刷新 · 登出
         │     ├── authCallback.ts  127.0.0.1 回环 server + 极简 HTML 回调页
@@ -180,25 +180,31 @@ onedrive:signIn / onedrive:backup（ipc/onedrive.ts）
         ├── backup.ts          快照 → 上传 → 清理（进度编排）
         │     ├── upload.ts        ≤4MB 单次 PUT / >4MB 分片会话 + 重试
         │     └── graph.ts         Graph 请求封装 · approot / backups 目录
+        ├── remote.ts          远端备份列表（按修改时间倒序）
+        ├── download.ts        Range 分块下载 · 预签名 URL 续传
+        ├── restoreRemote.ts   下载 → 校验 → 复用本地 restoreDatabase
         ├── http.ts            超时合并 · 错误归一化 · Retry-After · 可中断 sleep
         ├── logSafe.ts         邮箱 / 路径 / 异常脱敏
-        ├── types.ts           OneDriveError（21 个 code）
+        ├── types.ts           OneDriveError（24 个 code）
         └── index.ts           统一出口
 ```
 
-| 文件              | 行数 | 职责                                                     |
-| ----------------- | ---- | -------------------------------------------------------- |
-| `auth.ts`         | 315  | 生成 PKCE、起回调 server、换 token、刷新单飞、登出       |
-| `authCallback.ts` | 192  | 只监听 `127.0.0.1` 随机端口、校验 `state`、返回内置 HTML |
-| `authToken.ts`    | 95   | 令牌端点 HTTP + OAuth 错误映射                           |
-| `backup.ts`       | 231  | `db.backup()` 快照、互斥、进度、临时文件清理             |
-| `credentials.ts`  | 249  | settings 键、加密读写、`getOneDriveAuthStatus`           |
-| `graph.ts`        | 207  | `graphRequest`、`/me`、`approot:/backups` 目录、URL 构造 |
-| `http.ts`         | 185  | 与 AI 域平行的最小 HTTP 工具（不引 `openai` SDK）        |
-| `index.ts`        | 43   | 对外导出面                                               |
-| `logSafe.ts`      | 82   | `maskEmail` / `safePath` / `safeError`                   |
-| `types.ts`        | 166  | 错误码、凭据、进度、结果类型                             |
-| `upload.ts`       | 445  | 大小分流、分片、重试、416 纠偏、会话取消                 |
+| 文件               | 行数 | 职责                                                     |
+| ------------------ | ---- | -------------------------------------------------------- |
+| `auth.ts`          | 315  | 生成 PKCE、起回调 server、换 token、刷新单飞、登出       |
+| `authCallback.ts`  | 192  | 只监听 `127.0.0.1` 随机端口、校验 `state`、返回内置 HTML |
+| `authToken.ts`     | 95   | 令牌端点 HTTP + OAuth 错误映射                           |
+| `backup.ts`        | 155  | `db.backup()` 快照、互斥、进度、临时文件清理             |
+| `credentials.ts`   | 249  | settings 键、加密读写、`getOneDriveAuthStatus`           |
+| `download.ts`      | 332  | Range 分块下载、预签名 URL 刷新、重试与取消              |
+| `graph.ts`         | 207  | `graphRequest`、`/me`、`approot:/backups` 目录、URL 构造 |
+| `http.ts`          | 192  | 与 AI 域平行的最小 HTTP 工具（不引 `openai` SDK）        |
+| `index.ts`         | 52   | 对外导出面                                               |
+| `logSafe.ts`       | 82   | `maskEmail` / `safePath` / `safeError`                   |
+| `remote.ts`        | 127  | 列出 `approot:/backups` 中的快照并归一化                 |
+| `restoreRemote.ts` | 124  | 下载 → 校验 → 恢复编排、临时文件清理                     |
+| `types.ts`         | 202  | 错误码、凭据、进度、结果类型                             |
+| `upload.ts`        | 432  | 大小分流、分片、重试、416 纠偏、会话取消                 |
 
 `http.ts` 与 `ai/http.ts` 是**有意的双份实现**：错误归一化产物不同（`OneDriveError` vs `AiError`），且 AI 侧依赖 `openai` SDK，备份模块不应被它拖入依赖（`onedrive/http.ts:4-10` 已登记该例外）。
 
@@ -237,7 +243,7 @@ onedrive:signIn / onedrive:backup（ipc/onedrive.ts）
 
 ## 8. 备份流程
 
-> 恢复边界：OneDrive 链路**只负责上传**，不提供远端列表 / 下载 / 恢复。需要拿回数据时使用设置「数据与备份」分区的本地备份（`backup:*` IPC）：从列表恢复（按备份文件夹，读取其中的 `snapshot.db`）或从任意 `.db` 文件恢复，主进程会先自动创建一个恢复前安全副本文件夹（`kind = pre-restore`），成功后自动重启应用。
+> 恢复能力：OneDrive 链路同时提供上传、远端列表、下载与恢复。设置页「OneDrive 云备份」分区的「云端备份」区会自动列出 `approot:/backups` 中的快照，选中一份后先统一落盘、二次确认，再下载到系统临时目录并复用本地恢复流程替换数据库。恢复前自动创建本地 `pre-restore` 安全副本，成功后应用自动重启；下载 / 恢复期间可取消。本地备份与恢复仍是独立的 `backup:*` 链路。
 
 ### 8.1 打包内容
 
@@ -271,16 +277,34 @@ onedrive:signIn / onedrive:backup（ipc/onedrive.ts）
 - 互斥：模块级 `activeBackup` + IPC 层 `activeBackupController`；并发调用立即返回 `{ ok: false, code: 'backup_in_progress' }`（`ipc/onedrive.ts:153-156`）。
 - 取消：`onedrive:cancelBackup` 通过 `AbortController.abort()` 中断；网络层表现为 `aborted`，分片重试遇 `aborted` 不再重试。两者都是长任务，`ipcMain.handle` 会挂到流程结束，取消固定走独立通道。
 
-### 8.5 错误码（`onedrive/types.ts`，共 21 个）
+### 8.5 远端列表
+
+`onedrive:listBackups` 调 `listRemoteBackups()`：带 Authorization 请求 `approot:/backups/children`，按 `@odata.nextLink` 翻页（最多 10 页），404（目录不存在）视为空数组；列表按 `lastModifiedDateTime` 倒序。每项只回传 `itemId` / `name` / `sizeBytes` / `modifiedAt` / `webUrl?`，不含下载地址或 token。
+
+### 8.6 下载与恢复
+
+`onedrive:restoreBackup({ itemId })` 的编排（`restoreRemote.ts`）：
+
+1. 取 token 后请求 item 元信息，拿预签名 `@microsoft.graph.downloadUrl` 与总大小；404 归一化为 `remote_not_found`。
+2. 下载到系统临时目录 `writers-forge-restore/onedrive-restore-<YYYYMMDD-HHmmss>.db`。分块 **8 MB**，单块超时 **120 s**、最多尝试 **4 次**；预签名 URL 401 / 403 视为过期，最多重取 **2 次**并从当前偏移续传。临时文件名刻意不用 `writers-forge-` 前缀，避开快照遗留清理。
+3. 只读校验（复用 `verifyDatabaseFile`：后缀 / `quick_check` / 核心表）。
+4. 校验通过后调本地 `restoreDatabase()`（复用安全副本、替换数据库、自动重启），内部自行占用本地恢复锁；下载阶段不占锁。
+5. `finally` 删除临时文件；成功后 IPC 层 `scheduleRelaunch()`，300ms 后 `app.relaunch()` + `app.exit(0)`。
+
+进度走独立推送 `onedrive:restoreProgress`，载荷 `{ phase: 'download' | 'restore' | 'done', bytesReceived, totalBytes, percent }`。取消走 `onedrive:cancelRestore`（下载阶段生效）：网络层抛 `aborted`，分块重试不再继续，半成品文件随 `finally` 清理。
+
+**嵌套错误**：`restoreBackup` 返回 `OneDriveResult<BackupRestoreResult>`。外层 `{ ok: false, code }` 是 OneDrive 域错误（下载 / 鉴权 / 条目不存在等）；外层 `ok: true` 但 `value.ok === false` 时，`value.code` 是恢复域 `BackupErrorCode`（校验 / 安全副本 / 替换数据库）。渲染层先查 `ERROR_KEYS`，再查 `BACKUP_ERROR_KEYS`。
+
+### 8.7 错误码（`onedrive/types.ts`，共 24 个）
 
 跨 IPC 时**不抛异常**：`OneDriveError` 序列化后只剩 `name`/`message`，`code` 会丢，因此可预期错误一律返回 `{ ok: false, code, status? }`，只有非域内异常才重抛（`ipc/onedrive.ts:39-43`）。渲染层经 `ERROR_KEYS`（`satisfies Record<OneDriveErrorCode, string>`）取 `onedrive.error.<code>`。
 
-| 分组        | code                                                                                                     |
-| ----------- | -------------------------------------------------------------------------------------------------------- |
-| 配置 / 凭据 | `not_configured`、`encryption_unavailable`、`credentials_corrupt`                                        |
-| 授权流程    | `auth_cancelled`、`auth_timeout`、`auth_failed`、`state_mismatch`、`reauth_required`、`port_bind_failed` |
-| 传输        | `network`、`timeout`、`aborted`、`unauthorized`、`forbidden`、`not_found`、`rate_limited`、`upstream`    |
-| 备份        | `upload_failed`、`snapshot_failed`、`backup_in_progress`、`unknown`                                      |
+| 分组        | code                                                                                                                      |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 配置 / 凭据 | `not_configured`、`encryption_unavailable`、`credentials_corrupt`                                                         |
+| 授权流程    | `auth_cancelled`、`auth_timeout`、`auth_failed`、`state_mismatch`、`reauth_required`、`port_bind_failed`                  |
+| 传输        | `network`、`timeout`、`aborted`、`unauthorized`、`forbidden`、`not_found`、`rate_limited`、`upstream`                     |
+| 备份 / 恢复 | `upload_failed`、`snapshot_failed`、`list_failed`、`download_failed`、`remote_not_found`、`backup_in_progress`、`unknown` |
 
 可重试判定集中在 `RETRYABLE_CODES`：`network` / `timeout` / `rate_limited` / `upstream`（`onedrive/types.ts:36-41`）。
 

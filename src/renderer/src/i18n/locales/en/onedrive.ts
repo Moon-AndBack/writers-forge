@@ -51,6 +51,31 @@ const onedrive = {
     signInCancelled: 'Sign-in cancelled',
     backupCancelled: 'Backup cancelled'
   },
+  remote: {
+    title: 'Cloud backups',
+    refresh: 'Refresh',
+    loading: 'Loading cloud backups…',
+    empty: 'No cloud backups yet',
+    restoreAria: 'Restore cloud backup "{{name}}"',
+    confirm: {
+      title: 'Restore from cloud backup',
+      cover: 'This will overwrite all current data with cloud backup "{{name}}".',
+      safeCopy:
+        'A local safety copy (pre-restore) is created automatically before restoring, so the current data can be rolled back.',
+      restart: 'The app will restart automatically after a successful restore.',
+      flush: 'Unsaved edits will be saved first.',
+      action: 'Overwrite and restore'
+    },
+    phase: {
+      download: 'Downloading… {{percent}}%',
+      restore: 'Restoring the database… {{percent}}%'
+    },
+    progressLabel: 'Restore progress',
+    cancel: 'Cancel restore',
+    restarting: 'Restoring and restarting…',
+    cancelled: 'Restore cancelled',
+    failed: 'Restore failed; current data was not replaced. Please try again later.'
+  },
   clientId: {
     label: 'Application ID (clientId)',
     description:

@@ -19,6 +19,7 @@ import SettingRow from './SettingRow'
 import { settingRowDescriptionId } from './settingRowIds'
 import { ERROR_KEYS, NOTICE_KEYS, PHASE_KEYS, formatBytes } from './onedriveSectionSupport'
 import { useOneDriveBackup } from './useOneDriveBackup'
+import OneDriveRemoteBackups from './OneDriveRemoteBackups'
 import '../../styles/components/onedrive-backup.css'
 
 export default function OneDriveSection() {
@@ -65,7 +66,12 @@ export default function OneDriveSection() {
       >
         <div className="od-actions">
           {signedIn ? (
-            <Button variant="secondary" className="wf-btn--on-soft" onClick={od.handleSignOut}>
+            <Button
+              variant="secondary"
+              className="wf-btn--on-soft"
+              disabled={od.restoreRunning}
+              onClick={od.handleSignOut}
+            >
               {t('account.signOut')}
             </Button>
           ) : od.signingIn ? (
@@ -98,7 +104,9 @@ export default function OneDriveSection() {
           ) : (
             <Button
               variant="primary"
-              disabled={!signedIn || encryptionBlocked || od.signingIn || od.loading}
+              disabled={
+                !signedIn || encryptionBlocked || od.signingIn || od.loading || od.restoreRunning
+              }
               onClick={od.handleBackup}
             >
               {t('backup.action')}
@@ -146,6 +154,8 @@ export default function OneDriveSection() {
         </p>
       ) : null}
 
+      {signedIn ? <OneDriveRemoteBackups od={od} /> : null}
+
       <SettingRow
         controlId={clientIdControlId}
         label={t('clientId.label')}
@@ -161,7 +171,7 @@ export default function OneDriveSection() {
             aria-label={t('clientId.label')}
             spellCheck={false}
             autoComplete="off"
-            disabled={od.loading || od.unsupported}
+            disabled={od.loading || od.unsupported || od.restoreRunning}
             onChange={(event) => od.setDraftClientId(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
@@ -173,7 +183,7 @@ export default function OneDriveSection() {
           <Button
             variant="primary"
             loading={od.savingClientId}
-            disabled={od.loading || od.unsupported}
+            disabled={od.loading || od.unsupported || od.restoreRunning}
             onClick={od.handleSaveClientId}
           >
             {t('clientId.save')}

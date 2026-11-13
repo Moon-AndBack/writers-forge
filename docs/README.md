@@ -25,7 +25,7 @@
 | ---------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | [`architecture/overview.md`](./architecture/overview.md)               | 进程模型、启动时序、安全边界、目录分层                                |
 | [`architecture/database.md`](./architecture/database.md)               | 连接单例、建表装配、迁移、种子、诊断                                  |
-| [`architecture/ipc-preload.md`](./architecture/ipc-preload.md)         | 185 个 IPC 通道、6 个主→渲染事件、preload 24 个命名空间               |
+| [`architecture/ipc-preload.md`](./architecture/ipc-preload.md)         | 188 个 IPC 通道、7 个主→渲染事件、preload 24 个命名空间               |
 | [`ui/window.md`](./ui/window.md)                                       | 窗口创建、尺寸持久化、材质（仅 acrylic / none）、自绘标题栏、宽度磁吸 |
 | [`ui/components.md`](./ui/components.md)                               | `components/ui/` 下 23 项通用组件与钩子的 API                         |
 | [`ui/design-language.md`](./ui/design-language.md)                     | 表面层级、排版、间距、控件高度、选中态、三态、浮层、动效、例外与债务  |

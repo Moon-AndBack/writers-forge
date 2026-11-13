@@ -53,6 +53,30 @@ const onedrive = {
     signInCancelled: '已取消登录',
     backupCancelled: '已取消备份'
   },
+  remote: {
+    title: '云端备份',
+    refresh: '刷新',
+    loading: '正在读取云端备份列表…',
+    empty: '还没有云端备份',
+    restoreAria: '恢复云端备份「{{name}}」',
+    confirm: {
+      title: '从云端备份恢复',
+      cover: '将用云端备份「{{name}}」覆盖当前全部数据。',
+      safeCopy: '恢复前会自动创建一份本地安全副本（pre-restore），当前数据可回退。',
+      restart: '恢复成功后应用会自动重启。',
+      flush: '未保存的编辑会先尝试保存。',
+      action: '覆盖并恢复'
+    },
+    phase: {
+      download: '正在下载… {{percent}}%',
+      restore: '正在恢复数据库… {{percent}}%'
+    },
+    progressLabel: '恢复进度',
+    cancel: '取消恢复',
+    restarting: '正在恢复并重启…',
+    cancelled: '已取消恢复',
+    failed: '恢复失败，当前数据未被替换，请稍后重试'
+  },
   clientId: {
     label: '应用 ID（clientId）',
     description: '用于 OneDrive 应用注册；留空则使用内置默认应用 ID',

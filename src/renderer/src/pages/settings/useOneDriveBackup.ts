@@ -2,10 +2,11 @@
  * 设置页 · OneDrive 备份状态 hook。
  *
  * 职责：
- * - 挂载时 `status()` 拉取初始态（含 `backupRunning` / `signingIn` 恢复）；
+ * - 挂载时 `status()` 拉取初始态（含 `backupRunning` / `signingIn`）；
  * - 订阅 `onProgress`（卸载时退订），备份进度与运行态由事件驱动；
  * - 封装登录 / 取消登录 / 退出 / 备份 / 取消备份 / 保存 clientId 的异步流程；
- * - 错误只保留 `OneDriveErrorCode`，由组件经 `ERROR_KEYS` 走 i18n 文案。
+ * - 云端备份列表与恢复拆分到 `useOneDriveRemoteBackups`，本 hook 只合并对外接口；
+ * - 错误只保留 `OneDriveErrorCode` / `BackupErrorCode`，由组件经映射表走 i18n。
  *
  * 不在此处翻译错误文案（仅提示类 toast / 确认框使用 `t()`），避免把错误码
  * 降级成字符串后失去可映射性。
@@ -25,6 +26,7 @@ import {
   formatBytes,
   type OneDriveNotice
 } from './onedriveSectionSupport'
+import { useOneDriveRemoteBackups, type OneDriveRemoteController } from './useOneDriveRemoteBackups'
 
 const INITIAL_PROGRESS: OneDriveBackupProgress = {
   phase: 'snapshot',
@@ -33,7 +35,7 @@ const INITIAL_PROGRESS: OneDriveBackupProgress = {
   percent: 0
 }
 
-export interface OneDriveBackupController {
+export interface OneDriveBackupController extends OneDriveRemoteController {
   /** 主进程聚合状态；未读取完成时为 null。 */
   status: OneDriveStatus | null
   /** 初次 status 读取中。 */
@@ -83,6 +85,16 @@ export function useOneDriveBackup(): OneDriveBackupController {
   const [errorCode, setErrorCode] = useState<OneDriveErrorCode | null>(null)
   const [notice, setNotice] = useState<OneDriveNotice | null>(null)
 
+  const remote = useOneDriveRemoteBackups({
+    api,
+    signedIn: status?.signedIn === true,
+    backupRunning,
+    signingIn,
+    statusRestoreRunning: status?.restoreRunning === true,
+    requestConfirm
+  })
+  const { actions: remoteActions, resetRemote, restoreRunning: remoteRestoreRunning } = remote
+
   useEffect(() => {
     if (!api) return undefined
 
@@ -125,7 +137,7 @@ export function useOneDriveBackup(): OneDriveBackupController {
   }, [api, settingsApi])
 
   const handleSignIn = useCallback((): void => {
-    if (!api || signingIn || status === null) return
+    if (!api || signingIn || status === null || remoteRestoreRunning) return
 
     setErrorCode(null)
     setNotice(null)
@@ -160,7 +172,7 @@ export function useOneDriveBackup(): OneDriveBackupController {
         setSigningIn(false)
       }
     })()
-  }, [api, showToast, signingIn, status, t])
+  }, [api, remoteRestoreRunning, showToast, signingIn, status, t])
 
   const handleCancelSignIn = useCallback((): void => {
     if (!api) return
@@ -168,7 +180,7 @@ export function useOneDriveBackup(): OneDriveBackupController {
   }, [api])
 
   const handleSignOut = useCallback((): void => {
-    if (!api || status?.signedIn !== true) return
+    if (!api || status?.signedIn !== true || remoteRestoreRunning) return
 
     requestConfirm(
       {
@@ -186,16 +198,20 @@ export function useOneDriveBackup(): OneDriveBackupController {
           setProgress(null)
           setErrorCode(null)
           setNotice(null)
+          // 登出后远端列表不再可见，清空状态与恢复结果。
+          resetRemote()
           showToast(t('signOut.successToast'))
         } catch {
           setErrorCode('unknown')
         }
       }
     )
-  }, [api, requestConfirm, showToast, status?.signedIn, t])
+  }, [api, resetRemote, remoteRestoreRunning, requestConfirm, showToast, status?.signedIn, t])
 
   const handleBackup = useCallback((): void => {
-    if (!api || status?.signedIn !== true || backupRunning) return
+    if (!api || status?.signedIn !== true || backupRunning || remoteRestoreRunning) {
+      return
+    }
 
     setErrorCode(null)
     setNotice(null)
@@ -218,6 +234,8 @@ export function useOneDriveBackup(): OneDriveBackupController {
               size: formatBytes(result.value.sizeBytes)
             })
           )
+          // 新备份已上传，刷新远端列表。
+          remoteActions.refreshRemote()
         } else if (result.code === 'aborted') {
           setProgress(null)
           setNotice('backupCancelled')
@@ -233,7 +251,7 @@ export function useOneDriveBackup(): OneDriveBackupController {
         setStatus((prev) => (prev ? { ...prev, backupRunning: false } : prev))
       }
     })()
-  }, [api, backupRunning, showToast, status?.signedIn, t])
+  }, [api, backupRunning, remoteActions, remoteRestoreRunning, showToast, status?.signedIn, t])
 
   const handleCancelBackup = useCallback((): void => {
     if (!api) return
@@ -242,7 +260,7 @@ export function useOneDriveBackup(): OneDriveBackupController {
   }, [api])
 
   const handleSaveClientId = useCallback((): void => {
-    if (!api || savingClientId) return
+    if (!api || savingClientId || remoteRestoreRunning) return
 
     const trimmed = draftClientId.trim()
     setErrorCode(null)
@@ -262,7 +280,7 @@ export function useOneDriveBackup(): OneDriveBackupController {
         setSavingClientId(false)
       }
     })()
-  }, [api, draftClientId, savingClientId, showToast, t])
+  }, [api, draftClientId, remoteRestoreRunning, savingClientId, showToast, t])
 
   return {
     status,
@@ -276,6 +294,7 @@ export function useOneDriveBackup(): OneDriveBackupController {
     progress,
     errorCode,
     notice,
+    ...remote,
     handleSignIn,
     handleCancelSignIn,
     handleSignOut,
