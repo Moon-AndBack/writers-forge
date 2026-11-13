@@ -16,7 +16,7 @@ const log = createLogger('plot')
 export interface PlotTree {
   /** 未删除剧情线（后端顺序：`sortOrder, id`）。 */
   lines: PlotLineRow[]
-  /** 全书未删除场景（后端顺序：按线分组、组内 `sortOrder, id`）。 */
+  /** 全书未删除场景（后端顺序：绝对年优先、未定年沉底，同年按 `sortOrder, id`）。 */
   scenes: PlotSceneRow[]
   /** 是否仍在首次加载。 */
   loading: boolean

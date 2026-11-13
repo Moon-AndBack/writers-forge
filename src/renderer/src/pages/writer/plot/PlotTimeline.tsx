@@ -28,7 +28,7 @@ import { useSceneContentWidth } from './useSceneContentWidth'
 export interface PlotTimelineProps {
   /** 当前选中剧情线；null = 未选中 / 无线（渲染空态）。 */
   line: PlotLineRow | null
-  /** 当前选中剧情线下的场景（后端已按绝对年优先、未定年沉底排序）。 */
+  /** 当前选中剧情线下的场景（已按绝对年优先、未定年沉底排序，由 `scenesOfLine` 派生）。 */
   scenes: PlotSceneRow[]
   /** 当前选中场景 id（页面层持有，与右栏编辑器共享）。 */
   activeSceneId: number | null

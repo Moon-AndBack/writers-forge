@@ -89,7 +89,7 @@ export interface EditorPaneProps {
   outlineItems?: OutlineItemRow[]
   /** 当前选中剧情线（页面层共享，与左栏剧情线列表一致）。 */
   plotLine?: PlotLineRow | null
-  /** 当前选中线下的场景（组内 `sortOrder, id` 升序）。 */
+  /** 当前选中线下的场景（绝对年升序、未定年沉底，同年按 `sortOrder, id` 升序）。 */
   plotScenes?: PlotSceneRow[]
   /** 当前选中剧情场景 id（页面层共享，与右栏编辑器一致）。 */
   activePlotSceneId?: number | null

@@ -27,7 +27,7 @@ export interface PlotWorkspace {
   activeLineId: number | null
   /** 当前选中剧情线（null = 无线）。 */
   activeLine: PlotLineRow | null
-  /** 当前选中线下的场景（组内 `sortOrder, id` 升序）。 */
+  /** 当前选中线下的场景（绝对年升序、未定年沉底，同年按 `sortOrder, id` 升序）。 */
   activeScenes: PlotSceneRow[]
   /** 当前选中场景 id（null = 无线下节点）。 */
   activeSceneId: number | null
