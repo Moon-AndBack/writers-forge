@@ -33,6 +33,16 @@ export interface TimelineViewProps {
   descriptionJson?: string
   /** 当前选中时间线 id（用于自行读取 origin 时定位）。 */
   activeTimelineId?: string | null
+  /** 全书未删除剧情线（页面层剧情数据源下发；按当前时间线过滤后展示）。 */
+  lines?: PlotLineRow[]
+  /** 全书未删除场景（页面层剧情数据源下发；按当前时间线的剧情线过滤后展示）。 */
+  scenes?: PlotSceneRow[]
+  /** 剧情树是否仍在加载（页面层剧情数据源下发）。 */
+  loading?: boolean
+  /** 剧情树最近一次加载失败信息（`null` = 正常；页面层剧情数据源下发）。 */
+  error?: string | null
+  /** 重新拉取剧情树（错误态重试）。 */
+  onReload?: () => void
   /** 新建时间线入口（标题栏按钮触发）；缺省则不渲染入口。 */
   onCreateTimeline?: (name: string, description?: RichTextBodyValue) => void | Promise<unknown>
   /** 当前选中场景 id（页面层持有，与右栏只读详情共享；null = 未选中）。 */
@@ -53,13 +63,12 @@ export interface TimelineViewProps {
  *   `EntityStyleCard`（与剧情 / 伏笔 / 设定卡同一套骨架与视觉规格），
  *   不新增全局 token；独立 `is-origin` 类区分首段；
  * - 首段：起点时间 + 元年说明卡 + 人物无；不渲染「＋」缝，元年卡可点选起点；
- * - 次段：全书剧情经 `api.plot.listLines/listScenes` 按年分组跨线聚合
- *  （`groupScenesByYear`，同年一排多卡，未定年组沉底），卡可点击选中
+ * - 次段：全书剧情由页面层剧情数据源下发（`lines` / `scenes`），按当前时间线过滤后
+ *   经 `groupScenesByYear` 按年分组聚合（同年一排多卡，未定年组沉底），卡可点击选中
  *  （选中态落卡自身 `is-active`，`is-readonly` 保留；选中详情在右栏只读展示，
  *  不进编辑通道）；
  * - 起点经既有 settings 通道按书键读取，读不到回退 `t('originDefault')`（默认「元年」）；
- * - 起点经既有 settings 通道按书键读取，读不到回退 `t('originDefault')`（默认「元年」）；
- * - 不进 `plot` 计数排序写通道，不调 plot CRUD。
+ * - 不进 `plot` 计数排序写通道，不调 plot CRUD；数据与剧情模块 / 右栏剧情页签同源。
  */
 export default function TimelineView({
   bookId,
@@ -67,6 +76,11 @@ export default function TimelineView({
   originName = '',
   descriptionJson = '',
   activeTimelineId = null,
+  lines = [],
+  scenes = [],
+  loading = false,
+  error = null,
+  onReload,
   onCreateTimeline,
   selectedSceneId = null,
   originSelected = false,
@@ -79,15 +93,6 @@ export default function TimelineView({
   const [stored, setStored] = useState<string | null>(
     origin !== undefined ? (isStoredOrigin(origin) ? origin : null) : null
   )
-  const [lines, setLines] = useState<PlotLineRow[]>([])
-  const [scenes, setScenes] = useState<PlotSceneRow[]>([])
-  // 列表读取状态（按书打标）：`loading` = 首帧 / 换书 / 重试中，`error` = 读取失败。
-  const [listState, setListState] = useState<{
-    bookId: string | null
-    phase: 'loading' | 'ready' | 'error'
-  }>({ bookId: null, phase: 'loading' })
-  // 重试令牌：递增即重跑列表 effect（只影响失败后的显式重试）。
-  const [reloadKey, setReloadKey] = useState(0)
   const [createOpen, setCreateOpen] = useState(false)
 
   useEffect(() => {
@@ -111,43 +116,6 @@ export default function TimelineView({
     }
   }, [bookId, activeTimelineId, origin])
 
-  useEffect(() => {
-    let cancelled = false
-    const api = window.api?.plot
-    if (!api || !bookId) {
-      return () => {
-        cancelled = true
-      }
-    }
-    const targetBookId = bookId
-    void Promise.all([api.listLines(bookId), api.listScenes(bookId)])
-      .then(([nextLines, nextScenes]) => {
-        if (cancelled) return
-        setLines(nextLines)
-        setScenes(nextScenes)
-        setListState({ bookId: targetBookId, phase: 'ready' })
-      })
-      .catch(() => {
-        if (cancelled) return
-        setLines([])
-        setScenes([])
-        setListState({ bookId: targetBookId, phase: 'error' })
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [bookId, reloadKey])
-
-  // 列表读取态派生：无 API / 无书时不发起读取（保持既有兜底展示，不显示加载 / 错误）。
-  const listActive = Boolean(bookId) && window.api?.plot !== undefined
-  const listLoading = listActive && (listState.bookId !== bookId || listState.phase === 'loading')
-  const listError = listActive && listState.bookId === bookId && listState.phase === 'error'
-  /** 重试：先切回加载态，再靠令牌重跑上面的 effect。 */
-  const retryList = (): void => {
-    setListState({ bookId: bookId ?? null, phase: 'loading' })
-    setReloadKey((key) => key + 1)
-  }
-
   const resolvedStored = origin !== undefined ? (isStoredOrigin(origin) ? origin : null) : stored
   const originDisplay = isStoredOrigin(resolvedStored) ? resolvedStored.trim() : t('originDefault')
   // 元年卡卡头标题：自定义起点名（trim 后为空 → 回退「起点」）；时间列仍是「元年」。
@@ -156,16 +124,17 @@ export default function TimelineView({
   // （段首缩进由 `.plot-scene-para` 提供）；无段落（空文档 / 老数据空描述）时回退「故事开始了」。
   const originParagraphs = useMemo(() => docJsonToParagraphs(descriptionJson), [descriptionJson])
   // 按当前选中时间线过滤剧情线 / 场景：仅显示该时间线归属的剧情线及其下场景。
-  // activeTimelineId 为空时回退全量（时间线未加载 / 无时间线兜底），避免首帧空白。
+  // activeTimelineId 为空 = 时间线尚未加载完成：返回空集，避免把其它时间线的场景错当本线内容。
+  // 比较前两侧 trim + 小写归一（主进程已 trim，防老数据 / 手改设置残留空白或大小写差异）。
   const filteredLines = useMemo(() => {
-    if (!activeTimelineId) return lines
-    return lines.filter((row) => row.timelineId === activeTimelineId)
+    const target = activeTimelineId?.trim().toLowerCase() ?? ''
+    if (target === '') return []
+    return lines.filter((row) => row.timelineId.trim().toLowerCase() === target)
   }, [lines, activeTimelineId])
   const filteredScenes = useMemo(() => {
-    if (!activeTimelineId) return scenes
     const allowedLineIds = new Set(filteredLines.map((row) => row.id))
     return scenes.filter((scene) => allowedLineIds.has(scene.lineId))
-  }, [scenes, activeTimelineId, filteredLines])
+  }, [scenes, filteredLines])
   // 全书跨线按年分组（后端已按绝对年优先排序，此处再分组聚合，同年一排）。
   // 起点作为卡片合并进元年组（absoluteYear === 0）：若无元年组则创建，origin 卡与元年场景并排。
   const groups = useMemo(() => {
@@ -206,13 +175,13 @@ export default function TimelineView({
       <div className="editor-scroll">
         <div className="editor-inner is-full">
           <div
-            className={`plot-timeline timeline-main${listError || listLoading ? ' is-status' : ''}`}
+            className={`plot-timeline timeline-main${error !== null || loading ? ' is-status' : ''}`}
           >
-            {listError ? (
-              /* 读取失败：与「正常空时间线」区分，给出重试入口。 */
-              <LoadErrorState onRetry={retryList} />
-            ) : listLoading ? (
+            {loading ? (
               <div className="timeline-loading">{tCommon('loading')}</div>
+            ) : error !== null ? (
+              /* 读取失败：与「正常空时间线」区分，给出重试入口。 */
+              <LoadErrorState onRetry={() => onReload?.()} />
             ) : groups.length === 0 ? (
               <div className="plot-timeline-empty">{t('plotEmpty')}</div>
             ) : (

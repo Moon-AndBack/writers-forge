@@ -10,6 +10,8 @@ import { PlusIcon } from '../icons'
 export interface PlotActivityActionsProps {
   /** 打开「新建剧情线」聚合弹窗（弹窗本体挂载在剧情视图内）。 */
   onAdd: () => void
+  /** 禁用新建入口（时间线尚未加载时避免新剧情线落到不存在的默认时间线）。 */
+  disabled?: boolean
 }
 
 /**
@@ -32,7 +34,7 @@ export interface PlotActivityActionsProps {
  * 按钮会先使编辑器失焦 → `editing` 转 false → 工具栏在 click 派发前卸载，命令无从执行
  * （与 `FormatPopover` / `EditorFormatGroup` 的选区保持同口径）。
  */
-export default function PlotActivityActions({ onAdd }: PlotActivityActionsProps) {
+export default function PlotActivityActions({ onAdd, disabled = false }: PlotActivityActionsProps) {
   const { t } = useTranslation('plot')
   // 右栏正文编辑器共享态（editor 实例 + 聚焦态 + 归属书 id）；无 Provider 时为空。
   const { editor, editing, bookId } = usePlotEditor()
@@ -51,13 +53,14 @@ export default function PlotActivityActions({ onAdd }: PlotActivityActionsProps)
             label={t('newLine')}
             tooltip={t('newLine')}
             tooltipPlacement="bottom"
+            disabled={disabled}
             onClick={onAdd}
           >
             <PlusIcon />
           </IconButton>
         </>
       ),
-    [editing, editor, bookId, t, onAdd]
+    [editing, editor, bookId, t, onAdd, disabled]
   )
 
   // 注册到模块级 action 插槽（'plot'）：外壳标题栏读取并在返回图标右侧渲染。

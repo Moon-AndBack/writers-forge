@@ -369,6 +369,11 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
               timelineOriginName={timeline.originName}
               activeTimelineName={timeline.activeEntry?.name}
               activeTimelineId={timeline.activeId}
+              timelinePlotLines={plot.allLines}
+              timelinePlotScenes={plot.scenes}
+              timelinePlotLoading={plot.loading}
+              timelinePlotError={plot.error}
+              onReloadTimelinePlot={plot.reload}
               onCreateTimeline={handleCreateTimeline}
               dossier={dossierBundle}
               foreshadow={foreshadowBundle}

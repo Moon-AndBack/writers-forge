@@ -20,6 +20,8 @@ export interface PlotTree {
   scenes: PlotSceneRow[]
   /** 是否仍在首次加载。 */
   loading: boolean
+  /** 最近一次加载失败信息（`null` = 正常；消费方可据此展示错误态与重试）。 */
+  error: string | null
   /** 重新拉取剧情线 / 场景（写操作后调用）。 */
   reload: () => Promise<void>
   /** 新建剧情线（缺省名 →「新剧情线」；options 缺省取默认类型 + 首色），成功返回新线供选中。 */
@@ -50,12 +52,14 @@ export function usePlotTree(bookId: string): PlotTree {
   const [lines, setLines] = useState<PlotLineRow[]>([])
   const [scenes, setScenes] = useState<PlotSceneRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const reload = useCallback(async (): Promise<void> => {
     const api = window.api?.plot
     if (!api || bookId === '') {
       setLines([])
       setScenes([])
+      setLoadError(null)
       setLoading(false)
       return
     }
@@ -66,8 +70,10 @@ export function usePlotTree(bookId: string): PlotTree {
       ])
       setLines(nextLines)
       setScenes(nextScenes)
+      setLoadError(null)
     } catch (error) {
       log.warn('剧情树加载失败', error)
+      setLoadError(error instanceof Error ? error.message : String(error))
     } finally {
       setLoading(false)
     }
@@ -81,6 +87,7 @@ export function usePlotTree(bookId: string): PlotTree {
         if (active) {
           setLines([])
           setScenes([])
+          setLoadError(null)
           setLoading(false)
         }
         return
@@ -93,9 +100,11 @@ export function usePlotTree(bookId: string): PlotTree {
         if (active) {
           setLines(nextLines)
           setScenes(nextScenes)
+          setLoadError(null)
         }
       } catch (error) {
         log.warn('剧情树加载失败', error)
+        if (active) setLoadError(error instanceof Error ? error.message : String(error))
       } finally {
         if (active) setLoading(false)
       }
@@ -239,6 +248,7 @@ export function usePlotTree(bookId: string): PlotTree {
     lines,
     scenes,
     loading,
+    error: loadError,
     reload,
     createLine,
     renameLine,

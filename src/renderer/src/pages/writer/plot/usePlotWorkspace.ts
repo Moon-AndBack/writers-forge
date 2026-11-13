@@ -23,6 +23,12 @@ export interface PlotWorkspace {
   allLines: PlotLineRow[]
   /** 全书未删除场景（用于左栏节点计数 / 右栏节点编辑 / 只读详情）。 */
   scenes: PlotSceneRow[]
+  /** 剧情树是否仍在首次加载（独立时间线视图取用）。 */
+  loading: boolean
+  /** 剧情树最近一次加载失败信息（`null` = 正常；独立时间线视图取用）。 */
+  error: string | null
+  /** 重新拉取剧情线 / 场景（独立时间线视图错误态重试）。 */
+  reload: () => Promise<void>
   /** 当前选中剧情线 id（null = 无线）。 */
   activeLineId: number | null
   /** 当前选中剧情线（null = 无线）。 */
@@ -105,6 +111,9 @@ export function usePlotWorkspace(bookId: string, activeTimelineId?: string | nul
   const {
     lines: allLines,
     scenes: allScenes,
+    loading: plotLoading,
+    error: plotError,
+    reload: reloadPlot,
     createLine: createPlotLine,
     renameLine: renamePlotLine,
     updateLine: updatePlotLine,
@@ -302,6 +311,9 @@ export function usePlotWorkspace(bookId: string, activeTimelineId?: string | nul
     lines,
     allLines,
     scenes,
+    loading: plotLoading,
+    error: plotError,
+    reload: reloadPlot,
     activeLineId,
     activeLine,
     activeScenes,

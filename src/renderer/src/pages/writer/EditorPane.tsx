@@ -121,6 +121,16 @@ export interface EditorPaneProps {
   activeTimelineName?: string
   /** 当前激活时间线 id（新建剧情线继承用）。 */
   activeTimelineId?: string | null
+  /** 全书未删除剧情线（页面层 `plot.allLines`；独立时间线视图按当前时间线过滤）。 */
+  timelinePlotLines?: PlotLineRow[]
+  /** 全书未删除场景（页面层 `plot.scenes`；独立时间线视图按当前时间线的剧情线过滤）。 */
+  timelinePlotScenes?: PlotSceneRow[]
+  /** 剧情树是否仍在首次加载（独立时间线视图加载态）。 */
+  timelinePlotLoading?: boolean
+  /** 剧情树最近一次加载失败信息（`null` = 正常；独立时间线视图错误态）。 */
+  timelinePlotError?: string | null
+  /** 重新拉取剧情树（独立时间线视图错误态重试）。 */
+  onReloadTimelinePlot?: () => void
   /** 新建时间线入口（标题栏按钮）；缺省则不渲染。 */
   onCreateTimeline?: (name: string, description?: RichTextBodyValue) => void | Promise<unknown>
   /** 设定档案五域装配包（仅活动模块为五域之一时非空；中栏卡片视图消费）。 */
@@ -184,6 +194,11 @@ function EditorPaneComponent({
   timelineOriginName,
   activeTimelineName,
   activeTimelineId,
+  timelinePlotLines = [],
+  timelinePlotScenes = [],
+  timelinePlotLoading = false,
+  timelinePlotError = null,
+  onReloadTimelinePlot,
   onCreateTimeline,
   dossier = null,
   foreshadow = null,
@@ -394,6 +409,11 @@ function EditorPaneComponent({
           descriptionJson={timelineDescriptionJson}
           originName={timelineOriginName}
           activeTimelineId={activeTimelineId}
+          lines={timelinePlotLines}
+          scenes={timelinePlotScenes}
+          loading={timelinePlotLoading}
+          error={timelinePlotError}
+          onReload={onReloadTimelinePlot}
           onCreateTimeline={onCreateTimeline}
           originSelected={timelineOriginSelected}
           onSelectOrigin={onSelectTimelineOrigin}

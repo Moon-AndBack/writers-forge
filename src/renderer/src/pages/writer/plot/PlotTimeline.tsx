@@ -128,11 +128,14 @@ export default function PlotTimeline({
   )
 
   // 弹窗三字段提交：落库（页面层自动选中新线），关弹窗由 Dialog 内部处理。
+  // 时间线尚未加载（activeTimelineId 为空）时不落库：否则会归入可能不存在的 `default`，
+  // 导致新剧情线在时间线视图里「消失」；标题栏入口同时禁用。
   const handleCreateLine = (input: PlotLineDialogInput): void => {
+    if (!activeTimelineId) return
     void onCreateLine?.(input.name, {
       lineType: input.lineType,
       lineColor: input.lineColor,
-      timelineId: activeTimelineId ?? 'default',
+      timelineId: activeTimelineId,
       defaultOrigin: timelineOrigin ?? ''
     })
   }
@@ -177,7 +180,7 @@ export default function PlotTimeline({
   return (
     <>
       {/* 标题栏按钮组（剧情模块专属）：新建剧情线入口。 */}
-      <PlotActivityActions onAdd={() => setCreateOpen(true)} />
+      <PlotActivityActions onAdd={() => setCreateOpen(true)} disabled={!activeTimelineId} />
       {/* 「新建剧情线」弹窗：标题栏按钮触发，三字段（名称 / 类型 / 颜色）+ 落库。 */}
       {createOpen && (
         <PlotLineDialog
