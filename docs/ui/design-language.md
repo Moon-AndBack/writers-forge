@@ -53,7 +53,7 @@
 | 11px      | 空态说明、紧凑提示                                 | `components/empty-state.css:65`、`styles/statusbar.css:24`                                                                                                               |
 | 11.5px    | 辅助元信息、次级说明                               | `styles/settings.css:68`、`styles/statusbar-widgets.css:269`                                                                                                             |
 | 12px      | 小号表单控件、紧凑正文                             | `components/form.css:95`、`components/surface.css:135`                                                                                                                   |
-| 12.5px    | 卡片正文、列表主名、分段项                         | `components/surface.css:125`、`components/segmented.css:35`                                                                                                              |
+| 12.5px    | 卡片正文、列表主名、分段项                         | `components/surface.css:125`、`components/segmented.css:69`                                                                                                              |
 | 13px      | **界面基准**：输入、按钮、普通 UI 文本             | `components/form.css:36`、`components/button.css:15`                                                                                                                     |
 | 13.5px    | 行标题、章节 / 大纲条目名                          | `styles/writer-side-chapters.css:88`、`styles/writer-right-panels.css:254`                                                                                               |
 | 14px      | 卡片标题、大号输入                                 | `components/entity-card.css:59`、`components/form.css:99`                                                                                                                |
@@ -79,7 +79,7 @@
 
 | 场景                       | 值                 | 代表位置                                                               |
 | -------------------------- | ------------------ | ---------------------------------------------------------------------- |
-| 微间隙（图标–文字 / 胶囊） | 4 / 6px            | `components/entity-card.css:50,76`、`components/segmented.css:25`      |
+| 微间隙（图标–文字 / 胶囊） | 4 / 6px            | `components/entity-card.css:50,76`、`components/segmented.css:57`      |
 | 栏内衬 / 面板 gap          | 8px                | `styles/writer-right-panels.css:48-55`                                 |
 | 分区内衬                   | 6px                | `components/surface.css:145-148`                                       |
 | 树 / 导航行内衬            | 9px × 10px         | `styles/writer-side-chapters.css:35`、`styles/writer-outline.css:24`   |
@@ -108,7 +108,7 @@
 | Input / Select / Combobox（单行） | 36     | `components/form.css:48,95,100`、`components/form-select.css:16,151-158` |
 | SearchInput                       | 36     | `components/form-extras.css:21`                                          |
 | IconButton                        | 36     | `components/icon-button.css:14-15,84-85`                                 |
-| Segmented                         | 36     | `components/segmented.css:14,95,112`                                     |
+| Segmented                         | 36     | `components/segmented.css:16,105,122`                                    |
 | ChipInput                         | 36     | `components/form-extras.css:129`                                         |
 | Textarea（多行）                  | 不纳入 | `components/form.css:53-59,104-114`（最小高度维持 62 / 82 / 108）        |
 
@@ -216,7 +216,7 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 36 
 | offset | 适用场景                       | 代表位置                                                            |
 | ------ | ------------------------------ | ------------------------------------------------------------------- |
 | 1px    | 普通控件 / 按钮                | `components/button.css:53-56`                                       |
-| -1px   | 列表行、分段项（内嵌，防裁切） | `styles/writer-trash.css:188-190`、`components/segmented.css:81-84` |
+| -1px   | 列表行、分段项（内嵌，防裁切） | `styles/writer-trash.css:188-190`、`components/segmented.css:93-96` |
 | 2px    | 卡片                           | `styles/bookshelf.css:172-175`                                      |
 | 3px    | 色板 / 小圆点（避让选中双环）  | `components/display-extras.css:129-131`                             |
 | -2px   | 浮层选项 / 命中块（内嵌）      | `components/overlay.css:89-91`、`styles/clean-word-hits.css:67-69`  |
@@ -326,8 +326,8 @@ box-shadow:
 
 - **MUST** 卡片 hover 只过渡 `box-shadow` / `border-color` / `background` / `color`，不得包含 `transform`。
 - **MUST** 卡片 hover 不得使用位移或缩放（`translate / scale / rotate`）。
-- **MUST** 功能性 `transform` 允许，但仅限：Modal 进出场（`translateY(8px) scale(0.98)`）、折叠箭头（`rotate(90deg)`）、Switch 滑块（`translateX`）、按钮按压（`translateY(1px)`）、拖拽把手定位。
-- **MUST** 所有动效必须包在 `@media (prefers-reduced-motion: reduce)` 的关闭分支内（全局兜底见 `styles/base.css:113`，组件级见 `modal.css:70-76`、`segmented.css:115-119`）。
+- **MUST** 功能性 `transform` 允许，但仅限：Modal 进出场（`translateY(8px) scale(0.98)`）、折叠箭头（`rotate(90deg)`）、Switch 滑块（`translateX`）、按钮按压（`translateY(1px)`）、拖拽把手定位、Segmented 滑动指示器（`translate` 平移 + `width` / `height`，时长 `--dur-base`、缓动 `--ease`）。
+- **MUST** 所有动效必须包在 `@media (prefers-reduced-motion: reduce)` 的关闭分支内（全局兜底见 `styles/base.css:113`，组件级见 `modal.css:70-76`、`segmented.css:128-135`）。
 - **SHOULD** 入场位移统一 8px（`wf-enter-up` / `wf-exit-down`，`styles/components/motion.css:13-34`）；不得另造 6px / 10px 等位移量。
 
 ---
@@ -380,7 +380,7 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 | 10  | 胶囊 / 标签预设色板                | `styles/chip-pill-tokens.css:39-71`、`styles/chip-preset-colors.css:39-181`                                                                                            | `--chip-bg/fg/base` 实色 hex                                     | 模块 / 子类数据色，需跨主题稳定，且由数据库色板注入                   | 仅 `.chip-m-*` / `.chip-p-*`；新增色进数据库色板                |
 | 11  | 固定态活动栏轻微磨砂               | `styles/shell.css:336-355`                                                                                                                                             | `backdrop-filter: blur(10px) saturate(140%)` + `--pane` 55%      | 经用户确认的特例：固定态需透出桌面渐变                                | 仅 `body.act-pinned .activitybar`                               |
 | 12  | 封面白字 / 活动胶囊白点            | `styles/book-form.css:82`、`styles/bookshelf.css:199,305,323`、`styles/shell.css:287`                                                                                  | `#fff`                                                           | 固定深色封面 / 品牌底上的文本与指示点，白色对比恒优                   | 仅上述封面 / 活动胶囊内部                                       |
-| 13  | 既有微圆角 / 胶囊全圆              | `components/segmented.css:15,74`、`components/display-extras.css:142,148`、`components/surface.css:355,362`、`styles/entity-highlight.css:20`、`styles/writer.css:356` | `1/2/3/6/10/16px` 与 `99/999px`                                  | 细分隔 / 分段容器 / 色板与头像残留 / 胶囊全圆；本轮不重构             | 仅原地保留；新增只用 `--r-xs` / `--r-lg` / `--chip-pill-radius` |
+| 13  | 既有微圆角 / 胶囊全圆              | `components/segmented.css:18,33`、`components/display-extras.css:142,148`、`components/surface.css:355,362`、`styles/entity-highlight.css:20`、`styles/writer.css:356` | `1/2/3/6/10/16px` 与 `99/999px`                                  | 细分隔 / 分段容器 / 色板与头像残留 / 胶囊全圆；本轮不重构             | 仅原地保留；新增只用 `--r-xs` / `--r-lg` / `--chip-pill-radius` |
 | 14  | `.timeline-origin-head .wf-input`  | `styles/writer-timeline.css:78-86`                                                                                                                                     | `height: auto`（≈45）                                            | 字段根承担卡片外观，内衬由 section 提供，高度随内容                   | 仅时间线起点卡头输入框                                          |
 | 15  | `.dossier-rel-pill__action`        | `styles/writer-dossier-relation.css:111-123`                                                                                                                           | 14×14                                                            | 关系胶囊内微操作                                                      | 仅关系胶囊                                                      |
 | 16  | `.dossier-rel-remove`              | `styles/writer-dossier-relation.css:155-170`                                                                                                                           | 18×18                                                            | 自定义字段删除微操作                                                  | 仅字段键值行                                                    |

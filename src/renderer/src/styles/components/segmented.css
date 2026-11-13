@@ -8,6 +8,8 @@
    ============================================================ */
 
 .wf-seg {
+  /* 定位上下文：thumb 以本节点（offsetParent）的 padding 边为原点绝对定位。 */
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -15,6 +17,36 @@
   padding: 3px;
   border-radius: 6px;
   background: var(--soft-solid);
+}
+
+/* 选中高亮：容器内唯一的滑动指示器（thumb）。
+   位置与尺寸由组件把 offsetLeft / offsetTop / offsetWidth / offsetHeight
+   实测值写入 --wf-seg-x / y / w / h；transform 平移决定落点。
+   首帧（data-thumb-ready 未为 true）不加过渡，测量完成后才启用。 */
+.wf-seg__thumb {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--wf-seg-w, 0px);
+  height: var(--wf-seg-h, 0px);
+  transform: translate(var(--wf-seg-x, 0px), var(--wf-seg-y, 0px));
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  box-shadow:
+    var(--sh-xs),
+    inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent);
+  pointer-events: none;
+}
+
+.wf-seg__thumb[data-empty='true'] {
+  opacity: 0;
+}
+
+.wf-seg[data-thumb-ready='true'] .wf-seg__thumb {
+  transition:
+    transform var(--dur-base) var(--ease),
+    width var(--dur-base) var(--ease),
+    height var(--dur-base) var(--ease);
 }
 
 .wf-seg__item {
@@ -28,10 +60,10 @@
   border: 0;
   border-radius: 4px;
 
-  /* 选中框视觉层承载于内缩的 ::before 上，需在这里建立定位与独立层叠上下文，
-     使其落在 item 自身背景之上、文字之下（见 .wf-seg__item::before）。 */
+  /* 高亮由容器内 .wf-seg__thumb 承载（absolute + pointer-events: none），
+     item 抬到 thumb 之上，保证点击命中与文字始终在上层。 */
   position: relative;
-  isolation: isolate;
+  z-index: 1;
 
   font-family: inherit;
   font-size: 12.5px;
@@ -43,41 +75,19 @@
   background: transparent;
   cursor: pointer;
 
-  transition:
-    background 0.15s var(--ease),
-    color 0.15s var(--ease),
-    box-shadow 0.15s var(--ease);
+  transition: color var(--dur-fast) var(--ease);
 }
 
 .wf-seg__item:hover:not(:disabled):not(.is-active) {
   color: var(--text);
 }
 
-/* 选中态：品牌色高亮（不透明浅品牌底 + 品牌字 + 加粗 + 内描边环）。
-   底色用 color-mix 把 --brand 混入不透明的 --pane，保证 alpha = 1，
-   与容器 --soft-solid 形成清晰对比；内环的透明混色仅用于描边。 */
+/* 选中态：只保留品牌色文字与 600 字重；
+   高亮底 / 描边 / 投影统一由容器内 .wf-seg__thumb 承载。 */
 .wf-seg__item.is-active {
   color: var(--brand);
   font-weight: 600;
-  /* 视觉（底 + 描边 + 投影）落在内缩的 ::before 上，item 自身不再铺底，
-     使选中框四周与容器内缘留出 --wf-seg-inset 间隙（见下方 ::before）。 */
   background: transparent;
-}
-
-/* 选中项视觉层：相对 item 四边内缩 --wf-seg-inset，与分段控件底框内缘留出
-   可见间隙；z-index:-1 让该层位于 item 文字之下（item 的 isolation 保证不越界）。
-   内缩量为固定像素，四主题共用，颜色/投影取令牌，明暗自适应。 */
-.wf-seg__item.is-active::before {
-  --wf-seg-inset: 2px;
-  content: '';
-  position: absolute;
-  inset: var(--wf-seg-inset);
-  z-index: -1;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
-  box-shadow:
-    var(--sh-xs),
-    inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent);
 }
 
 .wf-seg__item:focus-visible {
@@ -117,6 +127,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .wf-seg__item {
+    transition: none;
+  }
+  .wf-seg__thumb {
     transition: none;
   }
 }
