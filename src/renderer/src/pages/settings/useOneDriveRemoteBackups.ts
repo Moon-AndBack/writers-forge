@@ -2,7 +2,7 @@
  * 设置页 · OneDrive 云端备份列表与恢复子状态机。
  *
  * 从 `useOneDriveBackup` 拆出（单文件 500 行上限）：只管理远端列表三态、
- * 恢复进度 / 取消 / 嵌套错误码，账号与本地备份流程仍留在主 hook。
+ * 恢复进度 / 取消 / 删除 / 嵌套错误码，账号与本地备份流程仍留在主 hook。
  *
  * 恢复时序（由调用方提供确认框控制器，复用主 hook 的 confirmNode）：
  * 1. 先 `flushAll()` 统一落盘；
@@ -43,6 +43,8 @@ export interface OneDriveRemoteActions {
   refreshRemote: () => void
   /** 恢复指定远端备份：先统一落盘，再二次确认。 */
   restoreRemote: (itemId: string) => void
+  /** 删除指定远端备份：二次确认后从 OneDrive 移除并刷新列表。 */
+  deleteRemote: (itemId: string) => void
   /** 中断进行中的云端恢复（下载阶段生效）。 */
   cancelRestore: () => void
 }
@@ -60,6 +62,8 @@ export interface OneDriveRemoteController {
   restoreProgress: OneDriveRestoreProgress | null
   /** 正在恢复的远端条目 id（进入页面时已在恢复则为 null）。 */
   restoringItemId: string | null
+  /** 正在删除的远端条目 id（无删除时为 null）。 */
+  deletingItemId: string | null
   /** 恢复失败（外层 OneDrive 错误优先，其次恢复域错误）。 */
   restoreFailure: RemoteRestoreFailure | null
   /** 用户主动取消恢复的提示（非错误）。 */
@@ -89,12 +93,22 @@ export interface UseOneDriveRemoteBackupsOptions {
   statusRestoreRunning: boolean
   /** 主 hook 的确认框控制器（复用同一个 confirmNode）。 */
   requestConfirm: ConfirmController['request']
+  /** 主 hook 的 toast 展示（复用同一个 toastNode）。 */
+  showToast: (message: string) => void
 }
 
 export function useOneDriveRemoteBackups(
   options: UseOneDriveRemoteBackupsOptions
 ): OneDriveRemoteController {
-  const { api, signedIn, backupRunning, signingIn, statusRestoreRunning, requestConfirm } = options
+  const {
+    api,
+    signedIn,
+    backupRunning,
+    signingIn,
+    statusRestoreRunning,
+    requestConfirm,
+    showToast
+  } = options
   const { t } = useTranslation('onedrive')
   const flushAll = useFlushAllBeforeClose()
 
@@ -107,6 +121,7 @@ export function useOneDriveRemoteBackups(
     null
   )
   const [restoringItemId, setRestoringItemId] = useState<string | null>(null)
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null)
   const [restoreFailure, setRestoreFailure] = useState<RemoteRestoreFailure | null>(null)
   const [restoreCancelled, setRestoreCancelled] = useState(false)
 
@@ -167,6 +182,7 @@ export function useOneDriveRemoteBackups(
     setRestoreFailure(null)
     setRestoreCancelled(false)
     setRestoringItemId(null)
+    setDeletingItemId(null)
     setRestoreActive(false)
     setRestoreSettled(false)
     setRestoreProgressState(null)
@@ -338,6 +354,70 @@ export function useOneDriveRemoteBackups(
     ]
   )
 
+  const deleteRemote = useCallback(
+    (itemId: string): void => {
+      if (
+        !api ||
+        !signedIn ||
+        restoreRunning ||
+        backupRunning ||
+        signingIn ||
+        deletingItemId !== null
+      ) {
+        return
+      }
+      const item = remoteItems.find((candidate) => candidate.itemId === itemId)
+      if (!item) return
+
+      requestConfirm(
+        {
+          title: t('remote.deleteConfirmTitle'),
+          message: t('remote.deleteConfirmMessage', { name: item.name }),
+          confirmText: t('remote.delete'),
+          tone: 'danger'
+        },
+        () => {
+          setRemoteErrorCode(null)
+          setDeletingItemId(itemId)
+
+          void (async () => {
+            try {
+              const result = await api.deleteBackup(itemId)
+              if (!mountedRef.current) return
+
+              if (!result.ok) {
+                setRemoteErrorCode(result.code)
+                // 条目已在 OneDrive 侧被删：顺手刷新列表，避免继续展示幽灵行。
+                if (result.code === 'remote_not_found') void loadRemote('silent')
+                return
+              }
+
+              showToast(t('remote.deletedToast', { name: item.name }))
+              await loadRemote('silent')
+            } catch {
+              if (mountedRef.current) setRemoteErrorCode('delete_failed')
+            } finally {
+              if (mountedRef.current) setDeletingItemId(null)
+            }
+          })()
+        }
+      )
+    },
+    [
+      api,
+      backupRunning,
+      deletingItemId,
+      loadRemote,
+      remoteItems,
+      requestConfirm,
+      restoreRunning,
+      showToast,
+      signedIn,
+      signingIn,
+      t
+    ]
+  )
+
   const refreshRemote = useCallback((): void => {
     if (restoreRunning) return
     setRemoteStatus('loading')
@@ -365,8 +445,8 @@ export function useOneDriveRemoteBackups(
   }, [api])
 
   const actions = useMemo<OneDriveRemoteActions>(
-    () => ({ refreshRemote, restoreRemote, cancelRestore }),
-    [cancelRestore, refreshRemote, restoreRemote]
+    () => ({ refreshRemote, restoreRemote, deleteRemote, cancelRestore }),
+    [cancelRestore, deleteRemote, refreshRemote, restoreRemote]
   )
 
   return {
@@ -376,6 +456,7 @@ export function useOneDriveRemoteBackups(
     restoreRunning,
     restoreProgress,
     restoringItemId,
+    deletingItemId,
     restoreFailure: signedIn ? restoreFailure : null,
     restoreCancelled: signedIn ? restoreCancelled : false,
     resetRemote,

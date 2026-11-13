@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, IconButton, Progress } from '../../components/ui'
 import { EmptyState } from '../../components/EmptyState'
 import { LoadErrorState } from '../../components/LoadErrorState'
-import { RestoreIcon } from '../../components/icons'
+import { RestoreIcon, TrashIcon } from '../../components/icons'
 import { formatBytes } from '../../lib/formatBytes'
 import { ERROR_KEYS } from './onedriveSectionSupport'
 import type { OneDriveBackupController } from './useOneDriveBackup'
@@ -34,7 +34,7 @@ export default function OneDriveRemoteBackups({ od }: OneDriveRemoteBackupsProps
     [i18n.language]
   )
 
-  const busy = od.restoreRunning || od.backupRunning
+  const busy = od.restoreRunning || od.backupRunning || od.deletingItemId !== null
   const loading = od.remoteStatus === 'idle' || od.remoteStatus === 'loading'
 
   return (
@@ -44,7 +44,7 @@ export default function OneDriveRemoteBackups({ od }: OneDriveRemoteBackupsProps
         <Button
           variant="ghost"
           size="sm"
-          disabled={od.restoreRunning || od.remoteStatus === 'loading'}
+          disabled={busy || od.remoteStatus === 'loading'}
           onClick={od.actions.refreshRemote}
         >
           {t('remote.refresh')}
@@ -100,6 +100,15 @@ export default function OneDriveRemoteBackups({ od }: OneDriveRemoteBackupsProps
                     onClick={() => od.actions.restoreRemote(item.itemId)}
                   >
                     <RestoreIcon />
+                  </IconButton>
+                  <IconButton
+                    className="row-act"
+                    tone="danger"
+                    label={t('remote.deleteAria', { name: item.name })}
+                    disabled={busy}
+                    onClick={() => od.actions.deleteRemote(item.itemId)}
+                  >
+                    <TrashIcon />
                   </IconButton>
                 </div>
               </li>

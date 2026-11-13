@@ -180,9 +180,14 @@ export function backupChildrenUrl(top = 200): string {
   return `${GRAPH_BASE}/me/drive/special/approot/children?$select=${select}&$top=${top}`
 }
 
+/** 构造单个 driveItem 的资源地址（删除 / 元信息共用；`itemId` 由 Graph 返回）。 */
+export function itemUrl(itemId: string): string {
+  return `${GRAPH_BASE}/me/drive/items/${encodeURIComponent(itemId)}`
+}
+
 /** 构造单个 driveItem 的元信息地址（含预签名 `@microsoft.graph.downloadUrl`）。 */
 export function itemDownloadUrl(itemId: string): string {
-  return `${GRAPH_BASE}/me/drive/items/${encodeURIComponent(itemId)}?$select=id,size,@microsoft.graph.downloadUrl`
+  return `${itemUrl(itemId)}?$select=id,size,@microsoft.graph.downloadUrl`
 }
 
 /** 构造 app folder 根路径下 `<name>` 的 createUploadSession 地址。 */

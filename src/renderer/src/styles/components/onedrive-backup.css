@@ -158,8 +158,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  /* 让位右缘 22×22 操作按钮（§8.5）。 */
-  margin-right: 34px;
+  /* 让位右缘两个 22×22 操作按钮（22×2 + gap 2 + right 6 = 52，§8.5）。 */
+  margin-right: 52px;
 }
 
 .od-remote__name {

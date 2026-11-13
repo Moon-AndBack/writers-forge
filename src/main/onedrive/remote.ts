@@ -1,7 +1,8 @@
 import { logger } from '../logger'
 import { getValidAccessToken } from './auth'
-import { appRootUrl, backupChildrenUrl, drain, graphRequest } from './graph'
+import { appRootUrl, backupChildrenUrl, drain, graphRequest, itemUrl } from './graph'
 import { isRecord, readNumber, readString } from './http'
+import { safeError } from './logSafe'
 import { OneDriveError } from './types'
 import type { RemoteBackupItem } from './types'
 
@@ -29,6 +30,13 @@ const REMOTE_FILE_PATTERN = /^writers-forge-\d{8}-\d{6}\.db$/
 
 /** `listRemoteBackups` 选项。 */
 export interface ListRemoteBackupsOptions {
+  signal?: AbortSignal
+}
+
+/** `deleteRemoteBackup` 选项。 */
+export interface DeleteRemoteBackupOptions {
+  /** Graph driveItem id（列表项返回的值）。 */
+  itemId: string
   signal?: AbortSignal
 }
 
@@ -155,4 +163,38 @@ export async function listRemoteBackups(
     pageSize: PAGE_SIZE
   })
   return items
+}
+
+/**
+ * 删除一个远端备份（`DELETE /me/drive/items/{itemId}`，204 视为成功）。
+ *
+ * 用 itemId 而非路径寻址：列表 / 下载 / 恢复都以 itemId 定位，删除沿用同一标识，
+ * 既不受文件名重名影响，也与恢复链路读取同一资源（`Files.ReadWrite.AppFolder`
+ * 按资源判定，app folder 内条目可读写删）。404 归一化为 `remote_not_found`
+ * （条目可能已在 OneDrive 侧被删）；401 / 403 由 `graphRequest` 映射为
+ * `unauthorized` / `forbidden`，其余失败兜底为 `delete_failed`。
+ */
+export async function deleteRemoteBackup(options: DeleteRemoteBackupOptions): Promise<void> {
+  const accessToken = await getValidAccessToken({ signal: options.signal })
+
+  try {
+    const response = await graphRequest(itemUrl(options.itemId), {
+      accessToken,
+      method: 'DELETE',
+      signal: options.signal,
+      fallback: 'delete_failed'
+    })
+    await drain(response)
+  } catch (error) {
+    if (error instanceof OneDriveError && error.code === 'not_found') {
+      throw new OneDriveError('remote_not_found', {
+        status: error.status ?? 404,
+        message: 'The remote backup does not exist or has already been deleted'
+      })
+    }
+    log.warn('OneDrive 删除远端备份失败', safeError(error))
+    throw error
+  }
+
+  log.info('OneDrive 远端备份已删除', { itemId: options.itemId })
 }

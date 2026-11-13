@@ -31,6 +31,7 @@ export type OneDriveErrorCode =
   | 'snapshot_failed'
   | 'list_failed'
   | 'download_failed'
+  | 'delete_failed'
   | 'remote_not_found'
   | 'backup_in_progress'
   | 'unknown'

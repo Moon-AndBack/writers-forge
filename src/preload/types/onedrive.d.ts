@@ -19,7 +19,12 @@ import type {
   RemoteBackupItem
 } from '../../main/onedrive'
 import type { BackupRestoreResult } from '../../main/backup'
-import type { OneDriveFailure, OneDriveResult, OneDriveStatus } from '../../main/ipc/onedrive'
+import type {
+  OneDriveDeleteResult,
+  OneDriveFailure,
+  OneDriveResult,
+  OneDriveStatus
+} from '../../main/ipc/onedrive'
 
 export type {
   BackupRestoreResult,
@@ -27,6 +32,7 @@ export type {
   OneDriveAuthStatus,
   OneDriveBackupProgress,
   OneDriveBackupResult,
+  OneDriveDeleteResult,
   OneDriveErrorCode,
   OneDriveFailure,
   OneDriveRestoreProgress,
@@ -58,6 +64,8 @@ export interface OneDriveApi {
   cancelBackup: () => Promise<boolean>
   /** 列出远端备份（按修改时间倒序；app folder 无备份时返回空数组）。 */
   listBackups: () => Promise<OneDriveResult<RemoteBackupItem[]>>
+  /** 删除指定远端备份（移到 OneDrive 回收站）；与备份 / 恢复互斥。 */
+  deleteBackup: (itemId: string) => Promise<OneDriveDeleteResult>
   /**
    * 下载并恢复指定远端备份；进度走 `onRestoreProgress`。
    * 外层失败为 OneDrive 域错误码；`value.ok = false` 时携带恢复域错误码。

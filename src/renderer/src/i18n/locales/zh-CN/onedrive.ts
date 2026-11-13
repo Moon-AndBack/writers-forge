@@ -2,7 +2,7 @@
  * OneDrive 备份命名空间（`onedrive`）：设置页「OneDrive 云备份」分区的全部文案。
  *
  * 约定：
- * - `error.*` 与主进程 `OneDriveErrorCode` 的 24 个值一一对应，渲染层经
+ * - `error.*` 与主进程 `OneDriveErrorCode` 的 25 个值一一对应，渲染层经
  *   `onedriveSectionSupport.ts` 的 `ERROR_KEYS` 静态映射取用，**不展示**主进程英文
  *   `message`；新增 / 删除错误码时 `satisfies Record<OneDriveErrorCode, string>`
  *   会触发 typecheck 失败，须同步双端本文件。
@@ -59,6 +59,7 @@ const onedrive = {
     loading: '正在读取云端备份列表…',
     empty: '还没有云端备份',
     restoreAria: '恢复云端备份「{{name}}」',
+    deleteAria: '删除云端备份「{{name}}」',
     confirm: {
       title: '从云端备份恢复',
       cover: '将用云端备份「{{name}}」覆盖当前全部数据。',
@@ -67,6 +68,10 @@ const onedrive = {
       flush: '未保存的编辑会先尝试保存。',
       action: '覆盖并恢复'
     },
+    deleteConfirmTitle: '删除云端备份',
+    deleteConfirmMessage: '将从 OneDrive 移除云端备份「{{name}}」，之后可在 OneDrive 回收站找回。',
+    delete: '删除',
+    deletedToast: '已删除云端备份「{{name}}」',
     phase: {
       download: '正在下载… {{percent}}%',
       restore: '正在恢复数据库… {{percent}}%'
@@ -100,6 +105,7 @@ const onedrive = {
     snapshot_failed: '生成本地快照失败，请检查磁盘空间后重试',
     list_failed: '获取云端备份列表失败，请稍后重试',
     download_failed: '下载云端备份失败，请检查网络后重试',
+    delete_failed: '删除云端备份失败，请稍后重试',
     remote_not_found: '云端备份不存在或已被删除',
     backup_in_progress: '已有备份正在进行，请等待完成后再试',
     unknown: '发生未知错误，请稍后重试'

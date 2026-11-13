@@ -79,7 +79,8 @@ export function useOneDriveBackup(): OneDriveBackupController {
     backupRunning,
     signingIn,
     statusRestoreRunning: status?.restoreRunning === true,
-    requestConfirm
+    requestConfirm,
+    showToast
   })
   const { actions: remoteActions, resetRemote, restoreRunning: remoteRestoreRunning } = remote
 

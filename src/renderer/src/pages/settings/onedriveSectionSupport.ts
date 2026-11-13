@@ -2,7 +2,7 @@
  * 设置页 · OneDrive 备份分区的静态映射与纯函数。
  *
  * `ERROR_KEYS` 以 `satisfies Record<OneDriveErrorCode, string>` 强制覆盖主进程
- * 全部 24 个错误码：新增 / 删除错误码时 `npm run typecheck` 会立即失败，避免漏译。
+ * 全部 25 个错误码：新增 / 删除错误码时 `npm run typecheck` 会立即失败，避免漏译。
  * 错误文案只按 `code` 取，**不展示**主进程的英文 `message`。
  */
 import type { OneDriveBackupProgress, OneDriveErrorCode } from '../../../../preload/types/onedrive'
@@ -30,6 +30,7 @@ export const ERROR_KEYS = {
   snapshot_failed: 'error.snapshot_failed',
   list_failed: 'error.list_failed',
   download_failed: 'error.download_failed',
+  delete_failed: 'error.delete_failed',
   remote_not_found: 'error.remote_not_found',
   backup_in_progress: 'error.backup_in_progress',
   unknown: 'error.unknown'

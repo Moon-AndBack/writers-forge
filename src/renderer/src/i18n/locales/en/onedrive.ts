@@ -57,6 +57,7 @@ const onedrive = {
     loading: 'Loading cloud backups…',
     empty: 'No cloud backups yet',
     restoreAria: 'Restore cloud backup "{{name}}"',
+    deleteAria: 'Delete cloud backup "{{name}}"',
     confirm: {
       title: 'Restore from cloud backup',
       cover: 'This will overwrite all current data with cloud backup "{{name}}".',
@@ -66,6 +67,11 @@ const onedrive = {
       flush: 'Unsaved edits will be saved first.',
       action: 'Overwrite and restore'
     },
+    deleteConfirmTitle: 'Delete cloud backup',
+    deleteConfirmMessage:
+      'This removes cloud backup "{{name}}" from OneDrive. You can restore it from the OneDrive recycle bin afterwards.',
+    delete: 'Delete',
+    deletedToast: 'Deleted cloud backup "{{name}}"',
     phase: {
       download: 'Downloading… {{percent}}%',
       restore: 'Restoring the database… {{percent}}%'
@@ -102,6 +108,7 @@ const onedrive = {
     snapshot_failed: 'Failed to create the local snapshot; check disk space and retry',
     list_failed: 'Failed to load the cloud backup list; please try again later',
     download_failed: 'Failed to download the cloud backup; check your network and retry',
+    delete_failed: 'Failed to delete the cloud backup; please try again later',
     remote_not_found: 'The cloud backup does not exist or has been deleted',
     backup_in_progress: 'A backup is already running; wait for it to finish and try again',
     unknown: 'An unknown error occurred; please try again later'

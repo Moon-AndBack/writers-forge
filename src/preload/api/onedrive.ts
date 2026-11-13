@@ -113,6 +113,7 @@ export const onedriveApi = {
   backup: () => ipcRenderer.invoke('onedrive:backup'),
   cancelBackup: () => ipcRenderer.invoke('onedrive:cancelBackup'),
   listBackups: () => ipcRenderer.invoke('onedrive:listBackups'),
+  deleteBackup: (itemId) => ipcRenderer.invoke('onedrive:deleteBackup', { itemId }),
   restoreBackup: (itemId) => ipcRenderer.invoke('onedrive:restoreBackup', { itemId }),
   cancelRestore: () => ipcRenderer.invoke('onedrive:cancelRestore'),
   onProgress: (callback) => {

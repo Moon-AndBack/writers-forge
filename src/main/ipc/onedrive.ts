@@ -5,6 +5,7 @@ import { scheduleRelaunch } from '../backup/relaunch'
 import { logger } from '../logger'
 import {
   cancelSignIn,
+  deleteRemoteBackup,
   getOneDriveAuthStatus,
   isBackupRunning,
   isOneDriveError,
@@ -37,6 +38,7 @@ import type {
  * - onedrive:backup        ()                 → OneDriveResult<OneDriveBackupResult>
  * - onedrive:cancelBackup  ()                 → boolean（是否中断了进行中的备份）
  * - onedrive:listBackups   ()                 → OneDriveResult<RemoteBackupItem[]>
+ * - onedrive:deleteBackup  ({ itemId })       → OneDriveDeleteResult（成功无载荷）
  * - onedrive:restoreBackup ({ itemId })       → OneDriveResult<BackupRestoreResult>
  * - onedrive:cancelRestore ()                 → boolean（是否中断了进行中的恢复）
  * 推送（主进程 → 渲染层）：
@@ -76,6 +78,9 @@ export interface OneDriveFailure {
 /** 可预期错误的统一返回形状；意外异常仍然抛出。 */
 export type OneDriveResult<T> = { ok: true; value: T } | OneDriveFailure
 
+/** 无载荷操作（删除）的结果：成功只回 `{ ok: true }`。 */
+export type OneDriveDeleteResult = { ok: true } | OneDriveFailure
+
 /** 备份取消控制器（同一时刻至多一个；`runBackup` 自身亦有互斥）。 */
 let activeBackupController: AbortController | null = null
 /** 云端恢复取消控制器（同一时刻至多一个；下载阶段可取消）。 */
@@ -110,8 +115,8 @@ function sendRestoreProgress(sender: WebContents, progress: OneDriveRestoreProgr
   sender.send('onedrive:restoreProgress', progress)
 }
 
-/** 从 `{ itemId }` 载荷读取恢复目标；非法返回 null。 */
-function readRestoreItemId(payload: unknown): string | null {
+/** 从 `{ itemId }` 载荷读取远端条目 id（恢复 / 删除共用）；非法返回 null。 */
+function readItemId(payload: unknown): string | null {
   if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) return null
   const { itemId } = payload as Record<string, unknown>
   return typeof itemId === 'string' && itemId.trim() !== '' ? itemId.trim() : null
@@ -217,9 +222,41 @@ export function registerOneDriveIpc(): void {
   })
 
   ipcMain.handle(
+    'onedrive:deleteBackup',
+    async (_event, payload: unknown): Promise<OneDriveDeleteResult> => {
+      const itemId = readItemId(payload)
+      if (itemId === null) {
+        log.warn('onedrive:deleteBackup 入参非法')
+        return { ok: false, code: 'remote_not_found' }
+      }
+      if (
+        isBackupRunning() ||
+        activeBackupController !== null ||
+        activeRestoreController !== null
+      ) {
+        log.warn('onedrive:deleteBackup 被拒绝：已有任务进行中')
+        return { ok: false, code: 'backup_in_progress' }
+      }
+
+      try {
+        await deleteRemoteBackup({ itemId })
+        log.info('onedrive:deleteBackup 完成', { itemId })
+        return { ok: true }
+      } catch (error) {
+        if (isOneDriveError(error)) {
+          log.warn('onedrive:deleteBackup 失败', safeError(error))
+          return toFailure(error)
+        }
+        log.error('onedrive:deleteBackup 意外异常', { error: safeError(error) })
+        throw error
+      }
+    }
+  )
+
+  ipcMain.handle(
     'onedrive:restoreBackup',
     async (event, payload: unknown): Promise<OneDriveResult<BackupRestoreResult>> => {
-      const itemId = readRestoreItemId(payload)
+      const itemId = readItemId(payload)
       if (itemId === null) {
         log.warn('onedrive:restoreBackup 入参非法')
         return { ok: false, code: 'remote_not_found' }

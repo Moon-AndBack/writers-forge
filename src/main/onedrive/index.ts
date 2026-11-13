@@ -40,8 +40,8 @@ export type { UploadFileOptions } from './upload'
 
 export { isBackupRunning, runBackup } from './backup'
 
-export { listRemoteBackups } from './remote'
-export type { ListRemoteBackupsOptions } from './remote'
+export { deleteRemoteBackup, listRemoteBackups } from './remote'
+export type { DeleteRemoteBackupOptions, ListRemoteBackupsOptions } from './remote'
 
 export { downloadRemoteBackup } from './download'
 export type { DownloadRemoteBackupOptions } from './download'

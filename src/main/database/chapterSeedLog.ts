@@ -11,10 +11,19 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v142'
+export const CHAPTER_SEED_VERSION = 'v143'
 
 /**
- * 最近版本变更日志（v142；更早版本见上述历史文件）。
+ * 最近版本变更日志（v143；更早版本见上述历史文件）。
+ *
+ * `v143`（OneDrive 云端备份删除批）：云端备份列表每行新增删除按钮，与恢复按钮
+ * 并排（行操作 22×22 悬浮浮现）。删除走 `onedrive:deleteBackup({ itemId })` →
+ * `DELETE /me/drive/items/{id}`（AppFolder scope 覆盖 app folder 内读写删），
+ * 成功 204 后自动刷新列表；与上传 / 恢复互斥，已有任务时返回
+ * `backup_in_progress`。删除前二次确认，文案说明会从 OneDrive 移除该备份、
+ * 可在 OneDrive 回收站找回；新增错误码 `delete_failed`（404 仍归一化为
+ * `remote_not_found`）。教学文案同步（卷五「OneDrive 云备份」章、大纲同项：
+ * 删除按钮 / 回收站语义 / 历史备份可逐份删除）。
  *
  * `v142`（OneDrive 备份改存 app folder 根路径批）：远端备份由 `approot:/backups/<name>`
  * 改为 `approot:/<name>`——app folder 本身是应用专属目录，根目录只包含本应用文件，
