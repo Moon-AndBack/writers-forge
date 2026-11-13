@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, type ReactElement, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TrashIcon } from '../../../components/icons'
 import { EntityStyleCard, IconButton } from '../../../components/ui'
@@ -14,7 +14,7 @@ import { useChipOverflow } from '../../../components/useChipOverflow'
 import { useOverflowPopup } from '../../../components/useOverflowPopup'
 import { plotSceneTitle, type PlotLineRow, type PlotSceneRow } from './plotTree'
 import { PlotSceneHeading } from './PlotSceneHeading'
-import { usePlotBodyEntities } from './usePlotBodyEntities'
+import { usePlotBodyEntities, type PlotBodyEntity } from './usePlotBodyEntities'
 
 interface SceneCardProps {
   scene: PlotSceneRow
@@ -40,6 +40,10 @@ interface SceneCardProps {
   onHoverStart?: (el: HTMLElement, target: HTMLElement) => void
   /** 卡片悬停结束（配合 `onHoverStart`）。 */
   onLeave?: () => void
+  /** 去掉外层 `.plot-scene-wrap`，供时间线一排放多卡使用（默认 false = 保留，剧情中栏行为不变）。 */
+  bare?: boolean
+  /** 外部批量匹配结果（时间线整条线一次算完）；传入时直接渲染，不再逐卡发起匹配。 */
+  entities?: readonly PlotBodyEntity[]
 }
 
 /** 单场景卡（标题 + 编辑入口 / 描述 / 正文自动匹配的实体胶囊）；选中态落卡自身。
@@ -65,7 +69,9 @@ export function SceneCard({
   readonly = false,
   line = null,
   onHoverStart,
-  onLeave
+  onLeave,
+  bare = false,
+  entities
 }: SceneCardProps) {
   const { t } = useTranslation('plot')
   // 正文按段落拆行（派生摘要块级之间用 `\n` 分隔）；空行丢弃，仅用于卡片渲染。
@@ -75,8 +81,14 @@ export function SceneCard({
     .filter((line) => line !== '')
   // 只读模式不渲染编辑 / 删除入口（右栏剧情页签）：仍需两个回调入参以保证调用契约一致。
   const showActions = !readonly
-  // 胶囊数据：正文实体匹配结果（去重），不读 / 不写库。
-  const characters = usePlotBodyEntities(bookId, bodyText)
+  // 胶囊数据：外部传入（时间线整条线批量匹配）时直接使用，并让内部匹配以空入参短路
+  //（`usePlotBodyEntities` 对空书 / 空正文不发起 IPC）；未传入时保持原逐卡实时匹配。
+  const externalEntities = entities !== undefined
+  const matchedCharacters = usePlotBodyEntities(
+    externalEntities ? '' : bookId,
+    externalEntities ? '' : bodyText
+  )
+  const characters = entities ?? matchedCharacters
   const charListRef = useRef<HTMLDivElement>(null)
   // 胶囊容量（按壳内胶囊容器实测宽测量、限 2 行）；溢出时「＋N」占 1 槽，不溢出则全显。
   const capacity = useChipOverflow(charListRef, characters.length, layoutKey, {
@@ -109,7 +121,7 @@ export function SceneCard({
       : []
 
   return (
-    <div className="plot-scene-wrap">
+    <SceneCardFrame bare={bare}>
       <EntityStyleCard
         className="plot-scene-card"
         active={active}
@@ -221,8 +233,14 @@ export function SceneCard({
           ) : undefined
         }
       />
-    </div>
+    </SceneCardFrame>
   )
+}
+
+/** 卡片外层容器：默认保留 `.plot-scene-wrap`（剧情线视图卡独占一行）；
+ * `bare` 时只输出卡片本体，供时间线一排放多卡（去掉 `flex: 0 0 100%` 的舞台包裹）。 */
+function SceneCardFrame({ bare, children }: { bare: boolean; children: ReactNode }): ReactElement {
+  return bare ? <>{children}</> : <div className="plot-scene-wrap">{children}</div>
 }
 
 export default SceneCard

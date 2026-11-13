@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LoadErrorState } from '../../../components/LoadErrorState'
 import type { RichTextBodyValue } from '../../../components/editor/useRichTextBodyEditor'
@@ -15,12 +15,19 @@ import {
 } from './timelineOrigin'
 import {
   groupScenesByYear,
-  plotSceneTitle,
   plotYearLabel,
   type PlotLineRow,
   type PlotSceneRow
 } from '../plot/plotTree'
-import { PlotSceneHeading } from '../plot/PlotSceneHeading'
+import { SceneCard } from '../plot/SceneCard'
+import { useSceneEntityMatches } from '../plot/useSceneEntityMatches'
+import { useSceneContentWidth } from '../plot/useSceneContentWidth'
+import type { PlotBodyEntity } from '../plot/usePlotBodyEntities'
+import { HoverCard } from '../entities/HoverCard'
+import { useEntityHover } from '../entities/useEntityHover'
+
+/** 显式「已批量匹配且无结果」的恒等空数组：避免卡内因 `undefined` 回落到逐卡匹配。 */
+const NO_ENTITIES: readonly PlotBodyEntity[] = []
 
 export interface TimelineViewProps {
   /** 书籍 id（路由参数）；按书读起点键，无书时用裸键兜底。 */
@@ -153,6 +160,15 @@ export default function TimelineView({
     () => new Map(filteredLines.map((row) => [row.id, row])),
     [filteredLines]
   )
+  // 胶囊悬停实体卡（事件委托挂在每张卡自己的胶囊容器上，浮窗单例经 portal 挂 body）。
+  const entityHover = useEntityHover()
+  // 时间线根引用 + 内容列可用宽：既作卡内胶囊溢出重测的布局签名，也作「视图可见」判据
+  //（`.ep-view` 非活动态 `display: none`，此时 clientWidth = 0）。隐藏时不做批量匹配，
+  // 切到可见后宽度签名 0 → N 变化，胶囊溢出随之重测，避免隐藏期把「全部可见」当结论。
+  const timelineRef = useRef<HTMLDivElement>(null)
+  const layoutKey = useSceneContentWidth(timelineRef, true)
+  // 场景实体胶囊：整条时间线一次批量匹配（revision + matchMany），按场景 id 建 Map。
+  const sceneEntities = useSceneEntityMatches(bookId ?? '', filteredScenes, layoutKey > 0)
   const eraLabels = {
     bc: tPlot('timeEra.bc'),
     zero: tPlot('timeEra.zero'),
@@ -175,6 +191,7 @@ export default function TimelineView({
       <div className="editor-scroll">
         <div className="editor-inner is-full">
           <div
+            ref={timelineRef}
             className={`plot-timeline timeline-main${error !== null || loading ? ' is-status' : ''}`}
           >
             {loading ? (
@@ -220,40 +237,24 @@ export default function TimelineView({
                         descriptionClassName="plot-scene-body"
                       />
                     ) : null}
-                    {group.scenes.map((scene) => {
-                      const line = lineById.get(scene.lineId)
-                      // 正文按段落拆行（派生摘要块级之间用 `\n` 分隔）；空行丢弃。
-                      const paragraphs = scene.description
-                        .split('\n')
-                        .map((text) => text.trim())
-                        .filter((text) => text !== '')
-                      return (
-                        <EntityStyleCard
-                          key={scene.id}
-                          className="plot-scene-card"
-                          active={scene.id === selectedSceneId}
-                          readonly
-                          cardProps={{ onClick: () => onSelectScene?.(scene.id) }}
-                          head={
-                            <PlotSceneHeading
-                              line={line ?? null}
-                              title={plotSceneTitle(scene, tPlot('unnamedScene'))}
-                              unnamedLine={tPlot('unnamedLine')}
-                            />
-                          }
-                          description={
-                            paragraphs.length > 0
-                              ? paragraphs.map((paragraph, index) => (
-                                  <p className="plot-scene-para" key={`para-${index}`}>
-                                    {paragraph}
-                                  </p>
-                                ))
-                              : undefined
-                          }
-                          descriptionClassName="plot-scene-body"
-                        />
-                      )
-                    })}
+                    {group.scenes.map((scene) => (
+                      <SceneCard
+                        key={scene.id}
+                        bare
+                        scene={scene}
+                        active={scene.id === selectedSceneId}
+                        layoutKey={layoutKey}
+                        bookId={bookId ?? ''}
+                        bodyText={scene.description}
+                        entities={sceneEntities.get(scene.id) ?? NO_ENTITIES}
+                        onSelect={(id) => onSelectScene?.(id)}
+                        onEditNode={() => undefined}
+                        charHover={entityHover}
+                        onDeleteScene={() => undefined}
+                        readonly
+                        line={lineById.get(scene.lineId) ?? null}
+                      />
+                    ))}
                   </div>
                 </div>
               ))
@@ -261,6 +262,12 @@ export default function TimelineView({
           </div>
         </div>
       </div>
+      <HoverCard
+        anchor={entityHover.anchor}
+        onClose={entityHover.close}
+        onPointerEnter={entityHover.cancelHide}
+        onPointerLeave={entityHover.onMouseLeave}
+      />
     </>
   )
 }
