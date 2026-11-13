@@ -22,7 +22,8 @@ import type { OneDriveAccount, OneDriveAuthStatus, OneDriveCredentials } from '.
  *
  * 流程：
  * 1. 生成 PKCE 对 + state；
- * 2. `127.0.0.1` 随机端口起本地 server，回调地址 `http://localhost:<port>/callback`；
+ * 2. `127.0.0.1` 随机端口起本地 server，回调地址 `http://localhost:<port>/`
+ *    （Azure 登记的是 `http://localhost` 根路径；localhost 仅忽略端口，路径必须一致）；
  * 3. `shell.openExternal` 打开授权页；
  * 4. 校验 state → 用 code 换 token → 写加密凭据；
  * 5. 后续 `getValidAccessToken()` 在过期前 5 分钟自动刷新（含 refresh token 轮换回写）。

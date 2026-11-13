@@ -8,13 +8,19 @@ import { OneDriveError } from './types'
  *
  * 约束：
  * - 仅监听 `127.0.0.1` 的随机端口（0 = 系统分配）；
- * - 仅接受 `GET /callback`，其余路径返回 404；
+ * - 仅接受 `GET /`（根路径），其余路径返回 404；
  * - 校验 `state`，收到 `code` 后立即响应极简成功页并关闭 server；
  * - 超时 / 取消 / 参数错误都会关闭 server 并拒绝 `code` Promise。
  */
 
-/** 回调路径（Azure 侧登记的是 `http://localhost`，运行时带随机端口）。 */
-export const CALLBACK_PATH = '/callback'
+/**
+ * 回调路径。
+ *
+ * Azure 应用注册的 redirect URI 是 `http://localhost`（根路径）。Microsoft 对
+ * localhost 只忽略端口、不忽略路径；改成 `/callback` 等子路径会让授权端点返回
+ * `redirect_uri` 不匹配（`invalid_request`），因此这里必须是 `'/'`。
+ */
+export const CALLBACK_PATH = '/'
 
 /** 本地回环回调 server 句柄。 */
 export interface CallbackServer {
@@ -56,8 +62,8 @@ function respondText(response: ServerResponse, status: number, body: string): vo
 /**
  * 启动本地回调 server 并返回回调地址与 `code` Promise。
  *
- * 回调地址使用 `http://localhost:<port>/callback`（与 Azure 登记的
- * `http://localhost` 对齐；Microsoft 允许 localhost 使用任意端口）。
+ * 回调地址使用 `http://localhost:<port>/`（与 Azure 登记的 `http://localhost`
+ * 根路径一致；Microsoft 对 localhost 只忽略端口，路径必须完全一致）。
  */
 export async function startCallbackServer(
   state: string,

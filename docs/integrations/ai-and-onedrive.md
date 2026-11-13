@@ -215,7 +215,7 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
 ### 7.1 PKCE 流程（`auth.ts:20-32`）
 
 1. 生成 PKCE 对：32 字节随机数 → base64url 作 `code_verifier`，其 SHA-256 → base64url 作 `challenge`；另生成 24 字节 `state`。
-2. 在 `127.0.0.1` 的随机端口（`listen(0, '127.0.0.1')`）起本地 server，回调地址 `http://localhost:<port>/callback`（与 Azure 登记的 `http://localhost` 对齐，Microsoft 允许 localhost 任意端口）。
+2. 在 `127.0.0.1` 的随机端口（`listen(0, '127.0.0.1')`）起本地 server，回调地址 `http://localhost:<port>/`（根路径，与 Azure 登记的 `http://localhost` 一致）。注意：Azure 对 localhost 只忽略端口、**不忽略路径**——改成 `/callback` 等子路径会导致授权端点返回 `redirect_uri` 不匹配（`invalid_request`）。
 3. `shell.openExternal` 打开授权页：`login.microsoftonline.com/common/oauth2/v2.0/authorize`，`response_type=code`、`code_challenge_method=S256`、scope = `offline_access Files.ReadWrite.AppFolder User.Read`。
 4. 回调 server 校验 `state`（不匹配 → `state_mismatch`），取 `code` 后立即回内置成功页并关闭。
 5. 用 `code` + `code_verifier` 换 token（`authToken.ts`）；缺 `refresh_token` 判 `auth_failed`。
@@ -223,7 +223,7 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
 
 ### 7.2 回调页
 
-`authCallback.ts` 内置极简 HTML（`respondHtml`），仅两个标题：`Authorization complete` / `Authorization failed`，文案为英文——注释明确「避免在本模块硬编码中文字案」（`authCallback.ts:28`）。非 `GET /callback` 返回 404 纯文本。`error=access_denied` 映射为 `auth_cancelled`，其余 OAuth 错误为 `auth_failed`。
+`authCallback.ts` 内置极简 HTML（`respondHtml`），仅两个标题：`Authorization complete` / `Authorization failed`，文案为英文——注释明确「避免在本模块硬编码中文字案」（`authCallback.ts:28`）。非 `GET /`（根路径）返回 404 纯文本。`error=access_denied` 映射为 `auth_cancelled`，其余 OAuth 错误为 `auth_failed`。
 
 ### 7.3 凭据存储
 
