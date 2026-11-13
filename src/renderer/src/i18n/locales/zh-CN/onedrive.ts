@@ -77,16 +77,9 @@ const onedrive = {
     cancelled: '已取消恢复',
     failed: '恢复失败，当前数据未被替换，请稍后重试'
   },
-  clientId: {
-    label: '应用 ID（clientId）',
-    description: '用于 OneDrive 应用注册；留空则使用内置默认应用 ID',
-    placeholder: '留空使用内置默认值',
-    save: '保存',
-    savedToast: '应用 ID 已保存'
-  },
   unsupported: '当前环境不支持 OneDrive 备份',
   error: {
-    not_configured: '尚未配置 OneDrive 应用 ID',
+    not_configured: '尚未登录 OneDrive',
     encryption_unavailable: '系统安全存储不可用，无法读取或保存授权凭据',
     credentials_corrupt: '本地授权凭据已损坏，请退出登录后重新登录',
     auth_cancelled: '已取消登录',

@@ -6,17 +6,14 @@
  * - 登录：`signIn` 等待中展示「取消登录」（`cancelSignIn`）；
  * - 退出登录：`useConfirm` 二次确认后 `signOut`；
  * - 手动备份：`backup`，进行中展示 `Progress` + 阶段文案 + 「取消备份」；
- * - 结果：成功 toast（文件名 + 大小），失败按 `code` 映射行内中文文案；
- * - clientId：以原始 settings 值初始化（空 = 内置默认），保存走 `setClientId`。
+ * - 结果：成功 toast（文件名 + 大小），失败按 `code` 映射行内中文文案。
  *
  * 状态与 IPC 调用集中在 `useOneDriveBackup`，本文件只负责渲染与事件绑定。
  */
-import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Input, Progress } from '../../components/ui'
+import { Button, Progress } from '../../components/ui'
 import SectionCard from './SectionCard'
 import SettingRow from './SettingRow'
-import { settingRowDescriptionId } from './settingRowIds'
 import { ERROR_KEYS, NOTICE_KEYS, PHASE_KEYS, formatBytes } from './onedriveSectionSupport'
 import { useOneDriveBackup } from './useOneDriveBackup'
 import OneDriveRemoteBackups from './OneDriveRemoteBackups'
@@ -25,7 +22,6 @@ import '../../styles/components/onedrive-backup.css'
 export default function OneDriveSection() {
   const { t } = useTranslation('onedrive')
   const od = useOneDriveBackup()
-  const clientIdControlId = useId()
 
   const signedIn = od.status?.signedIn === true
   const encryptionBlocked = od.status !== null && !od.status.encryptionAvailable
@@ -155,41 +151,6 @@ export default function OneDriveSection() {
       ) : null}
 
       {signedIn ? <OneDriveRemoteBackups od={od} /> : null}
-
-      <SettingRow
-        controlId={clientIdControlId}
-        label={t('clientId.label')}
-        description={t('clientId.description')}
-      >
-        <div className="od-client">
-          <Input
-            id={clientIdControlId}
-            aria-describedby={settingRowDescriptionId(clientIdControlId)}
-            className="od-client__input"
-            value={od.draftClientId}
-            placeholder={t('clientId.placeholder')}
-            aria-label={t('clientId.label')}
-            spellCheck={false}
-            autoComplete="off"
-            disabled={od.loading || od.unsupported || od.restoreRunning}
-            onChange={(event) => od.setDraftClientId(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                od.handleSaveClientId()
-              }
-            }}
-          />
-          <Button
-            variant="primary"
-            loading={od.savingClientId}
-            disabled={od.loading || od.unsupported || od.restoreRunning}
-            onClick={od.handleSaveClientId}
-          >
-            {t('clientId.save')}
-          </Button>
-        </div>
-      </SettingRow>
 
       {od.confirmNode}
       {od.toastNode}

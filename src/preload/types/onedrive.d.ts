@@ -44,15 +44,13 @@ export type OneDriveProgressUnsubscribe = () => void
  * 通道对应关系见 `main/ipc/onedrive.ts` 文件头注释，两侧须同步。
  */
 export interface OneDriveApi {
-  /** 聚合状态：加密可用性 / clientId / 登录态 / 授权中 / 备份中。 */
+  /** 聚合状态：加密可用性 / 登录态 / 授权中 / 备份中。 */
   status: () => Promise<OneDriveStatus>
-  /** 写入应用注册 clientId（空串 = 清除）；返回写入后的状态。 */
-  setClientId: (clientId: string) => Promise<OneDriveStatus>
   /** 发起授权（打开系统浏览器）；取消 / 超时 / 失败以 `ok=false` + `code` 返回。 */
   signIn: () => Promise<OneDriveResult<OneDriveAuthStatus>>
   /** 取消进行中的授权；返回是否有流程被取消（无进行中流程为 false）。 */
   cancelSignIn: () => Promise<boolean>
-  /** 登出（保留 clientId）；返回登出后的状态。 */
+  /** 登出（清除本机授权凭据）；返回登出后的状态。 */
   signOut: () => Promise<OneDriveStatus>
   /** 执行一次手动备份；进度走 `onProgress`。重复调用返回 `backup_in_progress`。 */
   backup: () => Promise<OneDriveResult<OneDriveBackupResult>>

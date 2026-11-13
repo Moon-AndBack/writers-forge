@@ -193,15 +193,6 @@ export const VOLUME_SETTINGS: SeedVolume = {
           '位置是 OneDrive 的「应用专属目录」下的 backups 文件夹（微软 Graph 的 special/approot），在 OneDrive 网页的常规文件列表里看不到该目录，只有本应用能访问',
           '本地临时快照生成在系统临时目录，上传结束即删除；远端那份才是备份',
           '应用不会自动清理远端的历史备份，攒多了请自行到 OneDrive 侧整理'
-        ]),
-        seedHeading('应用 ID（clientId）'),
-        seedParagraph(
-          '分区最下方是「应用 ID（clientId）」：这一项是给在 Azure 自行注册应用的用户用的，普通用户直接留空即可。留空时使用内置默认应用 ID（输入框占位提示「留空使用内置默认值」），输入框下方会标注当前来源是「当前使用内置默认应用 ID」还是「当前使用自定义应用 ID」。'
-        ),
-        seedBulletList([
-          '填好后点「保存」或按回车生效，保存成功提示「应用 ID 已保存」',
-          '想恢复默认：把输入框清空再保存即可',
-          '这一项不影响备份内容，只决定走哪个应用注册身份去授权'
         ])
       ]
     },

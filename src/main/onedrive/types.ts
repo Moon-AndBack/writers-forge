@@ -104,8 +104,6 @@ export interface OneDriveCredentials {
 
 /** 授权状态摘要（仅非敏感信息，可安全透传渲染层）。 */
 export interface OneDriveAuthStatus {
-  /** 是否已配置 clientId（应用注册）。 */
-  configured: boolean
   /** 是否已登录且当前环境可解密凭据。 */
   signedIn: boolean
   /** 账户展示信息（未登录 / 不可解密时为 null）。 */

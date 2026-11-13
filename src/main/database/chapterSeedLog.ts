@@ -11,10 +11,18 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v140'
+export const CHAPTER_SEED_VERSION = 'v141'
 
 /**
- * 最近版本变更日志（v140；更早版本见上述历史文件）。
+ * 最近版本变更日志（v141；更早版本见上述历史文件）。
+ *
+ * `v141`（OneDrive 自定义应用 ID 下线批）：删除设置页「应用 ID（clientId）」输入行、
+ * 自定义应用 ID 的 IPC 与 settings 覆盖，主进程授权与刷新统一使用内置
+ * `DEFAULT_ONEDRIVE_CLIENT_ID`；`OneDriveAuthStatus.configured` 与
+ * `OneDriveStatus.clientId` 一并删除。启动时一次性清理旧 `onedrive:clientId`
+ * （守卫键 `onedrive:clientIdCleanup:v1`）：存在非空自定义值时清除既有凭据并删键，
+ * 强制用户用内置应用重新登录，避免旧 refresh token 与 clientId 不匹配导致刷新失败。
+ * `not_configured` 文案由「尚未配置应用 ID」改为「尚未登录」。教学书删除该小节。
  *
  * `v140`（OneDrive 云端备份列表与恢复批）：OneDrive 分区新增「云端备份」区块——
  * 登录后自动列出 `approot:/backups` 下的远端快照（文件名 / 修改时间 / 大小，按修改

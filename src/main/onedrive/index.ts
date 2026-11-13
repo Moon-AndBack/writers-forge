@@ -15,8 +15,6 @@ export * from './types'
 
 export {
   ONEDRIVE_SETTING_KEYS,
-  getOneDriveClientId,
-  setOneDriveClientId,
   isCredentialEncryptionAvailable,
   readStoredCredentials,
   writeStoredCredentials,

@@ -1,7 +1,7 @@
 /**
  * 机翻占位 · 待校
  * 本文件英文译文由机器翻译生成，尚未人工校对；如见生硬 / 歧义，以 zh-CN 为准。
- * 说明：品牌标识 OneDrive / clientId 保持原文。
+ * 说明：品牌标识 OneDrive 保持原文。
  */
 import type { ZhCNResources } from '../zh-CN'
 
@@ -76,17 +76,9 @@ const onedrive = {
     cancelled: 'Restore cancelled',
     failed: 'Restore failed; current data was not replaced. Please try again later.'
   },
-  clientId: {
-    label: 'Application ID (clientId)',
-    description:
-      'Used for the OneDrive app registration; leave blank to use the built-in default application ID',
-    placeholder: 'Leave blank to use the built-in default',
-    save: 'Save',
-    savedToast: 'Application ID saved'
-  },
   unsupported: 'OneDrive backup is not available in this environment',
   error: {
-    not_configured: 'OneDrive application ID is not configured',
+    not_configured: 'Not signed in to OneDrive',
     encryption_unavailable:
       'Secure storage is unavailable, so authorization credentials cannot be read or saved',
     credentials_corrupt:

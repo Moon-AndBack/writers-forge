@@ -4,7 +4,7 @@
  * 职责：
  * - 挂载时 `status()` 拉取初始态（含 `backupRunning` / `signingIn`）；
  * - 订阅 `onProgress`（卸载时退订），备份进度与运行态由事件驱动；
- * - 封装登录 / 取消登录 / 退出 / 备份 / 取消备份 / 保存 clientId 的异步流程；
+ * - 封装登录 / 取消登录 / 退出 / 备份 / 取消备份的异步流程；
  * - 云端备份列表与恢复拆分到 `useOneDriveRemoteBackups`，本 hook 只合并对外接口；
  * - 错误只保留 `OneDriveErrorCode` / `BackupErrorCode`，由组件经映射表走 i18n。
  *
@@ -12,7 +12,7 @@
  * 降级成字符串后失去可映射性。
  */
 import { useCallback, useEffect, useState } from 'react'
-import type { Dispatch, ReactNode, SetStateAction } from 'react'
+import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type {
   OneDriveBackupProgress,
@@ -21,11 +21,7 @@ import type {
 } from '../../../../preload/types/onedrive'
 import { useToast } from '../../components/ui'
 import { useConfirm } from '../writer/chapters/useConfirm'
-import {
-  ONEDRIVE_CLIENT_ID_SETTING_KEY,
-  formatBytes,
-  type OneDriveNotice
-} from './onedriveSectionSupport'
+import { formatBytes, type OneDriveNotice } from './onedriveSectionSupport'
 import { useOneDriveRemoteBackups, type OneDriveRemoteController } from './useOneDriveRemoteBackups'
 
 const INITIAL_PROGRESS: OneDriveBackupProgress = {
@@ -42,10 +38,6 @@ export interface OneDriveBackupController extends OneDriveRemoteController {
   loading: boolean
   /** 当前环境未暴露 `window.api.onedrive`。 */
   unsupported: boolean
-  /** clientId 输入草稿。 */
-  draftClientId: string
-  setDraftClientId: Dispatch<SetStateAction<string>>
-  savingClientId: boolean
   /** 登录流程进行中（含进入设置前已在浏览器等待回调）。 */
   signingIn: boolean
   /** 备份进行中（含进入设置前已启动的备份）。 */
@@ -61,7 +53,6 @@ export interface OneDriveBackupController extends OneDriveRemoteController {
   handleSignOut: () => void
   handleBackup: () => void
   handleCancelBackup: () => void
-  handleSaveClientId: () => void
   /** 退出登录二次确认弹窗节点。 */
   confirmNode: ReactNode
   /** 备份成功提示节点。 */
@@ -73,12 +64,9 @@ export function useOneDriveBackup(): OneDriveBackupController {
   const { show: showToast, node: toastNode } = useToast()
   const { request: requestConfirm, node: confirmNode } = useConfirm()
   const api = window.api?.onedrive
-  const settingsApi = window.api?.settings
 
   const [status, setStatus] = useState<OneDriveStatus | null>(null)
   const [loading, setLoading] = useState(api !== undefined)
-  const [draftClientId, setDraftClientId] = useState('')
-  const [savingClientId, setSavingClientId] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
   const [backupRunning, setBackupRunning] = useState(false)
   const [progress, setProgress] = useState<OneDriveBackupProgress | null>(null)
@@ -101,17 +89,10 @@ export function useOneDriveBackup(): OneDriveBackupController {
     let active = true
 
     void (async () => {
-      // `status().clientId` 是生效值（可能已回退内置默认），无法区分来源；
-      // 直接读原始 settings 值，空串才让输入框保持「留空 = 默认」。
-      const rawClientId = await (
-        settingsApi ? settingsApi.get(ONEDRIVE_CLIENT_ID_SETTING_KEY) : Promise.resolve(null)
-      ).catch(() => null)
-
       try {
         const next = await api.status()
         if (!active) return
         setStatus(next)
-        setDraftClientId((rawClientId ?? '').trim())
         setSigningIn(next.signingIn)
         if (next.backupRunning) {
           setBackupRunning(true)
@@ -134,7 +115,7 @@ export function useOneDriveBackup(): OneDriveBackupController {
       active = false
       unsubscribe()
     }
-  }, [api, settingsApi])
+  }, [api])
 
   const handleSignIn = useCallback((): void => {
     if (!api || signingIn || status === null || remoteRestoreRunning) return
@@ -149,11 +130,9 @@ export function useOneDriveBackup(): OneDriveBackupController {
         if (result.ok) {
           setStatus((prev) => {
             const base: OneDriveStatus = prev ?? {
-              configured: false,
               signedIn: false,
               account: null,
               encryptionAvailable: result.value.encryptionAvailable,
-              clientId: '',
               signingIn: false,
               backupRunning: false,
               restoreRunning: false
@@ -259,36 +238,10 @@ export function useOneDriveBackup(): OneDriveBackupController {
     void api.cancelBackup().catch(() => {})
   }, [api])
 
-  const handleSaveClientId = useCallback((): void => {
-    if (!api || savingClientId || remoteRestoreRunning) return
-
-    const trimmed = draftClientId.trim()
-    setErrorCode(null)
-    setNotice(null)
-    setSavingClientId(true)
-
-    void (async () => {
-      try {
-        const next = await api.setClientId(trimmed)
-        setStatus(next)
-        // 不把生效值（内置默认）回填输入框，否则「留空 = 默认」无法表达。
-        setDraftClientId(trimmed)
-        showToast(t('clientId.savedToast'))
-      } catch {
-        setErrorCode('unknown')
-      } finally {
-        setSavingClientId(false)
-      }
-    })()
-  }, [api, draftClientId, remoteRestoreRunning, savingClientId, showToast, t])
-
   return {
     status,
     loading,
     unsupported: api === undefined,
-    draftClientId,
-    setDraftClientId,
-    savingClientId,
     signingIn,
     backupRunning,
     progress,
@@ -300,7 +253,6 @@ export function useOneDriveBackup(): OneDriveBackupController {
     handleSignOut,
     handleBackup,
     handleCancelBackup,
-    handleSaveClientId,
     confirmNode,
     toastNode
   }

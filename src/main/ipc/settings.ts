@@ -13,8 +13,7 @@ const log = logger.scope('settings')
  *
  * **新增敏感域时在此登记**（前缀或完整键均可，`startsWith` 对完整键等价）。
  *
- * 放行项：`onedrive:clientId`（Azure 公共客户端 ID，非密钥，设置页可编辑）、
- * `onedrive:account`（展示用明文邮箱）——渲染层需要读取，不得纳入。
+ * 放行项：`onedrive:account`（展示用明文邮箱）——渲染层需要读取，不得纳入。
  */
 const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
 

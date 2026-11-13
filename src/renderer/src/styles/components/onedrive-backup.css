@@ -1,8 +1,8 @@
 /**
  * 设置页 · OneDrive 云备份分区（前缀 od-）。
  *
- * 只服务 `OneDriveSection`：账号状态行、操作按钮组、备份进度块、行内错误 / 提示、
- * clientId 输入组。配色一律取 `theme.css` 令牌；无任何位移 / 缩放动画（§8）。
+ * 只服务 `OneDriveSection`：账号状态行、操作按钮组、备份进度块、行内错误 / 提示。
+ * 配色一律取 `theme.css` 令牌；无任何位移 / 缩放动画（§8）。
  */
 
 /* ---------- 按钮组 / 账号状态 ---------- */
@@ -95,27 +95,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- clientId 输入组 ---------- */
-.od-client {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.od-client__input {
-  width: 260px;
-}
-
 /* ---------- 云端备份列表 ---------- */
 .od-remote {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px 10px;
-  border-top: 1px solid var(--line);
-}
-
-.od-remote + .settings-row {
   border-top: 1px solid var(--line);
 }
 

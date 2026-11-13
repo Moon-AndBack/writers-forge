@@ -4,6 +4,7 @@ import { closeDb, getDb } from './database'
 import { runDiagnostics } from './database/diagnostics'
 import { registerIpc } from './ipc'
 import { configureLogger, logger } from './logger'
+import { cleanupLegacyOneDriveClientId } from './onedrive/clientIdCleanup'
 import { registerResizeSnap } from './resizeSnap'
 import { createMainWindow } from './window'
 
@@ -57,6 +58,9 @@ function startApplication(): void {
       log.error('数据库初始化失败', error)
       throw error
     }
+
+    // 一次性清理已下线的自定义 clientId；失败只记日志，不阻断启动。
+    cleanupLegacyOneDriveClientId()
 
     // 数据健康自检：在数据库就绪（含 foreign_keys=ON）之后、窗口创建之前同步执行一次。
     // 结果存主进程内存，供渲染层经 `diagnostics:get` 拉取——此时序保证渲染层挂载时

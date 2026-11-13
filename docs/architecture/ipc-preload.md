@@ -62,7 +62,7 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 | 14  | `registerForeshadowsIpc`         | `foreshadows.ts`   | 13             |
 | 15  | `registerImagesIpc`              | `images.ts`        | 3              |
 | 16  | `registerInspirationsIpc`        | `inspirations.ts`  | 5              |
-| 17  | `registerOneDriveIpc`            | `onedrive.ts`      | 10             |
+| 17  | `registerOneDriveIpc`            | `onedrive.ts`      | 9              |
 | 18  | `registerOutlineIpc`             | `outline.ts`       | 21             |
 | 19  | `registerPlotIpc`                | `plot.ts`          | 11             |
 | 20  | `registerSettingsIpc`            | `settings.ts`      | 4              |
@@ -80,9 +80,9 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 - `docLimit.ts`：单篇正文上限 `MAX_DOC_CHARS = 200_000` 与有效字数计算。
 - `worldSubtypeFields.ts`：子类字段白名单与规范化，只被 `worldSubtypes.ts` 调用。
 
-## 3. 188 个 handle 通道总表
+## 3. 187 个 handle 通道总表
 
-实测 `ipcMain.handle` 共 **188** 个（含 `onedrive:backup`、`outline:saveContent`、`worldEntity:list` / `saveText` / `listIncomingRefs` 等跨行书写的 8 个）。按一级前缀（域）分布：
+实测 `ipcMain.handle` 共 **187** 个（含 `onedrive:backup`、`outline:saveContent`、`worldEntity:list` / `saveText` / `listIncomingRefs` 等跨行书写的 8 个）。按一级前缀（域）分布：
 
 | 域             | 文件                                                            | 数量    |
 | -------------- | --------------------------------------------------------------- | ------- |
@@ -98,7 +98,7 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 | `foreshadow`   | `foreshadows.ts`                                                | 13      |
 | `images`       | `images.ts`                                                     | 3       |
 | `inspiration`  | `inspirations.ts`                                               | 5       |
-| `onedrive`     | `onedrive.ts`                                                   | 10      |
+| `onedrive`     | `onedrive.ts`                                                   | 9       |
 | `outline`      | `outline.ts`                                                    | 21      |
 | `plot`         | `plot.ts`                                                       | 11      |
 | `settings`     | `settings.ts`                                                   | 4       |
@@ -107,7 +107,7 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 | `window`       | `window.ts` + `snap.ts`                                         | 7       |
 | `worldEntity`  | `worldEntities.ts` + `worldRefs.ts` + `worldPowers.ts`          | 19      |
 | `worldSubtype` | `worldSubtypes.ts`                                              | 5       |
-| **合计**       | 26 个注册文件                                                   | **188** |
+| **合计**       | 26 个注册文件                                                   | **187** |
 
 ### 3.1 AI / 书稿 / 内容类（84）
 
@@ -198,7 +198,7 @@ cleanWords:import · cleanWords:toggle · cleanWords:setCategoryEnabled
 cleanWords:delete
 ```
 
-### 3.3 系统 / 设置 / 统计类（35）
+### 3.3 系统 / 设置 / 统计类（34）
 
 ```text
 # backup（8）
@@ -214,9 +214,9 @@ stats:totalWords · stats:todayWords · stats:streakDays · stats:bookStatsAll
 # diagnostics（1）
 diagnostics:get
 
-# onedrive（10）
-onedrive:status · onedrive:setClientId · onedrive:signIn
-onedrive:cancelSignIn · onedrive:signOut · onedrive:backup · onedrive:cancelBackup
+# onedrive（9）
+onedrive:status · onedrive:signIn · onedrive:cancelSignIn
+onedrive:signOut · onedrive:backup · onedrive:cancelBackup
 onedrive:listBackups · onedrive:restoreBackup · onedrive:cancelRestore
 
 # theme（1）
@@ -325,13 +325,13 @@ interface AiError {
 | `settings`       | 4      | `get` / `set` / `remove`                            | `settings:*`（`remove` → `settings:delete`）      |
 | `ai`             | 21     | `config.get` / `catalog.override` / `chat.onStream` | `ai:*`                                            |
 | `cleanWords`     | 7      | `import` / `toggle` / `setCategoryEnabled`          | `cleanWords:*`                                    |
-| `onedrive`       | 12     | `backup` / `listBackups` / `onRestoreProgress`      | `onedrive:*`                                      |
+| `onedrive`       | 11     | `backup` / `listBackups` / `onRestoreProgress`      | `onedrive:*`                                      |
 | `titleBar`       | 1      | `setOverlay`                                        | `window:titlebar:*`                               |
 | `windowMaterial` | 2      | `set` / `acrylicSupported`                          | `window:setMaterial`、`window:acrylicSupported`   |
 | `windowSnap`     | 4      | `set` / `clear` / `boundsWidth`                     | `window:snap:*`、`window:bounds:get`              |
 | `systemTheme`    | 2      | `getAccentColor` / `onAccentChange`                 | `theme:accent:*`                                  |
 
-合计 **195 个成员** = 189 个 invoke 调用点 + 4 个订阅方法（`ai.chat.onStream`、`onedrive.onProgress`、`onedrive.onRestoreProgress`、`systemTheme.onAccentChange`）+ 2 个 `app` 生命周期方法（`onBeforeClose` / `notifyCloseReady`）。调用点比通道多 1，是因为 `stats:bookStatsAll` 同时挂在 `books.statsAll` 与 `stats.bookStatsAll` 两个入口（书架批量取数，避免逐书 N+1）。
+合计 **194 个成员** = 188 个 invoke 调用点 + 4 个订阅方法（`ai.chat.onStream`、`onedrive.onProgress`、`onedrive.onRestoreProgress`、`systemTheme.onAccentChange`）+ 2 个 `app` 生命周期方法（`onBeforeClose` / `notifyCloseReady`）。调用点比通道多 1，是因为 `stats:bookStatsAll` 同时挂在 `books.statsAll` 与 `stats.bookStatsAll` 两个入口（书架批量取数，避免逐书 N+1）。
 
 - 大域拆文件：`ai` / `cleanWords` / `onedrive` / `worldEntity` / `worldSubtype` / `chipColors` 在 `api/*.ts`，用 `satisfies AiApi` / `satisfies Api['worldEntity']` 做结构校验，签名真源在 `types/*.d.ts`。
 - preload 可以**收紧**契约：`cleanWords.import` 把 `source: 'user'` 写死，渲染层无法把词写进 `builtin`；`ai` / `onedrive` 不暴露任何密钥明文或 token。
@@ -348,7 +348,7 @@ interface AiError {
 | `settings:all`    | 遍历全表，剔除敏感键后返回，并记 `hidden` 条数                                                            |
 | `settings:delete` | 键非 string → `false`；敏感键 → `false`（清理只由主进程授权流程负责）                                     |
 
-敏感前缀登记在 `src/main/ipc/settings.ts:19`：
+敏感前缀登记在 `src/main/ipc/settings.ts:18`：
 
 ```ts
 const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
@@ -356,9 +356,9 @@ const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
 
 - `ai:`：`ai:deepseek:baseUrl` / `ai:deepseek:model` / `ai:deepseek:apiKey`、`ai:opencode:baseUrl` / `ai:opencode:model` / `ai:opencode:token`。密钥由主进程写入加密值，渲染层只能通过 `ai:config:get` 拿掩码视图 `AiConfigView`。
 - `onedrive:credentials:`：`onedrive:credentials:v1`（safeStorage 加密的 token 载荷）。
-- **明确放行**：`onedrive:clientId`（Azure 公共客户端 ID，设置页可编辑）、`onedrive:account`（展示用邮箱）。新增敏感域必须在此登记，`startsWith` 对完整键等价。
+- **明确放行**：`onedrive:account`（展示用邮箱）。新增敏感域必须在此登记，`startsWith` 对完整键等价。
 
-其余非敏感键由渲染层直接读写，代表：`locale`、`theme`、`windowMaterial`、`activityBarPinned`、`rightPaneHidden`、`typography`、`penName`、`onboardingCompleted`、`timeline:list[:bookId]` / `timeline:active[:bookId]`（书级动态键）。教学书重灌守卫键 `chapterData:v132:migrated` 同样存在此表，但只由主进程读写。
+其余非敏感键由渲染层直接读写，代表：`locale`、`theme`、`windowMaterial`、`activityBarPinned`、`rightPaneHidden`、`typography`、`penName`、`onboardingCompleted`、`timeline:list[:bookId]` / `timeline:active[:bookId]`（书级动态键）。教学书重灌守卫键 `chapterData:v141:migrated` 同样存在此表，但只由主进程读写。
 
 ## 8. 类型真源链路
 

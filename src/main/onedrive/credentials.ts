@@ -10,8 +10,6 @@ import type { OneDriveAccount, OneDriveAuthStatus, OneDriveCredentials } from '.
  * OneDrive 凭据读写与加密存储。
  *
  * settings 键约定：
- * - `onedrive:clientId`       明文，用户可在设置页覆盖（非密钥）；未设置 / 已清除时回退
- *                             `DEFAULT_ONEDRIVE_CLIENT_ID`（Azure 公共客户端注册的内置 clientId）；
  * - `onedrive:credentials:v1` safeStorage 加密后的 base64 密文（含 token / 过期时间 / 账户）；
  * - `onedrive:account`        明文邮箱，仅用于界面展示（避免每次解密）。
  *
@@ -23,15 +21,14 @@ const log = logger.scope('onedrive:credentials')
 
 /** OneDrive 相关 settings 键（集中定义便于后续迁移）。 */
 export const ONEDRIVE_SETTING_KEYS = {
-  clientId: 'onedrive:clientId',
   credentials: 'onedrive:credentials:v1',
   account: 'onedrive:account'
 } as const
 
 /**
- * 内置默认 clientId（Azure 应用注册「应用程序(client) ID」）。
+ * 内置 clientId（Azure 应用注册「应用程序(client) ID」）。
  *
- * 为公共客户端，非密钥，可随安装包分发；用户的 `onedrive:clientId` 设置仅作覆盖。
+ * 为公共客户端，非密钥，可随安装包分发；所有用户统一使用该应用注册。
  */
 export const DEFAULT_ONEDRIVE_CLIENT_ID = '7f05c33b-794a-4b69-b641-de33e14b7cb0'
 
@@ -72,29 +69,6 @@ function isInsecureStorageBackend(): boolean {
     // 初始化未完成 / 运行时缺失时按既有逻辑（已可加密）处理，避免误伤。
     return false
   }
-}
-
-/**
- * 读取生效的 clientId（去空白）。
- *
- * settings 有非空值 → 用户自定义值；为空 / 未设置 / 已清除 → 内置默认值
- * `DEFAULT_ONEDRIVE_CLIENT_ID`（因此实际不再返回 null）。
- */
-export function getOneDriveClientId(): string {
-  const value = (getSetting(ONEDRIVE_SETTING_KEYS.clientId) ?? '').trim()
-  return value || DEFAULT_ONEDRIVE_CLIENT_ID
-}
-
-/** 写入 clientId；传空串等价于清除。 */
-export function setOneDriveClientId(clientId: string): void {
-  const value = clientId.trim()
-  if (!value) {
-    deleteSetting(ONEDRIVE_SETTING_KEYS.clientId)
-    log.info('OneDrive clientId 已清除')
-    return
-  }
-  setSetting(ONEDRIVE_SETTING_KEYS.clientId, value)
-  log.info('OneDrive clientId 已保存', { clientIdLength: value.length })
 }
 
 /** 解析密文里的账户信息。 */
@@ -218,25 +192,19 @@ export function getStoredAccount(): OneDriveAccount | null {
  * 汇总授权状态（不抛异常，供设置页展示）。
  *
  * `signedIn` 要求「有密文 + 当前环境可解密」；解密失败视为未登录。
- *
- * `configured` 表示「是否具备可用 clientId（含内置默认）」：由于默认值恒存在，
- * 该字段当前恒为 true，不再能区分「用户是否自定义过」。需要区分时，比较
- * `clientId` 与 `DEFAULT_ONEDRIVE_CLIENT_ID`（或读 settings 原始值）。
  */
 export function getOneDriveAuthStatus(): OneDriveAuthStatus {
-  const configured = Boolean(getOneDriveClientId())
   const encryptionAvailable = isCredentialEncryptionAvailable()
   const hasStored = (getSetting(ONEDRIVE_SETTING_KEYS.credentials) ?? '') !== ''
   const fallbackAccount = getStoredAccount()
 
   if (!hasStored || !encryptionAvailable) {
-    return { configured, signedIn: false, account: fallbackAccount, encryptionAvailable }
+    return { signedIn: false, account: fallbackAccount, encryptionAvailable }
   }
 
   try {
     const credentials = readStoredCredentials()
     return {
-      configured,
       signedIn: credentials !== null,
       account: credentials?.account ?? fallbackAccount,
       encryptionAvailable
@@ -244,6 +212,6 @@ export function getOneDriveAuthStatus(): OneDriveAuthStatus {
   } catch (error) {
     const normalized = error instanceof OneDriveError ? error : null
     log.warn('读取 OneDrive 授权状态失败', { code: normalized?.code ?? 'unknown' })
-    return { configured, signedIn: false, account: fallbackAccount, encryptionAvailable }
+    return { signedIn: false, account: fallbackAccount, encryptionAvailable }
   }
 }

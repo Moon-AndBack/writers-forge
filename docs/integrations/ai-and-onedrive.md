@@ -4,7 +4,7 @@ Writer's Forge 有两个「离开本机」的集成面：AI 服务商（OpenAI �
 
 - AI 能力层：`src/main/ai/`（6 文件，1,172 行）
 - AI 接入层：`src/main/ipc/ai.ts` + `aiValidate.ts` + `aiChat.ts`
-- OneDrive 模块：`src/main/onedrive/`（14 文件，2,756 行）
+- OneDrive 模块：`src/main/onedrive/`（15 文件，2,756 行）
 - OneDrive 接入层：`src/main/ipc/onedrive.ts`
 - 持久化：`src/main/database/schema/aiChat.ts`、`src/main/database/aiChat.ts`
 
@@ -176,7 +176,8 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
         ├── auth.ts            PKCE 授权 · 刷新 · 登出
         │     ├── authCallback.ts  127.0.0.1 回环 server + 极简 HTML 回调页
         │     ├── authToken.ts     令牌端点（authorization_code / refresh_token）
-        │     └── credentials.ts   settings 键 · safeStorage 密文 · 授权状态
+        │     ├── credentials.ts   settings 键 · safeStorage 密文 · 授权状态
+        │     └── clientIdCleanup.ts 启动时清理旧自定义 clientId
         ├── backup.ts          快照 → 上传 → 清理（进度编排）
         │     ├── upload.ts        ≤4MB 单次 PUT / >4MB 分片会话 + 重试
         │     └── graph.ts         Graph 请求封装 · approot / backups 目录
@@ -189,22 +190,23 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
         └── index.ts           统一出口
 ```
 
-| 文件               | 行数 | 职责                                                     |
-| ------------------ | ---- | -------------------------------------------------------- |
-| `auth.ts`          | 315  | 生成 PKCE、起回调 server、换 token、刷新单飞、登出       |
-| `authCallback.ts`  | 192  | 只监听 `127.0.0.1` 随机端口、校验 `state`、返回内置 HTML |
-| `authToken.ts`     | 95   | 令牌端点 HTTP + OAuth 错误映射                           |
-| `backup.ts`        | 155  | `db.backup()` 快照、互斥、进度、临时文件清理             |
-| `credentials.ts`   | 249  | settings 键、加密读写、`getOneDriveAuthStatus`           |
-| `download.ts`      | 332  | Range 分块下载、预签名 URL 刷新、重试与取消              |
-| `graph.ts`         | 207  | `graphRequest`、`/me`、`approot:/backups` 目录、URL 构造 |
-| `http.ts`          | 192  | 与 AI 域平行的最小 HTTP 工具（不引 `openai` SDK）        |
-| `index.ts`         | 52   | 对外导出面                                               |
-| `logSafe.ts`       | 82   | `maskEmail` / `safePath` / `safeError`                   |
-| `remote.ts`        | 127  | 列出 `approot:/backups` 中的快照并归一化                 |
-| `restoreRemote.ts` | 124  | 下载 → 校验 → 恢复编排、临时文件清理                     |
-| `types.ts`         | 202  | 错误码、凭据、进度、结果类型                             |
-| `upload.ts`        | 432  | 大小分流、分片、重试、416 纠偏、会话取消                 |
+| 文件                 | 行数 | 职责                                                     |
+| -------------------- | ---- | -------------------------------------------------------- |
+| `auth.ts`            | 301  | 生成 PKCE、起回调 server、换 token、刷新单飞、登出       |
+| `authCallback.ts`    | 192  | 只监听 `127.0.0.1` 随机端口、校验 `state`、返回内置 HTML |
+| `authToken.ts`       | 95   | 令牌端点 HTTP + OAuth 错误映射                           |
+| `backup.ts`          | 155  | `db.backup()` 快照、互斥、进度、临时文件清理             |
+| `credentials.ts`     | 217  | settings 键、加密读写、`getOneDriveAuthStatus`           |
+| `clientIdCleanup.ts` | 50   | 启动时一次性清理旧 `onedrive:clientId` 并清除凭据        |
+| `download.ts`        | 332  | Range 分块下载、预签名 URL 刷新、重试与取消              |
+| `graph.ts`           | 207  | `graphRequest`、`/me`、`approot:/backups` 目录、URL 构造 |
+| `http.ts`            | 192  | 与 AI 域平行的最小 HTTP 工具（不引 `openai` SDK）        |
+| `index.ts`           | 50   | 对外导出面                                               |
+| `logSafe.ts`         | 82   | `maskEmail` / `safePath` / `safeError`                   |
+| `remote.ts`          | 127  | 列出 `approot:/backups` 中的快照并归一化                 |
+| `restoreRemote.ts`   | 124  | 下载 → 校验 → 恢复编排、临时文件清理                     |
+| `types.ts`           | 200  | 错误码、凭据、进度、结果类型                             |
+| `upload.ts`          | 432  | 大小分流、分片、重试、416 纠偏、会话取消                 |
 
 `http.ts` 与 `ai/http.ts` 是**有意的双份实现**：错误归一化产物不同（`OneDriveError` vs `AiError`），且 AI 侧依赖 `openai` SDK，备份模块不应被它拖入依赖（`onedrive/http.ts:4-10` 已登记该例外）。
 
@@ -225,21 +227,20 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
 
 ### 7.3 凭据存储
 
-| 键                        | 内容                                                 | 形态                                            |
-| ------------------------- | ---------------------------------------------------- | ----------------------------------------------- |
-| `onedrive:clientId`       | Azure 应用 ID（可留空）                              | 明文；空则回退内置 `DEFAULT_ONEDRIVE_CLIENT_ID` |
-| `onedrive:credentials:v1` | `{ accessToken, refreshToken, expiresAt, account? }` | `safeStorage` 密文 base64                       |
-| `onedrive:account`        | 账户邮箱                                             | 明文，仅供界面展示，免每次解密                  |
+| 键                        | 内容                                                 | 形态                           |
+| ------------------------- | ---------------------------------------------------- | ------------------------------ |
+| `onedrive:credentials:v1` | `{ accessToken, refreshToken, expiresAt, account? }` | `safeStorage` 密文 base64      |
+| `onedrive:account`        | 账户邮箱                                             | 明文，仅供界面展示，免每次解密 |
 
-加密判定比 AI 侧更严：除 `isEncryptionAvailable()` 外，Linux 上还要排除 `basic_text` 后端（仅 base64 混淆，等同明文），命中即视为**不可用**（`credentials.ts:48-75`）。不可用时拒绝写入、读取抛 `encryption_unavailable`，绝不降级明文。
+加密判定比 AI 侧更严：除 `isEncryptionAvailable()` 外，Linux 上还要排除 `basic_text` 后端（仅 base64 混淆，等同明文），命中即视为**不可用**（`credentials.ts:45-72`）。不可用时拒绝写入、读取抛 `encryption_unavailable`，绝不降级明文。
 
 ### 7.4 刷新与取消
 
 - **提前 5 分钟刷新**：`expiresAt - now > 5 min` 直接返回现有 token，否则走刷新（`auth.ts:46`、`283-284`）。
-- **单飞**：模块级 `refreshTask` 保证并发调用共享同一次刷新，避免 refresh token 轮换互相失效（`auth.ts:292-306`）。
+- **单飞**：模块级 `refreshTask` 保证并发调用共享同一次刷新，避免 refresh token 轮换互相失效（`auth.ts:278-292`）。
 - **轮换回写**：上游未返回新 refresh token 时沿用旧值；成功后 `writeStoredCredentials` 回写。
-- **代际守卫**：`credentialsGeneration` 在登出 / 重新登录时自增；在途刷新若代际不符则抛 `aborted`，不把旧凭据写回（`auth.ts:62-63`、`258-262`）。刷新遇 `invalid_grant` / `interaction_required` → `reauth_required`，同时 `clearStoredCredentials()`（`auth.ts:240-250`）。
-- **取消 / 登出**：`cancelSignIn()` 关闭回环 server，`code` Promise 以 `auth_cancelled` 拒绝；`signIn` 入口先取消上一次流程，保证同一时刻只有一个授权；等待授权默认 **5 分钟**超时（`AUTHORIZE_TIMEOUT_MS`，`auth.ts:43`）。`signOut()` 取消在途授权、自增代际、清除凭据，**保留 clientId**。
+- **代际守卫**：`credentialsGeneration` 在登出 / 重新登录时自增；在途刷新若代际不符则抛 `aborted`，不把旧凭据写回（`auth.ts:59-61`、`244-248`）。刷新遇 `invalid_grant` / `interaction_required` → `reauth_required`，同时 `clearStoredCredentials()`（`auth.ts:226-236`）。
+- **取消 / 登出**：`cancelSignIn()` 关闭回环 server，`code` Promise 以 `auth_cancelled` 拒绝；`signIn` 入口先取消上一次流程，保证同一时刻只有一个授权；等待授权默认 **5 分钟**超时（`AUTHORIZE_TIMEOUT_MS`，`auth.ts:43`）。`signOut()` 取消在途授权、自增代际、清除凭据。
 
 ## 8. 备份流程
 
@@ -312,7 +313,7 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
 
 ### 9.1 settings 敏感键过滤
 
-四条通用 settings 通道（`get` / `set` / `all` / `delete`）共用一份前缀表（`ipc/settings.ts:19`）：
+四条通用 settings 通道（`get` / `set` / `all` / `delete`）共用一份前缀表（`ipc/settings.ts:18`）：
 
 ```ts
 const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
@@ -325,7 +326,7 @@ const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
 | `settings:all`    | 整键剔除后返回，只记剔除数量                         |
 | `settings:delete` | 返回 `false`，清理只能由主进程授权流程执行           |
 
-放行项：`onedrive:clientId`（Azure 公共客户端 ID，非密钥）、`onedrive:account`（展示用邮箱）。新增敏感域必须在此登记。
+放行项：`onedrive:account`（展示用邮箱）。新增敏感域必须在此登记。
 
 ### 9.2 日志脱敏
 
@@ -343,7 +344,6 @@ const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
 
 - **60 s 预算不随 delta 重置**：长回复可能在流式途中被本地定时器直接 abort（§3.5）。当前未按「首字节超时 + 空闲超时」建模。
 - **`touchAiSession` 无调用方**：schema 注释称 `updated_at` 在「流式结束」刷新，但实际只有 `appendAiMessage` 事务内刷新；该导出函数目前是死代码，注释与实现需对齐。
-- **OneDrive `configured` 恒为 `true`**：因为默认 clientId 始终存在，该字段已无法区分「用户是否自定义过」，需要比较原始 settings 值（`credentials.ts:217-225` 已注明）。
 - **`unsupported_provider` 为历史值**：`AiKeyWriteError` 保留它仅为兼容旧 IPC 载荷，当前流程不会再产生（`ai/types.ts:88-94`）。
 
 最后核对：2026-11-13

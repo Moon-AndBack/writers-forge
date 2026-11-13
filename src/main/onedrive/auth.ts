@@ -5,9 +5,9 @@ import { startCallbackServer } from './authCallback'
 import { requestToken } from './authToken'
 import type { TokenPayload } from './authToken'
 import {
+  DEFAULT_ONEDRIVE_CLIENT_ID,
   clearStoredCredentials,
   getOneDriveAuthStatus,
-  getOneDriveClientId,
   readStoredCredentials,
   writeStoredCredentials
 } from './credentials'
@@ -47,8 +47,6 @@ const EXPIRY_SKEW_MS = 5 * 60 * 1000
 
 /** `signIn` 选项。 */
 export interface SignInOptions {
-  /** 覆盖 settings 中的 clientId（一般不需要）。 */
-  clientId?: string
   /** 覆盖等待授权的超时（默认 5 分钟）。 */
   timeoutMs?: number
   /** 外部取消信号。 */
@@ -72,17 +70,6 @@ function createPkcePair(): { verifier: string; challenge: string } {
   const verifier = base64Url(randomBytes(32))
   const challenge = base64Url(createHash('sha256').update(verifier).digest())
   return { verifier, challenge }
-}
-
-/** 解析 clientId，缺失时抛 `not_configured`。 */
-function requireClientId(override?: string): string {
-  const clientId = (override ?? getOneDriveClientId() ?? '').trim()
-  if (!clientId) {
-    throw new OneDriveError('not_configured', {
-      message: 'OneDrive client id is not configured'
-    })
-  }
-  return clientId
 }
 
 /** 构造授权 URL。 */
@@ -131,7 +118,7 @@ export async function signIn(options: SignInOptions = {}): Promise<OneDriveAuthS
   cancelSignIn()
 
   const generation = (credentialsGeneration += 1)
-  const clientId = requireClientId(options.clientId)
+  const clientId = DEFAULT_ONEDRIVE_CLIENT_ID
   const timeoutMs = resolveTimeout(options.timeoutMs, AUTHORIZE_TIMEOUT_MS)
   const { verifier, challenge } = createPkcePair()
   const state = base64Url(randomBytes(24))
@@ -224,13 +211,12 @@ async function refreshStoredCredentials(
   signal?: AbortSignal
 ): Promise<OneDriveCredentials> {
   const generation = credentialsGeneration
-  const clientId = requireClientId()
 
   let token: TokenPayload
   try {
     token = await requestToken(
       {
-        client_id: clientId,
+        client_id: DEFAULT_ONEDRIVE_CLIENT_ID,
         grant_type: 'refresh_token',
         refresh_token: credentials.refreshToken,
         scope: ONEDRIVE_SCOPES
@@ -306,7 +292,7 @@ export async function getValidAccessToken(
   return refreshTask
 }
 
-/** 登出：取消进行中的授权并清除全部凭据（保留 clientId）。 */
+/** 登出：取消进行中的授权并清除全部凭据。 */
 export function signOut(): void {
   cancelSignIn()
   credentialsGeneration += 1

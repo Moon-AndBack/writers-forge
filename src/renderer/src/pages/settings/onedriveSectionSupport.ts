@@ -7,14 +7,6 @@
  */
 import type { OneDriveBackupProgress, OneDriveErrorCode } from '../../../../preload/types/onedrive'
 
-/**
- * 用户自定义 clientId 的 settings 键（与主进程 `ONEDRIVE_SETTING_KEYS.clientId` 同步）。
- *
- * 上游 `status().clientId` 现为「生效值」——未自定义时回退内置默认常量，已无法区分
- * 来源；本键仅用于以**原始自定义值**初始化输入框：空串 = 使用内置默认。
- */
-export const ONEDRIVE_CLIENT_ID_SETTING_KEY = 'onedrive:clientId'
-
 /** 错误码 → `onedrive` ns 文案 key。 */
 export const ERROR_KEYS = {
   not_configured: 'error.not_configured',

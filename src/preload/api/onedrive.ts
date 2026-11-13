@@ -107,7 +107,6 @@ ipcRenderer.on('onedrive:restoreProgress', (_event: IpcRendererEvent, payload: u
 
 export const onedriveApi = {
   status: () => ipcRenderer.invoke('onedrive:status'),
-  setClientId: (clientId) => ipcRenderer.invoke('onedrive:setClientId', clientId),
   signIn: () => ipcRenderer.invoke('onedrive:signIn'),
   cancelSignIn: () => ipcRenderer.invoke('onedrive:cancelSignIn'),
   signOut: () => ipcRenderer.invoke('onedrive:signOut'),

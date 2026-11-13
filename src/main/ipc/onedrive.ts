@@ -6,14 +6,12 @@ import { logger } from '../logger'
 import {
   cancelSignIn,
   getOneDriveAuthStatus,
-  getOneDriveClientId,
   isBackupRunning,
   isOneDriveError,
   isSignInInProgress,
   listRemoteBackups,
   restoreRemoteBackup,
   runBackup,
-  setOneDriveClientId,
   signIn,
   signOut
 } from '../onedrive'
@@ -33,7 +31,6 @@ import type {
  *
  * 通道：
  * - onedrive:status        ()                 → OneDriveStatus（一次拿全，永不失败）
- * - onedrive:setClientId   (clientId)         → OneDriveStatus（空串 = 清除）
  * - onedrive:signIn        ()                 → OneDriveResult<OneDriveAuthStatus>
  * - onedrive:cancelSignIn  ()                 → boolean（是否有进行中的授权被取消）
  * - onedrive:signOut       ()                 → OneDriveStatus
@@ -58,10 +55,8 @@ import type {
 
 const log = logger.scope('onedrive:ipc')
 
-/** 授权状态聚合（`getOneDriveAuthStatus` + 配置 / 运行态）。 */
+/** 授权状态聚合（`getOneDriveAuthStatus` + 运行态）。 */
 export interface OneDriveStatus extends OneDriveAuthStatus {
-  /** 已配置的 clientId（未配置为 null；非敏感，可展示）。 */
-  clientId: string | null
   /** 是否有授权流程进行中（浏览器等待回调）。 */
   signingIn: boolean
   /** 是否有备份进行中。 */
@@ -86,11 +81,10 @@ let activeBackupController: AbortController | null = null
 /** 云端恢复取消控制器（同一时刻至多一个；下载阶段可取消）。 */
 let activeRestoreController: AbortController | null = null
 
-/** 汇总当前状态（供 status / setClientId / signOut 复用）。 */
+/** 汇总当前状态（供 status / signOut 复用）。 */
 function currentStatus(): OneDriveStatus {
   return {
     ...getOneDriveAuthStatus(),
-    clientId: getOneDriveClientId(),
     signingIn: isSignInInProgress(),
     backupRunning: isBackupRunning(),
     restoreRunning: activeRestoreController !== null
@@ -126,21 +120,6 @@ function readRestoreItemId(payload: unknown): string | null {
 /** 注册 OneDrive 备份域 IPC。 */
 export function registerOneDriveIpc(): void {
   ipcMain.handle('onedrive:status', (): OneDriveStatus => currentStatus())
-
-  ipcMain.handle('onedrive:setClientId', (_event, clientId: unknown): OneDriveStatus => {
-    if (typeof clientId !== 'string') {
-      log.warn('onedrive:setClientId 入参非法', { type: typeof clientId })
-      return currentStatus()
-    }
-    try {
-      setOneDriveClientId(clientId)
-      log.info('onedrive:setClientId 完成', { configured: clientId.trim() !== '' })
-      return currentStatus()
-    } catch (error) {
-      log.error('onedrive:setClientId 失败', { error: safeError(error) })
-      throw error
-    }
-  })
 
   ipcMain.handle('onedrive:signIn', async (): Promise<OneDriveResult<OneDriveAuthStatus>> => {
     try {

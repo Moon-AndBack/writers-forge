@@ -160,13 +160,13 @@ registerResizeSnap(win)  src/main/index.ts:48  → resizeSnap.ts
 | 导航守卫           | `will-navigate` 只放行应用自身来源                        | `src/main/security.ts:80-104`      |
 | 外链               | 新窗口一律 `deny` 并交给系统浏览器                        | `src/main/window.ts:115-119`       |
 | DevTools           | 仅开发模式注册快捷键，生产不暴露入口                      | `src/main/window.ts:39-51,128-130` |
-| settings 敏感键    | 按前缀过滤，四条通道共用同一判定                          | `src/main/ipc/settings.ts:19-24`   |
+| settings 敏感键    | 按前缀过滤，四条通道共用同一判定                          | `src/main/ipc/settings.ts:18-22`   |
 
 CSP 要点（`src/main/security.ts:30-40`）：`default-src 'self'`、`script-src 'self'`（不放 `unsafe-inline` / `unsafe-eval`）；`style-src` 额外允许 `unsafe-inline`，因为 React 内联样式与 TipTap 运行期写入大量存在（`security.ts:15-17`）；`img-src` 放行 `data:` / `blob:` 及 http(s) 外链图（`security.ts:18-23`）；`connect-src 'self'`，AI 与 OneDrive 的网络请求全在主进程，CSP 不约束主进程（`security.ts:24-26`）。CSP **只在生产**挂载（`src/main/window.ts:132-134`），开发模式跳过以免阻断 HMR 的 ws 与内联脚本（`security.ts:51-53`）。
 
 导航守卫按环境区分来源：开发态比对 dev server 的 `origin`（scheme + host + port），生产态只放行打包入口 `file://…/renderer/index.html`，Windows 路径比较前做 percent-decode 与大小写归一（`src/main/security.ts:90-114`）。
 
-settings 敏感键过滤（`src/main/ipc/settings.ts:8-24`）：`ai:`（加密后的 API Key 与服务商配置）与 `onedrive:credentials:`（safeStorage 凭据）不可读 / 写 / 删 / 枚举；`settings:get` 命中时返回 `null` 而非抛错，避免破坏 `Promise<string | null>` 契约（`settings.ts:28-35`）。`onedrive:clientId` 与 `onedrive:account` 属放行项（`settings.ts:16-17`）。
+settings 敏感键过滤（`src/main/ipc/settings.ts:8-22`）：`ai:`（加密后的 API Key 与服务商配置）与 `onedrive:credentials:`（safeStorage 凭据）不可读 / 写 / 删 / 枚举；`settings:get` 命中时返回 `null` 而非抛错，避免破坏 `Promise<string | null>` 契约（`settings.ts:27-34`）。`onedrive:account` 属放行项（`settings.ts:16`）。
 
 ## 7. 日志与数据目录
 
