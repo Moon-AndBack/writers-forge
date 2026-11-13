@@ -62,7 +62,7 @@ const HEIGHTS = [
   { label: '活动栏按钮', value: 36, token: 'chrome · activitybar' },
   { label: '标题栏', value: 42, token: 'chrome · titlebar' },
   { label: '行操作按钮', value: 22, token: 'row-act' },
-  { label: 'Tag 高度', value: 23, token: 'wf-tag' }
+  { label: 'Tag 高度', value: 22, token: 'wf-tag' }
 ] as const
 
 function TokenSwatch({ token }: { token: string }) {

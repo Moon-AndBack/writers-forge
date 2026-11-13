@@ -242,7 +242,8 @@
   align-items: center;
   gap: 5px;
   max-width: 100%;
-  padding: 2px 8px;
+  height: 22px;
+  padding: 0 8px;
   border-radius: var(--r-xs);
   font-size: 10px;
   font-weight: 600;

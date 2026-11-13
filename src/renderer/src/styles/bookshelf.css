@@ -240,9 +240,9 @@
 
 /* 状态胶囊：定位与固定底色由页面负责，尺寸 / 圆角 / 字号由组件库 `.wf-badge` 提供。
    选择器叠加 `.wf-badge*` 提高优先级，确保页面覆盖胜过组件库默认色调。
-   对齐：与右上角操作按钮（26×26）同处一条水平中线——两者均设 `top: 10px`，
-   且徽章总高对齐到按钮的 26px（border-box：line-height 20px + 上下 padding 3px × 2），
-   故 `top` 相同、中心 Y 也相同（10 + 26 / 2 = 23px）。
+   对齐：与右上角操作按钮（22×22）同处一条水平中线——两者均设 `top: 10px`，
+   徽章高度由 `.wf-badge` 统一为 22px（border-box），故 `top` 相同、
+   中心 Y 也相同（10 + 22 / 2 = 21px）。
    底色为「固定」状态色，不随主题 / 强调色变化：直接取 light 主题的品牌 / 成功 /
    警告基色 hex（#5b4de8 / #0f7b4f / #9d5d00），四主题下三态外观完全一致。
    刻意不引用 --brand / --ok / --warn —— sage 下 --brand 与 --ok 同值（#4a9d5f）、
@@ -253,9 +253,7 @@
   top: 10px;
   left: 10px;
   z-index: 2;
-  padding: 3px 9px;
   font-size: 10.5px;
-  line-height: 20px;
   color: #fff;
   background: #5b4de8;
 }
