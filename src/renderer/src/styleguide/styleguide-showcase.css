@@ -153,13 +153,13 @@
 
 .sg-card-text {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--fs-body-sm);
   line-height: 1.7;
   color: var(--text-dim);
 }
 
 .sg-entity-name {
-  font-size: 14px;
+  font-size: var(--fs-title);
   font-weight: 600;
   color: var(--text);
 }

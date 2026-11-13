@@ -46,9 +46,21 @@ const COLOR_GROUPS: readonly ColorGroup[] = [
 const RADIUS_TOKENS = ['--r-xs', '--r-lg', '--r-window', '--chip-pill-radius'] as const
 const SHADOW_TOKENS = ['--sh-xs', '--sh-sm', '--sh-popup', '--sh-float', '--panel-ring'] as const
 
-/** 白名单字号（AGENTS §8.3）：常规档 + 特殊档。 */
-const FONT_SIZES = [10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 15] as const
-const SPECIAL_FONT_SIZES = [9.5, 12.8, 20, 22, 28] as const
+/** 界面字号 5 档令牌（AGENTS §8.3）。 */
+const FONT_SIZES = [
+  { size: 10, token: '--fs-micro' },
+  { size: 11, token: '--fs-caption' },
+  { size: 12, token: '--fs-body-sm' },
+  { size: 13, token: '--fs-body' },
+  { size: 14, token: '--fs-title' }
+] as const
+
+/** 展示档（不参与界面字阶）。 */
+const DISPLAY_FONT_SIZES = [
+  { size: 20, token: '--fs-display-sm' },
+  { size: 22, token: '--fs-display-md' },
+  { size: 28, token: '--fs-display-lg' }
+] as const
 
 const DURATIONS = [
   { token: '--dur-fast', className: 'sg-motion sg-motion--fast' },
@@ -114,21 +126,29 @@ export function TokensSection() {
       </Demo>
 
       <Demo
-        name="字号白名单 · 10 / 10.5 / 11 / 11.5 / 12 / 12.5 / 13 / 13.5 / 14 / 15"
-        note="特殊档 9.5 / 12.8 / 20 / 22 / 28 仅限已登记位置；禁止 16px 等新增中间档。"
+        name="字号令牌 · --fs-micro 10 / --fs-caption 11 / --fs-body-sm 12 / --fs-body 13 / --fs-title 14"
+        note="界面统一 5 档；展示档 --fs-display-sm / md / lg（20 / 22 / 28）仅限已登记位置；封面装饰首字 34 / 56 为例外，不属界面字阶。"
         classes="font-size"
       >
         <div className="sg-type-list">
-          {FONT_SIZES.map((size) => (
-            <div key={size} className="sg-type-row">
-              <code className="sg-code sg-type__value">{size}px</code>
-              <span style={{ fontSize: `${size}px` }}>Writer's Forge 组件样式 Aa 0123</span>
+          {FONT_SIZES.map((font) => (
+            <div key={font.token} className="sg-type-row">
+              <code className="sg-code sg-type__value">
+                {font.token} · {font.size}
+              </code>
+              <span style={{ fontSize: `var(${font.token})` }}>
+                Writer's Forge 组件样式 Aa 0123
+              </span>
             </div>
           ))}
-          {SPECIAL_FONT_SIZES.map((size) => (
-            <div key={size} className="sg-type-row is-special">
-              <code className="sg-code sg-type__value">{size}px · 特殊档</code>
-              <span style={{ fontSize: `${size}px` }}>Writer's Forge 组件样式 Aa 0123</span>
+          {DISPLAY_FONT_SIZES.map((font) => (
+            <div key={font.token} className="sg-type-row is-special">
+              <code className="sg-code sg-type__value">
+                {font.token} · {font.size} · 展示档
+              </code>
+              <span style={{ fontSize: `var(${font.token})` }}>
+                Writer's Forge 组件样式 Aa 0123
+              </span>
             </div>
           ))}
         </div>
