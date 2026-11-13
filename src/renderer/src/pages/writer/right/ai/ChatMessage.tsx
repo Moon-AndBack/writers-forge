@@ -91,8 +91,8 @@ export interface ChatMessageProps {
   applyActions: ApplyActions | null
   /** 消息来自其它章（跨章会话）：assistant 气泡上加一条轻量来源提示。 */
   fromOtherChapter?: boolean
-  onApplyReplace: (text: string) => void
-  onApplyInsert: (text: string) => void
+  onApplyReplace: (message: AiConversationMessage) => void
+  onApplyInsert: (message: AiConversationMessage) => void
 }
 
 /**
@@ -103,7 +103,7 @@ export interface ChatMessageProps {
  * - assistant 走 `react-markdown` + `remark-gfm`（元素类名见 `MD_COMPONENTS`）；
  * - 流式中追加闪烁光标（只动 opacity）；错误走 `ai` ns 的 `error.<code>`；
  * - 回插按钮按 `applyActions` 渲染：润色 / 重写 / 翻译只替换，续写只插入，
- *   自由对话与历史消息两种都给。
+ *   自由对话两个都给；历史消息（功能未知）只给插入，避免旧续写回复覆盖正文。
  */
 export function ChatMessage({
   message,
@@ -169,12 +169,12 @@ export function ChatMessage({
       {applyActions !== null && !isUser ? (
         <div className="ai-msg__actions">
           {applyActions.replace ? (
-            <Button size="sm" variant="secondary" onClick={() => onApplyReplace(message.content)}>
+            <Button size="sm" variant="secondary" onClick={() => onApplyReplace(message)}>
               {t('panel.apply.replace')}
             </Button>
           ) : null}
           {applyActions.insert ? (
-            <Button size="sm" variant="ghost" onClick={() => onApplyInsert(message.content)}>
+            <Button size="sm" variant="ghost" onClick={() => onApplyInsert(message)}>
               {t('panel.apply.insert')}
             </Button>
           ) : null}

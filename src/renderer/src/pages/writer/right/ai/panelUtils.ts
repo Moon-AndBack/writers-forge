@@ -39,11 +39,15 @@ export interface ApplyActions {
  * 动作矩阵：
  * - `polish` / `rewrite` / `translate`：只替换（成品替换选中段）；
  * - `continue`：只插入（续写接在选中段之后）；
- * - `chat` / 历史消息（`action` 为 `undefined`）：两种都允许（自由对话无法预判用途）。
+ * - `chat`：两种都允许（自由对话无法预判用途）；
+ * - `action` 为空的历史 / 未知消息：只插入——不能默认提供「替换选中」，
+ *   否则旧续写回复也能整段覆盖正文。`fallbackAction` 由调用方从配对的 user
+ *   消息推断功能后传入。
  */
 export function applyActionsFor(
   message: AiConversationMessage,
-  currentChapterId: number | null
+  currentChapterId: number | null,
+  fallbackAction?: AiComposeAction
 ): ApplyActions | null {
   if (currentChapterId === null) return null
   if (message.chapterId == null || message.chapterId !== currentChapterId) return null
@@ -55,15 +59,32 @@ export function applyActionsFor(
     message.content.trim() !== ''
   if (!eligible) return null
 
-  if (message.action === 'continue') return { replace: false, insert: true }
-  if (
-    message.action === 'polish' ||
-    message.action === 'rewrite' ||
-    message.action === 'translate'
-  ) {
+  const action = message.action ?? fallbackAction
+  if (action === 'continue') return { replace: false, insert: true }
+  if (action === 'polish' || action === 'rewrite' || action === 'translate') {
     return { replace: true, insert: false }
   }
-  return { replace: true, insert: true }
+  if (action === 'chat') return { replace: true, insert: true }
+  return { replace: false, insert: true }
+}
+
+/**
+ * 为某条 assistant 回复推断功能：向前找最近的 user 消息（配对轮次）。
+ *
+ * 历史消息的 `action` 为空时用它兜底；配对 user 也没有 `action`（同样来自旧库）
+ * 时返回 `undefined`，由 `applyActionsFor` 落到「只插入」。
+ */
+export function fallbackActionFor(
+  messages: AiConversationMessage[],
+  index: number
+): AiComposeAction | undefined {
+  for (let i = index - 1; i >= 0; i -= 1) {
+    const previous = messages[i]
+    if (previous === undefined || previous.divider !== undefined) continue
+    if (previous.role !== 'user') continue
+    return previous.action
+  }
+  return undefined
 }
 
 /** 当前选区字数（空选区 / 无编辑器 → 0）。 */

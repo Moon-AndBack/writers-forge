@@ -15,6 +15,8 @@
  *   语言在中 ↔ 英之间自动选向。
  */
 
+import type { EditorSelectionSnapshot } from '../../../../components/editor/useEditorSelection'
+
 /** 快捷功能标识。 */
 export type AiQuickAction = 'polish' | 'continue' | 'rewrite' | 'translate'
 
@@ -148,6 +150,12 @@ export interface AiComposeInput {
    * 「用户输入 + 携带内容」。仅用于本次会话内的界面展示，不落库。
    */
   attach?: AiComposeAttachment
+  /**
+   * 发起本次请求时的正文选区快照（可选）：只作为 assistant 气泡的 UI 元数据
+   * （回插依据，见 `chatRuntime.AiConversationMessage.selection`），不落库，
+   * 也不参与发给模型的消息组装。
+   */
+  selection?: EditorSelectionSnapshot
   /**
    * 作品设定（可选）：按当前书籍频道 / 分类拼出的写作风格约束（见 `bookContext.ts`）。
    * 只进 system（任务规则之后、输出格式约束之前），不进 user；面板关闭「携带内置提示词」时不传。

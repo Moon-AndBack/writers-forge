@@ -7,17 +7,19 @@ import {
   clearSelectionMirror,
   showSelectionMirror
 } from '../../../components/editor/linkSelectionMirror'
-import {
-  readEditorSelection,
-  type EditorSelectionSnapshot
-} from '../../../components/editor/useEditorSelection'
-import { insertAfter, replaceSelection } from './ai/applyToEditor'
 import { AI_QUICK_ACTIONS } from './ai/functions'
 import type { AiComposeAction } from './ai/functions'
 import { useAiConversation } from './ai/useAiConversation'
 import { useAiSessions } from './ai/useAiSessions'
 import { AiSessionBar } from './ai/AiSessionBar'
-import { ACTION_LABEL_KEYS, applyActionsFor, readFullText, toOption } from './ai/panelUtils'
+import {
+  ACTION_LABEL_KEYS,
+  applyActionsFor,
+  fallbackActionFor,
+  readFullText,
+  toOption
+} from './ai/panelUtils'
+import { useApplyToEditor } from './ai/useApplyToEditor'
 import { useAiModels } from './ai/useAiModels'
 import { useBookProfile } from './ai/useBookProfile'
 import { AiControls } from './ai/AiControls'
@@ -64,8 +66,10 @@ export interface AiPanelProps {
  * （见 `useAiSessions`），「新建」进入未落库草稿，首次发送时才创建会话；
  * 新建会话的首轮回复完成后由 AI 自动命名（失败回落首条消息截断）。
  *
- * 选区快照：点「发送」的瞬间读一次 `readEditorSelection(editor)` 存入 `selectionRef`
- * ——回插时用这份 range，不重新读，保证「发起请求时选中的那段」就是被替换 / 插入参照的那段。
+ * 选区快照：点「发送」的瞬间读一次当前选区（见 `ai/useApplyToEditor` 的
+ * `captureSelection`），随本轮 assistant 消息一起保存——回插优先用消息自带的
+ * 快照，不重新读，保证「发起请求时选中的那段」就是被替换 / 插入参照的那段；
+ * 快照仅内存，不落库。
  */
 export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps) {
   const { t } = useTranslation('ai')
@@ -145,8 +149,13 @@ export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps
       onSessionTitled: handleSessionTitled
     })
 
-  /** 发起请求瞬间的选区快照（回插依据；切章不清空，仅由下一次发送覆盖）。 */
-  const selectionRef = useRef<EditorSelectionSnapshot | null>(null)
+  /* ---------- 回插（选区快照随消息走，见 `ai/useApplyToEditor`） ---------- */
+
+  const { captureSelection, handleApplyReplace, handleApplyInsert } = useApplyToEditor({
+    editor,
+    showToast,
+    t
+  })
 
   /** 编辑器派生的只读指标（选区 / 全章字数、选区文案、焦点），订阅逻辑见 `useEditorMetrics`。 */
   const { selectionChars, totalChars, selectionText, selectionRange, editorFocused } =
@@ -187,60 +196,6 @@ export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps
     if (editorFocused || selectionRange === null) return undefined
     showSelectionMirror(editor, selectionRange, AI_SELECTION_MIRROR_CLASS)
   }, [active, carrySelection, editor, editorFocused, selectionRange])
-
-  /** 发请求瞬间快照选区（回插 range 的真源）。 */
-  const captureSelection = useCallback((): EditorSelectionSnapshot | null => {
-    const snapshot = readEditorSelection(editor)
-    selectionRef.current = snapshot
-    return snapshot
-  }, [editor])
-
-  /* ---------- 回插 ---------- */
-
-  /** 回插成功后刷新快照，避免连续回插仍指向已变化的旧 range（字数随 update 事件自更新）。 */
-  const refreshSnapshot = useCallback((): void => {
-    selectionRef.current = readEditorSelection(editor)
-  }, [editor])
-
-  const handleApplyReplace = useCallback(
-    (text: string): void => {
-      const snapshot = selectionRef.current
-      const range = snapshot ?? readEditorSelection(editor)
-      if (range !== null && replaceSelection(editor, text, { from: range.from, to: range.to })) {
-        refreshSnapshot()
-        showToast(t('panel.apply.replaced'))
-        return
-      }
-
-      // 兜底：快照失配（文档已改动 / 切了章）时，用当前非空选区再试一次。
-      const live = readEditorSelection(editor)
-      if (
-        live !== null &&
-        !live.empty &&
-        replaceSelection(editor, text, { from: live.from, to: live.to })
-      ) {
-        refreshSnapshot()
-        showToast(t('panel.apply.replaced'))
-        return
-      }
-      showToast(t('panel.apply.failed'))
-    },
-    [editor, refreshSnapshot, showToast, t]
-  )
-
-  const handleApplyInsert = useCallback(
-    (text: string): void => {
-      const snapshot = selectionRef.current
-      const position = snapshot !== null ? snapshot.to : (editor?.state.selection.to ?? null)
-      if (position !== null && insertAfter(editor, text, position)) {
-        refreshSnapshot()
-        showToast(t('panel.apply.inserted'))
-        return
-      }
-      showToast(t('panel.apply.failed'))
-    },
-    [editor, refreshSnapshot, showToast, t]
-  )
 
   /* ---------- 互斥勾选（谁被勾上，谁把另一个关掉） ---------- */
 
@@ -287,6 +242,8 @@ export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps
       action,
       input: text,
       context,
+      // 选区快照随本轮回复保存（仅内存）：回插用「发起时」的 range，而不是最后一次发送的。
+      ...(snapshot !== null ? { selection: snapshot } : {}),
       ...(display !== undefined ? { display } : {}),
       ...(attach !== undefined ? { attach } : {}),
       // 作品设定只进 system（见 `composeMessages`）；开关关闭 / 无文本时不传。
@@ -374,7 +331,7 @@ export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps
         {messages.length === 0 ? (
           <div className="rp-list-empty">{emptyText}</div>
         ) : (
-          messages.map((message) =>
+          messages.map((message, index) =>
             message.divider !== undefined ? (
               <div key={message.id} className="ai-chat__divider" role="separator">
                 {t(
@@ -386,7 +343,11 @@ export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps
               <ChatMessage
                 key={message.id}
                 message={message}
-                applyActions={applyActionsFor(message, chapterId)}
+                applyActions={applyActionsFor(
+                  message,
+                  chapterId,
+                  fallbackActionFor(messages, index)
+                )}
                 fromOtherChapter={message.chapterId != null && message.chapterId !== chapterId}
                 onApplyReplace={handleApplyReplace}
                 onApplyInsert={handleApplyInsert}

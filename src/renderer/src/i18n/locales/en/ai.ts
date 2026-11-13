@@ -199,6 +199,8 @@ const ai = {
       insert: 'Insert after selection',
       replaced: 'Selection replaced',
       inserted: 'Inserted after selection',
+      noSelection: 'Select text to replace first',
+      staleSelection: 'The text has changed; select it again',
       failed:
         'Could not write to the chapter: it may be finalized (read-only), or the editor is unavailable'
     }

@@ -82,13 +82,25 @@ export function replaceSelection(
 
   const { from, to } = range
   // 文本选区合法区间为 [1, doc.content.size - 1]（0 与末尾是文档边界，不能建 TextSelection）。
-  const maxPos = editor.state.doc.content.size - 1
+  // Ctrl+A 的 AllSelection 是 [0, doc.content.size]，在这里归一化回文本区间；
+  // 空文档 / 单空段（size <= 2）没有可替换范围，直接失败。
+  const docSize = editor.state.doc.content.size
+  if (docSize <= 2) return false
   if (!Number.isInteger(from) || !Number.isInteger(to)) return false
-  if (from < 1 || to < from || to > maxPos) return false
+  const normalizedFrom = from === 0 ? 1 : from
+  const normalizedTo = to === docSize ? docSize - 1 : to
+  if (normalizedFrom < 1 || normalizedTo < normalizedFrom || normalizedTo > docSize - 1) {
+    return false
+  }
 
   // 面板抢走焦点后 ProseMirror 的 state.selection 仍是旧值，但链式命令按事务内的当前选区
   // 计算，故必须先用 setTextSelection 显式恢复选区，再 insertContent（替换选区内容）。
-  return editor.chain().focus().setTextSelection({ from, to }).insertContent(nodes).run()
+  return editor
+    .chain()
+    .focus()
+    .setTextSelection({ from: normalizedFrom, to: normalizedTo })
+    .insertContent(nodes)
+    .run()
 }
 
 /**

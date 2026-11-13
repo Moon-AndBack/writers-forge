@@ -292,7 +292,8 @@ export function useAiConversation(input: {
       const request = createActiveRequest({
         sessionId: sessionIdRef.current,
         chapterId: chapterIdRef.current,
-        action: compose.action
+        action: compose.action,
+        ...(compose.selection !== undefined ? { selection: compose.selection } : {})
       })
       activeRequestRef.current = request
       setNotice(null)
@@ -310,7 +311,8 @@ export function useAiConversation(input: {
           assistantId: request.assistantId,
           chapterId: request.chapterId,
           action: compose.action,
-          ...(compose.attach !== undefined ? { attach: compose.attach } : {})
+          ...(compose.attach !== undefined ? { attach: compose.attach } : {}),
+          ...(compose.selection !== undefined ? { selection: compose.selection } : {})
         })
       )
       /** 超预算拒绝：撤掉本轮乐观消息、恢复输入（由调用方按 false 处理）。 */
