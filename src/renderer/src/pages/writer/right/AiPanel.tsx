@@ -243,7 +243,8 @@ export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps
       input: text,
       context,
       // 选区快照随本轮回复保存（仅内存）：回插用「发起时」的 range，而不是最后一次发送的。
-      ...(snapshot !== null ? { selection: snapshot } : {}),
+      // `carryFull` 一并快照：勾选携带全文时回插落到全文末尾（此时选区通常只是折叠光标）。
+      ...(snapshot !== null ? { selection: { ...snapshot, carryFull } } : {}),
       ...(display !== undefined ? { display } : {}),
       ...(attach !== undefined ? { attach } : {}),
       // 作品设定只进 system（见 `composeMessages`）；开关关闭 / 无文本时不传。

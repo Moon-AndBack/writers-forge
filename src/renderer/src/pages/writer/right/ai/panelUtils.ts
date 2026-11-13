@@ -25,6 +25,8 @@ export interface ApplyActions {
   replace: boolean
   /** 插入到发送时选区的末尾之后。 */
   insert: boolean
+  /** 插入落点是否为全文末尾（发送时勾选「携带全文」）。 */
+  insertAtEnd: boolean
 }
 
 /**
@@ -43,6 +45,9 @@ export interface ApplyActions {
  * - `action` 为空的历史 / 未知消息：只插入——不能默认提供「替换选中」，
  *   否则旧续写回复也能整段覆盖正文。`fallbackAction` 由调用方从配对的 user
  *   消息推断功能后传入。
+ *
+ * 插入落点由消息快照的 `carryFull` 决定（见 `useApplyToEditor.handleApplyInsert`），
+ * `insertAtEnd` 供气泡切换按钮文案。
  */
 export function applyActionsFor(
   message: AiConversationMessage,
@@ -59,13 +64,15 @@ export function applyActionsFor(
     message.content.trim() !== ''
   if (!eligible) return null
 
+  // 携带全文发送的回复：插入落点是全文末尾，按钮文案据此区分（见 `ChatMessage`）。
+  const insertAtEnd = message.selection?.carryFull === true
   const action = message.action ?? fallbackAction
-  if (action === 'continue') return { replace: false, insert: true }
+  if (action === 'continue') return { replace: false, insert: true, insertAtEnd }
   if (action === 'polish' || action === 'rewrite' || action === 'translate') {
-    return { replace: true, insert: false }
+    return { replace: true, insert: false, insertAtEnd }
   }
-  if (action === 'chat') return { replace: true, insert: true }
-  return { replace: false, insert: true }
+  if (action === 'chat') return { replace: true, insert: true, insertAtEnd }
+  return { replace: false, insert: true, insertAtEnd }
 }
 
 /**

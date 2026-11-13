@@ -104,6 +104,7 @@ export interface ChatMessageProps {
  * - 流式中追加闪烁光标（只动 opacity）；错误走 `ai` ns 的 `error.<code>`；
  * - 回插按钮按 `applyActions` 渲染：润色 / 重写 / 翻译只替换，续写只插入，
  *   自由对话两个都给；历史消息（功能未知）只给插入，避免旧续写回复覆盖正文。
+ *   插入按钮文案随 `insertAtEnd` 切换落点（携带全文 → 全文末尾）。
  */
 export function ChatMessage({
   message,
@@ -175,7 +176,7 @@ export function ChatMessage({
           ) : null}
           {applyActions.insert ? (
             <Button size="sm" variant="ghost" onClick={() => onApplyInsert(message)}>
-              {t('panel.apply.insert')}
+              {t(applyActions.insertAtEnd ? 'panel.apply.insertAtEnd' : 'panel.apply.insert')}
             </Button>
           ) : null}
         </div>

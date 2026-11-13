@@ -197,8 +197,10 @@ const ai = {
     apply: {
       replace: 'Replace selection',
       insert: 'Insert after selection',
+      insertAtEnd: 'Insert at end',
       replaced: 'Selection replaced',
       inserted: 'Inserted after selection',
+      insertedAtEnd: 'Inserted at the end',
       noSelection: 'Select text to replace first',
       staleSelection: 'The text has changed; select it again',
       failed:

@@ -1,5 +1,4 @@
 import { createLogger } from '@renderer/lib/log'
-import type { EditorSelectionSnapshot } from '../../../../components/editor/useEditorSelection'
 import type {
   AiApi,
   AiChatRole,
@@ -8,7 +7,12 @@ import type {
   AiProviderId,
   AiUsage
 } from '../../../../../../preload/types/ai'
-import type { AiComposeAction, AiComposeAttachment, AiComposeInput } from './functions'
+import type {
+  AiComposeAction,
+  AiComposeAttachment,
+  AiComposeInput,
+  AiSelectionSnapshot
+} from './functions'
 import { findSummary } from './contextSummary'
 import type { CompactionMarker, SavedSummary } from './contextSummary'
 
@@ -61,10 +65,11 @@ export interface AiConversationMessage {
    * 发起本次回复时的正文选区快照（仅 assistant 消息、**仅内存**）。
    *
    * 每条回复各带一份，回插优先用它，避免所有回复共用面板里唯一的 `selectionRef`
-   * 而被下一次发送覆盖（旧回复作用到错误轮次 / 已改动的位置）。**不落库**：
+   * 而被下一次发送覆盖（旧回复作用到错误轮次 / 已改动的位置）。`carryFull` 记录
+   * 发送时是否勾选「携带全文」，回插据此把落点定在全文末尾。**不落库**：
    * 重开会话后历史消息没有快照，回插时退回当前选区并校验原文。
    */
-  selection?: EditorSelectionSnapshot
+  selection?: AiSelectionSnapshot
   /** 是否正在流式输出。 */
   streaming?: boolean
   /** 错误消息（assistant 气泡内的错误提示）。 */
@@ -125,8 +130,8 @@ export interface ActiveRequest {
   chapterId: number | null
   /** 本次请求的功能类型（落库为消息的 `action`）。 */
   action: AiComposeAction
-  /** 发起时快照的正文选区（仅内存，便于排查回插错位；不落库）。 */
-  selection?: EditorSelectionSnapshot
+  /** 发起时快照的正文选区（含「携带全文」标记；仅内存，便于排查回插错位；不落库）。 */
+  selection?: AiSelectionSnapshot
   /** 发送前对 `prepared.messages` 的 token 估算（校准分母；0 = 尚未计算，不参与校准）。 */
   estimatedPromptTokens: number
   /** 校准键 `provider/model`（发送前回填；空串 = 未知，不参与校准）。 */
@@ -173,7 +178,7 @@ export function createActiveRequest(input: {
   sessionId: number | null
   chapterId: number | null
   action: AiComposeAction
-  selection?: EditorSelectionSnapshot
+  selection?: AiSelectionSnapshot
 }): ActiveRequest {
   return {
     requestId: createRequestId(),
@@ -205,7 +210,7 @@ export function createOptimisticMessages(input: {
   chapterId: number | null
   action: AiComposeAction
   attach?: AiComposeAttachment
-  selection?: EditorSelectionSnapshot
+  selection?: AiSelectionSnapshot
 }): AiConversationMessage[] {
   const { base, userText, assistantId, chapterId, action, attach, selection } = input
   return [

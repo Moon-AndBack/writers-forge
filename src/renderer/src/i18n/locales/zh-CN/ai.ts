@@ -196,8 +196,10 @@ const ai = {
     apply: {
       replace: '替换选中',
       insert: '插入到选中之后',
+      insertAtEnd: '插入到全文末尾',
       replaced: '已替换选中正文',
       inserted: '已插入到选中之后',
+      insertedAtEnd: '已插入到全文末尾',
       noSelection: '请先选中要替换的正文',
       staleSelection: '正文已改动，请重新选择',
       failed: '写入正文失败：章节可能已定稿（只读），或编辑器不可用'

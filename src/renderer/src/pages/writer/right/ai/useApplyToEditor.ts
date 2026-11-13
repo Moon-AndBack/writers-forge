@@ -11,13 +11,15 @@ import type { AiConversationMessage } from './chatRuntime'
 /**
  * 章节右栏 AI · 回插正文（从 `AiPanel.tsx` 抽出，控制单文件行数，AGENTS §3）。
  *
- * 三条规则：
+ * 四条规则：
  * - **选区跟消息走**：每条 assistant 消息带一份发送瞬间的快照（仅内存），
  *   回插优先用它，避免所有回复共用面板里唯一的 `selectionRef` 被下一次发送覆盖；
  * - **替换前校验原文**：位置合法不代表内容没变——发送后正文可能被编辑，偏移会指向
  *   别的句子；`doc.textBetween` 与快照原文不一致时提示重新选择，不盲写；
  * - **全选归一化**：Ctrl+A 的 `AllSelection` 是 `[0, size]`，快照在捕获与回插时都
  *   收敛到文本选区合法区间 `[1, size - 1]`（空文档 / 单空段无可替换范围）。
+ * - **插入落点**：携带全文 → 全文末尾；有选区快照 → 选区之后；否则当前光标
+ *   （携带全文时选区通常只是折叠光标，按光标插会把续写塞进段落中间）。
  */
 
 /** 把任意选区归一化到文本选区合法区间 `[1, doc.content.size - 1]`。 */
@@ -48,7 +50,7 @@ export interface UseApplyToEditorInput {
   t: TFunction<'ai'>
 }
 
-/** 面板需要的三个动作：发送时快照、替换选中、插入到选中之后。 */
+/** 面板需要的三个动作：发送时快照、替换选中、插入到快照落点（选区之后 / 全文末尾）。 */
 export interface ApplyToEditor {
   captureSelection: () => EditorSelectionSnapshot | null
   handleApplyReplace: (message: AiConversationMessage) => void
@@ -134,8 +136,17 @@ export function useApplyToEditor(input: UseApplyToEditorInput): ApplyToEditor {
       }
 
       const snapshot = resolveSnapshot(message)
-      const position = snapshot !== null ? snapshot.to : editor.state.selection.to
       const docSize = editor.state.doc.content.size
+      // 落点优先级：携带全文 → 全文末尾；有选区 → 选区之后；否则当前光标。
+      // 携带全文时编辑器里通常只是折叠光标，按光标插会把续写塞进段落中间。
+      const carryFull = message.selection?.carryFull === true
+      const position = carryFull
+        ? docSize <= 2
+          ? 1
+          : docSize - 1
+        : snapshot !== null && !snapshot.empty
+          ? snapshot.to
+          : editor.state.selection.to
       if (!Number.isInteger(position) || position < 0 || position > docSize) {
         showToast(t('panel.apply.staleSelection'))
         return
@@ -143,7 +154,7 @@ export function useApplyToEditor(input: UseApplyToEditorInput): ApplyToEditor {
 
       if (insertAfter(editor, message.content, position)) {
         refreshSelection()
-        showToast(t('panel.apply.inserted'))
+        showToast(t(carryFull ? 'panel.apply.insertedAtEnd' : 'panel.apply.inserted'))
         return
       }
       showToast(t('panel.apply.failed'))

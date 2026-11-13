@@ -131,6 +131,17 @@ export interface AiComposeAttachment {
   text: string
 }
 
+/**
+ * 回插用的选区快照：编辑器选区 + 发送瞬间的「携带全文」标记（仅内存，不落库）。
+ *
+ * 勾选「携带全文」时编辑器里通常只是折叠光标，回插应落到全文末尾而不是光标处
+ * （见 `useApplyToEditor.handleApplyInsert`）。
+ */
+export interface AiSelectionSnapshot extends EditorSelectionSnapshot {
+  /** 发起请求时是否勾选「携带全文」。 */
+  carryFull?: boolean
+}
+
 /** 一次发送请求的组成要素（来自统一输入区）。 */
 export interface AiComposeInput {
   /** 功能（含「自由对话」）。 */
@@ -153,9 +164,10 @@ export interface AiComposeInput {
   /**
    * 发起本次请求时的正文选区快照（可选）：只作为 assistant 气泡的 UI 元数据
    * （回插依据，见 `chatRuntime.AiConversationMessage.selection`），不落库，
-   * 也不参与发给模型的消息组装。
+   * 也不参与发给模型的消息组装。`carryFull` 标记本次发送是否勾选「携带全文」，
+   * 回插据此决定落点（全文末尾 / 选区之后）。
    */
-  selection?: EditorSelectionSnapshot
+  selection?: AiSelectionSnapshot
   /**
    * 作品设定（可选）：按当前书籍频道 / 分类拼出的写作风格约束（见 `bookContext.ts`）。
    * 只进 system（任务规则之后、输出格式约束之前），不进 user；面板关闭「携带内置提示词」时不传。
