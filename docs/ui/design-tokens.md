@@ -2,7 +2,7 @@
 
 本文描述 `src/renderer/src/styles/theme.css` 的令牌体系：单一真源的组织、主题标识与 `system` 解析、主题无关令牌、四套主题的分组与差异、不透明令牌与窗口材质的配合、系统强调色、主题切换过渡、样式导入顺序与使用规约。
 
-- 令牌定义：`src/renderer/src/styles/theme.css`（377 行，173 条声明）
+- 令牌定义：`src/renderer/src/styles/theme.css`（362 行，161 条声明）
 - 主题标识 / 解析：`theme/themes.ts`、`theme/ThemeProvider.tsx`；系统强调色：`theme/useSystemAccent.ts`、`theme/color.ts`、`src/main/theme.ts`、`src/main/ipc/theme.ts`
 - 切换过渡：`theme/themeReveal.ts`、`styles/components/motion.css`；材质 / 外壳：`styles/acrylic.css`、`styles/shell.css`；入口：`styles/index.css`、`App.tsx`
 
@@ -10,16 +10,16 @@
 
 ## 1. 单一真源与文件结构
 
-`theme.css` 是**主题 / 语义令牌**的单一真源（颜色、字号、圆角、字体、动效、层级、光斑）；其他样式一律 `var(--x)` 取用，组件样式不得重定义同名主题令牌。注意：领域色板 / 组件局部变量不在本文件范围内——`chip-pill-tokens.css`（29 条胶囊色板）、`entity-highlight-tokens.css`（8 条实体基色）、`theme-switcher.css`（28 条 `--mini-*` 预览镜像）各自定义领域令牌；`shell.css`、`window.css`、`clean-words.css`、`writer-ai.css` 等另有局部变量。间距 / 控件高度 / 选中态等视觉规则不在本文件，见 [`design-language.md`](./design-language.md)。
+`theme.css` 是**主题 / 语义令牌**的单一真源（颜色、字号、圆角、字体、动效、层级、光斑）；其他样式一律 `var(--x)` 取用，组件样式不得重定义同名主题令牌。注意：领域色板 / 组件局部变量不在本文件范围内——`chip-pill-tokens.css`（28 条胶囊色板）、`entity-highlight-tokens.css`（8 条实体基色）、`theme-switcher.css`（28 条 `--mini-*` 预览镜像）各自定义领域令牌；`shell.css`、`window.css`、`clean-words.css`、`writer-ai.css` 等另有局部变量。间距 / 控件高度 / 选中态等视觉规则不在本文件，见 [`design-language.md`](./design-language.md)。
 
 | 区块         | 选择器                        | 行号    | 声明数  | 作用                                                                 |
 | ------------ | ----------------------------- | ------- | ------- | -------------------------------------------------------------------- |
-| 主题无关     | `:root`                       | 9-90    | 33      | 排版、字号、圆角、控件高度、字体、动效、层级、光斑、材质透明度、选区 |
-| 亮色（默认） | `:root, [data-theme='light']` | 93-171  | 34      | 亮色主题，同时是全部主题的**基底**                                   |
-| 暗色         | `[data-theme='dark']`         | 174-239 | 32      | 暗色主题                                                             |
-| 浅绿         | `[data-theme='sage']`         | 242-297 | 31      | 浅绿主题                                                             |
-| 浅黄         | `[data-theme='honey']`        | 300-359 | 32      | 浅黄主题                                                             |
-| **合计**     | —                             | —       | **162** | —                                                                    |
+| 主题无关     | `:root`                       | 9-93    | 32      | 排版、字号、圆角、控件高度、字体、动效、层级、光斑、材质透明度、选区 |
+| 亮色（默认） | `:root, [data-theme='light']` | 96-174  | 34      | 亮色主题，同时是全部主题的**基底**                                   |
+| 暗色         | `[data-theme='dark']`         | 177-242 | 32      | 暗色主题                                                             |
+| 浅绿         | `[data-theme='sage']`         | 245-300 | 31      | 浅绿主题                                                             |
+| 浅黄         | `[data-theme='honey']`        | 303-362 | 32      | 浅黄主题                                                             |
+| **合计**     | —                             | —       | **161** | —                                                                    |
 
 - **亮色块与 `:root` 同挂 `<html>`**：选择器是 `:root, [data-theme='light']`，任何主题下都会命中。sage / honey 块同为 0,1,0 特异性且排在后面，只覆盖自己声明的属性，**未声明项回退到亮色块**——这正是它们只有 31 / 32 条的原因（省略了 `--sh-xs`、`--sh-sm`、sage 的 `--overlay-mask` 等）。
 - 每个主题块首行写 `color-scheme`（light / dark），驱动原生滚动条、表单控件与选区基线；块内分组顺序固定：桌面/窗口表面 → 交互底色 → 不透明交互底色 → 控件 on-soft → 文本 → 品牌/语义 → 正文 → 阴影/描边 → 遮罩 → 选区。变量名沿用原型命名，仅 `--desk-3` 大小写被规范为小写。
@@ -45,7 +45,7 @@
 
 ---
 
-## 3. 主题无关令牌（33 条）
+## 3. 主题无关令牌（32 条）
 
 `:root`（`theme.css:10-91`）中取值与主题无关的令牌：
 
@@ -61,9 +61,8 @@
 | `--fs-title`           | `14px`                                     | 卡片 / 详情 / 弹窗标题                                             |
 | `--fs-display`         | `20px`                                     | 展示档：欢迎标题 / 视口占位                                        |
 | `--fs-display-lg`      | `26px`                                     | 展示档：文档标题                                                   |
-| `--r-xs`               | `4px`                                      | 微圆角（列表行 / Tag / Badge / ≤22px 微控件）                      |
-| `--r-lg`               | `8px`                                      | 面板档（卡片 / 浮层 / 36px 控件与按钮）                            |
-| `--r-pill`             | `999px`                                    | 通用胶囊全圆（开关轨道 / 进度条 / 胶囊标记）                       |
+| `--r-lg`               | `8px`                                      | 界面统一圆角（面板 / 卡片 / 浮层 / 控件 / 列表行 / Tag / Badge）   |
+| `--r-pill`             | `999px`                                    | 胶囊 / chip / 开关轨道 / 进度条 / 滚动条全圆                       |
 | `--control-h-sm/md/lg` | `36px`                                     | 控件高度单档；三值同名仅为兼容旧引用                               |
 | `--font`               | Segoe UI Variable / 微软雅黑 / PingFang 栈 | 界面字体（挂在 `body`）                                            |
 | `--serif`              | 宋体 / Source Han Serif / Georgia 栈       | 衬线字体（书封、摘录）                                             |
@@ -81,7 +80,9 @@
 | `--desk-solid-alpha`   | `70%`                                      | 材质开启时 `--desk-solid` 的保留不透明度                           |
 | `--selection-bg`       | `brand 22%` + transparent                  | 全局 `::selection` 底色，随当前主题 `--brand` 变化                 |
 
-分组计数：排版 5、字号 5、圆角 3、控件高度 3、字体 3、动效 5、层级 4、光斑 3、材质 1、选区 1，共 **33** 条。层级令牌覆盖 970–972 三档（悬停卡 < 浮窗 < 嵌套卡）与行内抬升 1；970–972 仅 `entity-highlight.css` / `writer-right-panels.css` 引用，`--z-row-raised` 仅用于行内拖拽；其余层级仍是字面量：60（下拉 / 主题面板）、100 / 101（活动栏）、900（状态栏弹窗）、940（格式工具条）、980（活动筛选）、990（tooltip）、1000（Modal）、1040（Select / Combobox）、1100（Toast），另有 1–20 的局部层叠。目标档位与收敛计划见 `design-language.md` §6.2。注释明确本组光斑仅 light / sage / honey 生效——dark 由 `shell.css` 的 `[data-theme='dark'] .shell` 整体替换为无光斑的斜切色带，**四主题块均不覆写** `--desk-spot-*`。
+> CSS 会把 `border-radius` 钳制到 `min(宽, 高) / 2`：≤16px 元素设 8px 后渲染为正圆（16px 复选框 / 分组箭头），18×20 回收站箭头约 89% 半径（近圆），22px Tag / Badge 约 73% 半径。这是两档统一的必然结果，不是刻意设计（详见 [`design-language.md`](./design-language.md) §1.2 / §9 #20）。
+
+分组计数：排版 5、字号 5、圆角 2、控件高度 3、字体 3、动效 5、层级 4、光斑 3、材质 1、选区 1，共 **32** 条。层级令牌覆盖 970–972 三档（悬停卡 < 浮窗 < 嵌套卡）与行内抬升 1；970–972 仅 `entity-highlight.css` / `writer-right-panels.css` 引用，`--z-row-raised` 仅用于行内拖拽；其余层级仍是字面量：60（下拉 / 主题面板）、100 / 101（活动栏）、900（状态栏弹窗）、940（格式工具条）、980（活动筛选）、990（tooltip）、1000（Modal）、1040（Select / Combobox）、1100（Toast），另有 1–20 的局部层叠。目标档位与收敛计划见 `design-language.md` §6.2。注释明确本组光斑仅 light / sage / honey 生效——dark 由 `shell.css` 的 `[data-theme='dark'] .shell` 整体替换为无光斑的斜切色带，**四主题块均不覆写** `--desk-spot-*`。
 
 ---
 

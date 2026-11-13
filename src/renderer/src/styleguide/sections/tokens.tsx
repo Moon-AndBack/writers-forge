@@ -43,7 +43,7 @@ const COLOR_GROUPS: readonly ColorGroup[] = [
   { title: '语义', tokens: ['--ok', '--warn', '--danger', '--overlay-mask'] }
 ]
 
-const RADIUS_TOKENS = ['--r-xs', '--r-lg', '--r-pill', '--chip-pill-radius'] as const
+const RADIUS_TOKENS = ['--r-lg', '--r-pill'] as const
 const SHADOW_TOKENS = ['--sh-xs', '--sh-sm', '--sh-popup', '--sh-float', '--panel-ring'] as const
 
 /** 界面字号 3 档令牌（AGENTS §8.3）。 */
@@ -97,7 +97,11 @@ export function TokensSection() {
         </Demo>
       ))}
 
-      <Demo name="圆角 · --r-xs / --r-lg / --r-pill / --chip-pill-radius" classes="border-radius">
+      <Demo
+        name="圆角 · --r-lg（8px）/ --r-pill（999px）"
+        note="两档统一：界面元素用 8px，胶囊 / chip / 开关轨道用全圆。CSS 会把 border-radius 钳制到 min(宽,高)/2，因此 ≤16px 的元素（如 16px 复选框、16px 分组箭头）设 8px 后渲染为正圆，属预期结果。"
+        classes="border-radius"
+      >
         <div className="sg-radius-grid">
           {RADIUS_TOKENS.map((token) => (
             <div key={token} className="sg-radius-item">

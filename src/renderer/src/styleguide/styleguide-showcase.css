@@ -24,7 +24,7 @@
   flex: none;
   width: 28px;
   height: 28px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   box-shadow: var(--panel-ring);
 }
 
@@ -102,7 +102,7 @@
 .sg-motion__sample {
   display: block;
   height: 40px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   background: var(--soft-solid);
   transition: background var(--dur-fast) var(--ease);
 }
@@ -140,7 +140,7 @@
   flex: none;
   width: 120px;
   background: var(--brand);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
 }
 
 /* ---------- 卡片 / 状态 ---------- */

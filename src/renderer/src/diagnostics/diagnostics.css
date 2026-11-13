@@ -44,7 +44,7 @@
 
 .diagnostics__item {
   padding: 10px 12px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   background: var(--soft-solid);
   border-left: 3px solid var(--warn);
 }

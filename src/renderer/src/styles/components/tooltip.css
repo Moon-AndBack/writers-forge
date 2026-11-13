@@ -4,7 +4,7 @@
    替换浏览器原生 title 气泡（原生样式由系统绘制、方角、不可控）。
    视觉与 theme-switcher.css 的 .ts-popover / statusbar-widgets.css 的
    .st-popup 一脉：--pane 不透明底 + var(--sh-popup), 0 0 0 1px var(--line)
-   阴影描边（单环）+ 小圆角 --r-xs + 小字号。
+   阴影描边（单环）+ 小圆角 --r-lg + 小字号。
    颜色一律取 theme.css 令牌，四主题（light / dark / sage / honey）自适应。
    定位：由 useTooltip 以 fixed + 视口避让计算后内联 left/top；
         浮层本身 pointer-events: none（不挡点击）。
@@ -43,7 +43,7 @@
 }
 
 /* ---------- 伏笔正文标记悬停提示（components/editor/MarkHoverTip.tsx） ----------
-   与 .wf-tooltip 共用同一视觉底座（--pane 底 + --line 单环 + --r-xs + 小字号），
+   与 .wf-tooltip 共用同一视觉底座（--pane 底 + --line 单环 + --r-lg + 小字号），
    但**不**复用其类名：`.wf-tooltip` 带 `opacity: 0` 且需 `.is-ready` 才显形，与本浮层
    「HoverPopupShell 只写 left/top、由 useMarkHover 控制显隐」的挂载方式冲突。
    定位由 HoverPopupShell 内联写 left/top；宽度随内容，max-width 夹住长文案。

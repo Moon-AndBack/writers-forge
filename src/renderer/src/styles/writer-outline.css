@@ -22,7 +22,7 @@
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   cursor: pointer;
   transition: background 0.1s var(--ease);
 }
@@ -114,7 +114,7 @@
   opacity: 0;
   transition: opacity 0.1s var(--ease);
   background: var(--soft-hover-solid);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
 }
 
 .outline-chapter.has-grip .outline-chapter-actions {
@@ -208,7 +208,7 @@
   flex: none;
   width: 16px;
   height: 16px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   color: var(--text-mute);
 }
 

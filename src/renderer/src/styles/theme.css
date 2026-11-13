@@ -23,9 +23,10 @@
   --fs-display: 20px; /* 欢迎标题 / 视口占位 */
   --fs-display-lg: 26px; /* 文档标题 */
 
-  /* 圆角三档：面板 / 卡片 / 浮层 / 36px 控件用 --r-lg；
-     列表行、Tag / Badge、≤22px 微控件用 --r-xs；胶囊全圆用 --r-pill。 */
-  --r-xs: 4px;
+  /* 圆角两档：面板 / 卡片 / 浮层 / 控件 / 列表行 / Tag / Badge 统一用 --r-lg（8）；
+     胶囊 / chip / 开关轨道 / 进度条 / 滚动条用 --r-pill。正圆（50%）仅限图标按钮与状态点；
+     ≤3px 装饰微条与贴平（0）为例外。≤16px 元素设 8px 会被 CSS 钳制为正圆
+     （min(宽,高)/2，详见 docs/ui/design-language.md §9 #20）。 */
   --r-lg: 8px;
   --r-pill: 999px;
 

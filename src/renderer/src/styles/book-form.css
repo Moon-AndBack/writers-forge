@@ -75,7 +75,7 @@
   width: 100%;
   aspect-ratio: 3 / 4;
   overflow: hidden;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   box-shadow: var(--sh-sm), var(--panel-ring);
   color: #fff;
 }

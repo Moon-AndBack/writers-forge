@@ -240,7 +240,7 @@
   opacity: 0;
   transition: opacity 0.1s var(--ease);
   background: var(--soft-hover-solid);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
 }
 
 .timeline-item.is-active .timeline-item-actions {
@@ -274,7 +274,7 @@
   color: var(--text);
   background: var(--control-on-soft, var(--pane));
   border: 1px solid var(--brand);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   outline: none;
 }
 

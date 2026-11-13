@@ -69,7 +69,7 @@
   padding: 1px 5px;
   margin: -1px -5px;
   border: 0;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font: inherit;
   color: inherit;
   text-align: right;

@@ -65,7 +65,7 @@
   align-items: center;
   height: var(--filter-input-h);
   padding: 0 8px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-size: var(--fs-micro);
   font-weight: 600;
   white-space: nowrap;
@@ -158,7 +158,7 @@
   max-width: 100%;
   padding: 3px 9px;
   border: 0;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   background: transparent;
   box-shadow: inset 0 0 0 1px var(--line);
 

@@ -27,7 +27,7 @@
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   cursor: pointer;
   transition: background 0.1s var(--ease);
 }
@@ -99,7 +99,7 @@
   opacity: 0;
   transition: opacity 0.1s var(--ease);
   background: var(--soft-hover-solid);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
 }
 
 .plot-line.is-active .plot-line-actions {

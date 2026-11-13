@@ -51,7 +51,7 @@
   gap: 8px;
   width: 100%;
   padding: 5px 8px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-size: var(--fs-body);
   color: var(--text-dim);
   text-align: left;
@@ -93,7 +93,7 @@
 .wf-clean-pop__open {
   margin-top: 6px;
   border-top: 1px solid var(--line);
-  border-radius: 0 0 var(--r-xs) var(--r-xs);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
   color: var(--brand);
   font-weight: 600;
 }

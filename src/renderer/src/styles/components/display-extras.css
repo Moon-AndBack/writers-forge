@@ -89,7 +89,7 @@
   gap: 8px;
   width: 100%;
   padding: 7px 8px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   text-align: left;
   font-size: var(--fs-body);
   font-weight: 600;

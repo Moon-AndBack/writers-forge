@@ -278,7 +278,7 @@
   padding: 8px 10px;
   background: var(--pane);
   border-left: 2px solid color-mix(in srgb, var(--brand) 45%, transparent);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-size: var(--fs-body);
   line-height: 1.6;
   color: var(--text-dim);

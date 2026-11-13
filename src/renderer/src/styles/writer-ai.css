@@ -74,7 +74,7 @@
 
 /* 可聚焦（供键盘查看 Tooltip）：焦点环与 IconButton 同口径。 */
 .ai-composer-status__message:focus-visible {
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
   outline-offset: 1px;
 }
@@ -307,7 +307,7 @@
   max-width: 100%;
 }
 
-/* 功能胶囊：Tag 默认圆角 --r-xs，这里覆写为胶囊形（999px）。
+/* 功能胶囊：Tag 默认圆角 --r-lg，这里覆写为胶囊形（999px）。
    只改圆角 / 间距，不做位移（§8）。 */
 .wf-tag.ai-msg__chip {
   margin-bottom: 6px;
@@ -497,7 +497,7 @@
 
 .ai-md-code {
   padding: 1px 4px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   background: var(--soft);
   font-family: var(--mono);
   font-size: var(--fs-micro);

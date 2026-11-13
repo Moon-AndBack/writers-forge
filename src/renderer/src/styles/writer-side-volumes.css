@@ -16,7 +16,7 @@
   align-items: center;
   gap: 10px;
   padding: 9px 5px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   cursor: pointer;
   transition: background 0.1s var(--ease);
 }
@@ -97,7 +97,7 @@
   flex: 1;
   min-width: 0;
   padding: 0 4px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-size: var(--fs-title);
   font-weight: 600;
   line-height: 1.5;
@@ -219,7 +219,7 @@
   transform: translateY(-50%);
   /* 悬浮底色 = 行 hover 底（按钮仅在行 hover 时可见），遮住下方文字 / 徽标残影。 */
   background: var(--soft-hover-solid);
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
 }
 
 /* 选中章行的按钮底色同选中背景，保持视觉连续。 */

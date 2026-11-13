@@ -102,7 +102,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   cursor: pointer;
   transition: background 0.1s var(--ease);
 }
@@ -203,7 +203,7 @@
 
 .ep-search-error {
   padding: 6px 8px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-size: var(--fs-micro);
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 12%, var(--pane));

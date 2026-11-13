@@ -25,7 +25,7 @@
   display: inline-flex;
   align-items: center;
   max-width: 100%;
-  border-radius: var(--chip-pill-radius);
+  border-radius: var(--r-pill);
   border: 1px solid var(--chip-border);
   /* 实色优先：注入命中时直接用 --chip-bg；未注入时回落旧的浅混合底，保证首帧有色。 */
   background: var(--chip-bg, color-mix(in srgb, var(--chip-base) var(--chip-mix), var(--pane)));

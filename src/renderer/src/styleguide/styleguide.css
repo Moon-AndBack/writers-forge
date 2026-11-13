@@ -74,7 +74,7 @@ body {
 .sg-theme-btn {
   height: var(--control-h-md);
   padding: 0 12px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-size: var(--fs-body);
   font-weight: 500;
   color: var(--text-dim);
@@ -142,7 +142,7 @@ body {
 .sg-nav__link {
   display: block;
   padding: 9px 10px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-size: var(--fs-body);
   font-weight: 500;
   color: var(--text-dim);
@@ -251,7 +251,7 @@ body {
 .sg-code {
   display: inline-block;
   padding: 1px 6px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   background: var(--control-on-soft);
   font-family: var(--mono);
   font-size: var(--fs-micro);

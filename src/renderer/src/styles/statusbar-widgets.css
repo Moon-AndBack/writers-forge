@@ -18,7 +18,7 @@
   width: 48px;
   height: 24px;
   flex: none;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   color: var(--text-dim);
   background: var(--pill-bg-solid);
   transition:
@@ -81,7 +81,7 @@
   height: 24px;
   min-width: 48px;
   padding: 0 11px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-size: var(--fs-micro);
   font-weight: 600;
   color: var(--text-dim);
@@ -187,7 +187,7 @@
   gap: 8px;
   width: 100%;
   padding: 6px 10px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-size: var(--fs-body);
   color: var(--text-dim);
   text-align: left;
@@ -232,7 +232,7 @@
      24px 子项将上下各溢出 2px，hover 底跑出胶囊。 */
   height: 24px;
   padding: 0 2px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   background: var(--pill-bg-solid);
 }
 
@@ -296,7 +296,7 @@
      不用「纵向 padding + 继承行高」推导（11 × 1.55 + 8 ≈ 25px）。 */
   height: 24px;
   padding: 0 11px;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   font-size: var(--fs-micro);
   font-weight: 600;
   color: var(--text-dim);

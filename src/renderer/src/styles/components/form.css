@@ -225,7 +225,7 @@
 }
 .wf-checkbox__box {
   color: #fff;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
 }
 .wf-radio__dot {
   border-radius: 50%;

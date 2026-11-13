@@ -19,7 +19,7 @@ body {
 
 code {
   padding: 0.1rem 0.3rem;
-  border-radius: var(--r-xs);
+  border-radius: var(--r-lg);
   background: rgb(0 0 0 / 6%);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
