@@ -61,6 +61,19 @@ function safeJson(value: string): unknown {
   }
 }
 
+/** 读取 Graph 请求 ID：响应头优先，回退错误体的 `innerError`。 */
+function readRequestId(
+  response: Response,
+  graphErrorBody: Record<string, unknown> | null
+): string | null {
+  const fromHeader = response.headers.get('request-id') ?? response.headers.get('client-request-id')
+  if (fromHeader) return fromHeader
+
+  const innerError = graphErrorBody ? graphErrorBody.innerError : null
+  if (!isRecord(innerError)) return null
+  return readString(innerError, 'request-id') ?? readString(innerError, 'client-request-id')
+}
+
 /** 读取 Graph 错误体并构造结构化错误。 */
 export async function graphError(
   response: Response,
@@ -72,7 +85,9 @@ export async function graphError(
   const upstreamCode = graphErrorBody ? readString(graphErrorBody, 'code') : null
   const upstreamMessage = graphErrorBody ? readString(graphErrorBody, 'message') : null
 
-  const base = `Graph request failed (HTTP ${response.status})`
+  // request-id 放在 message 前部，避免被日志截断（`safeError` 只保留前 200 字符）。
+  const requestId = readRequestId(response, graphErrorBody)
+  const base = `Graph request failed (HTTP ${response.status})${requestId ? ` [request-id=${requestId}]` : ''}`
   const message = upstreamMessage
     ? `${base}: ${upstreamCode ?? 'error'} - ${upstreamMessage}`
     : upstreamCode
@@ -149,8 +164,10 @@ export async function getAccountProfile(options: GraphAuthOptions): Promise<OneD
 /**
  * 确保应用专属目录下的 `backups/` 子目录存在。
  *
- * approot 由 Graph 首次访问时自动创建；`backups` 需显式创建，否则向不存在
- * 的目录路径 PUT 会返回 404。并发创建返回 409 视为成功。
+ * app folder 在首次访问 special folder 命名空间时才由 Graph provision，
+ * 因此先请求 `approot` 本体；否则直接创建子目录可能返回 400 invalidRequest。
+ * `backups` 需显式创建，否则向不存在的目录路径 PUT 会返回 404。
+ * 并发创建返回 409 视为成功。
  */
 export async function ensureBackupFolder(options: GraphAuthOptions): Promise<void> {
   const request = {
@@ -160,6 +177,15 @@ export async function ensureBackupFolder(options: GraphAuthOptions): Promise<voi
     fallback: 'upload_failed' as const
   }
 
+  // 1) 先请求 approot 本体：文档把这一步列为 app folder 的首次创建入口。
+  //    404 不阻断（目录可能在后续步骤创建）；400/403 立即上抛，避免被误判。
+  try {
+    await graphRequest(`${GRAPH_BASE}/me/drive/special/approot`, request)
+  } catch (error) {
+    if (!(error instanceof OneDriveError) || error.code !== 'not_found') throw error
+  }
+
+  // 2) backups 已存在则结束。
   try {
     await graphRequest(`${GRAPH_BASE}/me/drive/special/approot:/${BACKUP_FOLDER}`, request)
     return
@@ -167,6 +193,7 @@ export async function ensureBackupFolder(options: GraphAuthOptions): Promise<voi
     if (!(error instanceof OneDriveError) || error.code !== 'not_found') throw error
   }
 
+  // 3) 创建 backups。
   try {
     await graphRequest(`${GRAPH_BASE}/me/drive/special/approot/children`, {
       ...request,
