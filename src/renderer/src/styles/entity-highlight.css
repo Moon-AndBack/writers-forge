@@ -91,7 +91,7 @@ span.entity-highlight:hover {
   box-shadow:
     var(--sh-popup),
     0 0 0 1px var(--line);
-  font-size: 12.5px;
+  font-size: var(--fs-body-sm);
   line-height: 1.6;
   color: var(--text-dim);
   animation: entity-card-in 0.14s var(--ease) both;
@@ -108,7 +108,7 @@ span.entity-highlight:hover {
 
 .entity-card-loading {
   color: var(--text-mute);
-  font-size: 12px;
+  font-size: var(--fs-body-sm);
 }
 
 .entity-card-head {
@@ -124,7 +124,7 @@ span.entity-highlight:hover {
   flex: none;
   padding: 1px 8px;
   border-radius: 99px;
-  font-size: 10.5px;
+  font-size: var(--fs-caption);
   font-weight: 600;
   /* 配色跟随数据库模块色（.chip-m-* 提供 --chip-bg / --chip-fg）；
      未命中时回落到弱化文字色底 + 面板色文字，保证仍可读。 */
@@ -143,7 +143,7 @@ span.entity-highlight:hover {
 /* 悬停卡内的胶囊：比档案卡略大一点，便于阅读；颜色取中性胶囊。 */
 .entity-card-chip {
   padding: 1px 8px;
-  font-size: 10.5px;
+  font-size: var(--fs-caption);
   font-weight: 500;
   line-height: 1.6;
 }
@@ -188,7 +188,7 @@ span.entity-highlight:hover {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 14px;
+  font-size: var(--fs-title);
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.01em;
@@ -223,7 +223,7 @@ span.entity-highlight:hover {
   flex-wrap: wrap;
   gap: 6px;
   color: var(--text-mute);
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
 }
 
 /* 第四行关系行与正文之间留 6px（正文缺省时与别名行之间也保持同一间距）。 */

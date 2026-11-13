@@ -154,7 +154,7 @@ body,
 }
 
 .tb-brand-name {
-  font-size: 12.5px;
+  font-size: var(--fs-body-sm);
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
@@ -203,14 +203,14 @@ body,
 .viewport-placeholder h1 {
   margin: 0;
   font-family: var(--serif);
-  font-size: 22px;
+  font-size: var(--fs-display-md);
   font-weight: 700;
   color: var(--text);
 }
 
 .viewport-placeholder p {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-body-sm);
   color: var(--text-mute);
 }
 

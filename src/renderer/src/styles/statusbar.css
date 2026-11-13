@@ -21,7 +21,7 @@
   gap: 12px;
   height: 36px;
   padding: 0 15px;
-  font-size: 11px;
+  font-size: var(--fs-caption);
   color: var(--text-mute);
   background: transparent;
   position: relative;
@@ -47,7 +47,7 @@
 
 .st-item b {
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: var(--fs-caption);
   font-weight: 600;
   color: var(--text-dim);
 }

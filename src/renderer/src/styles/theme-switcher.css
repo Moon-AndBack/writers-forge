@@ -43,7 +43,7 @@
 /* 面板标题「外观主题」 */
 .ts-title {
   padding: 2px 4px 8px;
-  font-size: 12.5px;
+  font-size: var(--fs-body-sm);
   font-weight: 600;
   color: var(--text);
 }
@@ -66,13 +66,13 @@
 }
 
 .ts-row-title {
-  font-size: 12.5px;
+  font-size: var(--fs-body-sm);
   font-weight: 500;
   color: var(--text);
 }
 
 .ts-row-sub {
-  font-size: 11px;
+  font-size: var(--fs-caption);
   line-height: 1.4;
   color: var(--text-mute);
 }
@@ -100,7 +100,7 @@
   height: 70px;
   padding: 8px;
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: var(--fs-body-sm);
   text-align: left;
   background: var(--soft-solid);
   border-radius: var(--r-xs);
