@@ -746,7 +746,7 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
 | `'aria-label'` | `string`                            | `undefined` | 分段组无障碍名称                       |
 
 **关键类名**：`.wf-seg`、`.wf-seg--sm`、`.wf-seg--fill`（外部追加的等分变体）、
-`.wf-seg__item`、`.wf-seg__item.is-active`（`::before` 画选中底板）。
+`.wf-seg__item`、`.wf-seg__thumb`（`--wf-seg-*` 实测驱动的滑动选中底板）。
 
 **键盘与无障碍**：`role="group"` + `aria-label`；每个按钮 `aria-pressed` 表示选中。
 **不是** `tablist` / `radiogroup` 语义：所有按钮都参与 Tab 序列，无方向键漫游。

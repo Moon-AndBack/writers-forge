@@ -5,6 +5,10 @@
         .field-seg button（表单单选）。
    命名：根类 .wf-seg；项 .wf-seg__item；激活 .is-active。
    颜色一律取 theme.css 令牌。
+   尺寸：外框高 36（sm 同为 36），横向轨道内衬 3px / 2px；纵向内衬
+        不再由容器 padding 承担，改由 .wf-seg__thumb 按 --wf-seg-inset-y
+        计算高度与位移，按钮（__item）用 height: 100% 撑满控件高，
+        可点击区与同排 36px 控件一致。
    ============================================================ */
 
 .wf-seg {
@@ -14,7 +18,9 @@
   align-items: center;
   gap: 2px;
   height: var(--control-h-md);
-  padding: 3px;
+  /* 纵向内衬只参与 thumb 的高度 / 位移计算，避免压缩按钮命中区。 */
+  --wf-seg-inset-y: 3px;
+  padding: 0 3px;
   border-radius: 6px;
   background: var(--soft-solid);
 }
@@ -28,8 +34,12 @@
   left: 0;
   top: 0;
   width: var(--wf-seg-w, 0px);
-  height: var(--wf-seg-h, 0px);
-  transform: translate(var(--wf-seg-x, 0px), var(--wf-seg-y, 0px));
+  /* 实测高为 item 的 36；减掉纵向内衬后仍是原滑块高（md 30 / sm 32）。 */
+  height: calc(var(--wf-seg-h, 0px) - 2 * var(--wf-seg-inset-y, 3px));
+  transform: translate(
+    var(--wf-seg-x, 0px),
+    calc(var(--wf-seg-y, 0px) + var(--wf-seg-inset-y, 3px))
+  );
   border-radius: 3px;
   background: color-mix(in srgb, var(--brand) 12%, var(--pane));
   box-shadow:
@@ -103,7 +113,8 @@
 /* ---------- 紧凑尺寸 ---------- */
 .wf-seg--sm {
   height: var(--control-h-sm);
-  padding: 2px;
+  --wf-seg-inset-y: 2px;
+  padding: 0 2px;
 }
 .wf-seg--sm .wf-seg__item {
   padding: 3px 10px;
@@ -116,7 +127,7 @@
    项拉伸填满容器，使选中框随容器等高（覆盖 inline-flex 的内容高）。
    新建卷 / 新建大纲 / 新建特殊章三个弹窗共用本类，禁止再写弹窗级覆盖
    （AGENTS §9 通用组件优先）。与 size 变体正交：高度由本类统一给定，
-   `--sm` 只影响内边距与字号。 */
+   `--sm` 只影响横向内边距、纵向内衬变量与字号。 */
 .wf-seg--fill {
   width: 100%;
   height: var(--control-h-md);
