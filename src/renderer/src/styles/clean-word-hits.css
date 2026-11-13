@@ -89,13 +89,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* 底部词库出口：与列表以分隔线隔开，沿用 .st-popup-item 的交互态。 */
+/* 底部词库出口：共享 Button（sm / secondary），用 8px 间距与列表分开，
+   不再用分隔线 + 品牌色文字冒充按钮。 */
 .wf-clean-pop__open {
-  margin-top: 6px;
-  border-top: 1px solid var(--line);
-  border-radius: 0 0 var(--r-lg) var(--r-lg);
-  color: var(--brand);
-  font-weight: 600;
+  width: 100%;
+  margin-top: 8px;
 }
 
 /* ============================================================

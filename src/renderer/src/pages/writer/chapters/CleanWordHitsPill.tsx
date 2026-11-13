@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Tag } from '../../../components/ui'
+import { Button, Tag } from '../../../components/ui'
 import { CATEGORY_LABEL_KEYS } from '../../../components/dialogs/cleanWordsMeta'
 import { setCleanWordsDialogOpen } from '../../../components/dialogs/cleanWordsDialogStore'
 import { requestCleanWordFlash, useProofreadHits } from './proofreadHits'
@@ -108,16 +108,17 @@ export default function CleanWordHitsPill(): ReactElement {
               </li>
             ))}
           </ul>
-          <button
-            type="button"
-            className="st-popup-item wf-clean-pop__open"
+          <Button
+            variant="secondary"
+            size="sm"
+            className="wf-clean-pop__open"
             onClick={() => {
               setOpenSnapshot(null)
               setCleanWordsDialogOpen(true)
             }}
           >
             {t('cleanWords.openLibrary')}
-          </button>
+          </Button>
         </div>
       ) : null}
     </div>
