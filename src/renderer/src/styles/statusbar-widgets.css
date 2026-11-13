@@ -226,13 +226,18 @@
   align-items: center;
   gap: 1px;
   flex: none;
-  padding: 2px;
+  /* 状态栏 chrome 档：外高 24px，与 24px 子项及同排按钮（.st-side-btn /
+     .st-pill-btn）同高。只保留横向 2px 内衬（胶囊与按钮的间距观感）；
+     纵向必须为 0——border-box 下若留纵向内衬，内容区会被压到 20px，
+     24px 子项将上下各溢出 2px，hover 底跑出胶囊。 */
+  height: 24px;
+  padding: 0 2px;
   border-radius: var(--r-xs);
   background: var(--pill-bg-solid);
 }
 
 .st-zoom-btn {
-  /* 状态栏 chrome 档：统一 24px（容器 .st-zoom 另加 2px 内衬，总高 28）。 */
+  /* 状态栏 chrome 档：统一 24px（容器 .st-zoom 同高，仅横向内衬 2px）。 */
   width: 24px;
   height: 24px;
   display: grid;
@@ -287,7 +292,10 @@
 .st-meta {
   display: inline-flex;
   align-items: center;
-  padding: 4px 11px;
+  /* 状态栏 chrome 档：height 固定 24px，文本由 align-items: center 居中；
+     不用「纵向 padding + 继承行高」推导（11 × 1.55 + 8 ≈ 25px）。 */
+  height: 24px;
+  padding: 0 11px;
   border-radius: var(--r-xs);
   font-size: 11px;
   font-weight: 600;
