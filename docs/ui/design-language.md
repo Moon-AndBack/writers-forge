@@ -6,7 +6,7 @@
 >
 > 真源顺序：`src/renderer/src/styles/theme.css`（主题 / 语义令牌）→ 本文档（组合公式与档位）→ 页面 / 组件 CSS。代码与本文档不一致时：实现偏差按本文档收敛；文档过期则修正本文档。
 >
-> 最后核对：2026-11-13（HEAD `181e825`）
+> 最后核对：2026-11-13（HEAD `99eedd6`）
 
 ---
 
@@ -123,7 +123,7 @@
 
 chrome 是界面框架（标题栏、活动栏、状态栏），不受控件三档 38 / 30 / 44 约束，高度由框架自身固定：
 
-- 状态栏：本体 36（`styles/statusbar.css:22`），内部控件 24（`styles/statusbar-widgets.css:19,81,237,269`）。
+- 状态栏：本体 36（`styles/statusbar.css:22`），内部控件 24（`styles/statusbar-widgets.css:19,81,233,242,274,297`）。
 - 活动栏：模块按钮 36×36（`styles/shell.css:368-372`）。
 - 标题栏：42（`styles/shell.css:91`）；标题栏内按钮按自身尺寸规则，不参与正文控件等高。
 
@@ -386,7 +386,7 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 | 15  | `.act-filter__search-btn`          | `styles/shell-activity-filter.css:94-109`                                                                                                                              | 40（`--filter-input-h + 2px`）                                   | 与 38 搜索框刻意上下各外露 1px                                        | 仅活动栏筛选浮层                                                |
 | 16  | `.dossier-rel-pill__action`        | `styles/writer-dossier-relation.css:111-123`                                                                                                                           | 14×14                                                            | 关系胶囊内微操作                                                      | 仅关系胶囊                                                      |
 | 17  | `.dossier-rel-remove`              | `styles/writer-dossier-relation.css:155-170`                                                                                                                           | 18×18                                                            | 自定义字段删除微操作                                                  | 仅字段键值行                                                    |
-| 18  | 展示类胶囊                         | `components/surface.css:170-184,239-254`、`styles/statusbar-widgets.css:287-299`                                                                                       | `.wf-tag` ≈23 / `.wf-badge` ≈21 / `.st-meta` ≈25                 | 展示类，非交互控件，不参与控件等高                                    | 纯展示；不得用于可点击控件                                      |
+| 18  | 展示类胶囊                         | `components/surface.css:170-184,239-254`                                                                                                                               | `.wf-tag` ≈23 / `.wf-badge` ≈21                                  | 展示类，非交互控件，不参与控件等高                                    | 纯展示；不得用于可点击控件                                      |
 | 19  | `.row-act`                         | `components/row-actions.css:13-16`                                                                                                                                     | 22×22                                                            | 行操作按钮域，见 §4.3                                                 | 仅行内浮现操作                                                  |
 
 ---
