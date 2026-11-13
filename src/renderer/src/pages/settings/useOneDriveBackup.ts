@@ -143,7 +143,8 @@ export function useOneDriveBackup(): OneDriveBackupController {
               encryptionAvailable: result.value.encryptionAvailable,
               clientId: '',
               signingIn: false,
-              backupRunning: false
+              backupRunning: false,
+              restoreRunning: false
             }
             return { ...base, ...result.value, signingIn: false }
           })

@@ -14,19 +14,25 @@ import type {
   OneDriveAuthStatus,
   OneDriveBackupProgress,
   OneDriveBackupResult,
-  OneDriveErrorCode
+  OneDriveErrorCode,
+  OneDriveRestoreProgress,
+  RemoteBackupItem
 } from '../../main/onedrive'
+import type { BackupRestoreResult } from '../../main/backup'
 import type { OneDriveFailure, OneDriveResult, OneDriveStatus } from '../../main/ipc/onedrive'
 
 export type {
+  BackupRestoreResult,
   OneDriveAccount,
   OneDriveAuthStatus,
   OneDriveBackupProgress,
   OneDriveBackupResult,
   OneDriveErrorCode,
   OneDriveFailure,
+  OneDriveRestoreProgress,
   OneDriveResult,
-  OneDriveStatus
+  OneDriveStatus,
+  RemoteBackupItem
 }
 
 /** 进度订阅退订函数（组件卸载时必调）。 */
@@ -52,6 +58,19 @@ export interface OneDriveApi {
   backup: () => Promise<OneDriveResult<OneDriveBackupResult>>
   /** 中断进行中的备份；返回是否发出了取消请求（无进行中任务为 false）。 */
   cancelBackup: () => Promise<boolean>
+  /** 列出远端备份（按修改时间倒序；`backups/` 不存在时返回空数组）。 */
+  listBackups: () => Promise<OneDriveResult<RemoteBackupItem[]>>
+  /**
+   * 下载并恢复指定远端备份；进度走 `onRestoreProgress`。
+   * 外层失败为 OneDrive 域错误码；`value.ok = false` 时携带恢复域错误码。
+   */
+  restoreBackup: (itemId: string) => Promise<OneDriveResult<BackupRestoreResult>>
+  /** 中断进行中的云端恢复（下载阶段生效）；返回是否发出了取消请求。 */
+  cancelRestore: () => Promise<boolean>
   /** 订阅备份进度，返回退订函数（组件卸载时必调）。 */
   onProgress: (callback: (progress: OneDriveBackupProgress) => void) => OneDriveProgressUnsubscribe
+  /** 订阅云端恢复进度，返回退订函数（组件卸载时必调）。 */
+  onRestoreProgress: (
+    callback: (progress: OneDriveRestoreProgress) => void
+  ) => OneDriveProgressUnsubscribe
 }

@@ -1,5 +1,7 @@
 import { ipcMain } from 'electron'
 import type { WebContents } from 'electron'
+import type { BackupRestoreResult } from '../backup'
+import { scheduleRelaunch } from '../backup/relaunch'
 import { logger } from '../logger'
 import {
   cancelSignIn,
@@ -8,6 +10,8 @@ import {
   isBackupRunning,
   isOneDriveError,
   isSignInInProgress,
+  listRemoteBackups,
+  restoreRemoteBackup,
   runBackup,
   setOneDriveClientId,
   signIn,
@@ -19,7 +23,9 @@ import type {
   OneDriveBackupProgress,
   OneDriveBackupResult,
   OneDriveError,
-  OneDriveErrorCode
+  OneDriveErrorCode,
+  OneDriveRestoreProgress,
+  RemoteBackupItem
 } from '../onedrive'
 
 /**
@@ -33,8 +39,12 @@ import type {
  * - onedrive:signOut       ()                 → OneDriveStatus
  * - onedrive:backup        ()                 → OneDriveResult<OneDriveBackupResult>
  * - onedrive:cancelBackup  ()                 → boolean（是否中断了进行中的备份）
+ * - onedrive:listBackups   ()                 → OneDriveResult<RemoteBackupItem[]>
+ * - onedrive:restoreBackup ({ itemId })       → OneDriveResult<BackupRestoreResult>
+ * - onedrive:cancelRestore ()                 → boolean（是否中断了进行中的恢复）
  * 推送（主进程 → 渲染层）：
  * - onedrive:progress      OneDriveBackupProgress
+ * - onedrive:restoreProgress OneDriveRestoreProgress
  *
  * ⚠️ 错误跨进程契约：`OneDriveError` 经 IPC 序列化后只剩 `name` / `message`，
  * `code` / `status` 会丢失，渲染层便无法走 i18n 映射。因此本文件对**可预期的域内错误**
@@ -56,6 +66,8 @@ export interface OneDriveStatus extends OneDriveAuthStatus {
   signingIn: boolean
   /** 是否有备份进行中。 */
   backupRunning: boolean
+  /** 是否有云端恢复进行中（下载 / 校验 / 替换数据库）。 */
+  restoreRunning: boolean
 }
 
 /** 结构化失败载荷；`code` 为渲染层 i18n 映射的唯一依据。 */
@@ -71,6 +83,8 @@ export type OneDriveResult<T> = { ok: true; value: T } | OneDriveFailure
 
 /** 备份取消控制器（同一时刻至多一个；`runBackup` 自身亦有互斥）。 */
 let activeBackupController: AbortController | null = null
+/** 云端恢复取消控制器（同一时刻至多一个；下载阶段可取消）。 */
+let activeRestoreController: AbortController | null = null
 
 /** 汇总当前状态（供 status / setClientId / signOut 复用）。 */
 function currentStatus(): OneDriveStatus {
@@ -78,7 +92,8 @@ function currentStatus(): OneDriveStatus {
     ...getOneDriveAuthStatus(),
     clientId: getOneDriveClientId(),
     signingIn: isSignInInProgress(),
-    backupRunning: isBackupRunning()
+    backupRunning: isBackupRunning(),
+    restoreRunning: activeRestoreController !== null
   }
 }
 
@@ -93,6 +108,19 @@ function toFailure(error: OneDriveError): OneDriveFailure {
 function sendProgress(sender: WebContents, progress: OneDriveBackupProgress): void {
   if (sender.isDestroyed()) return
   sender.send('onedrive:progress', progress)
+}
+
+/** 单向下发云端恢复进度；窗口已销毁时静默丢弃。 */
+function sendRestoreProgress(sender: WebContents, progress: OneDriveRestoreProgress): void {
+  if (sender.isDestroyed()) return
+  sender.send('onedrive:restoreProgress', progress)
+}
+
+/** 从 `{ itemId }` 载荷读取恢复目标；非法返回 null。 */
+function readRestoreItemId(payload: unknown): string | null {
+  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) return null
+  const { itemId } = payload as Record<string, unknown>
+  return typeof itemId === 'string' && itemId.trim() !== '' ? itemId.trim() : null
 }
 
 /** 注册 OneDrive 备份域 IPC。 */
@@ -150,7 +178,11 @@ export function registerOneDriveIpc(): void {
   ipcMain.handle(
     'onedrive:backup',
     async (event): Promise<OneDriveResult<OneDriveBackupResult>> => {
-      if (isBackupRunning() || activeBackupController !== null) {
+      if (
+        isBackupRunning() ||
+        activeBackupController !== null ||
+        activeRestoreController !== null
+      ) {
         log.warn('onedrive:backup 重复调用（已有任务进行中）')
         return { ok: false, code: 'backup_in_progress' }
       }
@@ -187,6 +219,76 @@ export function registerOneDriveIpc(): void {
     if (!controller) return false
     controller.abort()
     log.info('onedrive:cancelBackup 已请求取消')
+    return true
+  })
+
+  ipcMain.handle('onedrive:listBackups', async (): Promise<OneDriveResult<RemoteBackupItem[]>> => {
+    try {
+      const items = await listRemoteBackups()
+      log.info('onedrive:listBackups 完成', { count: items.length })
+      return { ok: true, value: items }
+    } catch (error) {
+      if (isOneDriveError(error)) {
+        log.warn('onedrive:listBackups 失败', { code: error.code, status: error.status })
+        return toFailure(error)
+      }
+      log.error('onedrive:listBackups 意外异常', { error: safeError(error) })
+      throw error
+    }
+  })
+
+  ipcMain.handle(
+    'onedrive:restoreBackup',
+    async (event, payload: unknown): Promise<OneDriveResult<BackupRestoreResult>> => {
+      const itemId = readRestoreItemId(payload)
+      if (itemId === null) {
+        log.warn('onedrive:restoreBackup 入参非法')
+        return { ok: false, code: 'remote_not_found' }
+      }
+      if (
+        isBackupRunning() ||
+        activeBackupController !== null ||
+        activeRestoreController !== null
+      ) {
+        log.warn('onedrive:restoreBackup 被拒绝：已有任务进行中')
+        return { ok: false, code: 'backup_in_progress' }
+      }
+
+      const sender = event.sender
+      const controller = new AbortController()
+      activeRestoreController = controller
+      try {
+        // 下载阶段不占用本地任务锁；`restoreRemoteBackup` 在调用
+        // `restoreDatabase` 时才由其内部 `tryStartBackupJob('restore')` 占锁。
+        const result = await restoreRemoteBackup({
+          itemId,
+          signal: controller.signal,
+          onProgress: (progress) => sendRestoreProgress(sender, progress)
+        })
+        if (result.ok) {
+          scheduleRelaunch()
+        } else {
+          log.warn('onedrive:restoreBackup 失败', { code: result.code })
+        }
+        return { ok: true, value: result }
+      } catch (error) {
+        if (isOneDriveError(error)) {
+          log.warn('onedrive:restoreBackup 失败', { code: error.code, status: error.status })
+          return toFailure(error)
+        }
+        log.error('onedrive:restoreBackup 意外异常', { error: safeError(error) })
+        throw error
+      } finally {
+        if (activeRestoreController === controller) activeRestoreController = null
+      }
+    }
+  )
+
+  ipcMain.handle('onedrive:cancelRestore', (): boolean => {
+    const controller = activeRestoreController
+    if (!controller) return false
+    controller.abort()
+    log.info('onedrive:cancelRestore 已请求取消')
     return true
   })
 }

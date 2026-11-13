@@ -18,6 +18,7 @@ import {
   SNAPSHOT_FILE_NAME,
   tryStartBackupJob
 } from '../backup'
+import { scheduleRelaunch } from '../backup/relaunch'
 import { getDatabasePath, getDb } from '../database'
 import type {
   BackupCreateResult,
@@ -48,9 +49,6 @@ import type {
 
 const log = logger.scope('backup:ipc')
 
-/** 恢复成功到重启之间的延时（ms）：确保 IPC 响应先送达渲染层。 */
-const RELAUNCH_DELAY_MS = 300
-
 /** 从 `{ folder }` 载荷读取备份文件夹名；非法返回 null。 */
 function readBackupFolder(payload: unknown): string | null {
   if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) return null
@@ -69,18 +67,6 @@ function readRenamePayload(payload: unknown): { folder: string; name: string } |
 /** 取发起调用的窗口作为对话框父窗口（窗口已销毁时为 null）。 */
 function senderWindow(event: IpcMainInvokeEvent): BrowserWindow | null {
   return BrowserWindow.fromWebContents(event.sender)
-}
-
-/** 恢复成功后安排重启（结果先返回，再退出当前进程）。 */
-function scheduleRelaunch(result: BackupRestoreResult): BackupRestoreResult {
-  if (!result.ok) return result
-
-  setTimeout(() => {
-    log.info('数据库已恢复，重启应用')
-    app.relaunch()
-    app.exit(0)
-  }, RELAUNCH_DELAY_MS)
-  return result
 }
 
 /** 注册本地备份 / 恢复域 IPC。 */
@@ -130,7 +116,9 @@ export function registerBackupIpc(): void {
         return guarded
       }
 
-      return scheduleRelaunch(await restoreDatabase(join(guarded.path, SNAPSHOT_FILE_NAME)))
+      const result = await restoreDatabase(join(guarded.path, SNAPSHOT_FILE_NAME))
+      if (result.ok) scheduleRelaunch()
+      return result
     }
   )
 
@@ -149,7 +137,9 @@ export function registerBackupIpc(): void {
       return { ok: false, code: 'canceled' }
     }
 
-    return scheduleRelaunch(await restoreDatabase(picked.filePaths[0]))
+    const result = await restoreDatabase(picked.filePaths[0])
+    if (result.ok) scheduleRelaunch()
+    return result
   })
 
   ipcMain.handle('backup:export', async (event): Promise<BackupExportResult> => {

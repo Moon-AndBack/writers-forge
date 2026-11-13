@@ -29,6 +29,9 @@ export type OneDriveErrorCode =
   | 'upstream'
   | 'upload_failed'
   | 'snapshot_failed'
+  | 'list_failed'
+  | 'download_failed'
+  | 'remote_not_found'
   | 'backup_in_progress'
   | 'unknown'
 
@@ -111,8 +114,8 @@ export interface OneDriveAuthStatus {
   encryptionAvailable: boolean
 }
 
-/** 备份阶段：生成快照 → 上传 → 完成。 */
-export type OneDriveBackupPhase = 'snapshot' | 'upload' | 'done'
+/** 备份 / 恢复阶段：快照 → 上传（备份）；下载 → 恢复（云端恢复）；完成。 */
+export type OneDriveBackupPhase = 'snapshot' | 'upload' | 'download' | 'restore' | 'done'
 
 /** 备份进度回调载荷。 */
 export interface OneDriveBackupProgress {
@@ -133,6 +136,39 @@ export interface OneDriveUploadProgress {
   bytesSent: number
   totalBytes: number
   percent: number
+}
+
+/** 下载进度载荷（graph 层使用，由恢复层包装成 `OneDriveRestoreProgress`）。 */
+export interface OneDriveDownloadProgress {
+  bytesReceived: number
+  totalBytes: number
+  percent: number
+}
+
+/** 云端恢复进度（下载 → 恢复 → 完成）。 */
+export interface OneDriveRestoreProgress {
+  phase: 'download' | 'restore' | 'done'
+  /** 已接收字节数（restore / done 阶段为文件总大小）。 */
+  bytesReceived: number
+  totalBytes: number
+  percent: number
+}
+
+/** 云端恢复进度监听器。 */
+export type OneDriveRestoreProgressListener = (progress: OneDriveRestoreProgress) => void
+
+/** 远端备份列表项（按 `modifiedAt` 倒序返回）。 */
+export interface RemoteBackupItem {
+  /** Graph driveItem id（下载 / 恢复的唯一标识）。 */
+  itemId: string
+  /** 远端文件名（`writers-forge-<YYYYMMDD-HHmmss>.db`）。 */
+  name: string
+  /** 文件字节数。 */
+  sizeBytes: number
+  /** 最后修改时间（ISO 8601）。 */
+  modifiedAt: string
+  /** OneDrive 网页链接（上游未返回时省略）。 */
+  webUrl?: string
 }
 
 /** 上传成功后的远端文件信息。 */

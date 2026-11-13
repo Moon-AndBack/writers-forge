@@ -41,3 +41,12 @@ export type { GraphAuthOptions } from './graph'
 export type { UploadFileOptions } from './upload'
 
 export { isBackupRunning, runBackup } from './backup'
+
+export { listRemoteBackups } from './remote'
+export type { ListRemoteBackupsOptions } from './remote'
+
+export { downloadRemoteBackup } from './download'
+export type { DownloadRemoteBackupOptions } from './download'
+
+export { restoreRemoteBackup } from './restoreRemote'
+export type { RestoreRemoteBackupOptions } from './restoreRemote'

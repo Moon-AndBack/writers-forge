@@ -39,6 +39,8 @@ const onedrive = {
     phase: {
       snapshot: 'Creating snapshot…',
       upload: 'Uploading… {{percent}}%',
+      download: 'Downloading… {{percent}}%',
+      restore: 'Restoring the database…',
       done: 'Backup complete'
     },
     bytes: '{{sent}} / {{total}}',
@@ -81,6 +83,9 @@ const onedrive = {
     upstream: 'OneDrive service is temporarily unavailable; please try again later',
     upload_failed: 'Upload failed; check your network and retry',
     snapshot_failed: 'Failed to create the local snapshot; check disk space and retry',
+    list_failed: 'Failed to load the cloud backup list; please try again later',
+    download_failed: 'Failed to download the cloud backup; check your network and retry',
+    remote_not_found: 'The cloud backup does not exist or has been deleted',
     backup_in_progress: 'A backup is already running; wait for it to finish and try again',
     unknown: 'An unknown error occurred; please try again later'
   }

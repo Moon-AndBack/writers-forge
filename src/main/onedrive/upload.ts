@@ -17,10 +17,10 @@ import {
   describeError,
   isRecord,
   normalizeError,
-  parseRetryAfter,
   readNumber,
   readString,
   resolveTimeout,
+  retryDelayMs,
   sleep
 } from './http'
 import { safeError, safePath } from './logSafe'
@@ -112,13 +112,6 @@ function parseNextOffset(payload: unknown, fallback: number): number {
   if (typeof first !== 'string') return fallback
   const start = Number.parseInt(first.split('-')[0] ?? '', 10)
   return Number.isFinite(start) && start >= 0 ? start : fallback
-}
-
-/** 重试等待：优先 `Retry-After`，否则指数退避（1s / 2s / 4s，上限 30s）。 */
-function retryDelayMs(headers: Headers | null, attempt: number): number {
-  const retryAfter = headers ? parseRetryAfter(headers) : null
-  if (retryAfter !== null) return retryAfter
-  return Math.min(30_000, 1_000 * 2 ** (attempt - 1))
 }
 
 /** 会话状态：服务端还有待传区间、已传完、或无法判定。 */

@@ -140,6 +140,13 @@ export function normalizeError(
   })
 }
 
+/** 重试等待：优先 `Retry-After`，否则指数退避（1s / 2s / 4s，上限 30s）。 */
+export function retryDelayMs(headers: Headers | null, attempt: number): number {
+  const retryAfter = headers ? parseRetryAfter(headers) : null
+  if (retryAfter !== null) return retryAfter
+  return Math.min(30_000, 1_000 * 2 ** (attempt - 1))
+}
+
 /** 可被 signal 中断的 sleep（中断时抛 `aborted`）。 */
 export async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   if (ms <= 0) return

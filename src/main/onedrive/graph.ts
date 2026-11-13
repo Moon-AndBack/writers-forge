@@ -190,6 +190,17 @@ export function contentUrl(fileName: string): string {
   return `${GRAPH_BASE}/me/drive/special/approot:/${BACKUP_FOLDER}/${encodeURIComponent(fileName)}:/content`
 }
 
+/** 构造备份目录的子项列表地址（`$top` 为单页上限，Graph 默认 200）。 */
+export function backupChildrenUrl(top = 200): string {
+  const select = 'id,name,size,createdDateTime,lastModifiedDateTime,file,folder,webUrl'
+  return `${GRAPH_BASE}/me/drive/special/approot:/${BACKUP_FOLDER}:/children?$select=${select}&$top=${top}`
+}
+
+/** 构造单个 driveItem 的元信息地址（含预签名 `@microsoft.graph.downloadUrl`）。 */
+export function itemDownloadUrl(itemId: string): string {
+  return `${GRAPH_BASE}/me/drive/items/${encodeURIComponent(itemId)}?$select=id,size,@microsoft.graph.downloadUrl`
+}
+
 /** 构造 `…:/backups/<name>:/createUploadSession` 地址。 */
 export function createSessionUrl(fileName: string): string {
   return `${GRAPH_BASE}/me/drive/special/approot:/${BACKUP_FOLDER}/${encodeURIComponent(fileName)}:/createUploadSession`

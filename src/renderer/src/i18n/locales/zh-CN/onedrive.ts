@@ -2,7 +2,7 @@
  * OneDrive 备份命名空间（`onedrive`）：设置页「OneDrive 云备份」分区的全部文案。
  *
  * 约定：
- * - `error.*` 与主进程 `OneDriveErrorCode` 的 21 个值一一对应，渲染层经
+ * - `error.*` 与主进程 `OneDriveErrorCode` 的 24 个值一一对应，渲染层经
  *   `onedriveSectionSupport.ts` 的 `ERROR_KEYS` 静态映射取用，**不展示**主进程英文
  *   `message`；新增 / 删除错误码时 `satisfies Record<OneDriveErrorCode, string>`
  *   会触发 typecheck 失败，须同步双端本文件。
@@ -41,6 +41,8 @@ const onedrive = {
     phase: {
       snapshot: '正在生成快照…',
       upload: '正在上传… {{percent}}%',
+      download: '正在下载… {{percent}}%',
+      restore: '正在恢复数据库…',
       done: '备份完成'
     },
     bytes: '{{sent}} / {{total}}',
@@ -79,6 +81,9 @@ const onedrive = {
     upstream: 'OneDrive 服务暂时不可用，请稍后重试',
     upload_failed: '上传失败，请检查网络后重试',
     snapshot_failed: '生成本地快照失败，请检查磁盘空间后重试',
+    list_failed: '获取云端备份列表失败，请稍后重试',
+    download_failed: '下载云端备份失败，请检查网络后重试',
+    remote_not_found: '云端备份不存在或已被删除',
     backup_in_progress: '已有备份正在进行，请等待完成后再试',
     unknown: '发生未知错误，请稍后重试'
   }
