@@ -14,7 +14,7 @@
   gap: 14px;
 }
 
-/* 行 2：计数 + 词表 + 出处，三者间距小于行间距，保持为同一视觉分组。 */
+/* 行 2：计数 + 词表，两者间距小于行间距，保持为同一视觉分组。 */
 .cw-results {
   display: flex;
   flex-direction: column;
@@ -210,14 +210,6 @@
   display: flex;
   justify-content: center;
   padding: 6px 0;
-}
-
-/* ---------- 来源说明 ---------- */
-.cw-meta {
-  margin: 0;
-  font-size: var(--fs-micro);
-  line-height: 1.5;
-  color: var(--text-mute);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -116,9 +116,7 @@ const chapters = {
     categoryConfirmDisable: 'Disable',
     categoryEnableDone: 'Enabled {{count}} built-in words in “{{category}}”',
     categoryDisableDone: 'Disabled {{count}} built-in words in “{{category}}”',
-    categoryToggleFailed: 'Failed to update this category, please retry',
-    metaSourceManual: 'Self-built',
-    metaLine: 'Sources: {{sources}} ({{licenses}}) · updated {{date}}'
+    categoryToggleFailed: 'Failed to update this category, please retry'
   },
   search: {
     aria: 'Chapter search and replace',

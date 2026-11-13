@@ -125,9 +125,7 @@ const chapters = {
     categoryConfirmDisable: '禁用',
     categoryEnableDone: '已启用「{{category}}」类别的 {{count}} 条内置词',
     categoryDisableDone: '已禁用「{{category}}」类别的 {{count}} 条内置词',
-    categoryToggleFailed: '批量更新失败，请重试',
-    metaSourceManual: '自建',
-    metaLine: '来源：{{sources}}（{{licenses}}）· 更新于 {{date}}'
+    categoryToggleFailed: '批量更新失败，请重试'
   },
   search: {
     aria: '章节搜索与替换',

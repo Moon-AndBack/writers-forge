@@ -34,6 +34,8 @@ Writer's Forge 的违禁词库是**全局共享**（不含 `book_id`）的提示
 
 合计 1274 条（去重后单归属）。两个外部词库均为 Apache-2.0；自建部分为本项目原创，按 MIT 发布。词表在仓库内以静态种子文件分发，运行期不请求网络。
 
+界面说明：违禁词库弹窗**已不再展示出处行**（原位于结果区计数行下方）。原文案为「来源：{{sources}}（{{licenses}}）· 更新于 {{date}}」，其中 `sources` 依次为 fwwdn / houbb / 自建，`licenses` 为 Apache-2.0 / Apache-2.0 / MIT，日期取内置词表生成日；来源、许可与日期统一以本文档为出口。
+
 ## 3. 生成与清洗
 
 生成脚本：`scripts/build-clean-word-seed.mjs`（辅助模块在 `scripts/clean-words/`），支持 `--report` / `--check`。固定上游 commit 拉取后执行：
@@ -83,4 +85,4 @@ Writer's Forge 的违禁词库是**全局共享**（不含 `book_id`）的提示
 - 正文标记：`src/renderer/src/pages/writer/chapters/proofreadMark.ts`、`CleanWordHitsPill.tsx`
 - 文案：`src/renderer/src/i18n/locales/{zh-CN,en}/chapters.ts` 的 `cleanWords.*`
 
-最后核对：2026-11-10
+最后核对：2026-11-14

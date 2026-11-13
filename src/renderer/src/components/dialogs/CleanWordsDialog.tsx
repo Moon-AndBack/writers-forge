@@ -1,7 +1,5 @@
-import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Input, Modal, Segmented, Select } from '../ui'
-import { BUILTIN_META } from './cleanWordsMeta'
 import { useConfirm } from '../../pages/writer/chapters/useConfirm'
 import '../../styles/components/clean-words.css'
 import { CleanWordAddForm } from './CleanWordAddForm'
@@ -28,9 +26,6 @@ export interface CleanWordsDialogProps {
   onClose: () => void
 }
 
-/** 出处行许可证（与 `BUILTIN_META.sources` 同序；静态常量，不进组件状态）。 */
-const META_LICENSES = BUILTIN_META.sources.map((source) => source.license).join(' / ')
-
 /**
  * 违禁词库管理弹窗。内置词（`source = 'builtin'`）只能启用 / 禁用，仅用户自建词可删除
  * （与主进程 `deleteCleanWord` 口径一致：内置词删除后会被下次词库更新写回）。
@@ -40,15 +35,6 @@ export function CleanWordsDialog({ open, onClose }: CleanWordsDialogProps) {
   const library = useCleanWordsLibrary(open)
   const confirm = useConfirm()
   const bulk = library.categoryBulk
-
-  /** 多来源出处：`manual` 走 i18n「自建」，其余来源直接显示 id（与种子 meta 一致）。 */
-  const metaSources = useMemo(
-    () =>
-      BUILTIN_META.sources
-        .map((source) => (source.id === 'manual' ? t('cleanWords.metaSourceManual') : source.id))
-        .join(' / '),
-    [t]
-  )
 
   /** 计数行右侧的批量按钮：确认框带类别名与条数，确认后只操作内置词。 */
   const handleBulkToggle = (): void => {
@@ -111,7 +97,7 @@ export function CleanWordsDialog({ open, onClose }: CleanWordsDialogProps) {
           />
         </div>
 
-        {/* 行 2. 结果：计数 + 按类别批量启停 + 词表 + 内置词表出处 */}
+        {/* 行 2. 结果：计数 + 按类别批量启停 + 词表 */}
         <div className="cw-results">
           <div className="cw-count-row">
             <p className="cw-count" aria-live="polite" aria-atomic="true">
@@ -128,13 +114,6 @@ export function CleanWordsDialog({ open, onClose }: CleanWordsDialogProps) {
               </Button>
             ) : null}
           </div>
-          <p className="cw-meta">
-            {t('cleanWords.metaLine', {
-              sources: metaSources,
-              licenses: META_LICENSES,
-              date: BUILTIN_META.generatedAt
-            })}
-          </p>
           <CleanWordsTable
             hasActiveFilter={library.hasActiveFilter}
             visibleRows={library.visibleRows}
