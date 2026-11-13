@@ -42,7 +42,6 @@ export function AiTestRow({ testState, disabled, onTest }: AiTestRowProps) {
       }
     >
       <Button
-        size="sm"
         variant="secondary"
         loading={testState.status === 'testing'}
         disabled={disabled}

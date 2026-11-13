@@ -38,7 +38,6 @@ export default function AppearanceSection() {
         <Select
           id={themeModeId}
           ariaDescribedBy={settingRowDescriptionId(themeModeId)}
-          size="sm"
           className="settings-control settings-control--select"
           value={theme}
           options={themes.map((item) => ({ value: item.id, label: t(item.labelKey) }))}

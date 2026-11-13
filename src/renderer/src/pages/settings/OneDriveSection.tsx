@@ -65,26 +65,20 @@ export default function OneDriveSection() {
       >
         <div className="od-actions">
           {signedIn ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              className="wf-btn--on-soft"
-              onClick={od.handleSignOut}
-            >
+            <Button variant="secondary" className="wf-btn--on-soft" onClick={od.handleSignOut}>
               {t('account.signOut')}
             </Button>
           ) : od.signingIn ? (
             <>
-              <Button size="sm" variant="primary" loading>
+              <Button variant="primary" loading>
                 {t('account.signIn')}
               </Button>
-              <Button size="sm" variant="ghost" onClick={od.handleCancelSignIn}>
+              <Button variant="ghost" onClick={od.handleCancelSignIn}>
                 {t('account.cancelSignIn')}
               </Button>
             </>
           ) : (
             <Button
-              size="sm"
               variant="primary"
               disabled={encryptionBlocked || od.loading || od.unsupported || od.status === null}
               onClick={od.handleSignIn}
@@ -98,12 +92,11 @@ export default function OneDriveSection() {
       <SettingRow label={t('backup.label')} description={t('backup.description')}>
         <div className="od-actions">
           {od.backupRunning ? (
-            <Button size="sm" variant="danger" onClick={od.handleCancelBackup}>
+            <Button variant="danger" onClick={od.handleCancelBackup}>
               {t('backup.cancel')}
             </Button>
           ) : (
             <Button
-              size="sm"
               variant="primary"
               disabled={!signedIn || encryptionBlocked || od.signingIn || od.loading}
               onClick={od.handleBackup}
@@ -162,7 +155,6 @@ export default function OneDriveSection() {
           <Input
             id={clientIdControlId}
             aria-describedby={settingRowDescriptionId(clientIdControlId)}
-            size="sm"
             className="od-client__input"
             value={od.draftClientId}
             placeholder={t('clientId.placeholder')}
@@ -179,7 +171,6 @@ export default function OneDriveSection() {
             }}
           />
           <Button
-            size="sm"
             variant="primary"
             loading={od.savingClientId}
             disabled={od.loading || od.unsupported}

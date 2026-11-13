@@ -122,12 +122,7 @@ export function AiCatalogRow() {
       }
     >
       <div className="ai-control">
-        <Button
-          size="sm"
-          variant="ghost"
-          loading={state.status === 'loading'}
-          onClick={handleRefresh}
-        >
+        <Button variant="ghost" loading={state.status === 'loading'} onClick={handleRefresh}>
           {t('catalog.refresh')}
         </Button>
       </div>

@@ -75,7 +75,6 @@ export function AiApiKeyRow({
           id={apiKeyControlId}
           aria-describedby={settingRowDescriptionId(apiKeyControlId)}
           type="password"
-          size="sm"
           className="settings-control settings-control--wide"
           value={value}
           placeholder={
@@ -96,7 +95,6 @@ export function AiApiKeyRow({
           }}
         />
         <Button
-          size="sm"
           variant="primary"
           loading={saving}
           disabled={inputDisabled || value.trim() === ''}
@@ -104,13 +102,7 @@ export function AiApiKeyRow({
         >
           {t('apiKey.save')}
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          loading={clearing}
-          disabled={clearDisabled}
-          onClick={onClear}
-        >
+        <Button variant="ghost" loading={clearing} disabled={clearDisabled} onClick={onClear}>
           {t('apiKey.clear')}
         </Button>
       </div>

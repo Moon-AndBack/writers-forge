@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, IconButton, Tag } from '../../components/ui'
+import { Button, IconButton, Input, Tag } from '../../components/ui'
 import { EmptyState } from '../../components/EmptyState'
 import { LoadErrorState } from '../../components/LoadErrorState'
 import { PencilIcon, RestoreIcon, TrashIcon } from '../../components/icons'
@@ -117,7 +117,7 @@ export default function DataSection() {
                     }
                   >
                     {renaming ? (
-                      <input
+                      <Input
                         className="settings-backup__rename"
                         type="text"
                         value={draftName}
@@ -196,7 +196,7 @@ export default function DataSection() {
         ) : null}
 
         <div className="settings-backup__footer">
-          <Button variant="ghost" size="sm" disabled={busy} onClick={backup.actions.restoreFile}>
+          <Button variant="ghost" disabled={busy} onClick={backup.actions.restoreFile}>
             {t('data.backups.restoreFile')}
           </Button>
           <span className="settings-backup__hint">{t('data.backups.restoreFileHint')}</span>

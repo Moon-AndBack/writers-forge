@@ -157,7 +157,6 @@ export function AiCompressionRow() {
         <Switch
           id={enabledControlId}
           aria-describedby={settingRowDescriptionId(enabledControlId)}
-          size="sm"
           checked={enabled}
           aria-label={t('compression.enabled.label')}
           onChange={(event) => handleToggle(event.target.checked)}
@@ -183,7 +182,6 @@ export function AiCompressionRow() {
             <Input
               id={windowControlId}
               aria-describedby={settingRowDescriptionId(windowControlId)}
-              size="sm"
               className="settings-control settings-control--wide"
               value={model}
               placeholder={t('compression.window.modelPlaceholder')}
@@ -199,7 +197,6 @@ export function AiCompressionRow() {
               }}
             />
             <Input
-              size="sm"
               className="settings-control settings-control--tokens"
               value={tokens}
               placeholder={t('compression.window.tokensPlaceholder')}
@@ -214,7 +211,7 @@ export function AiCompressionRow() {
                 }
               }}
             />
-            <Button size="sm" variant="ghost" loading={busy} onClick={handleSave}>
+            <Button variant="ghost" loading={busy} onClick={handleSave}>
               {t('compression.window.save')}
             </Button>
           </div>
@@ -226,12 +223,7 @@ export function AiCompressionRow() {
                 <li key={entry.model} className="ai-window__item">
                   <ModelName name={entry.model} />
                   <span className="ai-window__tokens">{formatTokenCount(entry.tokens)}</span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={busy}
-                    onClick={() => handleRemove(entry.model)}
-                  >
+                  <Button variant="ghost" disabled={busy} onClick={() => handleRemove(entry.model)}>
                     {t('compression.window.remove')}
                   </Button>
                 </li>

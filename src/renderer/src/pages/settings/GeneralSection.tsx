@@ -56,7 +56,6 @@ export default function GeneralSection() {
         <Select
           id={localeId}
           ariaDescribedBy={settingRowDescriptionId(localeId)}
-          size="sm"
           className="settings-control settings-control--select"
           value={locale}
           options={LOCALE_OPTIONS.map((option) => ({
@@ -76,7 +75,6 @@ export default function GeneralSection() {
         <Switch
           id={autoSaveId}
           aria-describedby={settingRowDescriptionId(autoSaveId)}
-          size="sm"
           checked={autoSave.value}
           aria-label={t('autoSave.label')}
           onChange={(event) => autoSave.setValue(event.target.checked)}
@@ -91,7 +89,6 @@ export default function GeneralSection() {
         <Select
           id={defaultViewId}
           ariaDescribedBy={settingRowDescriptionId(defaultViewId)}
-          size="sm"
           className="settings-control settings-control--select"
           value={defaultView.value}
           options={DEFAULT_VIEW_OPTIONS.map((option) => ({

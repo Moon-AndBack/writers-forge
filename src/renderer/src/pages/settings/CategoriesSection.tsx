@@ -147,7 +147,6 @@ export default function CategoriesSection() {
       <div className="cm">
         <div className="cm-create">
           <Input
-            size="sm"
             className="cm-create__input"
             value={newName}
             placeholder={t('categories.placeholder')}
@@ -165,7 +164,6 @@ export default function CategoriesSection() {
             }}
           />
           <Button
-            size="sm"
             variant="primary"
             onClick={handleCreate}
             disabled={newName.trim() === '' || !api}
@@ -198,7 +196,6 @@ export default function CategoriesSection() {
                   <div className="cm-rename">
                     <Input
                       ref={renameRef}
-                      size="sm"
                       className="cm-rename__input"
                       value={editingName}
                       invalid={renameError}
@@ -217,15 +214,10 @@ export default function CategoriesSection() {
                         }
                       }}
                     />
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      onClick={handleCommitRename}
-                      disabled={busy}
-                    >
+                    <Button variant="primary" onClick={handleCommitRename} disabled={busy}>
                       {tCommon('save')}
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={handleCancelRename}>
+                    <Button variant="ghost" onClick={handleCancelRename}>
                       {tCommon('cancel')}
                     </Button>
                   </div>
@@ -234,7 +226,6 @@ export default function CategoriesSection() {
                     <span className="cm-item__name">{row.name}</span>
                     <div className="cm-item__actions">
                       <Button
-                        size="sm"
                         variant="ghost"
                         aria-label={t('categories.renameAria', { name: row.name })}
                         onClick={() => handleStartRename(row)}
@@ -242,7 +233,6 @@ export default function CategoriesSection() {
                         {t('categories.rename')}
                       </Button>
                       <Button
-                        size="sm"
                         variant="ghost"
                         className="settings-danger-action"
                         aria-label={t('categories.deleteAria', { name: row.name })}

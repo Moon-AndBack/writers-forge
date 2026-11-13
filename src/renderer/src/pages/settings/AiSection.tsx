@@ -127,7 +127,6 @@ export default function AiSection() {
         <Select
           id={providerId}
           ariaDescribedBy={settingRowDescriptionId(providerId)}
-          size="sm"
           className="settings-control settings-control--select"
           value={draft.provider}
           options={[
@@ -153,7 +152,6 @@ export default function AiSection() {
         <Input
           id={baseUrlId}
           aria-describedby={settingRowDescriptionId(baseUrlId)}
-          size="sm"
           className="settings-control settings-control--wide"
           value={draft.baseUrl}
           placeholder={t(isOpencode ? 'baseUrl.placeholderOpencode' : 'baseUrl.placeholder')}
