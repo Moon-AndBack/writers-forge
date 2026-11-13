@@ -258,7 +258,7 @@ import { Button } from '@renderer/components/ui'
 | 名称       | 类型                                           | 默认值        | 说明                                        |
 | ---------- | ---------------------------------------------- | ------------- | ------------------------------------------- |
 | `variant`  | `'primary' / 'secondary' / 'ghost' / 'danger'` | `'secondary'` | 视觉变体                                    |
-| `size`     | `'sm' / 'md' / 'lg'`                           | `'md'`        | 尺寸；`md` 不额外输出尺寸类（高 32px）      |
+| `size`     | `'sm' / 'md' / 'lg'`                           | `'md'`        | 尺寸；`md` 不额外输出尺寸类（高 38px）      |
 | `iconOnly` | `boolean`                                      | `false`       | 方形图标按钮（内容为单个图标）              |
 | `loading`  | `boolean`                                      | `false`       | 加载中：显示 spinner、禁用交互、`aria-busy` |
 | `disabled` | `boolean`                                      | `undefined`   | 原生禁用；与 `loading` 取或                 |
@@ -869,11 +869,12 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 **示例**
 
 ```tsx
-<Tag tone="brand" onClose={() => removeTag(tag.id)}>{tag.name}</Tag>
-<Tag tone="warn" action={<IconButton size="sm" label={t('tag.expand')}><ChevronIcon /></IconButton>}>
-  {label}
+<Tag tone="brand" onClose={() => removeTag(tag.id)}>
+  {tag.name}
 </Tag>
 ```
+
+`action` 位于约 23px 高的 Tag 内，只能放 14px 级微操作按钮（如 `.dossier-rel-pill__action`）；30px 的 `IconButton size="sm"` 会溢出，不要使用。
 
 ### 3.18 Textarea
 

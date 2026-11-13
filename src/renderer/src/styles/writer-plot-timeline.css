@@ -234,8 +234,8 @@
 
 /* 新增节点按钮：hover 仅描边 / 颜色 / 光晕过渡（无缩放）。 */
 .plot-add-node {
-  width: 25px;
-  height: 25px;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
   border-radius: 50%;
   border: 1.5px dashed color-mix(in srgb, var(--text-mute) 55%, var(--pane));
   background: var(--soft-solid);

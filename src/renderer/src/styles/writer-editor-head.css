@@ -186,7 +186,10 @@
    点击切换状态（定稿 → 草稿 / 草稿 → 定稿）；按钮基础样式复位，
    仅保留文字 + 轻底；颜色随 --warn（草稿）/ --ok（定稿）四主题自适应。 */
 .editor-head .doc-status {
-  padding: 1px 8px;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-h-sm);
+  padding: 0 8px;
   border: none;
   border-radius: var(--r-xs);
   background: var(--soft-solid);

@@ -6,7 +6,7 @@
 >
 > 真源顺序：`src/renderer/src/styles/theme.css`（主题 / 语义令牌）→ 本文档（组合公式与档位）→ 页面 / 组件 CSS。代码与本文档不一致时：实现偏差按本文档收敛；文档过期则修正本文档。
 >
-> 最后核对：2026-11-09（HEAD `3186cd7`）
+> 最后核对：2026-11-13（HEAD `181e825`）
 
 ---
 
@@ -114,6 +114,20 @@
 | Textarea（多行）                  | ≥82     | ≥62     | ≥108    | 不纳入  | 不纳入  | 不纳入  | `components/form.css:53-59,104-114`                                      |
 
 > 局部魔法值 `--cw-control-h`（违禁词弹窗）与 `--ai-ctl-h`（AI 面板）已删除：两处同行控件均走组件自身的 sm 档（30px），不再另存高度变量。
+>
+> 尺寸分工：**设置弹窗内全部控件统一 md 38**；**sm 30** 用于右栏、工具条、密集面板；**lg 44** 用于主表单强调行。
+
+### 3.4 chrome 尺寸域
+
+状态栏控件 **24** / 活动栏按钮 **36** / 标题栏 **42**（px）。
+
+chrome 是界面框架（标题栏、活动栏、状态栏），不受控件三档 38 / 30 / 44 约束，高度由框架自身固定：
+
+- 状态栏：本体 36（`styles/statusbar.css:22`），内部控件 24（`styles/statusbar-widgets.css:19,81,237,269`）。
+- 活动栏：模块按钮 36×36（`styles/shell.css:368-372`）。
+- 标题栏：42（`styles/shell.css:91`）；标题栏内按钮按自身尺寸规则，不参与正文控件等高。
+
+新增 chrome 控件必须落在对应域内：不得借用 md / sm / lg 档，也不得把正文控件塞进 chrome。
 
 ---
 
@@ -184,7 +198,7 @@
 }
 ```
 
-- 按钮尺寸统一 **22×22**（`.row-act`，`styles/writer-side-volumes.css:192-200`）。
+- 按钮尺寸统一 **22×22**（`.row-act`，`components/row-actions.css:13-16`）。
 - 右缘偏移现为 2px（章节 / 大纲 / 树形回收站）；`writer-trash.css` 的 6px 平铺档随伏笔 / 灵感回收站下线已无使用者，按操作组与行内衬取值。
 - 主名让位使用 `margin-right`（非 `padding`）：现有 48 / 52 / 72 / 95 四档，按操作组实际宽度推导；新增行先量操作组宽度再取值。
 - 代表位置：`writer-side-volumes.css:155-196,207-229`、`writer-outline.css:92-136`、`writer-trash.css:349-377`、`writer-trash-tree.css`。
@@ -368,6 +382,12 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 | 11  | 固定态活动栏轻微磨砂               | `styles/shell.css:336-355`                                                                                                                                             | `backdrop-filter: blur(10px) saturate(140%)` + `--pane` 55%      | 经用户确认的特例：固定态需透出桌面渐变                                | 仅 `body.act-pinned .activitybar`                               |
 | 12  | 封面白字 / 活动胶囊白点            | `styles/book-form.css:82`、`styles/bookshelf.css:199,305,323`、`styles/shell.css:287`                                                                                  | `#fff`                                                           | 固定深色封面 / 品牌底上的文本与指示点，白色对比恒优                   | 仅上述封面 / 活动胶囊内部                                       |
 | 13  | 既有微圆角 / 胶囊全圆              | `components/segmented.css:15,74`、`components/display-extras.css:142,148`、`components/surface.css:355,362`、`styles/entity-highlight.css:20`、`styles/writer.css:356` | `1/2/3/6/10/16px` 与 `99/999px`                                  | 细分隔 / 分段容器 / 色板与头像残留 / 胶囊全圆；本轮不重构             | 仅原地保留；新增只用 `--r-xs` / `--r-lg` / `--chip-pill-radius` |
+| 14  | `.timeline-origin-head .wf-input`  | `styles/writer-timeline.css:78-86`                                                                                                                                     | `height: auto`（≈45）                                            | 字段根承担卡片外观，内衬由 section 提供，高度随内容                   | 仅时间线起点卡头输入框                                          |
+| 15  | `.act-filter__search-btn`          | `styles/shell-activity-filter.css:94-109`                                                                                                                              | 40（`--filter-input-h + 2px`）                                   | 与 38 搜索框刻意上下各外露 1px                                        | 仅活动栏筛选浮层                                                |
+| 16  | `.dossier-rel-pill__action`        | `styles/writer-dossier-relation.css:111-123`                                                                                                                           | 14×14                                                            | 关系胶囊内微操作                                                      | 仅关系胶囊                                                      |
+| 17  | `.dossier-rel-remove`              | `styles/writer-dossier-relation.css:155-170`                                                                                                                           | 18×18                                                            | 自定义字段删除微操作                                                  | 仅字段键值行                                                    |
+| 18  | 展示类胶囊                         | `components/surface.css:170-184,239-254`、`styles/statusbar-widgets.css:287-299`                                                                                       | `.wf-tag` ≈23 / `.wf-badge` ≈21 / `.st-meta` ≈25                 | 展示类，非交互控件，不参与控件等高                                    | 纯展示；不得用于可点击控件                                      |
+| 19  | `.row-act`                         | `components/row-actions.css:13-16`                                                                                                                                     | 22×22                                                            | 行操作按钮域，见 §4.3                                                 | 仅行内浮现操作                                                  |
 
 ---
 
@@ -393,7 +413,7 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 ## 11. 提交前自检
 
 - [ ] 颜色 / 圆角 / 阴影 / 时长 / 缓动是否全部来自令牌？新增字面量是否已登记例外？
-- [ ] 控件高度是否落在 md 38 / sm 30 / lg 44？同一行控件是否等高？
+- [ ] 正文控件高度是否落在 md 38 / sm 30 / lg 44？chrome 是否落在 24 / 36 / 42？同一行控件是否等高？
 - [ ] 字号是否在白名单内？正文是否走 `--doc-*`？
 - [ ] 列表行内衬、选中态、hover 回落是否符合 §4？
 - [ ] 三态顺序是否为 loading → error → empty？已有数据时错误是否未替换内容？
@@ -405,4 +425,4 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 
 ---
 
-最后核对：2026-11-09
+最后核对：2026-11-13

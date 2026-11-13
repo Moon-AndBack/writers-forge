@@ -110,7 +110,7 @@
 /* 图标按钮（紧凑工具条）：正方格，无文字，tooltip 提供文案。 */
 .wf-format-pop__btn--icon {
   padding: 0;
-  min-width: 28px;
+  min-width: var(--control-h-sm);
 }
 
 .wf-format-pop__btn-glyph {
@@ -131,8 +131,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
-  padding: 4px 8px;
+  min-height: var(--control-h-sm);
+  padding: 0 8px;
   border: 1px solid transparent;
   border-radius: var(--r-xs);
   font-family: inherit;
@@ -225,7 +225,7 @@
 .wf-format-pop__num {
   flex: 1;
   min-width: 0;
-  height: 26px;
+  height: var(--control-h-sm);
   padding: 0 8px;
   border: 1px solid var(--line);
   border-radius: var(--r-xs);
@@ -243,7 +243,7 @@
 /* 链接地址输入 */
 .wf-format-pop__url {
   width: 100%;
-  height: 28px;
+  height: var(--control-h-sm);
   padding: 0 8px;
   border: 1px solid var(--line);
   border-radius: var(--r-xs);
@@ -337,8 +337,8 @@
 .wf-color-grid .wf-format-pop__btn--icon {
   min-width: 0;
   width: 100%;
-  height: 28px;
-  min-height: 28px;
+  height: var(--control-h-sm);
+  min-height: var(--control-h-sm);
   padding: 0;
   overflow: hidden;
   background: transparent;
