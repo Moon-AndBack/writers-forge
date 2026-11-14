@@ -11,6 +11,9 @@ const settings = {
     title: '基础偏好',
     description: '软件的通用行为与启动偏好'
   },
+  nav: {
+    aria: '设置分区导航'
+  },
   locale: {
     label: '界面语言',
     description: '选择软件的显示语言',
@@ -125,6 +128,14 @@ const settings = {
     duplicate: '已存在同名分类（含官方分类）',
     inUse: '已被 {{count}} 本书使用，无法删除',
     deleteFailed: '删除失败，请重试'
+  },
+  reset: {
+    label: '重置为默认',
+    confirmTitle: '重置为默认',
+    confirmMessage:
+      '将把界面语言、自动保存、默认打开视图、主题模式与稿纸横线五项恢复默认值（语言改为跟随系统）。不会删除书籍、章节、大纲、实体、自定义分类或备份文件，也不会退出 AI 与 OneDrive 登录。默认打开视图在下次启动时生效。',
+    confirmAction: '重置',
+    doneToast: '已重置为默认设置'
   }
 }
 

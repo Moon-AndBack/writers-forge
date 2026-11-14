@@ -10,6 +10,9 @@ const settings = {
     title: 'Basic preferences',
     description: 'General behavior and startup preferences'
   },
+  nav: {
+    aria: 'Settings sections'
+  },
   locale: {
     label: 'Language',
     description: 'Choose the display language of the app.',
@@ -128,6 +131,14 @@ const settings = {
     duplicate: 'A category with the same name already exists (including official ones)',
     inUse: 'Used by {{count}} book(s), cannot be deleted',
     deleteFailed: 'Delete failed, please retry'
+  },
+  reset: {
+    label: 'Reset to defaults',
+    confirmTitle: 'Reset to defaults',
+    confirmMessage:
+      'This restores five preferences to their defaults: language, auto save, default view, theme mode and paper lines (language follows the system). It will not delete books, chapters, outlines, entities, custom categories or backup files, and will not sign you out of AI or OneDrive. The default view takes effect on the next launch.',
+    confirmAction: 'Reset',
+    doneToast: 'Settings reset to defaults'
   }
 } satisfies ZhCNResources['settings']
 

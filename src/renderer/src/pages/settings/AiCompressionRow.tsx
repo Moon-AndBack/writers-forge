@@ -165,6 +165,7 @@ export function AiCompressionRow() {
 
       <SettingRow
         controlId={windowControlId}
+        className="settings-row--stack"
         label={t('compression.window.label')}
         description={
           <>

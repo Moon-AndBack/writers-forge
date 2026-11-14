@@ -359,7 +359,7 @@ const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
 - `onedrive:credentials:`：`onedrive:credentials:v1`（safeStorage 加密的 token 载荷）。
 - **明确放行**：`onedrive:account`（展示用邮箱）。新增敏感域必须在此登记，`startsWith` 对完整键等价。
 
-其余非敏感键由渲染层直接读写，代表：`locale`、`theme`、`windowMaterial`、`activityBarPinned`、`rightPaneHidden`、`typography`、`penName`、`onboardingCompleted`、`timeline:list[:bookId]` / `timeline:active[:bookId]`（书级动态键）。教学书重灌守卫键 `chapterData:v141:migrated` 同样存在此表，但只由主进程读写。
+其余非敏感键由渲染层直接读写，代表：`locale`、`theme`、`windowMaterial`、`activityBarPinned`、`rightPaneHidden`、`typography`、`penName`、`onboardingCompleted`、`timeline:list[:bookId]` / `timeline:active[:bookId]`（书级动态键）。教学书重灌守卫键 `chapterData:v153:migrated` 同样存在此表，但只由主进程读写。
 
 ## 8. 类型真源链路
 

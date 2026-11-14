@@ -60,6 +60,7 @@ export function AiApiKeyRow({
   return (
     <SettingRow
       controlId={apiKeyControlId}
+      className="settings-row--stack"
       label={t('apiKey.label')}
       description={
         <>

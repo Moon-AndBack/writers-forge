@@ -2,32 +2,134 @@
    设置弹窗（SettingsDialog）样式
    由 pages/settings/SettingsDialog.tsx 直接 import（在组件库样式之后，故可
    覆盖 `.wf-card` 的高度上限与 `.wf-window__body` 的内衬假设）。
-   内容渲染在 `Modal` 的 `.wf-window--xl`（880px）面板内：标题区 / 关闭按钮由
-   Window 提供，滚动交给 `.wf-window__body`（单层滚动），本文件只负责内容排版。
-   布局为单列（无左侧分区导航），卡片自上而下排列。视觉基线对齐组件库卡片规格
-   （surface.css 的 .wf-card__title / 副标题）与设置行排版；颜色一律取
-   styles/theme.css 令牌 / color-mix 派生（四主题自适应），控件复用 components/ui
-   （Button / Select / Switch / Card）；卡片行无 hover 位移 / 缩放（遵守 §8）。
+   内容渲染在 `Modal` 的 `.wf-window--xl`（880px）面板内：标题区 / 关闭按钮 / 底栏
+   由 Window 提供。布局为两栏：左侧 184px 分区导航（五项），右侧内容区一次一页；
+   六个分区常驻渲染，仅切换 display。弹窗高度固定（`min(680px, 100vh - 90px)`），
+   切换分区不跳动；滚动只发生在右侧 `.settings-content` 一层（弹窗 body 覆写为
+   `padding: 0; overflow: hidden`，header / footer 保持自然高）。内容列约 630–656px，
+   控件列宽默认 280。两栏只用背景色差区分（导航 `--soft-solid` / 内容 `--pane`，
+   无分隔线）。卡片视觉基线对齐组件库卡片规格（surface.css 的
+   .wf-card__title / 副标题）与设置行排版；颜色一律取 styles/theme.css 令牌 /
+   color-mix 派生（四主题自适应），控件复用 components/ui（Button / Select /
+   Switch / Card）；卡片行无 hover 位移 / 缩放（遵守 §8）。
    ============================================================ */
 
-/* ---------- 内容列（占满面板可用宽，不再居中压缩） ---------- */
-.settings-container {
-  /* `.wf-window--xl` 880px 扣掉 `.wf-window__body` 左右各 20px 内衬后为 840px；
-     容器直接铺满，无需再设 max-width。 */
-  max-width: none;
-  /* 行内控件列宽（Select / 宽输入 / 模型下拉共用）：原 176 / 240 / 320 三处
-     散点收敛为此单一变量，改一处即整体对齐；tokens 等特窄控件另行覆写。
-     窄窗（最小窗口 902×764）下由文件末尾 media query 收窄。 */
-  --settings-control-w: 320px;
-  margin: 0 auto;
+/* ---------- 弹窗两栏外壳（左导航 + 右内容） ---------- */
+/* 固定高度：680px 为常规目标高；`calc(100vh - 90px)` 对应避标题栏模式
+   （顶部下移 42px + 上下各 24px 内边距，见 modal.css:58-66），最小窗口
+   （764px 高）时落到 674px。高度固定后切换分区不跳动，只有窗口尺寸变化才变。 */
+.wf-settings-modal {
+  height: min(680px, calc(100vh - 90px));
+}
+
+/* 弹窗 body 原本承担整页滚动与 4/20/16 内衬；两栏后由右侧内容区单独滚动，
+   body 只做横向布局容器；header / footer 不参与拉伸。 */
+.wf-settings-modal .wf-window__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.settings-shell {
+  /* 导航列宽：最小窗口（902px）下弹窗面板约 854px，扣掉导航后内容列仍 ≥670px。 */
+  --settings-nav-w: 184px;
+  /* 行内控件列宽（Select / 宽输入 / 模型下拉共用）。两栏后内容列约 630–656px，
+     默认 280 保证左侧说明与右侧控件都不被压缩；窄窗在文件末尾 media query 再收窄。 */
+  --settings-control-w: 280px;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+/* ---------- 左侧导航（五项） ---------- */
+/* 两栏只用背景色差区分：导航铺 --soft-solid（软底侧栏），右侧内容为 --pane；
+   不加右描边 / 侧投影 / ::after 竖线。选 --soft-solid 作导航底而非反过来，
+   是因为内容区里的分区卡本身就是 --soft-solid —— 若内容区也用软底，卡片会与
+   背景同色糊平；反过来「软底导航 + 面板底内容」两层都清晰。 */
+.settings-nav {
+  flex: none;
   display: flex;
   flex-direction: column;
+  gap: 4px;
+  width: var(--settings-nav-w);
+  padding: 4px 12px 16px 20px;
+  background: var(--soft-solid);
+}
+
+/* 行规格按 AGENTS §8.5：内衬 9×10、gap 10、--r-lg、--fs-body / 500；
+   最小行高取控件档 32，保证可点区域。hover 取 --control-on-soft（软底上的
+   控件层）：亮色主题下 --soft-hover-solid 与 --soft-solid 同值（均 6%），
+   直接用它会让 hover 完全不可见（§4.1「软底卡内用 --control-on-soft」）。 */
+.settings-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--control-h-md);
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--r-lg);
+  background: none;
+  font-size: var(--fs-body);
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+  color: var(--text-dim);
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.settings-nav__item:hover {
+  background: var(--control-on-soft);
+  color: var(--text);
+}
+
+/* 选中态：品牌 12% + 导航软底混合 + 品牌文字 600（§8.5 公式；行位于软底容器，
+   混合基底取 --soft-solid）。不另造色条 / 下划线；选中行 hover 回落中性底，
+   叠加不产生第三种颜色。 */
+.settings-nav__item[aria-current='page'] {
+  background: color-mix(in srgb, var(--brand) 12%, var(--soft-solid));
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.settings-nav__item[aria-current='page']:hover {
+  background: var(--control-on-soft);
+}
+
+/* 行 / 分段项统一内嵌焦点环（§4.5 offset -1px，避免被栏宽裁切）。 */
+.settings-nav__item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: -1px;
+}
+
+/* ---------- 右侧内容区（单层滚动） ---------- */
+/* 面板高度固定后，内容超出只在这里滚动；导航栏保持整列高度、不随内容滚动。 */
+.settings-content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 4px 20px 16px;
+  background: var(--pane);
+}
+
+/* 一次只显示一页：所有面板常驻 DOM，仅切换 display（仿 .sp-panel.is-active），
+   避免条件渲染卸载导致 AI 草稿 / 备份列表 / 登录态重新加载。 */
+.settings-panel {
+  display: none;
+  flex-direction: column;
   gap: 18px;
-  padding-top: 4px;
+}
+
+.settings-panel.is-active {
+  display: flex;
 }
 
 /* ---------- 分区卡片（复用 Card，内容自带边距） ---------- */
-/* 覆盖 `surface.css` 中 `.wf-card { max-height: 240px }`：四个分组的累积高度
+/* 覆盖 `surface.css` 中 `.wf-card { max-height: 240px }`：单个分组的累积高度
    远超该值（「基础偏好」单组已约 268px），弹窗可视区更小，必须让卡片按内容
    自然增高（`min-height: 120px` 保留）。双类选择器特异性高于 `.wf-card`，
    不受样式导入顺序影响。 */
@@ -119,6 +221,24 @@
   margin-left: auto;
 }
 
+/* 宽控件行（API Key / 自定义上下文窗口）：控件换到说明下方整行排列，
+   避免两栏后内容列变窄时把左侧说明压成一条竖线。 */
+.settings-row--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.settings-row--stack .settings-row__control {
+  margin-left: 0;
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.settings-row--stack .ai-control {
+  flex-wrap: wrap;
+}
+
 /* Select 默认 width:100%，此处统一收窄为控件列宽（特异性高于 .wf-select）。 */
 .settings-row__control .settings-control--select {
   width: var(--settings-control-w);
@@ -138,9 +258,9 @@
 }
 
 /* ---------- 控件列宽 ----------
-   行内 Select / 宽输入原为 176 / 320px 两个散点，现统一取
-   `.settings-container` 的单一变量 `--settings-control-w`。
-   悬停反馈全部交给控件自身（颜色 / 描边 / 阴影），无位移 / 缩放（§8）。 */
+   行内 Select / 宽输入统一取 `.settings-shell` 的单一变量 `--settings-control-w`
+   （默认 280，窄窗收窄）。悬停反馈全部交给控件自身（颜色 / 描边 / 阴影），
+   无位移 / 缩放（§8）。 */
 .settings-row__control .settings-control--wide {
   width: var(--settings-control-w);
 }
@@ -154,9 +274,9 @@
 
 /* 「上下文压缩」手填窗口：模型 ID + tokens + 保存，下方列出已保存覆写。
    纵向块（不参与卡片 hover 动画，无位移 / 缩放，§8）。
-   固定 420px 时内部「320 输入 + 96 tokens + 保存按钮」会被 flex 压缩，故给足
-   480px；`max-width: 100%` 作窄窗兜底。父级 `.settings-row__control` 是自动宽度
-   的收缩盒，此处用定宽而非 `width: 100%`，避免百分比随内容/占位文案浮动。 */
+   固定 480px 时内部「280 输入 + 96 tokens + 保存按钮」仍宽裕；`max-width: 100%`
+   作窄窗兜底。父级 `.settings-row__control` 是自动宽度的收缩盒，此处用定宽而非
+   `width: 100%`，避免百分比随内容/占位文案浮动。 */
 .ai-window {
   display: flex;
   flex-direction: column;
@@ -166,7 +286,7 @@
   max-width: 100%;
 }
 
-/* 模型 ID 吃掉剩余宽度（480 − 96 tokens − 保存按钮 − 两个 8px 间距 ≈ 320），
+/* 模型 ID 吃掉剩余宽度（480 − 96 tokens − 保存按钮 − 两个 8px 间距），
    避免与 tokens / 按钮并排时被压缩。 */
 .ai-window .ai-control .settings-control--wide {
   flex: 1 1 auto;
@@ -230,15 +350,10 @@
 }
 
 /* ---------- 窄窗适配（最小窗口 902×764） ----------
-   `.wf-window--xl` 上限 880px，窗口收到最小宽度时面板仅约 854px，减去 body 内衬
-   与行内边距后行宽约 778px。此时 320px 控件列 + 480px 手填窗口会把左侧说明挤到
-   约 280px，故按比例收窄控件列，保证说明文字与输入框都不被压缩。 */
+   `.wf-window--xl` 上限 880px，窗口收到最小宽度时面板仅约 854px，扣掉 184px 导航
+   与两侧内衬后内容列约 630px。控件列再收一档，保证说明文字与输入框都不被压缩。 */
 @media (max-width: 960px) {
-  .settings-container {
-    --settings-control-w: 280px;
-  }
-
-  .ai-window {
-    max-width: 440px;
+  .settings-shell {
+    --settings-control-w: 240px;
   }
 }

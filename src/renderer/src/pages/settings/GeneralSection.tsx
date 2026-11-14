@@ -7,6 +7,11 @@ import { settingRowDescriptionId } from './settingRowIds'
 import { useLocale } from '../../i18n/context'
 import { useSettingsValue } from './useSettingsValue'
 import { DEFAULT_VIEW_OPTIONS, resolveDefaultView, type DefaultView } from './defaultView'
+import {
+  AUTO_SAVE_DEFAULT,
+  AUTO_SAVE_SETTING_KEY,
+  decodeAutoSave
+} from '../writer/useAutoSaveEnabled'
 
 /** 界面语言档位（值写入 settings 键 `locale`；label 走 i18n，语言自称保留原文）。 */
 const LOCALE_OPTIONS = [
@@ -38,9 +43,7 @@ const DEFAULT_VIEW_LABEL_KEYS: Record<DefaultView, DefaultViewLabelKey> = {
 export default function GeneralSection() {
   const { t } = useTranslation('settings')
   const { locale, setLocale } = useLocale()
-  const autoSave = useSettingsValue('autoSave', true, (raw) =>
-    raw === null || raw === '' ? true : raw === 'true'
-  )
+  const autoSave = useSettingsValue(AUTO_SAVE_SETTING_KEY, AUTO_SAVE_DEFAULT, decodeAutoSave)
   const defaultView = useSettingsValue('defaultView', 'bookshelf', resolveDefaultView)
   const localeId = useId()
   const autoSaveId = useId()

@@ -275,6 +275,7 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 32 
 - **MUST** 对话框一律组合 `Modal + Window`：`Modal` 负责遮罩、焦点陷阱、嵌套栈与进出场；`Window` 负责面板、标题区、内容区与底栏。
 - **MUST** 弹窗宽度只用四档：**360 / 480 / 640 / 880**（`Window` 的 `sm / md / lg / xl`，`components/window.css:28-43`）。
 - **MUST** 底栏按钮 `min-width: 104px`（`--wf-window-action-min-w`，`window.css:14,126-127`）。
+- 设置弹窗两栏布局：左侧五项导航（基础偏好 / 外观与主题 / AI 助手 / 自定义分类 / 数据与备份）固定 184px、`--soft-solid` 软底，右侧内容 `--pane`，两栏只用背景色差区分（无分隔线）；六个分区常驻渲染仅切换 `display`，一次一页；面板高度固定 `min(680px, 100vh - 90px)`，切换分区不跳动。内容列约 630–656px，控件列宽 280（`styles/settings.css`）。
 - **MUST** 弹窗底栏按钮顺序为「取消 / 次要动作在左，主动作在右」；危险动作使用 `Button variant="danger"`，不得只换文字色。
 
 ### 6.2 z 层级表
