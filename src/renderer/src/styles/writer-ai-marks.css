@@ -1,0 +1,81 @@
+/* ============================================================
+   写作视图 · 编辑器标记与状态栏计数
+   ------------------------------------------------------------------
+   承接原 writer-ai.css 末尾的两个独立板块：
+   - 编辑器失焦期选区镜像（.ai-selection-mirror；AI / 链接面板共用隐藏规则）；
+   - 违禁词命中标注（.wf-clean-hit）与状态栏「N 处违禁词」胶囊（.wf-clean-count）。
+   与 writer-ai.css（外壳 / 输入区）、writer-ai-message.css（对话记录 /
+   消息气泡）、writer-ai-markdown.css（Markdown 渲染）共同构成 AI 面板
+   所在写作视图的样式。规则原样迁出，选择器、属性值与相对顺序不变。
+   ============================================================ */
+
+/* ============================================================
+   编辑器失焦期选区镜像（.ai-selection-mirror）
+   ------------------------------------------------------------------
+   面板聚焦在输入框时，ProseMirror 不再渲染原生选区（blur 后
+   `selectionToDOM` 直接返回），正文里看不出「会带进 AI 的是哪段」。
+   故失焦期以 Decoration.inline 给该段铺浅品牌色底
+   （见 components/editor/linkSelectionMirror.ts 的 showSelectionMirror）。
+
+   与原生 ::selection 对齐（同底色、同几何）：
+   - 不设 border-radius：Chromium 的 ::selection 不支持圆角，原生选区恒为
+     直角；镜像若带圆角，短选区 / 行首行尾一眼就能看出两种形状。
+   - 不设 padding / border：inline 盒的背景只铺 content area（字体度量高），
+     与原生选区按文本片段绘制的高度一致；加 padding 会让色块变胖并撑高行盒
+     （正文抖动）。
+   - 跨行沿用默认 box-decoration-break: slice，每行各自成块，与原生选区逐行
+     绘制一致（无 padding / border / 圆角时 slice 与 clone 视觉等价）。
+
+   聚焦期隐藏：原生选区由 ProseMirror 自绘，饰带再叠一层会双重高亮。
+   隐藏**只能**用 CSS（`.ProseMirror-focused` 在 focus 时由 ProseMirror 添加、
+   blur 时移除）：聚焦由点击正文触发，若在 focus 帧 dispatch 清理事务，
+   `selectionToDOM` 会把旧选区写回 DOM，吞掉该次点击的落点。
+   只清底色、不卸载节点 → 零布局抖动；无 transform（AGENTS §8）。
+   ============================================================ */
+.ai-selection-mirror {
+  background: var(--selection-bg);
+}
+
+/* 两条镜像（AI / 链接面板）聚焦期统一隐藏：聚焦时原生选区已可见，叠加即双重高亮。 */
+.ProseMirror-focused .ai-selection-mirror,
+.ProseMirror-focused .wf-link-mirror {
+  background: none;
+}
+
+/* ============================================================
+   违禁词命中标注（.wf-clean-hit）+ 状态栏计数（.wf-clean-count）
+   ------------------------------------------------------------------
+   0 态（`is-zero`）与「本章命中清单」弹层样式已迁至 clean-word-hits.css，
+   本文件只保留命中波浪线规则与状态栏胶囊的危险色主态。
+   只提示不阻断：命中由 Decoration.inline 铺「波浪下划线」
+   （见 chapters/proofreadMark.ts 的 CleanWordMark），不改文档内容、
+   不动选区、不拦输入。
+
+   与实体高亮共存：`.entity-highlight` 只设 background / color，
+   本类只设 text-decoration，两者可叠在同一文本上（互不覆盖）。
+
+   与伏笔标记（`.wf-foreshadow-mark`，同为 text-decoration）**同区间**时：
+   同元素只能有一条 text-decoration，后加载者胜出（foreshadow-mark.css 在
+   writer.css 里排在 writer-ai-marks.css 之后）。故本规则加 `.ProseMirror` 前缀
+   提到 (0,2,0)，稳压伏笔的 (0,1,0)——重叠区间始终显示红色波浪线，不受
+   @import 顺序影响；不重叠的伏笔区间视觉不变。
+
+   只取 --danger 主题令牌（四主题各自定义），无 transform（AGENTS §8）。
+   thickness / offset 固定：正文 18px 字号下波浪线落在基线下 3px，
+   不压下一行、不与实体高亮的浅底边缘打架。
+   ============================================================ */
+.ProseMirror .wf-clean-hit {
+  text-decoration: underline wavy var(--danger);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+/* 状态栏「N 处违禁词」胶囊：复用 .st-pill-btn 胶囊底，仅把文字色换成 --danger。
+   实际类名为 `.st-pill-btn.wf-clean-count`（见 CleanWordHitsPill.tsx），双类
+   选择器压过 `.st-pill-btn` 的 color；hover / is-open 态单列（各加一个类），
+   保证交互态仍是危险色，替代原先的内联 `style={{ color }}`。 */
+.st-pill-btn.wf-clean-count,
+.st-pill-btn.wf-clean-count:hover:not(:disabled),
+.st-pill-btn.wf-clean-count.is-open {
+  color: var(--danger);
+}

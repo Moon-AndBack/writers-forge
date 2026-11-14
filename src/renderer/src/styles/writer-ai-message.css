@@ -1,0 +1,205 @@
+/* ============================================================
+   写作视图 · 右栏「AI」页签面板 — 对话记录与消息气泡
+   ------------------------------------------------------------------
+   与 writer-ai.css（外壳 / 输入区）、writer-ai-markdown.css（Markdown
+   渲染）、writer-ai-marks.css（编辑器标记）共同构成 AI 面板样式。
+   本文件负责对话记录卡、压缩分隔行、user / assistant 气泡、携带内容
+   预览、展开 / 收起、错误 / 中断 / 跨章标记、操作行与流式光标；
+   流式光标只动 opacity（AGENTS §8）。规则自 writer-ai.css 原样迁出，
+   选择器与相对顺序不变。
+   ============================================================ */
+
+/* ---------- 对话记录（占满剩余高度，自身滚动） ----------
+   底色对齐右栏其余列表卡（`.pane-region` 口径：--soft-solid 软底 + --r-lg 圆角），
+   不再透出 `.rp-panel` 的栏底。气泡在此底之上再分层（见下）：
+   user = --control-on-soft（软底上再深 / 再亮一档的层）+ 37% 描边；
+   assistant = --pane（内容卡层），不加描边，靠与容器软底的明度差区分。
+   `gap` 已承接原「角色标签」腾出的纵向留白（气泡上方不再有一行小字）。 */
+.ai-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px;
+  border-radius: var(--r-lg);
+  background: var(--soft-solid);
+}
+
+/* 压缩分隔行：不是气泡，只做一条居中细线 + 小字说明（不写进正文、不进模型）。 */
+.ai-chat__divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+  color: var(--text-mute);
+  text-align: center;
+}
+
+.ai-chat__divider::before,
+.ai-chat__divider::after {
+  content: '';
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--line);
+}
+
+/* ---------- 消息气泡 ----------
+   无角色标签：user / assistant 仅靠对齐方向与底色区分（无 transform，§8）。
+   `gap` 只作用于「气泡 ↔ 回插按钮行」。 */
+.ai-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* 功能胶囊：Tag 默认圆角 --r-lg，这里覆写为胶囊形（999px）。
+   只改圆角 / 间距，不做位移（§8）。 */
+.wf-tag.ai-msg__chip {
+  margin-bottom: 6px;
+  border-radius: var(--r-pill);
+}
+
+/* 携带内容预览：分隔线区分「用户输入」与「选中正文 / 卷章名」。 */
+.ai-msg__attach {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--control-on-soft-line);
+}
+
+.ai-msg__attach-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text-dim);
+}
+
+/* 3 行截断：只裁切视觉，不隐藏文本（展开后完整显示）。 */
+.ai-msg__text.is-clamped,
+.ai-msg__attach-text.is-clamped {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* 气泡内「展开 / 收起」：纯文本按钮（不引入 Button 的按压位移）。 */
+.ai-msg__toggle {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  font-size: var(--fs-micro);
+  line-height: 1.6;
+  color: var(--brand);
+  background: transparent;
+  cursor: pointer;
+}
+
+.ai-msg__toggle:hover {
+  text-decoration: underline;
+}
+
+.ai-msg--user {
+  align-items: flex-end;
+}
+
+.ai-msg--assistant {
+  align-items: flex-start;
+}
+
+.ai-msg__bubble {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--r-lg);
+  font-size: var(--fs-body);
+  line-height: 1.65;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* user：右侧气泡，底取「软底容器上的控件」层（--control-on-soft，与容器
+   --soft-solid 差一档，明度比约 1.16:1），不加描边（§1.2），四套主题均清晰可辨；
+   宽度不超过容器 88%。 */
+.ai-msg--user .ai-msg__bubble {
+  max-width: 88%;
+  background: var(--control-on-soft);
+  color: var(--text);
+}
+
+/* assistant：左侧整宽卡面（--pane 内容卡层，与 --soft-solid 容器形成明度差），
+   便于阅读 Markdown；不加描边（§1.2）。 */
+.ai-msg--assistant .ai-msg__bubble {
+  width: 100%;
+  background: var(--pane);
+}
+
+.ai-msg__text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ai-msg__error {
+  margin: 0;
+  font-size: var(--fs-micro);
+  line-height: 1.6;
+  color: var(--danger);
+}
+
+/* 错误气泡只换描边色，不改底色（保持可读性）。 */
+.ai-msg__bubble.is-error {
+  box-shadow: inset 0 0 0 1px var(--danger);
+}
+
+/* 中断 / 跨章来源标记：与错误原因并列的小字状态说明（结构化，不写进正文），左侧竖线表意
+   「截断」或「非本章」，只用颜色 / 文字，不做位移或动画（§8）。 */
+.ai-msg__interrupted,
+.ai-msg__foreign {
+  margin: 6px 0 0;
+  padding-left: 6px;
+  border-left: 2px solid var(--line);
+  font-size: var(--fs-micro);
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.ai-msg__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 2px;
+}
+
+/* 流式光标：只做透明度闪烁，不位移 / 不缩放。 */
+.ai-msg__cursor {
+  display: inline-block;
+  width: 6px;
+  height: 12px;
+  margin-left: 2px;
+  vertical-align: -1px;
+  border-radius: 1px;
+  background: var(--brand);
+  animation: ai-cursor-blink 1s steps(2, start) infinite;
+}
+
+/* 无正文时单独占位（不撑出空段落）。 */
+.ai-msg__cursor--solo {
+  margin-left: 0;
+}
+
+@keyframes ai-cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.15;
+  }
+}

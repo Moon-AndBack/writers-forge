@@ -10,7 +10,7 @@ import type { ApplyActions } from './panelUtils'
 import type { AiConversationMessage } from './chatRuntime'
 
 /**
- * Markdown 元素覆写：全部只挂类名（样式见 `styles/writer-ai.css`），
+ * Markdown 元素覆写：全部只挂类名（样式见 `styles/writer-ai-markdown.css`），
  * 不用内联样式（§8：颜色 / 字号统一由主题令牌控制）。
  * 覆写对象置于模块层，引用稳定，避免流式追加时每帧重建组件树。
  */

@@ -32,7 +32,7 @@ import { publishProofreadHits, releaseProofreadHits } from './proofreadHits'
  * `tr.docChanged` 时 `map` 跟随；插件经扩展静态注册（不改 `components/editor/**`）。
  */
 
-/** 命中饰带类名（样式见 `styles/writer-ai.css`，四主题经 `--danger` 自适应）。 */
+/** 命中饰带类名（样式见 `styles/writer-ai-marks.css`，四主题经 `--danger` 自适应）。 */
 export const CLEAN_HIT_CLASS = 'wf-clean-hit'
 
 /** 命中词 data 属性名（供详情面板 / 悬停取词消费）。 */

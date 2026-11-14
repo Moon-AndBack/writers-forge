@@ -136,7 +136,7 @@
 | `--control-on-soft-line`                    | 37%                      | 22%       | 37%                 | 37%                  |
 | `--seg-thumb-bg`（分段选中底板）            | `--brand` 19% + `--pane` | 18%       | 19%                 | 24%                  |
 
-- 半透明组中**只有 `--soft` 仍有消费点**（`writer-ai.css` 2 处）；`--soft-hover`、`--soft-press`、`--pill-bg`、`--pill-bg-hover` 早已被 `-solid` 取代、无任何消费点，已于本次清理从四主题块删除，新代码不要使用。light / sage / honey 的 `--soft-solid` **刻意加深到 6%**（左栏分区容器卡口径，全库共享），故 light 的 `--soft-solid` 与 `--soft-hover-solid` 同值，这是有意为之。
+- 半透明组中**只有 `--soft` 仍有消费点**（`writer-ai-markdown.css` 2 处）；`--soft-hover`、`--soft-press`、`--pill-bg`、`--pill-bg-hover` 早已被 `-solid` 取代、无任何消费点，已于本次清理从四主题块删除，新代码不要使用。light / sage / honey 的 `--soft-solid` **刻意加深到 6%**（左栏分区容器卡口径，全库共享），故 light 的 `--soft-solid` 与 `--soft-hover-solid` 同值，这是有意为之。
 - 混色分两派：light / dark 用 `var(--text)`（dark 下白字混入 = 提亮）；sage / honey 固定用本主题基色 `rgb(20,60,30)` / `rgb(80,60,10)` 以保住绿调 / 暖黄调，改用 `--text` 会掉色相。
 - **控件 on-soft 的方向相反**：light 下 `--text` 为深色，13% 混入使控件**更深**；dark 下为白色，14% 混入使控件**更亮**。统一取向是「**默认态无描边，边界靠底色差**」：浅色系约 1.13–1.16:1（已去掉旧 10% + 37% 内描边的第二套语言），dark 约 1.35:1；`--control-on-soft-line` 只用于 focus / invalid / checked 等状态线。微调只需改这三行比例，且四套主题各自显式定义，不依赖 `:root` 继承。
 - **分段控件选中底板**（`--seg-thumb-bg`）不混 `--soft-solid` 而混 `--pane`：thumb 没有「行位于卡片内」的背景差可依赖，且已去掉 1px 品牌描边，比例需高于 §8.5 列表行的 12%——light / sage 19%、dark 18%、honey 24%（honey 品牌色与纸面明度最接近）。其余仍由品牌文字 + 600 字重表达选中。

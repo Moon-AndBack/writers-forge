@@ -29,7 +29,7 @@ import { AiComposerStatus } from './ai/AiComposerStatus'
 import { useContextUsage } from './ai/useContextUsage'
 import { useEditorMetrics } from './ai/useEditorMetrics'
 
-/** 失焦期选区镜像饰带类名（样式见 `styles/writer-ai.css` 的 `.ai-selection-mirror`）。 */
+/** 失焦期选区镜像饰带类名（样式见 `styles/writer-ai-marks.css` 的 `.ai-selection-mirror`）。 */
 const AI_SELECTION_MIRROR_CLASS = 'ai-selection-mirror'
 
 export interface AiPanelProps {

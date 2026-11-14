@@ -3,12 +3,12 @@
    ------------------------------------------------------------------
    胶囊底 / 弹层底复用 statusbar-widgets.css 的 `.st-pill-btn` / `.st-popup`，
    本文件只补 0 态静态外观与清单弹层的宽度 / 滚动 / 行样式。
-   危险色主态留在 writer-ai.css（`.st-pill-btn.wf-clean-count`），本文件
+   危险色主态留在 writer-ai-marks.css（`.st-pill-btn.wf-clean-count`），本文件
    不改其基础样式。无 transform（AGENTS §8）。
    ============================================================ */
 
 /* 0 态：静态文本（span，非按钮），muted 且不可点。
-   前缀 `.statusbar` 把基线提到 (0,4,0)，压过 writer-ai.css 的
+   前缀 `.statusbar` 把基线提到 (0,4,0)，压过 writer-ai-marks.css 的
    `.st-pill-btn.wf-clean-count`（0,2,0）；hover 变体 (0,5,0) 再压过其
    `.st-pill-btn.wf-clean-count:hover:not(:disabled)`（0,4,0），
    避免静态胶囊被 hover 染回危险色。 */

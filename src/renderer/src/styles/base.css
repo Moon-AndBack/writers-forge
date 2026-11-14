@@ -106,7 +106,7 @@ textarea,
    覆盖——revert 会回滚掉作者源声明、落到 UA 初始值 0s，反而把光标和
    旋转停死），从而保留各自原声明的时长 / 迭代次数：
    - .caret（writer-editor-doc.css：自绘输入光标，blink 1.1s steps(1) infinite）
-   - .ai-msg__cursor（writer-ai.css：AI 流式输出光标，ai-cursor-blink 1s infinite）
+   - .ai-msg__cursor（writer-ai-message.css：AI 流式输出光标，ai-cursor-blink 1s infinite）
    - .wf-btn__spinner（button.css：加载旋转，wf-btn-spin 0.7s linear infinite；
      button.css 既有守卫把它放慢到 1.5s，此处不压制以保证该规则继续生效）
    - [class*='spinner']：兜住今后新增的同类加载旋转。 */
