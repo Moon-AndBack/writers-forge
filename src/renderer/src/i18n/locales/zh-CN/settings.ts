@@ -15,13 +15,12 @@ const settings = {
   },
   locale: {
     label: '界面语言',
-    description: '选择软件的显示语言',
     zhCN: '简体中文',
     en: 'English'
   },
   autoSave: {
     label: '自动保存',
-    description: '编辑正文后自动保存；关闭后需手动保存（切换章节或关闭窗口时仍会保存）'
+    description: '编辑后自动保存；关闭后需手动保存，切换章节或关窗时仍保存'
   },
   defaultView: {
     label: '默认打开视图',
@@ -39,7 +38,7 @@ const settings = {
   },
   paperLines: {
     label: '稿纸横线',
-    description: '在章节与大纲的编辑区每行下方显示一条虚线（右栏只读正文不显示）'
+    description: '章节与大纲编辑区每行显示虚线，右栏不显示'
   },
   data: {
     title: '本地备份',

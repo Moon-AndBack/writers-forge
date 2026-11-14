@@ -11,10 +11,22 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v156'
+export const CHAPTER_SEED_VERSION = 'v157'
 
 /**
- * 最近版本变更日志（v156；更早版本见上述历史文件）。
+ * 最近版本变更日志（v157；更早版本见上述历史文件）。
+ *
+ * `v157`（AI 助手总开关 + 设置文案精简批）：设置 → AI 助手页顶行新增「启用 AI 助手」
+ * 总开关（`Switch`，默认开启）。键为普通渲染层偏好 `aiAssistantEnabled`（camelCase，
+ * 刻意不放 `ai:` 域——该前缀被 `settings:get/set` 整体屏蔽，见 `ipc/settings.ts` 的
+ * `SENSITIVE_KEY_PREFIXES`）；解码仅显式 `'false'` 视为关闭，经 `useSettingsValue` 即时
+ * 广播。关闭后写作页右栏页签集剔除「AI」，`AiPanel` 条件卸载（流式订阅退订并 abort
+ * 在途请求，半截回复落库），连接配置与会话历史保留；设置页的测试连接 / 刷新模型目录 /
+ * 自定义上下文窗口仍可用。同时精简 9 条设置项描述（自动保存、稿纸横线、模型提示、
+ * Base URL 提示、模型目录、上下文压缩两项、测试连接、OneDrive 手动备份），并删除与
+ * 「界面语言」标签重复的 `settings:locale.description`（连带移除该行的
+ * `aria-describedby`，避免悬空）；「重置为默认」白名单仍为五项。教学书与文档同步。
+ * 纯渲染层 + 教学文案改动：无 DB 迁移，升版本只重灌教学书。
  *
  * `v156`（移除自定义分类管理批）：删除设置弹窗「自定义分类」页（`CategoriesSection`）、
  * `category-manager.css` 与 `settings:categories.*` 文案，导航回到五项；移除

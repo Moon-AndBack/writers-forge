@@ -10,24 +10,30 @@ const ai = {
   section: {
     title: 'AI 助手'
   },
+  assistant: {
+    enabled: {
+      label: '启用 AI 助手',
+      description: '关闭后写作页右栏的「AI」页签隐藏；配置与会话历史保留，重新开启即恢复'
+    }
+  },
   provider: {
     label: '服务商',
     description: '选择提供模型服务的平台',
     deepseek: 'DeepSeek',
     opencode: 'OpenCode Go',
     opencodeHint: 'OpenCode Go 使用 OpenAI 兼容接口',
-    modelHint: '模型在写作页右栏的 AI 面板中选择'
+    modelHint: '模型在写作页右栏选择'
   },
   baseUrl: {
     label: 'Base URL',
     description: '接口地址，需包含版本路径',
     placeholder: 'https://api.deepseek.com/v1',
     placeholderOpencode: 'https://opencode.ai/inference/go',
-    hint: '可填中转站地址；留空则恢复默认地址'
+    hint: '可填中转站；留空恢复默认'
   },
   catalog: {
     label: '模型目录',
-    description: '用于识别各模型的上下文窗口；离线时使用内置基线',
+    description: '识别模型上下文窗口；离线用内置基线',
     refresh: '刷新模型目录',
     loading: '正在刷新模型目录…',
     summary: '已收录 {{count}} 个模型',
@@ -39,13 +45,11 @@ const ai = {
   compression: {
     enabled: {
       label: '启用自动压缩',
-      description:
-        '达到上下文窗口 80% 时，发送前自动把较早对话压成摘要；关闭后仍显示占用、仍按预算省略较早对话，但不再生成摘要（不额外消耗额度）'
+      description: '发送前窗口达 80% 压缩较早对话；关闭后仍省略但不生成摘要'
     },
     window: {
       label: '自定义上下文窗口',
-      description:
-        '模型目录匹配不到的模型可手动指定窗口（按模型名保存，范围 1024–10000000 tokens）；保存后上下文百分比与压缩阈值立即按新窗口计算',
+      description: '目录外模型手填窗口（1024–1000 万），保存即生效',
       modelPlaceholder: '模型 ID',
       tokensPlaceholder: 'tokens',
       save: '保存',
@@ -72,7 +76,7 @@ const ai = {
   },
   test: {
     label: '测试连接',
-    description: '拉取一次模型列表以验证配置（不会发送任何正文）',
+    description: '拉取模型列表验证配置，不发送任何正文',
     button: '测试',
     testing: '正在测试…',
     success: '连接成功',

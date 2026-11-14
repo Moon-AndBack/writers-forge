@@ -32,7 +32,7 @@ const onedrive = {
   },
   backup: {
     label: 'Manual backup',
-    description: 'Create a full-library snapshot now and upload it to OneDrive',
+    description: 'Creates a full-library snapshot and uploads it to OneDrive',
     action: 'Back up now',
     cancel: 'Cancel backup',
     phase: {

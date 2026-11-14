@@ -14,14 +14,13 @@ const settings = {
   },
   locale: {
     label: 'Language',
-    description: 'Choose the display language of the app.',
     zhCN: '简体中文',
     en: 'English'
   },
   autoSave: {
     label: 'Auto save',
     description:
-      'Save the document automatically while editing; when off, save manually (switching chapters or closing the window still saves)'
+      'Saves automatically after editing; when off, save manually (chapter switch or closing the window still saves)'
   },
   defaultView: {
     label: 'Default view',
@@ -40,7 +39,7 @@ const settings = {
   paperLines: {
     label: 'Paper lines',
     description:
-      'Show a dashed line under each line in the chapter and outline editors (not in the read-only body of the right pane)'
+      'Dashed line under each line in the chapter and outline editors; not in the right pane'
   },
   data: {
     title: 'Local backup',

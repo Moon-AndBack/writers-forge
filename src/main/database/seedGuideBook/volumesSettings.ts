@@ -88,9 +88,10 @@ export const VOLUME_SETTINGS: SeedVolume = {
         ]),
         seedHeading('AI 助手'),
         seedParagraph(
-          '「AI 助手」页用来配置写作辅助用的大模型，从上到下依次是服务商、Base URL、模型目录、上下文压缩、API Key 与测试连接六项，填好即可在章节右栏的「AI」页签里使用。这里不选模型——模型只在写作页右栏「AI」页签的模型下拉里选。'
+          '「AI 助手」页用来配置写作辅助用的大模型：顶部是「启用 AI 助手」总开关，其下依次是服务商、Base URL、模型目录、上下文压缩、API Key 与测试连接六项配置，填好即可在章节右栏的「AI」页签里使用。这里不选模型——模型只在写作页右栏「AI」页签的模型下拉里选。'
         ),
         seedBulletList([
+          '启用 AI 助手：总开关，默认开启；关闭后写作页右栏的「AI」页签隐藏（在途回复会中止、已生成部分保留），连接配置与会话历史都不删除，重新开启即恢复',
           '服务商：在 DeepSeek / OpenCode Go 之间二选一；OpenCode Go 走 OpenAI 兼容接口。改动后已打开的 AI 面板立即切到该服务商，并沿用它在面板里上次选的模型',
           'Base URL：可留空走默认（DeepSeek 为 https://api.deepseek.com/v1，OpenCode Go 为 https://opencode.ai/inference/go），也可填中转站地址；清空即恢复默认',
           '模型不在设置页选：到写作页右栏「AI」页签的模型下拉里选。面板打开时沿用该服务商上次选定的模型（此前配置过的也保留），选定后按服务商记住、重启或换书都沿用；从未选过则留空占位，不会自动选第一个',

@@ -51,14 +51,9 @@ export default function GeneralSection() {
 
   return (
     <SectionCard>
-      <SettingRow
-        controlId={localeId}
-        label={t('locale.label')}
-        description={t('locale.description')}
-      >
+      <SettingRow controlId={localeId} label={t('locale.label')}>
         <Select
           id={localeId}
-          ariaDescribedBy={settingRowDescriptionId(localeId)}
           className="settings-control settings-control--select"
           value={locale}
           options={LOCALE_OPTIONS.map((option) => ({

@@ -29,6 +29,7 @@ import {
 } from './right/rightPaneTabSets'
 import type { TimelineEntry } from './timeline/timelineOrigin'
 import type { TimelineOriginPatch } from './timeline/useTimelineWorkspace'
+import { useAiAssistantEnabled } from './useAiAssistantEnabled'
 
 /** 调用方未传保存入口时的占位 ref（仅保证必填契约，编辑器写入无副作用）。 */
 const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { current: null }
@@ -41,6 +42,8 @@ const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { curr
  *   不重复挂载面板）。
  *   - 章节模块：五页签「大纲 / 剧情 / 伏笔 / 灵感 / AI」（页签条 + 大纲面板 + 剧情面板 +
  *     伏笔总览面板 + 灵感总览面板 + AI 面板）；页签状态 `chapterTab`，默认「大纲」。
+ *     设置里关闭「启用 AI 助手」（键 `aiAssistantEnabled`）时页签集剔除「AI」，
+ *     页签条变四项、面板卸载（在途请求随卸载中止）。
  *   - 大纲模块：三页签「剧情 / 伏笔 / 灵感」（与章节页同款，不含「大纲」与「AI」）；
  *     页签状态 `outlineTab`，默认「剧情」。
  *   五个面板**始终挂载**，只用 `hidden` 切换显隐，列表滚动位置不因页签切换丢失；大纲模块下
@@ -48,6 +51,7 @@ const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { curr
  *   （时间线 + 剧情线双下拉筛选 + 只读时间轴卡片 + 悬停正文浮窗），两模块同款面板。
  *   AI 页签挂载 `AiPanel`（模型 / 功能下拉 + 快捷结果 / 对话两种模式，结果可回插正文），
  *   惰性加载：`active` 仅在「章节模块 + 页签可见」时为真，不可见时不发起任何模型 / 会话请求。
+ *   总开关关闭时不渲染该面板（条件卸载，与「切页签只 hidden」不同），确保退订流式并中止在途请求。
  *   伏笔页签挂载 `ForeshadowOverviewPanel`（全书伏笔按派生状态分组的只读卡片总览），
  *   同样惰性加载，且切离这两个模块时不拉数据。
  *   灵感页签挂载 `InspirationOverviewPanel`（全书灵感平铺的只读卡片总览，点卡片在右栏内
@@ -191,9 +195,15 @@ export function RightPane({
 
   const isChapterView = module === 'chapters'
   const isOutlineView = module === 'outline'
-  const paneTabs = isOutlineView ? OUTLINE_RIGHT_PANE_TABS : CHAPTER_RIGHT_PANE_TABS
+  // AI 助手总开关（设置 → AI 助手，键 `aiAssistantEnabled`）：关闭时页签集剔除「AI」，
+  // 顺序仍以 `rightPaneTabSets` 为唯一真源。
+  const aiEnabled = useAiAssistantEnabled()
+  const paneTabs = useMemo(() => {
+    const base = isOutlineView ? OUTLINE_RIGHT_PANE_TABS : CHAPTER_RIGHT_PANE_TABS
+    return aiEnabled ? base : base.filter((tab) => tab !== 'ai')
+  }, [isOutlineView, aiEnabled])
   const storedTab = isOutlineView ? outlineTab : chapterTab
-  // 当前页签不在本模块可见集内（如章节停在「大纲 / AI」后切到大纲模块）→ 回退本模块首项。
+  // 当前页签不在本模块可见集内（如章节停在「大纲 / AI」后切到大纲模块、或关闭 AI 开关）→ 回退本模块首项。
   const activeTab = paneTabs.includes(storedTab) ? storedTab : paneTabs[0]
   const handleTabChange = (next: RightPaneTab): void => {
     if (isOutlineView) setOutlineTab(next)
@@ -261,15 +271,19 @@ export function RightPane({
         </div>
         {/* AI 页签：模型 / 功能下拉 + 快捷结果或对话列表，结果可回插正文。
             `active` 仅在「章节模块 + 页签可见」时为真（惰性加载）；大纲模块页签集不含 AI，
-            必须为假，否则会话与流式状态会一直挂着。面板本身常驻，切页签不丢状态。 */}
-        <div className="rp-tabpanel" hidden={!isChapterView || activeTab !== 'ai'}>
-          <AiPanel
-            bookId={bookId ?? ''}
-            chapterId={chapterId}
-            chapterPath={aiChapterPath}
-            active={isChapterView && activeTab === 'ai'}
-          />
-        </div>
+            必须为假，否则会话与流式状态会一直挂着。总开关关闭时整块不渲染（条件卸载）：
+            面板的流式订阅在卸载时退订并 abort 在途请求，配置与会话历史保留。
+            开关开启时面板常驻，切页签不丢状态。 */}
+        {aiEnabled ? (
+          <div className="rp-tabpanel" hidden={!isChapterView || activeTab !== 'ai'}>
+            <AiPanel
+              bookId={bookId ?? ''}
+              chapterId={chapterId}
+              chapterPath={aiChapterPath}
+              active={isChapterView && activeTab === 'ai'}
+            />
+          </div>
+        ) : null}
       </div>
 
       {/* 剧情模块：右栏为选中节点的正文富文本编辑器（底部手动保存）。 */}

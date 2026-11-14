@@ -1,5 +1,8 @@
 /**
- * 设置页 · AI 配置分区（数据只走 `window.api.ai`，不使用 useSettingsValue）。
+ * 设置页 · AI 配置分区。
+ * 连接类数据只走 `window.api.ai`；顶部「启用 AI 助手」总开关是普通渲染层偏好，
+ * 走 `useSettingsValue`（键 `aiAssistantEnabled`，默认开启），关闭只隐藏写作页右栏
+ * 的「AI」页签，配置行与既有会话不受影响。
  * 只配置连接（服务商 / Base URL / 密钥）与目录、压缩；当前模型由写作页右栏 AI
  * 面板选择并写回 `ai:<provider>:model`，设置页不再提供模型选择。
  * 各服务商（DeepSeek / opencode）连接类控件一律可用；安全存储不可用时不保存密钥。
@@ -9,7 +12,7 @@
  */
 import { useEffect, useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Input, Select } from '../../components/ui'
+import { Input, Select, Switch } from '../../components/ui'
 import type { AiProviderId } from '../../../../preload/types/ai'
 import SectionCard from './SectionCard'
 import SettingRow from './SettingRow'
@@ -20,6 +23,12 @@ import AiCompressionRow from './AiCompressionRow'
 import AiTestRow from './AiTestRow'
 import { UNKNOWN_ERROR, type TestState } from './aiSectionSupport'
 import { useAiSettingsConfig } from './useAiSettingsConfig'
+import { useSettingsValue } from './useSettingsValue'
+import {
+  AI_ASSISTANT_DEFAULT,
+  AI_ASSISTANT_SETTING_KEY,
+  decodeAiAssistant
+} from '../writer/useAiAssistantEnabled'
 
 export default function AiSection() {
   const { t } = useTranslation('ai')
@@ -40,6 +49,12 @@ export default function AiSection() {
   } = useAiSettingsConfig()
 
   const [testState, setTestState] = useState<TestState>({ status: 'idle' })
+  const assistant = useSettingsValue(
+    AI_ASSISTANT_SETTING_KEY,
+    AI_ASSISTANT_DEFAULT,
+    decodeAiAssistant
+  )
+  const assistantId = useId()
   const providerId = useId()
   const baseUrlId = useId()
 
@@ -113,6 +128,20 @@ export default function AiSection() {
 
   return (
     <SectionCard>
+      <SettingRow
+        controlId={assistantId}
+        label={t('assistant.enabled.label')}
+        description={t('assistant.enabled.description')}
+      >
+        <Switch
+          id={assistantId}
+          aria-describedby={settingRowDescriptionId(assistantId)}
+          checked={assistant.value}
+          aria-label={t('assistant.enabled.label')}
+          onChange={(event) => assistant.setValue(event.target.checked)}
+        />
+      </SettingRow>
+
       <SettingRow
         controlId={providerId}
         label={t('provider.label')}

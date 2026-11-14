@@ -14,6 +14,7 @@ Writer's Forge 有两个「离开本机」的集成面：AI 服务商（OpenAI �
 
 ```
 渲染层（设置页 AI 分区 / 章节右栏 AI 面板）
+        │  · 右栏「AI」页签入口受设置总开关 aiAssistantEnabled 控制（关闭即隐藏并卸载面板）
         │  window.api.ai.*   （ipcRenderer.invoke）
         ▼
 src/main/ipc/ai.ts              通道注册 · 超时注入 · 结果整形
@@ -54,13 +55,15 @@ src/main/ai/index.ts           按 provider 分发 · 生成 requestId · 异常
 | `ai:opencode:model`   | 模型 ID                                 | 明文                            |
 | `ai:opencode:token`   | Personal API Key                        | `safeStorage` 密文，base64 落库 |
 
+**AI 助手总开关**：`aiAssistantEnabled` 是**普通渲染层偏好键**（布尔，缺省开启），不在 `AI_KEYS` 里、也不是敏感键，**不走** `window.api.ai`——设置页与写作页同经 `settings:get/set` 读写、经渲染层同键广播即时生效。它只决定写作页右栏是否出现「AI」页签：关闭后页签隐藏、`AiPanel` 条件卸载（在途请求随卸载 abort，已生成部分落库），连接配置与会话历史完整保留，重新开启即恢复；设置页的测试连接 / 刷新模型目录 / 自定义上下文窗口不受影响（配置是启用前置）。解码口径与 `ai:compression:enabled` 一致：仅显式 `'false'` 视为关闭。
+
 **id 与展示名分离**：持久化与 IPC 里只有 `'deepseek' | 'opencode'`（`ai/types.ts:11`，`isAiProviderId` 做运行时判定）。展示名只存在于渲染层文案：`ai.provider.deepseek` = `DeepSeek`、`ai.provider.opencode` = `OpenCode Go`。**id 不可改**——已落库的 `ai:provider` 与 `ai_chat_sessions.provider` 都按 id 存值，改名等于数据迁移。
 
 密钥处理规则：
 
 - 写入：`setAiConfig` 先 `trim()`，空串等价于删除（`ai/config.ts:209-213`）；加密不可用时**拒绝保存**并返回 `apiKeyError: 'encryption_unavailable'`，绝不落明文（`ai/config.ts:214-219`）。
 - 读取：`getApiKey()` 仅在主进程内部可用，解密失败 / 环境不支持一律返回 `null`，不抛出、不打明文日志（`ai/config.ts:125-138`）。
-- 展示：`getAiConfig()` 只给 `hasKey` + `keyMasked` + `encryptionAvailable`；掩码为「前 3 位 + `****` + 后 4 位」，不足 8 位全掩码（`ai/config.ts:115-118`）；渲染层也无法经 `settings:*` 读写 `ai:` 前缀（见 §9）。
+- 展示：`getAiConfig()` 只给 `hasKey` + `keyMasked` + `encryptionAvailable`；掩码为「前 3 位 + `****` + 后 4 位」，不足 8 位全掩码（`ai/config.ts:115-118`）；渲染层也无法经 `settings:*` 读写 `ai:` 前缀（见 §9）。AI 助手总开关 `aiAssistantEnabled` **故意放在 `ai:` 域之外**，不要把它加进 `SENSITIVE_KEY_PREFIXES`——它是普通界面偏好，需经通用 settings 通道读写。
 
 ## 3. 请求链路
 
@@ -334,7 +337,7 @@ const SENSITIVE_KEY_PREFIXES = ['ai:', 'onedrive:credentials:'] as const
 | `settings:all`    | 整键剔除后返回，只记剔除数量                         |
 | `settings:delete` | 返回 `false`，清理只能由主进程授权流程执行           |
 
-放行项：`onedrive:account`（展示用邮箱）。新增敏感域必须在此登记。
+放行项：`onedrive:account`（展示用邮箱）。新增敏感域必须在此登记。AI 助手总开关 `aiAssistantEnabled` 是刻意留在 `ai:` 域**之外**的普通偏好键，**不要**为了「归拢 AI 配置」把它加进 `SENSITIVE_KEY_PREFIXES`（加了会让设置页写不进、写作页也读不到）。
 
 ### 9.2 日志脱敏
 

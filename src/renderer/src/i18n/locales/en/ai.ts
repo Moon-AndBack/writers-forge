@@ -9,24 +9,31 @@ const ai = {
   section: {
     title: 'AI assistant'
   },
+  assistant: {
+    enabled: {
+      label: 'Enable AI assistant',
+      description:
+        'When off, the AI tab in the right pane of the writing page is hidden; settings and conversation history are kept, and it comes back when re-enabled'
+    }
+  },
   provider: {
     label: 'Provider',
     description: 'Choose the platform that offers model access',
     deepseek: 'DeepSeek',
     opencode: 'OpenCode Go',
     opencodeHint: 'OpenCode Go uses an OpenAI-compatible API',
-    modelHint: 'Choose the model in the AI panel on the right of the writing page'
+    modelHint: 'Choose the model in the writing page’s right pane'
   },
   baseUrl: {
     label: 'Base URL',
     description: 'Endpoint address, including the version path',
     placeholder: 'https://api.deepseek.com/v1',
     placeholderOpencode: 'https://opencode.ai/inference/go',
-    hint: 'Relay endpoints are allowed; leave empty to restore the default'
+    hint: 'Relay endpoints allowed; leave empty for the default'
   },
   catalog: {
     label: 'Model catalog',
-    description: 'Identifies each model’s context window; the built-in baseline is used offline',
+    description: 'Identifies context windows; the built-in baseline is used offline',
     refresh: 'Refresh model catalog',
     loading: 'Refreshing model catalog…',
     summary: '{{count}} models in the catalog',
@@ -39,12 +46,12 @@ const ai = {
     enabled: {
       label: 'Enable automatic compaction',
       description:
-        'When the context reaches 80% of the window, earlier conversation is compacted into a summary before sending; when disabled, usage is still shown and earlier turns are still omitted by budget, but no summary is generated (no extra quota used)'
+        'Compacts earlier turns before sending once the window reaches 80%; when off, earlier turns are still omitted but no summary is generated'
     },
     window: {
       label: 'Custom context window',
       description:
-        'Set the window manually for models missing from the catalog (saved per model name, 1024–10000000 tokens); the context percentage and compaction threshold update immediately after saving',
+        'Enter a window for models outside the catalog (1024–10,000,000 tokens); it applies once saved',
       modelPlaceholder: 'Model ID',
       tokensPlaceholder: 'tokens',
       save: 'Save',
@@ -73,7 +80,7 @@ const ai = {
   },
   test: {
     label: 'Test connection',
-    description: 'Fetch the model list once to verify the configuration (no content is sent)',
+    description: 'Fetches the model list to verify the setup; no content is sent',
     button: 'Test',
     testing: 'Testing…',
     success: 'Connected',

@@ -34,7 +34,7 @@ const onedrive = {
   },
   backup: {
     label: '手动备份',
-    description: '立即生成一份整库快照并上传到 OneDrive',
+    description: '生成整库快照并上传到 OneDrive',
     action: '立即备份',
     cancel: '取消备份',
     phase: {
