@@ -326,15 +326,16 @@ export function replaceHit(bookId: string, input: ChapterReplaceInput): ChapterR
     return { replaced: 0, chapterId }
   }
 
-  // 替换保留每段既有 contentJson（替换只改文本，不碰块级结构；段 JSON 内的文本由
-  // 渲染层读回重建后按新文本重新呈现）。
+  // 未改动的段落保留既有 contentJson；被替换段落的 JSON 里仍是**旧文字**，与 text 冲突
+  // （读侧按 textContent === text 校验后会回退纯文本），故显式置 null，让 text 成为唯一真源。
+  // 段内 marks 随本次替换丢失——「JSON 内替换并保留 marks」为后续项（P1）。
   const paragraphs = rows.map((row) => ({
     text: row.text,
     contentJson: row.contentJson
   }))
   paragraphs[index] = {
     text: text.slice(0, input.start) + input.replacement + text.slice(input.end),
-    contentJson: rows[index].contentJson
+    contentJson: null
   }
 
   const nextTexts = paragraphs.map((item) => item.text)
@@ -408,7 +409,8 @@ export function replaceAllChapters(
         const next = replaceOccurrences(text, input.query, input.replacement)
         if (next === text) continue
         texts[i] = next
-        paragraphs[i] = { ...paragraphs[i], text: next }
+        // 同 replaceHit：被改段落的 JSON 内仍是旧文字，置 null 让 text 成为唯一真源。
+        paragraphs[i] = { text: next, contentJson: null }
         chapterReplaced += countOccurrences(text, input.query)
         changed = true
       }

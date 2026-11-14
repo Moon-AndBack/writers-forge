@@ -74,7 +74,7 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
     const chapterId = chapterIdRef.current
     if (!chapterId || !editor || !editor.isInitialized) return
 
-    const paragraphs = docToParagraphs(editor)
+    const paragraphs = docToParagraphs(editor, { withContentJson: true })
     const snapshot = JSON.stringify(paragraphs)
     if (lastSavedRef.current !== null && snapshot === lastSavedRef.current) {
       dirtyRef.current = false
@@ -136,7 +136,10 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
               .sort((a, b) => a.idx - b.idx)
               .map((row) => ({ text: row.text, contentJson: row.contentJson }))
           : [{ text: '', contentJson: null }]
-      editor.commands.setContent(paragraphsToDocJSON(paragraphs), { emitUpdate: false })
+      editor.commands.setContent(
+        paragraphsToDocJSON(paragraphs, { withContentJson: true, schema: editor.schema }),
+        { emitUpdate: false }
+      )
       lastSavedRef.current = JSON.stringify(paragraphs)
       dirtyRef.current = false
       setDirty(false)
@@ -192,7 +195,10 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
                 .sort((a, b) => a.idx - b.idx)
                 .map((row) => ({ text: row.text, contentJson: row.contentJson }))
             : [{ text: '', contentJson: null }]
-        editor.commands.setContent(paragraphsToDocJSON(paragraphs), { emitUpdate: false })
+        editor.commands.setContent(
+          paragraphsToDocJSON(paragraphs, { withContentJson: true, schema: editor.schema }),
+          { emitUpdate: false }
+        )
         lastSavedRef.current = JSON.stringify(paragraphs)
         setCharCount(countCharacters(paragraphs.map((item) => item.text)))
         setStatus('ready')

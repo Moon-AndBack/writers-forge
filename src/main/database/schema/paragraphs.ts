@@ -11,8 +11,8 @@ import type Database from 'better-sqlite3'
  * - `UNIQUE(chapter_id, idx)` 保证段序唯一（**该唯一键已隐含按章取正文的索引**，
  *   不另建同名索引），`idx` 从 0 起、按升序即为正文块序，`CHECK (idx >= 0)` 守卫负段序；
  * - `content_json TEXT`：块级 Tiptap JSON 串（顶层块 node.toJSON() 的原样序列化，
- *   marks 天然包含在内），NULL = 纯文本段；`text` 列保留该块纯文本摘要，作为字数统计 /
- *   搜索的真源（与 content_json 双写，读侧以 content_json 优先）；
+ *   marks 天然包含在内），NULL = 无格式纯文本段（普通段落不写，控制体积）；`text` 列保留
+ *   该块纯文本摘要，作为字数统计 / 搜索 / 查找替换的真源（读侧仅在校验通过后采用 JSON）；
  * - 幂等建表（`CREATE ... IF NOT EXISTS`），对齐 `schema/entities.ts` 既有风格，
  *   **不写任何一次性迁移**（用户手动删库，新库直建）。
  */

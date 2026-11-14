@@ -44,12 +44,13 @@ import {
 
 /**
  * StarterKit 裁剪说明：
- * - 保留 document / paragraph / text（骨架）+ bold / italic（快捷键）
- *   + history（撤销重做）；
+ * - 保留 document / paragraph / text（骨架）+ 行内 marks：bold / italic / underline /
+ *   strike / code / link + history（撤销重做）；
  * - 剔除 heading / blockquote / bulletList / orderedList / listItem / codeBlock /
  *   horizontalRule / hardBreak / dropcursor / gapcursor：
  *   正文为「每段一个 paragraph」的纯段落口径（paragraphs 表按段存储），
  *   保留这些块级扩展会让 doc 出现非 paragraph 顶层节点，破坏 doc ↔ texts 一一对应。
+ *   行内 marks 经段级 contentJson 持久化（见 docParagraphs.ts）。
  */
 const EDITOR_BASE_EXTENSIONS = [
   StarterKit.configure({

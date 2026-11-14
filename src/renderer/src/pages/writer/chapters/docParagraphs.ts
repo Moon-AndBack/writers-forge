@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/core'
-import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import type { Node as ProseMirrorNode, Schema } from '@tiptap/pm/model'
 
 /**
  * Tiptap doc ↔ 块级段落数组 映射工具（双格式兼容）。
@@ -12,9 +12,10 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
  * 双格式存储（`paragraphs` 表）：
  * - `text`：该块纯文本摘要（字数统计 / 搜索的真源，不含任何格式语法）；
  * - `contentJson`：块级 Tiptap JSON 串（该块 node.toJSON() 原样序列化，marks /
- *   heading / 列表 / 表格结构天然包含）；NULL = 纯文本段（旧行为，章节侧恒 NULL）。
+ *   heading / 列表 / 表格结构天然包含）；NULL = 无格式纯文本段（稀疏化：普通段落不写，
+ *   控制库体积）。
  *
- * 兼容：旧行 contentJson 为 NULL → 按纯文本段重建 doc（现状行为不变）。
+ * 兼容：旧行 contentJson 为 NULL → 按纯文本段重建 doc（与旧行为逐字一致）。
  */
 
 /** 段落读取项：对应 ParagraphRow 的序列化侧。 */
@@ -29,11 +30,25 @@ export interface DocToParagraphsOptions {
 }
 
 /**
+ * 段落块是否「无格式纯文本」：子节点全为无 mark 的 text。
+ * 空段（无子节点）与仅空 text 的段落同样视为纯文本，用于稀疏化——普通段落不写 JSON。
+ */
+function isPlainTextParagraph(node: ProseMirrorNode): boolean {
+  if (node.type.name !== 'paragraph') return false
+  let plain = true
+  node.forEach((child) => {
+    if (child.type.name !== 'text' || child.marks.length > 0) plain = false
+  })
+  return plain
+}
+
+/**
  * 块级 JSON 序列化：取该顶层块 `node.toJSON()` 原样 JSON 串。
- * 空文本 paragraph 不存 JSON（与旧行为一致，纯文本段无需冗余结构）。
+ * 无格式纯文本 paragraph（含空段）返回 null，避免普通段落产生冗余 JSON；
+ * heading / 列表等非 paragraph 块与含 marks 的段落原样序列化。
  */
 function serializeBlockJson(node: ProseMirrorNode): string | null {
-  if (node.type.name === 'paragraph' && node.textContent === '') return null
+  if (isPlainTextParagraph(node)) return null
   return JSON.stringify(node.toJSON())
 }
 
@@ -69,6 +84,11 @@ export function docToParagraphs(
 /** paragraphsToDocJSON 选项：`withContentJson` 开启时接受块级 JSON（大纲侧）；缺省忽略（章节侧）。 */
 export interface ParagraphsToDocJSONOptions {
   withContentJson?: boolean
+  /**
+   * 编辑器 schema：传入后对块级 JSON 做安全校验（见 `isSafeBlock`），不合格回退纯文本段。
+   * 章节侧必须传入 `editor.schema`；不传则维持旧行为（仅做 JSON 解析，结构风险由调用方承担）。
+   */
+  schema?: Schema
 }
 
 /** 块级 JSON 串 → 安全的块 JSON 对象（损坏 / 非对象 / 结构异常 → null，调用方降级纯文本段）。 */
@@ -87,8 +107,33 @@ function parseBlockJson(
 }
 
 /**
+ * 块级 JSON 是否可安全交给编辑器（仅在传入 schema 时启用）：
+ * - 必须为 paragraph：章节编辑器禁用 heading / 列表等块级扩展，非 paragraph 会让
+ *   `setContent` 解析失败并回退空文档（整章正文丢失）；
+ * - `schema.nodeFromJSON` 必须成功：marks / 属性不被当前 schema 支持时即抛错；
+ * - 重建后 `textContent` 必须与 `text` 一致：防止陈旧 JSON 把查找替换后的文字顶回去。
+ *
+ * 不传 schema → 恒 true（向后兼容：行为与改动前完全一致）。
+ */
+function isSafeBlock(
+  block: { type: string; content?: unknown; [key: string]: unknown },
+  text: string,
+  schema: Schema | undefined
+): boolean {
+  if (schema === undefined) return true
+  if (block.type !== 'paragraph') return false
+  try {
+    return schema.nodeFromJSON(block).textContent === text
+  } catch {
+    return false
+  }
+}
+
+/**
  * 段落数组 → ProseMirror JSON：`withContentJson` 且行含块级 JSON 时按 JSON 重建
  * （heading / 列表 / 表格 / marks 一并恢复），其余按纯文本段（旧行为兼容）。
+ * 传入 `schema` 时，非 paragraph / schema 不识别 / 文本与 `text` 不一致的 JSON 一律
+ * 降级为纯文本段（不丢字，仅丢结构 / 格式）。
  */
 export function paragraphsToDocJSON(
   paragraphs: readonly DocParagraph[],
@@ -103,8 +148,8 @@ export function paragraphsToDocJSON(
     content: paragraphs.map((paragraph) => {
       if (withContentJson && paragraph.contentJson !== null && paragraph.contentJson !== '') {
         const block = parseBlockJson(paragraph.contentJson)
-        if (block !== null) return block
-        // JSON 损坏 → 降级为纯文本段（不丢字，仅丢结构 / 格式）
+        if (block !== null && isSafeBlock(block, paragraph.text, options.schema)) return block
+        // JSON 损坏 / 结构不被 schema 支持 / 文本过期 → 降级为纯文本段（不丢字，仅丢格式）
       }
       return {
         type: 'paragraph',

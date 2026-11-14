@@ -24,8 +24,8 @@ export interface ParagraphDbRow {
 
 /**
  * 段落写入项：`text` 必填（字数统计 / 搜索 / 当日增量的真源）；
- * `contentJson` 为块级 Tiptap JSON 串，缺省 / null = 纯文本段
- * （章节侧维持此形态；大纲侧正文内联在 `outline_items.content_json`，不占本表）。
+ * `contentJson` 为块级 Tiptap JSON 串，缺省 / null = 无格式纯文本段
+ * （章节侧仅含格式的段落落库；大纲侧正文内联在 `outline_items.content_json`，不占本表）。
  */
 export interface ParagraphInput {
   text: string
