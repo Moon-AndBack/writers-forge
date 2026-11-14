@@ -7,23 +7,53 @@
    底色，无位移 / 缩放（AGENTS §8）。
    ============================================================ */
 
-/* ---------- 内容列 ---------- */
-.cw-root {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
+/* ---------- 固定高度（管理型弹窗） ----------
+   切换来源（内置 / 我的）/ 类别 / 搜索时结果行数变化，若面板高度随内容伸缩，
+   每次筛选都会让弹窗跳高跳低；改为固定高度（与设置弹窗同口径），只有窗口
+   尺寸变化才改变面板高度。580 依据：常规内容 = 标题区 ≈47 + body 内衬 20 +
+   筛选 32 + 三行间距 28 + 计数行 32 + 间距 10 + 词表（原 40vh 上限@默认 764 高
+   窗口 ≈306）+ 添加行 ≈67，合计 ≈542；取 580 让词表略增一行、观感接近旧版。最小窗口
+   （764）下 100vh - 48 ≈ 674 > 580，不会被压缩。减数 48 = 遮罩上下内衬各 24
+   （coverTitlebar 默认 true，遮罩全屏，见 modal.css:11-34）；若将来改为避标题栏
+   模式，需同步换成 100vh - 90。属尺寸局部覆写，不含颜色 / 字号 / 圆角 / 时长字面量。 */
+.cw-modal {
+  height: min(580px, calc(100vh - 48px));
 }
 
-/* 行 2：计数 + 词表，两者间距小于行间距，保持为同一视觉分组。 */
-.cw-results {
+/* 例外：局部覆写共享窗口 body 布局（仅违禁词库弹窗）——该弹窗需要固定高度与
+   内部滚动：body 只做纵向布局容器，滚动下放到 .cw-list 一层，使筛选行 / 计数行 /
+   添加行始终可见；内衬保留组件默认值。 */
+.cw-modal .wf-window__body {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---------- 内容列 ---------- */
+/* 撑满 body 剩余高度：中间结果区吸收剩余空间，首尾两行保持自然高度。 */
+.cw-root {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+
+/* 行 2：计数 + 词表，两者间距小于行间距，保持为同一视觉分组。
+   flex: 1 + min-height: 0 让词表占满本行剩余空间（flex 子项默认 min-height:auto
+   会拒绝收缩，必须显式归零，否则内部滚动不会出现）。 */
+.cw-results {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   gap: 10px;
+  min-height: 0;
 }
 
 /* ---------- 词表筛选 ---------- */
 .cw-filters {
   display: flex;
+  flex: none;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
@@ -47,6 +77,7 @@
    按钮固定在行尾，计数文案过长时自行换行，不挤压按钮。 */
 .cw-count-row {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
@@ -72,6 +103,7 @@
 .cw-add {
   position: relative;
   display: flex;
+  flex: none;
   flex-direction: column;
   gap: 6px;
   padding-top: 14px;
@@ -126,12 +158,15 @@
 
 /* ---------- 词表容器 ----------
    软底 + 大圆角替代原 1px 裸边框；不另加描边——软底与弹窗 --pane 已有
-   6% 明度差，再套描边会形成「框中框」。 */
+   6% 明度差，再套描边会形成「框中框」。
+   固定高度弹窗下不再用 40vh 上限：词表作为 .cw-results 的弹性子项占满剩余高度，
+   自行纵向滚动（min-height: 0 是内部滚动生效的前提）。 */
 .cw-list {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 2px;
-  max-height: 40vh;
+  min-height: 0;
   padding: 4px;
   overflow-y: auto;
   scrollbar-gutter: stable;
@@ -192,13 +227,17 @@
   color: var(--text-mute);
 }
 
+/* 空态 / 失败态 / 加载态：作为 .cw-results 的非弹性子项按内容高度自然排布
+   （flex: none 防止固定高度下被压缩变形）；不参与拉伸，弹窗高度保持不变。 */
 .cw-empty {
+  flex: none;
   margin: 0;
   color: var(--text-mute);
 }
 
 /* 加载态：单行状态提示（不引入 spinner），与列表左对齐。 */
 .cw-loading {
+  flex: none;
   margin: 0;
   padding: 10px 8px;
   font-size: var(--fs-body);

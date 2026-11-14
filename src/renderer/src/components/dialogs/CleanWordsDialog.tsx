@@ -62,6 +62,7 @@ export function CleanWordsDialog({ open, onClose }: CleanWordsDialogProps) {
       onClose={onClose}
       title={t('cleanWords.dialogTitle')}
       size="lg"
+      panelClassName="cw-modal"
       ariaLabel={t('cleanWords.dialogTitle')}
     >
       {library.toastNode}
