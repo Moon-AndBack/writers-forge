@@ -143,7 +143,7 @@ export default function CategoriesSection() {
   }
 
   return (
-    <SectionCard title={t('categories.title')} description={t('categories.description')}>
+    <SectionCard>
       <div className="cm">
         <div className="cm-create">
           <Input

@@ -10,8 +10,7 @@
  */
 const onedrive = {
   section: {
-    title: 'OneDrive 云备份',
-    description: '将整库快照上传到 OneDrive，作为本地数据之外的异地副本'
+    title: 'OneDrive 云备份'
   },
   account: {
     label: '账户状态',

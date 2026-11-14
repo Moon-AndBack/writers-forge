@@ -7,8 +7,7 @@ import type { ZhCNResources } from '../zh-CN'
 
 const settings = {
   general: {
-    title: 'Basic preferences',
-    description: 'General behavior and startup preferences'
+    title: 'Basic preferences'
   },
   nav: {
     aria: 'Settings sections'
@@ -32,8 +31,7 @@ const settings = {
     outline: 'Outline view'
   },
   appearance: {
-    title: 'Appearance & theme',
-    description: 'Theme and display preferences'
+    title: 'Appearance & theme'
   },
   themeMode: {
     label: 'Theme mode',
@@ -45,8 +43,7 @@ const settings = {
       'Show a dashed line under each line in the chapter and outline editors (not in the read-only body of the right pane)'
   },
   data: {
-    title: 'Data & backup',
-    description: 'Local backup, restore and full-database export',
+    title: 'Local backup',
     create: {
       label: 'Back up now',
       description: 'Create a local snapshot of the whole database',
@@ -116,8 +113,6 @@ const settings = {
   },
   categories: {
     title: 'Custom categories',
-    description:
-      'Create your own categories shared by all books; independent of the official “Male / Female / Publishing” channels',
     placeholder: 'Enter a new category name',
     add: 'Add',
     empty: 'No custom categories yet',

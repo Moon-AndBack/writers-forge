@@ -118,6 +118,7 @@
   - `[data-material='acrylic'] body` 置透明，否则 body 底会挡住 DWM 材质（`acrylic.css:30-32`）。
 - 切换时三件事同步：调主进程、写 `data-material`、经 `settings:set` 持久化（`WindowMaterialProvider.tsx:57-71`）。
 - 主进程返回的实际值与请求不一致时（如系统不支持），Provider 回退本地状态（`WindowMaterialProvider.tsx:63-67`）。
+- 透明效果入口：标题栏主题面板与「设置 → 外观与主题」页均提供开关，两处共享 `WindowMaterialProvider`，状态天然同步。
 
 ### 4.6 失败降级
 

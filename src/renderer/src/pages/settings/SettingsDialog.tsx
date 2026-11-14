@@ -30,7 +30,7 @@ export interface SettingsDialogProps {
  * 结构要点：
  * - 宽度用 `size="xl"`（880px，`.wf-window--xl`）；高度固定在
  *   `min(680px, calc(100vh - 90px))`，切换分区不跳动，只有窗口尺寸变化才变；
- * - **两栏**：左侧 `SettingsNav`（五项，184px）+ 右侧内容区，两栏同为 `--pane`
+ * - **两栏**：左侧 `SettingsNav`（六项，200px）+ 右侧内容区，两栏同为 `--pane`
  *   底色、无分隔线；`window.css` 的 body 内衬在本弹窗覆写为 0，滚动交给
  *   右侧 `.settings-content` 单层承接；
  * - 六个分区**全部常驻渲染**，仅以 `.settings-panel.is-active` 切换 `display`
@@ -110,6 +110,8 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             </div>
             <div className={pageClass('data')}>
               <DataSection />
+            </div>
+            <div className={pageClass('onedrive')}>
               <OneDriveSection />
             </div>
           </div>

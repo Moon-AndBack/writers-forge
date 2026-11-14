@@ -11,7 +11,7 @@ import { BACKUP_ERROR_KEYS, useLocalBackup } from './useLocalBackup'
 import '../../styles/components/local-backup.css'
 
 /**
- * 通用设置 · 数据与备份。
+ * 通用设置 · 本地备份。
  *
  * 自上而下：立即备份 → 备份列表（三态：loading → error → empty → content）
  * → 导出整库 `.db` → 数据目录（打开备份文件夹）。列表行显示名称（未命名时
@@ -57,7 +57,7 @@ export default function DataSection() {
   }
 
   return (
-    <SectionCard title={t('data.title')} description={t('data.description')}>
+    <SectionCard>
       <SettingRow label={t('data.create.label')} description={t('data.create.description')}>
         <Button
           variant="primary"

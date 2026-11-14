@@ -1,6 +1,6 @@
 /**
  * 设置页文案命名空间（`settings`）：各设置分组（基础偏好 / 外观与主题 /
- * 自定义分类 / 数据与备份）文案。消费者统一 `useTranslation('settings')`
+ * 自定义分类 / 本地备份 / 云备份）文案。消费者统一 `useTranslation('settings')`
  * 后以同 ns 点分路径取用（如 `t('general.title')`）。
  *
  * 命名说明：主题模式组用 `themeMode`（而非 `theme`）以免与独立 `theme` ns 混淆——
@@ -8,8 +8,7 @@
  */
 const settings = {
   general: {
-    title: '基础偏好',
-    description: '软件的通用行为与启动偏好'
+    title: '基础偏好'
   },
   nav: {
     aria: '设置分区导航'
@@ -32,8 +31,7 @@ const settings = {
     outline: '大纲视图'
   },
   appearance: {
-    title: '外观与主题',
-    description: '界面主题与显示偏好'
+    title: '外观与主题'
   },
   themeMode: {
     label: '主题模式',
@@ -44,8 +42,7 @@ const settings = {
     description: '在章节与大纲的编辑区每行下方显示一条虚线（右栏只读正文不显示）'
   },
   data: {
-    title: '数据与备份',
-    description: '本地备份、恢复与整库导出',
+    title: '本地备份',
     create: {
       label: '立即备份',
       description: '创建一份本地整库快照',
@@ -114,7 +111,6 @@ const settings = {
   },
   categories: {
     title: '自定义分类',
-    description: '创建你自己的分类，供所有书籍选用；与「男频 / 女频 / 出版」官方分类相互独立',
     placeholder: '输入新分类名称',
     add: '添加',
     empty: '还没有自定义分类',

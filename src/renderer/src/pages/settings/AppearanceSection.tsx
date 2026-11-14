@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Select, Switch } from '../../components/ui'
 import type { ThemeId } from '../../theme/themes'
 import { useTheme } from '../../theme/useTheme'
+import { useWindowMaterial } from '../../theme/windowMaterial'
 import {
   PAPER_LINES_DEFAULT,
   PAPER_LINES_SETTING_KEY,
@@ -29,19 +30,18 @@ export default function AppearanceSection() {
   const { t } = useTranslation('theme')
   const { t: tSettings } = useTranslation('settings')
   const { theme, themes, setTheme } = useTheme()
+  const windowMaterial = useWindowMaterial()
   const paperLines = useSettingsValue(
     PAPER_LINES_SETTING_KEY,
     PAPER_LINES_DEFAULT,
     decodePaperLines
   )
   const themeModeId = useId()
+  const acrylicId = useId()
   const paperLinesId = useId()
 
   return (
-    <SectionCard
-      title={tSettings('appearance.title')}
-      description={tSettings('appearance.description')}
-    >
+    <SectionCard>
       <SettingRow
         controlId={themeModeId}
         label={tSettings('themeMode.label')}
@@ -55,6 +55,23 @@ export default function AppearanceSection() {
           options={themes.map((item) => ({ value: item.id, label: t(item.labelKey) }))}
           ariaLabel={tSettings('themeMode.label')}
           onChange={(value) => setTheme(value as ThemeId)}
+        />
+      </SettingRow>
+
+      <SettingRow
+        controlId={acrylicId}
+        label={t('acrylic.label')}
+        description={
+          windowMaterial.supported ? t('acrylic.supportedDesc') : t('acrylic.unsupportedDesc')
+        }
+      >
+        <Switch
+          id={acrylicId}
+          aria-describedby={settingRowDescriptionId(acrylicId)}
+          checked={windowMaterial.enabled}
+          disabled={!windowMaterial.supported}
+          aria-label={t('acrylic.switchAria')}
+          onChange={(event) => windowMaterial.setEnabled(event.target.checked)}
         />
       </SettingRow>
 

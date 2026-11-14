@@ -8,8 +8,7 @@
  */
 const ai = {
   section: {
-    title: 'AI 助手',
-    description: '配置用于写作辅助的大模型服务；API Key 仅经系统安全存储加密后保存在本地'
+    title: 'AI 助手'
   },
   provider: {
     label: '服务商',

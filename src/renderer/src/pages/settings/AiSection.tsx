@@ -112,7 +112,7 @@ export default function AiSection() {
   const keyInputDisabled = encryptionUnavailable
 
   return (
-    <SectionCard title={t('section.title')} description={t('section.description')}>
+    <SectionCard>
       <SettingRow
         controlId={providerId}
         label={t('provider.label')}

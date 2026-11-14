@@ -50,7 +50,7 @@ export default function GeneralSection() {
   const defaultViewId = useId()
 
   return (
-    <SectionCard title={t('general.title')} description={t('general.description')}>
+    <SectionCard>
       <SettingRow
         controlId={localeId}
         label={t('locale.label')}

@@ -3,10 +3,10 @@
    由 pages/settings/SettingsDialog.tsx 直接 import（在组件库样式之后，故可
    覆盖 `.wf-card` 的高度上限与 `.wf-window__body` 的内衬假设）。
    内容渲染在 `Modal` 的 `.wf-window--xl`（880px）面板内：标题区 / 关闭按钮 / 底栏
-   由 Window 提供。布局为两栏：左侧 184px 分区导航（五项），右侧内容区一次一页；
+   由 Window 提供。布局为两栏：左侧 200px 分区导航（六项），右侧内容区一次一页；
    六个分区常驻渲染，仅切换 display。弹窗高度固定（`min(680px, 100vh - 90px)`），
    切换分区不跳动；滚动只发生在右侧 `.settings-content` 一层（弹窗 body 覆写为
-   `padding: 0; overflow: hidden`，header / footer 保持自然高）。内容列约 630–656px，
+   `padding: 0; overflow: hidden`，header / footer 保持自然高）。内容列约 614–640px，
    控件列宽默认 280。两栏完全同底色（均为 `--pane`），不设分隔线 / 描边 / 投影。
    卡片视觉基线对齐组件库卡片规格（surface.css 的
    .wf-card__title / 副标题）与设置行排版；颜色一律取 styles/theme.css 令牌 /
@@ -33,9 +33,10 @@
 }
 
 .settings-shell {
-  /* 导航列宽：最小窗口（902px）下弹窗面板约 854px，扣掉导航后内容列仍 ≥670px。 */
-  --settings-nav-w: 184px;
-  /* 行内控件列宽（Select / 宽输入 / 模型下拉共用）。两栏后内容列约 630–656px，
+  /* 导航列宽：200px 容纳六项里较长的「OneDrive 云备份」；最小窗口（902px）下
+     弹窗面板约 854px，扣掉导航后内容列仍 ≥614px。 */
+  --settings-nav-w: 200px;
+  /* 行内控件列宽（Select / 宽输入 / 模型下拉共用）。两栏后内容列约 614–640px，
      默认 280 保证左侧说明与右侧控件都不被压缩；窄窗在文件末尾 media query 再收窄。 */
   --settings-control-w: 280px;
   display: flex;
@@ -44,7 +45,7 @@
   width: 100%;
 }
 
-/* ---------- 左侧导航（五项） ---------- */
+/* ---------- 左侧导航（六项） ---------- */
 /* 两栏完全同底色：导航显式铺 --pane（与右侧 `.settings-content` 同一令牌），
    不设右描边 / 侧投影 / ::after 竖线；两栏间距只由导航 12px 右内衬与内容
    20px 左内衬形成。 */
@@ -148,27 +149,6 @@
 
 .wf-card__body.settings-group__body {
   padding: 0;
-}
-
-.settings-group__head {
-  padding: 16px 18px 0;
-}
-
-/* 分区标题 / 描述：对齐 surface.css 的卡片标题规格（--fs-title / 700 与
-   --fs-micro）。 */
-.settings-group__title {
-  margin: 0;
-  font-size: var(--fs-title);
-  font-weight: 700;
-  line-height: 1.35;
-  color: var(--text);
-}
-
-.settings-group__desc {
-  margin: 3px 0 0;
-  font-size: var(--fs-micro);
-  line-height: 1.5;
-  color: var(--text-mute);
 }
 
 .settings-group__rows {
@@ -349,8 +329,8 @@
 }
 
 /* ---------- 窄窗适配（最小窗口 902×764） ----------
-   `.wf-window--xl` 上限 880px，窗口收到最小宽度时面板仅约 854px，扣掉 184px 导航
-   与两侧内衬后内容列约 630px。控件列再收一档，保证说明文字与输入框都不被压缩。 */
+   `.wf-window--xl` 上限 880px，窗口收到最小宽度时面板仅约 854px，扣掉 200px 导航
+   与两侧内衬后内容列约 614px。控件列再收一档，保证说明文字与输入框都不被压缩。 */
 @media (max-width: 960px) {
   .settings-shell {
     --settings-control-w: 240px;

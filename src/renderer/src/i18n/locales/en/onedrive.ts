@@ -7,8 +7,7 @@ import type { ZhCNResources } from '../zh-CN'
 
 const onedrive = {
   section: {
-    title: 'OneDrive cloud backup',
-    description: 'Upload a full-library snapshot to OneDrive as an off-site copy of your local data'
+    title: 'OneDrive cloud backup'
   },
   account: {
     label: 'Account status',

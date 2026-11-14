@@ -37,7 +37,7 @@
   max-width: 640px;
 }
 
-/* 设置弹窗（SettingsDialog）：左侧 184px 分区导航 + 右侧内容两栏，640px 过窄。 */
+/* 设置弹窗（SettingsDialog）：左侧 200px 分区导航 + 右侧内容两栏，640px 过窄。 */
 .wf-window--xl {
   max-width: 880px;
 }

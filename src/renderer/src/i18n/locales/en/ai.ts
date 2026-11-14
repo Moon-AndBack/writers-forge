@@ -7,9 +7,7 @@ import type { ZhCNResources } from '../zh-CN'
 
 const ai = {
   section: {
-    title: 'AI assistant',
-    description:
-      'Configure the model service used for writing assistance; the API key is stored locally, encrypted by system secure storage'
+    title: 'AI assistant'
   },
   provider: {
     label: 'Provider',

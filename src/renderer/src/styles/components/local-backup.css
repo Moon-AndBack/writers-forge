@@ -1,5 +1,5 @@
 /**
- * 设置页 · 数据与备份分区（前缀 settings-backup-）。
+ * 设置页 · 本地备份分区（前缀 settings-backup-）。
  *
  * 只服务 `DataSection`：备份列表三态、列表行与悬浮操作、行内提示 / 重启提示。
  * 颜色 / 圆角 / 动效全部取 `theme.css` 令牌；行 hover 只改背景，无位移 / 缩放。

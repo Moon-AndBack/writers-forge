@@ -30,7 +30,7 @@ export default function OneDriveSection() {
   const hasDisplayName = account?.displayName !== undefined && account.displayName !== ''
 
   return (
-    <SectionCard title={t('section.title')} description={t('section.description')}>
+    <SectionCard>
       <SettingRow
         label={t('account.label')}
         description={
