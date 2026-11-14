@@ -3,8 +3,8 @@ import { createContext, useContext } from 'react'
 /**
  * 正文稿纸横线的共享状态：
  * `PaperLinesProvider` 持有唯一真源并把开关投影到
- * `document.documentElement.dataset.paperLines`，样式据此在章节 / 大纲编辑区
- * 与右栏只读正文的每行下方绘制虚线。设置页开关直接经 `useSettingsValue`
+ * `document.documentElement.dataset.paperLines`，样式据此仅在章节 / 大纲编辑区
+ * 的每行下方绘制虚线。设置页开关直接经 `useSettingsValue`
  * 写同一键，`useSettingsValue` 的同键广播会即时同步本 Provider。
  */
 

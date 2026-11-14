@@ -38,7 +38,7 @@ const settings = {
   },
   paperLines: {
     label: '稿纸横线',
-    description: '在正文每行下方显示一条虚线，仅影响编辑区与右栏只读正文'
+    description: '在章节与大纲的编辑区每行下方显示一条虚线（右栏只读正文不显示）'
   },
   data: {
     title: '数据与备份',

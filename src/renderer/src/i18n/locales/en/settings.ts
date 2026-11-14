@@ -39,7 +39,7 @@ const settings = {
   paperLines: {
     label: 'Paper lines',
     description:
-      'Show a dashed line under each line of body text in the editor and the read-only body in the right pane'
+      'Show a dashed line under each line in the chapter and outline editors (not in the read-only body of the right pane)'
   },
   data: {
     title: 'Data & backup',
