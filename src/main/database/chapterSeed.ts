@@ -16,6 +16,7 @@ import { relinkGuidePlotSceneEntities } from './worldEntityPlotSeed'
 import { clearWorldEntitySeedMarker, seedDemoWorldEntities } from './worldEntitySeed'
 import { getSetting, setSetting } from './settings'
 import { saveParagraphs } from './paragraphs'
+import { markChapterContentChanged } from './chapterContentVersion'
 import { CHAPTER_SEED_VERSION } from './chapterSeedLog'
 import { logger } from '../logger'
 
@@ -73,6 +74,9 @@ function seedGuideChapter(bookId: string, volumeId: number, chapter: SeedChapter
   if (chapter.paragraphs && chapter.paragraphs.length > 0) {
     // 正文直接以 chapterId 落 paragraphs（documents 表已删除）。
     saveParagraphs(createdChapter.id, chapter.paragraphs)
+    // 落库成功后再标记内容版本（此时首次登场索引尚未建立，标记本身无害；提前标记则可能
+    // 让索引记录一个尚未真正落盘的版本）。
+    markChapterContentChanged(createdChapter.id)
   }
   if (createdChapter.kind === 'special' && chapter.pin !== undefined) {
     // pin 是创建后动作（走 setChapterPin，组内同步重排）。

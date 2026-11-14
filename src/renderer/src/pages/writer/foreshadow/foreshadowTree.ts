@@ -21,6 +21,7 @@ import type {
   ForeshadowUpdatePatch
 } from '../../../../../main/database/foreshadows'
 import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
+import { formatChapterPlace, type PlaceLabels } from '../../../../../shared/place'
 import type { ChapterRow, VolumeRow } from '../chapters/chapterTree'
 import { outlineItemLabel, type OutlineItemRow } from '../outline/outlineTree'
 
@@ -216,58 +217,21 @@ export function resolveForeshadowRecoverAnchor(
 }
 
 /**
- * 位置串格式化所需的最小标签函数集合（由 `useChapterLabels` 提供；纯函数侧不依赖 hook）。
- *
- * 只取「编号前缀段」而非整串：位置串要求「卷X 卷名 · 第X章 章名」——号与名之间用空格、
- * 卷与章之间用「 · 」；而整串 `volumeLabel` / `chapterLabel` 内部已用「 · 」连接号与名，
- * 直接拼接会得到四段式。故此处改用前缀 + 名段自行拼串；全局共用的整串口径保持不动。
- */
-export interface ForeshadowPlaceLabels {
-  /** 卷编号前缀段（「卷X」；自定义卷 / 分组 / 编号非法时为空串）。 */
-  volumePrefixLabel: (volume: Pick<VolumeRow, 'kind' | 'numberIndex'>) => string
-  /** 章前段（普通章「第X章」；特殊章为 `specialPrefix`，如「序章」）。 */
-  chapterRowPrefixLabel: (chapter: ChapterRow) => string
-}
-
-/** 前缀段 + 名段拼接：空格分隔，任一段为空则省略（两段皆空 → 空串）。 */
-function joinPlaceParts(prefix: string, name: string): string {
-  if (prefix === '') return name
-  return name === '' ? prefix : `${prefix} ${name}`
-}
-
-/**
- * 章节位置串（伏笔列表卡 / 右栏只读块 / 正文标记悬停共用，AGENTS §9）：
- * 「卷X 卷名 · 第X章 章名」——号与名之间空格、卷与章之间「 · 」；
- * 所属卷缺失 / 卷无编号（自定义卷、分组）时退化为「第X章 章名」。
- */
-export function formatForeshadowPlace(
-  volume: Pick<VolumeRow, 'kind' | 'numberIndex' | 'title'> | null,
-  chapter: ChapterRow,
-  labels: ForeshadowPlaceLabels
-): string {
-  const chapterPart = joinPlaceParts(labels.chapterRowPrefixLabel(chapter), chapter.title)
-  const volumePart =
-    volume === null ? '' : joinPlaceParts(labels.volumePrefixLabel(volume), volume.title)
-  // 任一段为空则省掉分隔符，避免出现「 · 第X章 章名」这类残串。
-  return [volumePart, chapterPart].filter((part) => part !== '').join(' · ')
-}
-
-/**
  * 锚点位置串（中栏卡的位置行与右栏只读块共用，AGENTS §9）：入参是**解析结果**而非行，
  * 故正文埋点 / 大纲埋点 / 回收点三个槽位共用同一实现，调用方只换 `resolution`。
- * - 章节 → {@link formatForeshadowPlace}（「卷X 卷名 · 第X章 章名」）；
+ * - 章节 → {@link formatChapterPlace}（「卷X 卷名 · 第X章 章名」）；
  * - 大纲 → 条目名本身（外层已有「埋点位置 / 回收位置」标签，不重复「大纲 ·」前缀）；
  * - 未锚定 / 失效（`target` 为空）→ null，由调用方显示各自占位文案。
  */
 export function foreshadowPlaceLabel(
   resolution: ForeshadowAnchorResolution,
-  labels: ForeshadowPlaceLabels,
+  labels: PlaceLabels<ChapterRow, VolumeRow>,
   unnamedTarget: string
 ): string | null {
   const target = resolution.target
   if (target === null) return null
   if (target.kind === 'outline') return outlineItemLabel(target.item, unnamedTarget)
-  return formatForeshadowPlace(target.volume, target.chapter, labels)
+  return formatChapterPlace(target.volume, target.chapter, labels)
 }
 
 /** 右栏表单草稿（与行值比对后仅提交变更字段）。状态不参与编辑（派生只读）。 */

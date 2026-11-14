@@ -25,6 +25,7 @@ import type {
   WorldEntityType
 } from '../database/worldEntities'
 import { resolveDefaultSubtypeId, resolveEntitySubtype } from '../database/worldSubtypes'
+import { getFirstAppearances } from '../match/firstAppearance'
 import { registerWorldPowersIpc } from './worldPowers'
 import { registerWorldRefsIpc } from './worldRefs'
 import {
@@ -285,6 +286,8 @@ function parseUpdatePatch(input: unknown): UpdateWorldEntityPatch | null {
  * - worldEntity:removeRef         (id)                      → boolean
  * 境界体系（只读列表 + 写通道见 `worldPowers.ts`）：
  * - worldEntity:listPowerSystems  (bookId)                 → WorldPowerSystemRow[]
+ * 首次登场（实体卡关联展示，数据层见 `match/firstAppearance.ts`）：
+ * - worldEntity:firstAppearances  (bookId)                 → FirstAppearanceMap
  */
 export function registerWorldEntitiesIpc(): void {
   ipcMain.handle(
@@ -430,6 +433,17 @@ export function registerWorldEntitiesIpc(): void {
   ipcMain.handle('worldEntity:listPowerSystems', (_event, bookId: unknown) => {
     if (typeof bookId !== 'string') return []
     return listPowerSystems(bookId)
+  })
+
+  // 实体首次登场：按阅读序扫描章节正文（只读、按书缓存）；失败不抛给渲染层，回空映射。
+  ipcMain.handle('worldEntity:firstAppearances', async (_event, bookId: unknown) => {
+    if (typeof bookId !== 'string' || bookId === '') return {}
+    try {
+      return await getFirstAppearances(bookId)
+    } catch (error) {
+      log.error('worldEntity:firstAppearances 失败', { bookId, error })
+      return {}
+    }
   })
 
   // 通用引用通道（出 / 入边、语义码字典、增 / 改 / 删）独立成文件，避免本文件超过 500 行。

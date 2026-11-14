@@ -31,6 +31,7 @@ export const worldEntityApi = {
   updateRef: (id, patch) => ipcRenderer.invoke('worldEntity:updateRef', id, patch),
   removeRef: (id) => ipcRenderer.invoke('worldEntity:removeRef', id),
   listPowerSystems: (bookId) => ipcRenderer.invoke('worldEntity:listPowerSystems', bookId),
+  firstAppearances: (bookId) => ipcRenderer.invoke('worldEntity:firstAppearances', bookId),
   updatePowerSystem: (entityId, patch) =>
     ipcRenderer.invoke('worldEntity:updatePowerSystem', entityId, patch)
 } satisfies Api['worldEntity']

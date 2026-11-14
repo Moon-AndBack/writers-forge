@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import { getDb } from './index'
 import { getParagraphs, saveParagraphs } from './paragraphs'
+import { markChapterContentChanged } from './chapterContentVersion'
 import { chapterEffectiveWords, recordDailyDelta } from './stats'
 import { MAX_DOC_CHARS, docEffectiveChars } from '../ipc/docLimit'
 import { logger } from '../logger'
@@ -353,6 +354,8 @@ export function replaceHit(bookId: string, input: ChapterReplaceInput): ChapterR
 
   const before = chapterEffectiveWords(input.chapterId)
   saveParagraphs(input.chapterId, paragraphs)
+  // 替换已成功落库：递增该章内容版本，供实体首次登场索引增量重扫。
+  markChapterContentChanged(input.chapterId)
   recordDailyDelta(before, nextTexts)
   invalidateChapterSearchCache()
   return { replaced: 1, chapterId }
@@ -436,6 +439,8 @@ export function replaceAllChapters(
   })
 
   const { replaced, chapterIds } = run()
+  // 事务已提交：逐章递增内容版本（供实体首次登场索引增量重扫；回滚时不会走到这里）。
+  for (const chapterId of chapterIds) markChapterContentChanged(chapterId)
   if (chapterIds.length > 0) invalidateChapterSearchCache()
   return { replaced, chapters: chapterIds.length, chapterIds }
 }

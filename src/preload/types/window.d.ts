@@ -76,6 +76,7 @@ import type { ImagePayload, ImageRow } from './images'
 import type {
   BookRefRow,
   CreateWorldEntityInput,
+  FirstAppearanceMap,
   UpdateWorldEntityPatch,
   UpdateWorldPowerSystemPatch,
   UpdateWorldRefPatch,
@@ -252,6 +253,8 @@ export interface Api {
     updateRef: (id: number, patch: UpdateWorldRefPatch) => Promise<WorldRefRow | null>
     removeRef: (id: number) => Promise<boolean>
     listPowerSystems: (bookId: string) => Promise<WorldPowerSystemRow[]>
+    /** 实体首次登场（按阅读序扫描章节正文；未登场为 null） */
+    firstAppearances: (bookId: string) => Promise<FirstAppearanceMap>
     updatePowerSystem: (
       entityId: number,
       patch: UpdateWorldPowerSystemPatch

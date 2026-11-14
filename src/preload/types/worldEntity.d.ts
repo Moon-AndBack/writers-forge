@@ -55,3 +55,6 @@ export type {
   WorldPowerSystemRow,
   UpdateWorldPowerSystemPatch
 }
+
+/** 实体首次登场（主进程按阅读序扫描章节正文；未登场为 `null`）。 */
+export type { FirstAppearanceMap, FirstAppearancePlace } from '../../main/match/firstAppearance'

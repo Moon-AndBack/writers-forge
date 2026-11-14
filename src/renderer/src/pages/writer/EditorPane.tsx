@@ -35,7 +35,8 @@ import type {
 import DossierView from './dossier/DossierView'
 import type { DossierBundle } from './dossier/dossierTree'
 import ForeshadowView from './foreshadow/ForeshadowView'
-import { formatForeshadowPlace, type ForeshadowBundle } from './foreshadow/foreshadowTree'
+import type { ForeshadowBundle } from './foreshadow/foreshadowTree'
+import { formatChapterPlace } from '../../../../shared/place'
 import InspirationView from './inspiration/InspirationView'
 import type { InspirationBundle } from './inspiration/inspirationTree'
 import type { ForeshadowLabelResolver } from '../../components/editor/useForeshadowMarks'
@@ -213,7 +214,7 @@ function EditorPaneComponent({
 
   /**
    * 伏笔正文标记的**位置名解析**（埋设 / 回收悬停文案里「在哪一章 / 哪个条目」）：
-   * 章节 → `formatForeshadowPlace`（「卷X 卷名 · 第X章 章名」，与伏笔列表卡 / 右栏同口径；
+   * 章节 → `formatChapterPlace`（「卷X 卷名 · 第X章 章名」，与伏笔列表卡 / 右栏同口径；
    * 所属卷缺失时退化为「第X章 章名」）；大纲条目 → `anchor.outline` + 条目名。
    * 目标行已不存在（已删）→ 空串，标记层按「未知位置」兜底。
    * 只有本层同时持有 chapters / volumes / outlineItems，故解析集中在此、经 props 下传，
@@ -225,7 +226,7 @@ function EditorPaneComponent({
         const row = chapters.find((item) => item.id === target.id)
         if (!row) return ''
         const volume = volumes.find((item) => item.id === row.volumeId) ?? null
-        return formatForeshadowPlace(volume, row, labels)
+        return formatChapterPlace(volume, row, labels)
       }
       const item = outlineItems?.find((row) => row.id === target.id)
       if (!item) return ''

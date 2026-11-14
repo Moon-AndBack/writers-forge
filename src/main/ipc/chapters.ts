@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { logger } from '../logger'
 import { invalidateChapterSearchCache } from '../database/chapterSearch'
+import { markChapterContentChanged } from '../database/chapterContentVersion'
 import { getParagraphs, saveParagraphs } from '../database/paragraphs'
 import { recordDailyDelta } from '../database/stats'
 import { MAX_DOC_CHARS, docEffectiveChars } from './docLimit'
@@ -304,6 +305,8 @@ export function registerChaptersIpc(): void {
       // 字数只看 text（marks 为格式 JSON，不参与统计）。
       const before = docEffectiveChars(getParagraphs(chapterId).map((row) => row.text))
       const count = saveParagraphs(chapterId, paragraphs)
+      // 正文已成功落库：递增该章内容版本，供实体首次登场索引增量重扫（见 chapterContentVersion.ts）。
+      markChapterContentChanged(chapterId)
       const delta = recordDailyDelta(
         before,
         paragraphs.map((item) => item.text)
