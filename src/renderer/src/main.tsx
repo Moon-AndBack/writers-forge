@@ -2,6 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import App from './App'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { registerGlobalErrorHandlers } from './lib/globalErrorHandlers'
 import { ThemeProvider } from './theme/ThemeProvider'
 import { ChipColorProvider } from './theme/ChipColorProvider'
 import { DEFAULT_THEME, isThemeId, THEME_SETTING_KEY } from './theme/themes'
@@ -23,6 +25,10 @@ import {
   type DefaultView
 } from './pages/settings/defaultView'
 import './styles/index.css'
+
+/* 先于 bootstrap 注册窗口级监听：启动阶段（设置读取 / i18n 初始化）的异常同样写入日志。
+   错误边界只能兜住 React 渲染期异常，这里补事件处理器 / 异步回调的缺口。 */
+registerGlobalErrorHandlers()
 
 /**
  * 批量读取「其余」启动设置（主题 / 窗口材质 / 活动栏固定态 / 稿纸横线）：一次 `settings:all` IPC
@@ -108,22 +114,26 @@ async function bootstrap(): Promise<void> {
     <StrictMode>
       <I18nextProvider i18n={i18n}>
         <LocaleProvider initialLocale={initialLocale}>
-          <ThemeProvider initialTheme={initialTheme}>
-            <ChipColorProvider>
-              <WindowMaterialProvider
-                initialMaterial={initialMaterial}
-                initialSupported={initialSupported}
-              >
-                <HashRouter>
-                  <App
-                    initialActivityPinned={initialActivityPinned}
-                    initialPaperLines={initialPaperLines}
-                    initialDefaultView={initialDefaultView}
-                  />
-                </HashRouter>
-              </WindowMaterialProvider>
-            </ChipColorProvider>
-          </ThemeProvider>
+          {/* 最外层边界：i18n Provider 在外，兜底界面才能取到翻译并跟随语言切换；
+              它兜住其下所有 Provider 与整棵界面树（Provider 渲染期抛错也能恢复）。 */}
+          <ErrorBoundary scope="errorBoundary:app" className="wf-error-boundary--root">
+            <ThemeProvider initialTheme={initialTheme}>
+              <ChipColorProvider>
+                <WindowMaterialProvider
+                  initialMaterial={initialMaterial}
+                  initialSupported={initialSupported}
+                >
+                  <HashRouter>
+                    <App
+                      initialActivityPinned={initialActivityPinned}
+                      initialPaperLines={initialPaperLines}
+                      initialDefaultView={initialDefaultView}
+                    />
+                  </HashRouter>
+                </WindowMaterialProvider>
+              </ChipColorProvider>
+            </ThemeProvider>
+          </ErrorBoundary>
         </LocaleProvider>
       </I18nextProvider>
     </StrictMode>

@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useRef } from 'react'
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { DiagnosticsGate } from './diagnostics/DiagnosticsGate'
 import i18n, { ensureWriterNamespaces } from './i18n'
 import { resolveLocale } from './i18n/config'
@@ -252,35 +253,40 @@ export default function App({
                                 {status === 'loading' ? (
                                   <ViewportPlaceholder />
                                 ) : (
-                                  /* 路由页懒加载：只包裹路由出口，标题栏 / 活动栏 / 状态栏外壳
-                                     首帧即渲染；fallback 与上面的引导占位同款，衔接无跳变。 */
-                                  <Suspense fallback={<ViewportPlaceholder />}>
-                                    <Routes>
-                                      <Route
-                                        path="/"
-                                        element={
-                                          status === 'required' ? (
-                                            <Welcome onFinish={complete} />
-                                          ) : (
-                                            <Bookshelf />
-                                          )
-                                        }
-                                      />
-                                      <Route
-                                        path="/write/:bookId"
-                                        element={
-                                          status === 'required' ? (
-                                            <Navigate to="/" replace />
-                                          ) : (
-                                            <WriteRoute />
-                                          )
-                                        }
-                                      />
-                                      {/* 设置已改为标题栏齿轮唤起的弹窗（`SettingsDialog`），
-                                      不再占用路由；未匹配路径一律回首页。 */}
-                                      <Route path="*" element={<Navigate to="/" replace />} />
-                                    </Routes>
-                                  </Suspense>
+                                  /* 路由级边界：只兜住页面内容，标题栏 / 活动栏 / 状态栏
+                                     外壳保持可用；`resetKeys` 随路由复位，避免页面崩溃后
+                                     切到其他路由仍停留在兜底界面。 */
+                                  <ErrorBoundary scope="errorBoundary:route" resetKeys={[pathname]}>
+                                    {/* 路由页懒加载：只包裹路由出口，标题栏 / 活动栏 / 状态栏外壳
+                                       首帧即渲染；fallback 与上面的引导占位同款，衔接无跳变。 */}
+                                    <Suspense fallback={<ViewportPlaceholder />}>
+                                      <Routes>
+                                        <Route
+                                          path="/"
+                                          element={
+                                            status === 'required' ? (
+                                              <Welcome onFinish={complete} />
+                                            ) : (
+                                              <Bookshelf />
+                                            )
+                                          }
+                                        />
+                                        <Route
+                                          path="/write/:bookId"
+                                          element={
+                                            status === 'required' ? (
+                                              <Navigate to="/" replace />
+                                            ) : (
+                                              <WriteRoute />
+                                            )
+                                          }
+                                        />
+                                        {/* 设置已改为标题栏齿轮唤起的弹窗（`SettingsDialog`），
+                                        不再占用路由；未匹配路径一律回首页。 */}
+                                        <Route path="*" element={<Navigate to="/" replace />} />
+                                      </Routes>
+                                    </Suspense>
+                                  </ErrorBoundary>
                                 )}
                               </main>
 

@@ -139,6 +139,16 @@ const common = {
   loadFailedDesc:
     'The content could not be loaded, possibly a temporary error. Select “Retry” to try again.',
   retry: 'Retry',
+  /** Renderer error-boundary fallback (components/ErrorBoundary): shared by root and route boundaries. */
+  errorBoundary: {
+    title: 'Something went wrong',
+    description:
+      'The page hit an error while rendering. Reloading usually recovers; if it keeps happening, copy the error details and share them with us.',
+    reload: 'Reload',
+    copy: 'Copy error details',
+    copied: 'Copied',
+    copyFailed: 'Copy failed'
+  },
   loadMore: 'Load more',
   restoreDefaultWidth: 'Double-click to restore default width',
   restoreDefaultSplit: 'Drag to resize the panes; double-click to restore the default split',

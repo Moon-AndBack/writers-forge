@@ -147,6 +147,19 @@ const common = {
   loadFailedTitle: '加载失败',
   loadFailedDesc: '内容没有读取出来，可能是暂时性错误。请点「重试」再试一次。',
   retry: '重试',
+  /**
+   * 渲染层错误边界兜底界面（`components/ErrorBoundary`）：根边界 / 路由边界共用。
+   * `description` 说明可恢复路径，`copy*` 为剪贴板反馈（不改用 Toast，避免错误风暴刷屏）。
+   */
+  errorBoundary: {
+    title: '界面遇到错误',
+    description:
+      '页面在渲染时遇到了异常。重新加载通常可以恢复；如果反复出现，请复制错误详情用于反馈。',
+    reload: '重新加载',
+    copy: '复制错误详情',
+    copied: '已复制',
+    copyFailed: '复制失败'
+  },
   loadMore: '加载更多',
   restoreDefaultWidth: '双击恢复默认宽度',
   restoreDefaultSplit: '拖动调整上下两栏高度，双击恢复默认比例',
