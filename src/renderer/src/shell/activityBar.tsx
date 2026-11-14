@@ -8,6 +8,7 @@ import { useTooltip } from '../components/ui'
 import { POPOVER_SHOW_DELAY } from '../components/popoverTiming'
 import { ActivityBarContext, useActivityBar } from './activityBarContext'
 import type { ActivityBarContextValue } from './activityBarContext'
+import { ActivityPill } from './activityPill'
 import ActivityBarFilterPopover from './ActivityBarFilterPopover'
 import { WRITER_MODULES, isFilterableModule } from './activityBarModules'
 import type { FilterableModule, WriterModule } from './activityBarModules'
@@ -176,6 +177,16 @@ export function ActivityBar(): ReactElement {
     showTimer.current = window.setTimeout(() => setShown(true), delay)
   }
 
+  /** 键盘展开（胶囊 Enter / Space）：立即展开，并把焦点交给首个模块按钮；
+      活动栏的 `inert` 本次提交后才解除，故等下一帧再聚焦（同步会被拦下）。 */
+  const expandForKeyboard = useCallback((): void => {
+    if (pinned) return
+    setShown(true)
+    window.requestAnimationFrame(() => {
+      barRef.current?.querySelector<HTMLElement>('.act-btn')?.focus()
+    })
+  }, [pinned])
+
   /**
    * 焦点是否仍停留在浮层的**文本输入**中（浮层是 body portal，只能按节点包含关系判断）。
    * 分类 chip / 搜索按钮等可聚焦控件不算：点完按钮后焦点若留在其上，
@@ -216,6 +227,9 @@ export function ActivityBar(): ReactElement {
       // 守卫：指针或焦点仍在筛选浮层内时不得收起活动栏 —— 浮层是 body portal，
       // 下面的 `matches(':hover')` 判据覆盖不到它，否则会「浮层关掉顺带收起整栏」。
       if (isFilterEngaged()) return
+      // 守卫：键盘焦点仍在活动栏内时不得收起 —— 收起会让 `inert` 生效并抢走焦点，
+      // 用户的 Tab 位置随之丢失。焦点离开后由栏的 `onBlur` 重新排收起。
+      if (barRef.current?.contains(document.activeElement)) return
       setShown(false)
       // 栏收起时浮层不得悬空；一并清掉目标（计时器随浮层卸载即无意义）。
       setFilterTarget(null)
@@ -377,32 +391,41 @@ export function ActivityBar(): ReactElement {
   return (
     <>
       {pillTooltip}
-      <div
-        ref={pillRef}
-        className={cn('act-pill', shown && 'is-hidden')}
-        onMouseEnter={() => {
-          pillAnchor.onMouseEnter()
-          open(SHOW_DELAY)
-        }}
-        onMouseLeave={() => {
+      <ActivityPill
+        shown={shown}
+        pillRef={pillRef}
+        anchorProps={pillAnchor}
+        label={t('moduleBar')}
+        onEnter={() => open(SHOW_DELAY)}
+        onLeave={() => {
           pillAnchor.onMouseLeave()
           if (!barRef.current?.matches(':hover')) scheduleHide()
         }}
-        onFocus={pillAnchor.onFocus}
-        onBlur={pillAnchor.onBlur}
-        aria-describedby={pillAnchor['aria-describedby']}
-      >
-        <span />
-        <span />
-        <span />
-      </div>
+        onExpand={expandForKeyboard}
+      />
 
       <aside
         ref={barRef}
         className={cn('activitybar', shown && 'is-shown')}
         aria-label={t('moduleBarAria')}
+        // 收起态整体移出焦点顺序与无障碍树（CSS 只有 opacity / transform，Tab 仍可进入）。
+        // 固定态常驻可见，永不 inert（否则固定活动栏无法键盘操作）。
+        inert={!pinned && !shown}
         onMouseEnter={cancelHide}
         onMouseLeave={handleBarLeave}
+        onKeyDown={(event) => {
+          // 键盘收起：仅收起悬停态；固定态常驻，筛选浮层的 Esc 由浮层自己处理。
+          if (event.key !== 'Escape' || pinned || filterTarget !== null) return
+          event.preventDefault()
+          setShown(false)
+          pillRef.current?.focus()
+        }}
+        onBlur={(event) => {
+          // 焦点在栏内移动（按钮之间）不收起；真正离开后按常规延迟收起。
+          const next = event.relatedTarget
+          if (next instanceof Node && event.currentTarget.contains(next)) return
+          scheduleHide()
+        }}
       >
         {WRITER_MODULES.map((id) => {
           const icons = MODULE_MORPH_ICONS[id]

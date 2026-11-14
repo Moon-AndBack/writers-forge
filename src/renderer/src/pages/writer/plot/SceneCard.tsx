@@ -127,7 +127,18 @@ export function SceneCard({
         active={active}
         readonly={readonly}
         cardProps={{
+          role: 'button',
+          tabIndex: 0,
+          'aria-pressed': active,
+          'aria-label': plotSceneTitle(scene, t('unnamedScene')),
           onClick: () => onSelect(scene.id),
+          onKeyDown: (event) => {
+            // 只响应卡片自身聚焦：标题行编辑 / 删除按钮的 Enter / Space 不触发选中。
+            if (event.target !== event.currentTarget) return
+            if (event.key !== 'Enter' && event.key !== ' ') return
+            event.preventDefault()
+            onSelect(scene.id)
+          },
           onMouseEnter: (event) => onHoverStart?.(event.currentTarget, event.target as HTMLElement),
           onMouseLeave: onLeave
         }}

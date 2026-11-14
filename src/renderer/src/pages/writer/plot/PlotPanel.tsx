@@ -173,7 +173,18 @@ export default function PlotPanel({
                 <div
                   key={line.id}
                   className={`plot-line${active ? ' is-active' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={active}
+                  aria-label={plotLineLabel(line, t('unnamedLine'))}
                   onClick={() => onSelectLine(line.id)}
+                  onKeyDown={(event) => {
+                    // 只响应行自身聚焦：行内编辑 / 删除按钮的 Enter / Space 不触发选中。
+                    if (event.target !== event.currentTarget) return
+                    if (event.key !== 'Enter' && event.key !== ' ') return
+                    event.preventDefault()
+                    onSelectLine(line.id)
+                  }}
                 >
                   <span
                     className="plot-line-dot"

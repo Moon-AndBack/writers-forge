@@ -1,5 +1,5 @@
-import { useId } from 'react'
-import type { HTMLAttributes, ReactNode } from 'react'
+import { cloneElement, isValidElement, useId } from 'react'
+import type { HTMLAttributes, ReactElement, ReactNode } from 'react'
 import '../../styles/components/form-extras.css'
 
 export interface FormFieldProps extends HTMLAttributes<HTMLDivElement> {
@@ -32,6 +32,19 @@ export function FormField({
   const generatedId = useId()
   const messageId = `${htmlFor ?? generatedId}-message`
   const hasError = error !== undefined && error !== null && error !== ''
+  const hasHint = hint !== undefined && hint !== null
+  const hasMessage = hasError || hasHint
+  // 把错误 / 提示节点的 id 关联到子控件（A 方案：调用方零改动）。只处理单个非 Fragment
+  // 元素；子控件已有 `aria-describedby` 时以空格合并，并按 id 去重（调用方可能已手动关联）。
+  let control = children
+  if (hasMessage && isValidElement(children) && typeof children.type !== 'symbol') {
+    const element = children as ReactElement<{ 'aria-describedby'?: string }>
+    const existing = element.props['aria-describedby']
+    const ids = Array.from(
+      new Set(`${existing ?? ''} ${messageId}`.split(/\s+/).filter((id) => id !== ''))
+    )
+    control = cloneElement(element, { 'aria-describedby': ids.join(' ') })
+  }
 
   const classes = ['wf-field', hasError ? 'is-invalid' : '', className].filter(Boolean).join(' ')
 
@@ -48,13 +61,13 @@ export function FormField({
         </label>
       ) : null}
 
-      <div className="wf-field__control">{children}</div>
+      <div className="wf-field__control">{control}</div>
 
       {hasError ? (
         <div className="wf-field__error" id={messageId} role="alert">
           {error}
         </div>
-      ) : hint !== undefined && hint !== null ? (
+      ) : hasHint ? (
         <div className="wf-field__hint" id={messageId}>
           {hint}
         </div>

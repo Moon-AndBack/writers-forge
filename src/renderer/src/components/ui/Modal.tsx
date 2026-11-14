@@ -101,6 +101,18 @@ function isTopModal(id: string): boolean {
   return openModalStack[openModalStack.length - 1]?.id === id
 }
 
+/**
+ * 关闭弹窗后把焦点还原到打开前的元素。
+ * 元素已卸载、仍处于 `inert` 背景（如外层弹窗尚未撤销）或已禁用时静默放弃，
+ * 焦点留在浏览器默认位置（body），不抛错。
+ */
+function restoreFocus(target: HTMLElement | null): void {
+  if (target === null || !target.isConnected) return
+  if (target.closest('[inert]') !== null) return
+  if (target.matches(':disabled')) return
+  target.focus({ preventScroll: true })
+}
+
 /** 取面板内当前可见的可聚焦元素（返回顺序即 DOM / tab 顺序）。 */
 function getFocusableElements(panel: HTMLElement): HTMLElement[] {
   return Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
@@ -253,6 +265,11 @@ export function Modal({
   useEffect(() => {
     if (!open) return
 
+    // 记录打开前的焦点（入栈前）：关闭 cleanup 时还原。多层弹窗各自记录「打开本层时」
+    // 的元素，故关闭内层回到外层弹窗内，关闭外层才回到最外层触发按钮。
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null
+
     pushModal({ id: instanceId, coverTitlebar })
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -276,6 +293,8 @@ export function Modal({
       document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = previousOverflow
       removeModal(instanceId)
+      // removeModal 已按新栈顶重算背景 inert，此时还原不会被上一层弹窗的 inert 拦下。
+      restoreFocus(previouslyFocused)
     }
   }, [open, instanceId, coverTitlebar])
 

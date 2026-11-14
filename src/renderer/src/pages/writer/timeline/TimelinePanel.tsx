@@ -114,8 +114,20 @@ export default function TimelinePanel({
                 <div
                   key={entry.id}
                   className={`timeline-item${active ? ' is-active' : ''}`}
+                  role="button"
+                  // 重命名时行内有输入框：焦点交给输入框，行本身退出 Tab 序列。
+                  tabIndex={renaming ? -1 : 0}
+                  aria-pressed={active}
+                  aria-label={entry.name.trim() !== '' ? entry.name : t('defaultName')}
                   onClick={() => {
                     if (renaming) return
+                    onSelect(entry.id)
+                  }}
+                  onKeyDown={(event) => {
+                    // 只响应行自身聚焦：重命名输入框的空格 / Enter 与行内按钮不触发选中。
+                    if (renaming || event.target !== event.currentTarget) return
+                    if (event.key !== 'Enter' && event.key !== ' ') return
+                    event.preventDefault()
                     onSelect(entry.id)
                   }}
                 >

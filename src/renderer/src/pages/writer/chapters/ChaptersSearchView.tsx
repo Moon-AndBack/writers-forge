@@ -163,7 +163,17 @@ export default function ChaptersSearchView({
               <div
                 key={`${hit.chapterId}-${hit.paragraphIdx}-${hit.start}-${index}`}
                 className={`ep-search-row${isActive ? ' is-active' : ''}`}
+                role="button"
+                tabIndex={0}
+                aria-current={isActive ? 'true' : undefined}
                 onClick={() => requestJump(hit)}
+                onKeyDown={(event) => {
+                  // 只响应行自身聚焦：行尾「替换」按钮的 Enter / Space 不触发跳转。
+                  if (event.target !== event.currentTarget) return
+                  if (event.key !== 'Enter' && event.key !== ' ') return
+                  event.preventDefault()
+                  requestJump(hit)
+                }}
               >
                 <span className="ep-search-row-main">
                   <span className="ep-search-row-chapter">{titleOf(hit)}</span>

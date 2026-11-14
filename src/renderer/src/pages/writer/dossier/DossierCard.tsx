@@ -142,7 +142,20 @@ export function DossierCard({
     <EntityStyleCard
       className="dossier-card"
       active={active}
-      cardProps={{ onClick: () => onSelect(row.id) }}
+      cardProps={{
+        role: 'button',
+        tabIndex: 0,
+        'aria-pressed': active,
+        'aria-label': hasName ? row.name : t('unnamed'),
+        onClick: () => onSelect(row.id),
+        onKeyDown: (event) => {
+          // 只响应卡片自身聚焦：标题行编辑 / 关系 / 删除按钮的 Enter / Space 不触发选中。
+          if (event.target !== event.currentTarget) return
+          if (event.key !== 'Enter' && event.key !== ' ') return
+          event.preventDefault()
+          onSelect(row.id)
+        }
+      }}
       head={
         <>
           <h3 className="wf-entity-card__title dossier-card__name">
