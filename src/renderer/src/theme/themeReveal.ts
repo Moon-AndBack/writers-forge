@@ -7,12 +7,12 @@
  *   `styles/components/motion.css` 关闭），新快照在它之上从 0 → 1 淡入。
  *   因此任何中间帧都是一次不透明混合，不会出现两层同时半透明导致的
  *   「透底泛灰」（亮 / 暗主题明度差极大，真交叉会闪灰）。
- * - **透明模式**（`data-material='acrylic'`）：真交叉 + `plus-lighter`——此时窗口底
- *   是 `.shell` 的 70% 不透明底（`--desk-solid-alpha`）配 body 透明，覆盖式淡化会让
- *   两层快照的 alpha 相加（0.70 → 0.91），表现为过渡期间越来越实、快照撤掉后又跳回
- *   通透。故 new 淡入的同时 old 同步淡出，两层以 `mix-blend-mode: plus-lighter`
- *   按 a·(1-t) / a·t 预乘相加，合计恒为 a = 0.70，材质透出率全程不变
- *   （CSS 侧见 `motion.css` 的 acrylic 规则）。
+ * - **窗口材质模式**（`data-material` 为 `'acrylic'` / `'mica'`）：真交叉 + `plus-lighter`
+ *   ——此时窗口底是 `.shell` 的 70% 不透明底（`--desk-solid-alpha`）配 body 透明，
+ *   覆盖式淡化会让两层快照的 alpha 相加（0.70 → 0.91），表现为过渡期间越来越实、
+ *   快照撤掉后又跳回通透。故 new 淡入的同时 old 同步淡出，两层以
+ *   `mix-blend-mode: plus-lighter` 按 a·(1-t) / a·t 预乘相加，合计恒为 a = 0.70，
+ *   材质透出率全程不变（CSS 侧见 `motion.css` 的窗口材质规则）。
  *
  * 为何由 JS（WAAPI）而不是 CSS 承担动画：
  * - `document.startViewTransition` 只能由 JS 启动，整窗快照也只有它能拍摄；
@@ -34,8 +34,8 @@
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
 
-/** 透明（Acrylic）材质在根元素上的标记值，与 `styles/acrylic.css` 的选择器一致。 */
-const ACRYLIC_MATERIAL = 'acrylic'
+/** 窗口材质（亚克力 / 云母）在根元素上的标记值，与 `styles/material.css` 的选择器一致。 */
+const MATERIAL_MARKERS = new Set(['acrylic', 'mica'])
 
 /** 与 `theme.css` 的 `--dur-slow` 对齐；令牌读取失败时的回退值（毫秒）。 */
 const FALLBACK_DURATION = 240
@@ -55,15 +55,15 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * 当前是否处于透明（Acrylic）材质模式。
+ * 当前是否处于窗口材质模式（亚克力 / 云母）。
  *
- * 读 `WindowMaterialProvider` 投影到根元素的 `data-material`：只有值为
- * `'acrylic'` 时 `.shell` 才是 70% 不透明底、body 才透明（见 `acrylic.css`），
+ * 读 `WindowMaterialProvider` 投影到根元素的 `data-material`：值为 `'acrylic'` /
+ * `'mica'` 时 `.shell` 才是 70% 不透明底、body 才透明（见 `material.css`），
  * 也只有此时需要 `plus-lighter` 真交叉。属性缺失 / `'none'` 一律按不透明模式
  * 处理（保持原覆盖式淡化）。
  */
-function isAcrylic(): boolean {
-  return document.documentElement.dataset.material === ACRYLIC_MATERIAL
+function hasWindowMaterial(): boolean {
+  return MATERIAL_MARKERS.has(document.documentElement.dataset.material ?? '')
 }
 
 /**
@@ -129,8 +129,8 @@ export function runThemeReveal(applyTheme: () => void): void {
         // 两种材质都由 new 从 0 → 1 浮上来
         document.documentElement.animate([{ opacity: 0 }, { opacity: 1 }], newOptions)
 
-        if (isAcrylic()) {
-          // 透明模式：old 同步淡出。与 new 一起在 `mix-blend-mode: plus-lighter`
+        if (hasWindowMaterial()) {
+          // 窗口材质模式：old 同步淡出。与 new 一起在 `mix-blend-mode: plus-lighter`
           // 下按 a·(1-t) / a·t 预乘相加，合计恒为 a = 0.70（见 motion.css），
           // 避免覆盖式叠加把 alpha 抬到 0.91 → 过渡中越来越实、结束后跳回通透。
           //

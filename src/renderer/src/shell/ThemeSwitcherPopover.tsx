@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MorphIcon } from 'morphicons/react'
-import { IconButton, Switch } from '../components/ui'
+import { IconButton, Segmented, Switch } from '../components/ui'
 import type { ResolvedThemeId, ThemeId } from '../theme/themes'
 import { useTheme } from '../theme/useTheme'
 import { useWindowMaterial } from '../theme/windowMaterial'
+import type { WindowMaterialSetting } from '../theme/windowMaterial'
 import { THEME_MORPH_ICONS } from './morphIcons'
 import '../styles/theme-switcher.css'
 
@@ -15,8 +16,8 @@ import '../styles/theme-switcher.css'
  *   1. 标题「外观主题」；
  *   2. 「跟随系统」开关行——开启即 `setTheme('system')`；关闭时落到当前解析主题
  *      （`resolvedTheme`），避免视觉跳变（等价「用当前选中的四主题之一」）；
- *   3. 「透明效果」开关行——切换主进程 backgroundMaterial + 根元素
- *      `data-material` + settings 持久化（由 WindowMaterialProvider 负责）；
+ *   3. 「窗口材质」三档行——亚克力 / 云母 / 关闭，切换主进程 backgroundMaterial +
+ *      根元素 `data-material` + settings 持久化（由 WindowMaterialProvider 负责）；
  *   4. 四张主题预览卡（light / dark / sage / honey）2 列网格——`system` 已由
  *      开关行取代，故不再出卡。点击任一卡 `setTheme(id)` 并关闭（持久化由
  *      ThemeProvider 负责），同时隐含关闭「跟随系统」（切到显式主题）。
@@ -44,11 +45,7 @@ import '../styles/theme-switcher.css'
 export default function ThemeSwitcherPopover() {
   const { t } = useTranslation('theme')
   const { theme, themes, resolvedTheme, setTheme } = useTheme()
-  const {
-    enabled: acrylicEnabled,
-    supported: acrylicSupported,
-    setEnabled: setAcrylicEnabled
-  } = useWindowMaterial()
+  const { material, supported: materialSupported, setMaterial } = useWindowMaterial()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
@@ -130,19 +127,23 @@ export default function ThemeSwitcherPopover() {
             />
           </div>
 
-          <div className="ts-row">
+          <div className="ts-row ts-row--stack">
             <div className="ts-row-text">
-              <span className="ts-row-title">{t('acrylic.label')}</span>
+              <span className="ts-row-title">{t('material.label')}</span>
               <span className="ts-row-sub">
-                {acrylicSupported ? t('acrylic.supportedDesc') : t('acrylic.unsupportedDesc')}
+                {materialSupported ? t('material.supportedDesc') : t('material.unsupportedDesc')}
               </span>
             </div>
-            <Switch
-              size="sm"
-              checked={acrylicEnabled}
-              disabled={!acrylicSupported}
-              onChange={(event) => setAcrylicEnabled(event.target.checked)}
-              aria-label={t('acrylic.switchAria')}
+            <Segmented
+              className="wf-seg--fill"
+              options={[
+                { value: 'acrylic', label: t('material.acrylic'), disabled: !materialSupported },
+                { value: 'mica', label: t('material.mica'), disabled: !materialSupported },
+                { value: 'none', label: t('material.none'), disabled: !materialSupported }
+              ]}
+              value={material}
+              onChange={(value) => setMaterial(value as WindowMaterialSetting)}
+              aria-label={t('material.aria')}
             />
           </div>
 

@@ -11,10 +11,20 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v157'
+export const CHAPTER_SEED_VERSION = 'v158'
 
 /**
- * 最近版本变更日志（v157；更早版本见上述历史文件）。
+ * 最近版本变更日志（v158；更早版本见上述历史文件）。
+ *
+ * `v158`（窗口材质三档批）：窗口材质由「亚克力 / 关闭」二档扩展为
+ * 「亚克力 / 云母 / 关闭」三档，默认仍为亚克力。主进程 `WindowMaterial` 与
+ * 渲染层 `WindowMaterialSetting` 同步扩展，`'mica'` 直接作为合法值生效
+ * （不做旧值迁移）；`resolveMaterial` / `applyWindowMaterial` / 建窗背景色
+ * 统一按「非 none 即透明」处理，避免云母被实色底遮挡。渲染层 `data-material`
+ * 写实际材质名，`material.css`（原 `acrylic.css`）与主题切换 View Transition
+ * 覆盖亚克力 / 云母两种材质。设置页改为三档 `Select`、主题面板改为三档分段控件，
+ * 文案由「透明效果」改为「窗口材质」；IPC `window:acrylicSupported` 更名
+ * `window:materialSupported`。教学书与文档同步；无 DB 迁移，升版本只重灌教学书。
  *
  * `v157`（AI 助手总开关 + 设置文案精简批）：设置 → AI 助手页顶行新增「启用 AI 助手」
  * 总开关（`Switch`，默认开启）。键为普通渲染层偏好 `aiAssistantEnabled`（camelCase，

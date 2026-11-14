@@ -1,6 +1,6 @@
 # 窗口行为（Window）
 
-本文描述主窗口的创建参数、尺寸与持久化、窗口材质（Acrylic）、自绘标题栏、宽度磁吸与开发态快捷键。
+本文描述主窗口的创建参数、尺寸与持久化、窗口材质（亚克力 / 云母）、自绘标题栏、宽度磁吸与开发态快捷键。
 所有数值以源码为准，标注为「文件:行号」。
 
 - 创建与装配：`src/main/window.ts`
@@ -8,7 +8,7 @@
 - 材质：`src/main/windowMaterial.ts`、`src/renderer/src/theme/windowMaterial.ts`
 - 宽度磁吸：`src/main/resizeSnap.ts`、`src/main/ipc/snap.ts`、`src/renderer/src/pages/bookshelf/useShelfSnap.ts`
 - 标题栏 overlay：`src/main/ipc/window.ts`、`src/renderer/src/theme/useTitleBarOverlay.ts`
-- 渲染层样式：`styles/acrylic.css`、`styles/statusbar.css`、`styles/shell.css`、`styles/bookshelf.css`
+- 渲染层样式：`styles/material.css`、`styles/statusbar.css`、`styles/shell.css`、`styles/bookshelf.css`
 
 ## 1. 窗口创建参数
 
@@ -18,8 +18,8 @@
 | ------------------------ | -------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------- |
 | `width` / `height`       | 持久化值，缺省 902 × 764                                             | 外框尺寸，单位 DIP                                                                | `window.ts:75-76`、`windowState.ts:22-23` |
 | `minWidth` / `minHeight` | 902 × 764                                                            | 与默认尺寸相同，窗口不可再缩小                                                    | `window.ts:77-78`                         |
-| `backgroundColor`        | 材质生效 `#00000000`；否则 `#f3f3f3`                                 | 透明用 alpha 通道实现，**不用** `transparent: true`                               | `window.ts:84`                            |
-| `backgroundMaterial`     | `resolveMaterial()` 结果                                             | `acrylic` / `none`                                                                | `window.ts:65,85`                         |
+| `backgroundColor`        | 材质生效 `#00000000`；否则 `#f3f3f3`                                 | 透明用 alpha 通道实现，**不用** `transparent: true`                               | `window.ts:165`                           |
+| `backgroundMaterial`     | `resolveMaterial()` 结果                                             | `acrylic` / `mica` / `none`                                                       | `window.ts:144,166`                       |
 | `icon`                   | 开发态 `build/icon.png`；打包态 `resources/icon.png`                 | 路径由 `app.isPackaged` 分支决定；窗口图标只用 256（Windows 图标尺寸上限，无 4K） | `window.ts:147-151,159`                   |
 | `titleBarStyle`          | `'hidden'`                                                           | 隐藏系统标题栏，渲染层自绘                                                        | `window.ts:86`                            |
 | `titleBarOverlay`        | `color: '#00000000'`、`symbolColor: '#5c5c5c'`、`height: 42`         | 仅保留右上角系统按钮（WCO）                                                       | `window.ts:87-91`                         |
@@ -77,55 +77,56 @@
 
 ### 4.1 取值
 
-窗口材质**只有两种**（`src/main/windowMaterial.ts:14`）：
+窗口材质**有三种**（`src/main/windowMaterial.ts:14`）：
 
-| 值        | 含义                                                   |
-| --------- | ------------------------------------------------------ |
-| `acrylic` | 开启亚克力透明：窗口底全透明，透出 Windows DWM Acrylic |
-| `none`    | 关闭：不透明，回退渲染层光斑渐变                       |
+| 值        | 含义                                                      |
+| --------- | --------------------------------------------------------- |
+| `acrylic` | 亚克力：窗口底全透明，透出 DWM 实时模糊的背后内容         |
+| `mica`    | 云母：窗口底全透明，透出采样桌面壁纸的 DWM 材质（不模糊） |
+| `none`    | 关闭：不透明，回退渲染层光斑渐变                          |
 
 - 默认值：`acrylic`（`windowMaterial.ts:24`；渲染层默认一致，`theme/windowMaterial.ts:17`）。
 - settings 键：`windowMaterial`（`windowMaterial.ts:17`、`theme/windowMaterial.ts:10`）。
-- 旧值迁移：历史值 `mica` 一律按 `acrylic` 处理，其余非法值返回 `null`（`windowMaterial.ts:50-54`、`theme/windowMaterial.ts:25-29`）。
+- 三档均为合法值，**不做旧值迁移**，其余非法值返回 `null`（`windowMaterial.ts:49-52`、`theme/windowMaterial.ts:25-29`）。
 
 ### 4.2 系统门槛
 
-- 仅 Windows：`process.platform === 'win32'`（`windowMaterial.ts:68`）。
-- 仅 Windows 11 22H2 及以上：build ≥ **22621**（`ACRYLIC_MIN_BUILD`，`windowMaterial.ts:36,67-71`）。
-- 非 Windows / 低版本一律解析为 `none`（`resolveMaterial`，`windowMaterial.ts:90-92`）。
-- 门槛依据是 Electron `setBackgroundMaterial` 的实现限制；Win10 原生亚克力不在此 API 暴露范围内（`windowMaterial.ts:27-34`）。
+- 仅 Windows：`process.platform === 'win32'`（`windowMaterial.ts:66`）。
+- 仅 Windows 11 22H2 及以上：build ≥ **22621**（`MATERIAL_MIN_BUILD`，`windowMaterial.ts:36,65-69`）。
+- 非 Windows / 低版本一律解析为 `none`（`resolveMaterial`，`windowMaterial.ts:86-89`）。
+- 门槛依据是 Electron `setBackgroundMaterial` 的实现限制，`acrylic` 与 `mica` 同一门槛；Win10 原生亚克力不在此 API 暴露范围内（`windowMaterial.ts:27-34`）。
 
 ### 4.3 启动应用流程
 
-1. 建窗前读 settings 键并归一化：`readInitialWindowMaterial()`（`windowMaterial.ts:78-87`）。
-2. `resolveMaterial()` 结合平台能力算出真实可生效值（`windowMaterial.ts:65,90-92`）。
-3. 由该值决定 `backgroundMaterial` 与 `backgroundColor`：开启时 `#00000000`，关闭时 `#f3f3f3`（`window.ts:66,84-85`；常量在 `windowMaterial.ts:39,42`）。
-4. 渲染层 `main.tsx` 预取同一键、校验后作为 `WindowMaterialProvider` 的 `initialMaterial`，避免异步读取造成闪屏（`src/renderer/src/main.tsx:34-42,60`）。
+1. 建窗前读 settings 键并归一化：`readInitialWindowMaterial()`（`windowMaterial.ts:75-84`）。
+2. `resolveMaterial()` 结合平台能力算出真实可生效值（`windowMaterial.ts:86-89`）。
+3. 由该值决定 `backgroundMaterial` 与 `backgroundColor`：非 `none` 时 `#00000000`，`none` 时 `#f3f3f3`（`window.ts:143-145,162-166`；常量在 `windowMaterial.ts:39,42`）。
+4. 渲染层 `main.tsx` 预取同一键、校验后作为 `WindowMaterialProvider` 的 `initialMaterial`，避免异步读取造成闪屏（`src/renderer/src/main.tsx:72-75,100`）。
 
 ### 4.4 运行时切换
 
-- IPC `window:setMaterial`：入参经 `normalizeWindowMaterial()` 迁移旧值，非法返回 `null`，否则调用 `applyWindowMaterial()` 并返回**实际生效**值（`src/main/ipc/window.ts:63-74`）。
-- IPC `window:acrylicSupported`：返回当前系统是否支持 Acrylic，渲染层据此禁用开关（`src/main/ipc/window.ts:78`）。
-- `applyWindowMaterial()` 内部：`setBackgroundMaterial(effective)` + 同步 `setBackgroundColor()`（`windowMaterial.ts:101-114`）。
-- preload 暴露为 `window.api.windowMaterial.set / acrylicSupported`（`src/preload/index.ts:345-351`）。
+- IPC `window:setMaterial`：入参经 `normalizeWindowMaterial()` 校验（三档均合法），非法返回 `null`，否则调用 `applyWindowMaterial()` 并返回**实际生效**值（`src/main/ipc/window.ts:62-73`）。
+- IPC `window:materialSupported`：返回当前系统是否支持窗口材质，渲染层据此禁用三档选择（`src/main/ipc/window.ts:77`）。
+- `applyWindowMaterial()` 内部：`setBackgroundMaterial(effective)` + 同步 `setBackgroundColor()`（`windowMaterial.ts:98-111`）。
+- preload 暴露为 `window.api.windowMaterial.set / materialSupported`（`src/preload/index.ts:421-427`）。
 
 ### 4.5 渲染层投影
 
-- `WindowMaterialProvider` 计算 `enabled = setting === 'acrylic' && supported`（`WindowMaterialProvider.tsx:51`）。
-- 状态写入根元素 `data-material`：开启为 `acrylic`，关闭为 `none`（`WindowMaterialProvider.tsx:53-55`）。
-- `styles/acrylic.css` 依 `data-material` 生效：
-  - `[data-material='acrylic'] .shell` 用 `color-mix(... var(--desk-solid-alpha), transparent)` 换成半透明纯色底（`acrylic.css:24-26`）。
-  - `[data-material='acrylic'] body` 置透明，否则 body 底会挡住 DWM 材质（`acrylic.css:30-32`）。
-- 切换时三件事同步：调主进程、写 `data-material`、经 `settings:set` 持久化（`WindowMaterialProvider.tsx:57-71`）。
-- 主进程返回的实际值与请求不一致时（如系统不支持），Provider 回退本地状态（`WindowMaterialProvider.tsx:63-67`）。
-- 透明效果入口：标题栏主题面板与「设置 → 外观与主题」页均提供开关，两处共享 `WindowMaterialProvider`，状态天然同步。
+- `WindowMaterialProvider` 计算 `material = setting !== 'none' && supported ? setting : 'none'`，`enabled = material !== 'none'`（`WindowMaterialProvider.tsx:52-53`）。
+- 状态写入根元素 `data-material`：写**实际材质名** `acrylic` / `mica` / `none`（`WindowMaterialProvider.tsx:55-57`）。
+- `styles/material.css` 依 `data-material` 生效：
+  - `:is([data-material='acrylic'], [data-material='mica']) .shell` 用 `color-mix(... var(--desk-solid-alpha), transparent)` 换成半透明纯色底（`material.css:26-28`）。
+  - `:is([data-material='acrylic'], [data-material='mica']) body` 置透明，否则 body 底会挡住 DWM 材质（`material.css:32-34`）。
+- 切换时三件事同步：调主进程、写 `data-material`、经 `settings:set` 持久化（`WindowMaterialProvider.tsx:59-72`）。
+- 主进程返回的实际值与请求不一致时（如系统不支持），Provider 回退本地状态（`WindowMaterialProvider.tsx:64-68`）。
+- 窗口材质入口：标题栏主题面板与「设置 → 外观与主题」页均提供三档选择，两处共享 `WindowMaterialProvider`，状态天然同步。
 
 ### 4.6 失败降级
 
-- 平台不支持：`resolveMaterial` 提前降级 `none`，不会调用无效 API（`windowMaterial.ts:97,104`）。
-- 调用异常：`setBackgroundMaterial` 抛错时记录 `error` 并返回 `DEFAULT_WINDOW_MATERIAL`（当前为 `acrylic`，见 `windowMaterial.ts:108-112`）；窗口保持上一次底色，属边界现状，正常平台不触发。
-- 窗口已销毁：直接返回默认常量（`windowMaterial.ts:102`）。
-- 渲染层查询 `acrylicSupported` 失败视为不支持，开关置灰（`WindowMaterialProvider.tsx:35-48`）。
+- 平台不支持：`resolveMaterial` 提前降级 `none`，不会调用无效 API（`windowMaterial.ts:86-89,101`）。
+- 调用异常：`setBackgroundMaterial` 抛错时记录 `error` 并返回 `DEFAULT_WINDOW_MATERIAL`（当前为 `acrylic`，见 `windowMaterial.ts:105-109`）；窗口保持上一次底色，属边界现状，正常平台不触发。
+- 窗口已销毁：直接返回默认常量（`windowMaterial.ts:99`）。
+- 渲染层查询 `materialSupported` 失败视为不支持，三档选择置灰（`WindowMaterialProvider.tsx:36-49`）。
 
 ## 5. 自绘标题栏与 WCO
 
@@ -213,16 +214,16 @@ preload 对应 `window.api.windowSnap`（`src/preload/index.ts:352-361`）。配
 
 ## 9. 常见误区
 
-- **不存在 `mica` / `tabbed` / `auto` 材质**。合法值只有 `acrylic` 与 `none`；`mica` 仅是历史值，读到时迁移为 `acrylic`（`windowMaterial.ts:14,50-54`）。
-- **不要写 `transparent: true`**。透明效果通过 `backgroundColor: '#00000000'` 的 alpha 通道实现，`transparent: true` 会在 Windows 上带来无法缩放、无阴影等副作用（`window.ts:81-84`）。
-- **材质生效时禁止给背景再叠加 `backdrop-filter`**。DWM Acrylic 已在系统层完成模糊，渲染层再模糊会二次处理、破坏透明链路并增加掉帧；材质态只允许改底色透明度（见 `acrylic.css:24-32`）。
+- **`mica` 是合法材质**。合法值为 `acrylic` / `mica` / `none`；`acrylic` 实时模糊背后内容，`mica` 采样桌面壁纸（不模糊），两者门槛同为 Windows 11 22H2+（`windowMaterial.ts:14,49-52,65-69`）。
+- **不要写 `transparent: true`**。窗口透明通过 `backgroundColor: '#00000000'` 的 alpha 通道实现，`transparent: true` 会在 Windows 上带来无法缩放、无阴影等副作用（`window.ts:162-166`）。
+- **材质生效时禁止给背景再叠加 `backdrop-filter`**。DWM 已在系统层完成材质处理，渲染层再模糊会二次处理、破坏透明链路并增加掉帧；材质态只允许改底色透明度（见 `material.css:26-34`）。
 - **`material.ts` 已改名 `windowMaterial.ts`**（主进程与渲染层各一份），旧路径与旧文档引用均已失效。
-- **不存在 `window:material:*` 通道**。实际通道是 `window:setMaterial`、`window:acrylicSupported`、`window:titlebar:set-overlay`（`src/main/ipc/window.ts:41,63,78`）。
-- **渲染层标记是 `data-material`**，不是 `data-window-material`，也不是 `data-theme` 的附属值（`WindowMaterialProvider.tsx:54`）。
-- **`acrylicSupported` 只在 Windows 返回 true**，非 Windows 下开关必然置灰，属预期行为（`windowMaterial.ts:67-71`）。
+- **不存在 `window:material:*` 通道**。实际通道是 `window:setMaterial`、`window:materialSupported`、`window:titlebar:set-overlay`（`src/main/ipc/window.ts:41,62,77`）。
+- **渲染层标记是 `data-material`**，不是 `data-window-material`，也不是 `data-theme` 的附属值；三档分别写实际材质名 `acrylic` / `mica` / `none`（`WindowMaterialProvider.tsx:55-57`）。
+- **`materialSupported` 只在 Windows 返回 true**，非 Windows 下三档选择必然置灰，属预期行为（`windowMaterial.ts:65-69`）。
 - **最小尺寸不是 320 × 240**：320 / 240 只是持久化数据的合法下限；窗口实际最小值为 902 × 764（`windowState.ts:26-27`、`window.ts:77-78`）。
 - **磁吸不是全局能力**：离开书架页即 `clear`，其他页面拖动完全自由（`useShelfSnap.ts:129-138`）。
 
 ---
 
-最后核对：2026-10-31
+最后核对：2026-11-14

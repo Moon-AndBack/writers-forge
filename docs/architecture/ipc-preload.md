@@ -29,7 +29,7 @@ Writer's Forge 的渲染层不直接接触 Node / Electron 能力：所有数据
 - **唯一例外**：`window:titlebar:set-overlay` 保留连字符，属历史遗留；改名会同时破坏 preload 与渲染层，改动需按不兼容变更处理。
 - **域前缀不随文件走**：`chapters` 域跨 `chapters.ts` + `chapterSearch.ts`；`window` 域跨 `window.ts` + `snap.ts`；`worldEntity` 域跨 `worldEntities.ts` + `worldRefs.ts` + `worldPowers.ts`。域是逻辑边界，不是文件边界。
 - **单复数不统一，逐字沿用**：`chipColors`（复数）、`diagnostics`（复数）、`books`（复数），但 `worldEntity` / `worldSubtype` / `outline` / `plot` / `settings`（单数）。新增通道必须沿用既有前缀，不得"顺手纠正"。
-- **preload 命名空间 ≠ 通道前缀**：`titleBar` → `window:titlebar:*`、`windowMaterial` → `window:setMaterial` / `window:acrylicSupported`、`windowSnap` → `window:snap:*`、`systemTheme` → `theme:accent:*`。命名空间表达 UI 概念，通道表达主进程归属。
+- **preload 命名空间 ≠ 通道前缀**：`titleBar` → `window:titlebar:*`、`windowMaterial` → `window:setMaterial` / `window:materialSupported`、`windowSnap` → `window:snap:*`、`systemTheme` → `theme:accent:*`。命名空间表达 UI 概念，通道表达主进程归属。
 
 ## 2. 注册装配与文件布局
 
@@ -224,7 +224,7 @@ onedrive:cancelRestore
 theme:accent:get
 
 # window（7）—— window.ts 3 + snap.ts 4
-window:titlebar:set-overlay · window:setMaterial · window:acrylicSupported
+window:titlebar:set-overlay · window:setMaterial · window:materialSupported
 window:snap:set · window:snap:clear · window:snap:status · window:bounds:get
 ```
 
@@ -328,7 +328,7 @@ interface AiError {
 | `cleanWords`     | 7      | `import` / `toggle` / `setCategoryEnabled`          | `cleanWords:*`                                    |
 | `onedrive`       | 12     | `backup` / `deleteBackup` / `onRestoreProgress`     | `onedrive:*`                                      |
 | `titleBar`       | 1      | `setOverlay`                                        | `window:titlebar:*`                               |
-| `windowMaterial` | 2      | `set` / `acrylicSupported`                          | `window:setMaterial`、`window:acrylicSupported`   |
+| `windowMaterial` | 2      | `set` / `materialSupported`                         | `window:setMaterial`、`window:materialSupported`  |
 | `windowSnap`     | 4      | `set` / `clear` / `boundsWidth`                     | `window:snap:*`、`window:bounds:get`              |
 | `systemTheme`    | 2      | `getAccentColor` / `onAccentChange`                 | `theme:accent:*`                                  |
 

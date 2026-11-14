@@ -5,7 +5,11 @@ import {
   type TitleBarOverlayOptions
 } from 'electron'
 import { logger } from '../logger'
-import { applyWindowMaterial, isAcrylicSupported, normalizeWindowMaterial } from '../windowMaterial'
+import {
+  applyWindowMaterial,
+  isMaterialSupported,
+  normalizeWindowMaterial
+} from '../windowMaterial'
 
 /** 窗口域日志 scope。 */
 const log = logger.scope('windowIpc')
@@ -57,9 +61,8 @@ export function registerWindowIpc(): void {
     }
   })
 
-  // 切换窗口系统材质（Acrylic 透明效果）：参数非法返回 null；无窗口返回 null。
-  // 返回值经 `normalizeWindowMaterial` 迁移旧值 `'mica'` → `'acrylic'`。
-  // 返回**实际生效**的材质（非 Windows 11 22H2+ 时降级 'none'），供渲染层校准开关状态。
+  // 切换窗口系统材质（亚克力 / 云母 / 关闭）：参数非法返回 null；无窗口返回 null。
+  // 返回**实际生效**的材质（非 Windows 11 22H2+ 时降级 'none'），供渲染层校准选择状态。
   ipcMain.handle('window:setMaterial', (event, material: unknown) => {
     const normalized = normalizeWindowMaterial(material)
     if (!normalized) {
@@ -73,7 +76,7 @@ export function registerWindowIpc(): void {
     return effective
   })
 
-  // 当前系统是否支持 Acrylic（Electron 限制：仅 Windows 11 22H2+）；
-  // 渲染层据此禁用开关并提示。
-  ipcMain.handle('window:acrylicSupported', () => isAcrylicSupported())
+  // 当前系统是否支持窗口材质（Electron 限制：仅 Windows 11 22H2+）；
+  // 渲染层据此禁用三档选择并提示。
+  ipcMain.handle('window:materialSupported', () => isMaterialSupported())
 }

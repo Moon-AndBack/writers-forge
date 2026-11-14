@@ -4,6 +4,7 @@ import { Select, Switch } from '../../components/ui'
 import type { ThemeId } from '../../theme/themes'
 import { useTheme } from '../../theme/useTheme'
 import { useWindowMaterial } from '../../theme/windowMaterial'
+import type { WindowMaterialSetting } from '../../theme/windowMaterial'
 import {
   PAPER_LINES_DEFAULT,
   PAPER_LINES_SETTING_KEY,
@@ -37,7 +38,7 @@ export default function AppearanceSection() {
     decodePaperLines
   )
   const themeModeId = useId()
-  const acrylicId = useId()
+  const materialId = useId()
   const paperLinesId = useId()
 
   return (
@@ -59,19 +60,25 @@ export default function AppearanceSection() {
       </SettingRow>
 
       <SettingRow
-        controlId={acrylicId}
-        label={t('acrylic.label')}
+        controlId={materialId}
+        label={t('material.label')}
         description={
-          windowMaterial.supported ? t('acrylic.supportedDesc') : t('acrylic.unsupportedDesc')
+          windowMaterial.supported ? t('material.supportedDesc') : t('material.unsupportedDesc')
         }
       >
-        <Switch
-          id={acrylicId}
-          aria-describedby={settingRowDescriptionId(acrylicId)}
-          checked={windowMaterial.enabled}
+        <Select
+          id={materialId}
+          ariaDescribedBy={settingRowDescriptionId(materialId)}
+          className="settings-control settings-control--select"
+          value={windowMaterial.material}
+          options={[
+            { value: 'acrylic', label: t('material.acrylic') },
+            { value: 'mica', label: t('material.mica') },
+            { value: 'none', label: t('material.none') }
+          ]}
           disabled={!windowMaterial.supported}
-          aria-label={t('acrylic.switchAria')}
-          onChange={(event) => windowMaterial.setEnabled(event.target.checked)}
+          ariaLabel={t('material.aria')}
+          onChange={(value) => windowMaterial.setMaterial(value as WindowMaterialSetting)}
         />
       </SettingRow>
 

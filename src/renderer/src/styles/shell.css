@@ -7,8 +7,8 @@
    光斑（原浓度 ×0.2；dark 专属覆盖为斜切「三角」渐隐色带（无光斑），
    见下方 [data-theme='dark'] .shell），仅使用 theme.css 令牌，兼容
    light / dark / sage / honey 四主题。
-   可选窗口材质（Acrylic 透明效果）在开启时改用四主题纯色 @70% 底透出 DWM，
-   覆盖规则独立于 styles/acrylic.css（由 App.tsx 在本文件之后导入）。
+   可选窗口材质（亚克力 / 云母）在开启时改用四主题纯色 @70% 底透出 DWM，
+   覆盖规则独立于 styles/material.css（由 App.tsx 在本文件之后导入）。
    ============================================================ */
 
 html,

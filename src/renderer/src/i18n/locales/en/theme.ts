@@ -17,11 +17,15 @@ const theme = {
     label: 'Follow system',
     desc: 'Automatically switch the theme with the system light/dark setting'
   },
-  acrylic: {
-    label: 'Transparency',
-    supportedDesc: 'Use acrylic material for the window background',
+  material: {
+    label: 'Window material',
+    acrylic: 'Acrylic',
+    mica: 'Mica',
+    none: 'Off',
+    supportedDesc:
+      'Use the selected material for the window background (Acrylic blurs live, Mica samples the wallpaper)',
     unsupportedDesc: 'Not supported on this system (requires Windows 11 22H2+)',
-    switchAria: 'Transparency (Acrylic)'
+    aria: 'Window material'
   },
   triggerAria: 'Theme: {{label}}, click to open the theme panel',
   triggerTooltip: 'Theme: {{label}} (click to switch)',

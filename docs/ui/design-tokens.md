@@ -4,7 +4,7 @@
 
 - 令牌定义：`src/renderer/src/styles/theme.css`（363 行，156 条声明）
 - 主题标识 / 解析：`theme/themes.ts`、`theme/ThemeProvider.tsx`；系统强调色：`theme/useSystemAccent.ts`、`theme/color.ts`、`src/main/theme.ts`、`src/main/ipc/theme.ts`
-- 切换过渡：`theme/themeReveal.ts`、`styles/components/motion.css`；材质 / 外壳：`styles/acrylic.css`、`styles/shell.css`；入口：`styles/index.css`、`App.tsx`
+- 切换过渡：`theme/themeReveal.ts`、`styles/components/motion.css`；材质 / 外壳：`styles/material.css`、`styles/shell.css`；入口：`styles/index.css`、`App.tsx`
 
 ---
 
@@ -184,12 +184,12 @@
 | `--soft-press-solid`                        | 按下态                       | 标题栏按钮                                           |
 | `--pill-bg-solid` / `--pill-bg-hover-solid` | 胶囊底 / hover               | `statusbar-widgets.css`                              |
 
-材质（Acrylic）链路：
+材质（亚克力 / 云母）链路：
 
-1. `WindowMaterialProvider` 在 `<html>` 写 `data-material='acrylic' | 'none'`。
-2. 开启时 `acrylic.css:24-26` 把 `.shell` 底色换为 `color-mix(in srgb, var(--desk-solid) var(--desk-solid-alpha), transparent)`，即各主题纯色底保留 **70%** 不透明度；同时 `body` 背景置透明（`acrylic.css:30-32`），否则 `body` 的不透明背景会挡住 DWM 材质。
+1. `WindowMaterialProvider` 在 `<html>` 写 `data-material='acrylic' | 'mica' | 'none'`（实际生效材质）。
+2. 开启时 `material.css:26-28` 把 `.shell` 底色换为 `color-mix(in srgb, var(--desk-solid) var(--desk-solid-alpha), transparent)`，即各主题纯色底保留 **70%** 不透明度；同时 `body` 背景置透明（`material.css:32-34`），否则 `body` 的不透明背景会挡住 DWM 材质。两种材质共用同一套壳层 / body 规则（亚克力实时模糊，云母采样壁纸但不模糊）。
 3. 面板 / 侧栏 / 编辑区继续用不透明 `--pane`，**只有组件缝隙**透出材质。这正是 `-solid` 组存在的理由：若沿半透明 `--soft`，材质会从每张卡内部透出，文字对比度随壁纸漂移。
-4. `--desk-solid-alpha` 是主题无关的单一旋钮（70%），四主题共用；dark 的 `--desk-solid` 取 `#161616`（与色带中段同值），避免深色下材质偏亮。主进程窗口底：材质开 `#00000000`，关 `#f3f3f3`，避免创建瞬间黑闪（`window.ts:81-84`）。
+4. `--desk-solid-alpha` 是主题无关的单一旋钮（70%），四主题共用；dark 的 `--desk-solid` 取 `#161616`（与色带中段同值），避免深色下材质偏亮。主进程窗口底：材质开 `#00000000`，关 `#f3f3f3`，避免创建瞬间黑闪（`window.ts:162-166`）。
 
 选择顺序：**`--soft-solid` 容器上的输入类控件用 `--control-on-soft*`；普通卡片 / 按钮用 `--*-solid`；只有确需透出下层的浮层才用半透明档**。
 
@@ -237,9 +237,9 @@ resolved === 当前 dataset.theme → flushSync 只提交状态，不启动过�
 `runThemeReveal()`（`themeReveal.ts:94-170`）用 `document.startViewTransition` 拍整窗快照，再用 WAAPI 驱动伪元素：
 
 - 时长 / 缓动读 `--dur-slow`（240ms）与 `--ease`（对称曲线），读失败回退常量，不写裸时长；改由 JS 而非 CSS 是因为 CSS 曾用强前倾曲线 + 180ms，前 3 帧走完 3/4，肉眼等同瞬切。
-- `motion.css` 只做三件事：`::view-transition-old/new(root)` 一律 `animation: none`；`::view-transition-new(root)` 基础 `opacity: 0`（`ready` 前物理上不可能闪）；acrylic 下两层改 `mix-blend-mode: plus-lighter`。
+- `motion.css` 只做三件事：`::view-transition-old/new(root)` 一律 `animation: none`；`::view-transition-new(root)` 基础 `opacity: 0`（`ready` 前物理上不可能闪）；窗口材质（亚克力 / 云母）下两层改 `mix-blend-mode: plus-lighter`。
 - 不透明材质：**覆盖式**。旧快照保持不透明垫底，新快照 0 → 1 淡入；真交叉会让亮暗两层同时半透明而整屏泛灰。
-- Acrylic：**真交叉 + `plus-lighter`**，old 1 → 0 与 new 0 → 1 同步，预乘后合计恒为 0.70，材质透出率全程 30% 不变。old 必须 `fill: 'forwards'`，否则结束回落 opacity 1 会与 new 相加导致一帧变实。
+- 窗口材质（亚克力 / 云母）：**真交叉 + `plus-lighter`**，old 1 → 0 与 new 0 → 1 同步，预乘后合计恒为 0.70，材质透出率全程 30% 不变。old 必须 `fill: 'forwards'`，否则结束回落 opacity 1 会与 new 相加导致一帧变实。
 - 降级（直接 `applyTheme()`，切换永不依赖动画）：不支持 `startViewTransition`、`prefers-reduced-motion: reduce`、启动抛错、`ready` 被跳过（窗口隐藏 / 快速连切）。最后一种在 catch 中补调一次，并用 `revealSequence` 序号守卫，避免旧切换回写已被取代的主题。
 
 ---
@@ -259,7 +259,7 @@ resolved === 当前 dataset.theme → flushSync 只提交状态，不启动过�
 | 7    | `chip-pill.css`                                        | 胶囊基类，就地派生 `--chip-fg`                                                                                                                                      |
 | 8    | `chip-preset-colors.css`                               | **必须最后**：`.chip-p-*` 与 `.chip-m-*` 同为 0,1,0，只有后加载才能覆盖模块基色；其配对文字色也必须压过 `chip-pill.css` 的派生色，否则首帧「实色底 + 低对比字」闪烁 |
 
-`App.tsx:22-23` 另有顺序依赖：`shell.css` 定义 `.shell` 基础底与 `[data-theme='dark'] .shell`（0,2,0），`acrylic.css` 随后导入，`[data-material='acrylic'] .shell` 同为 0,2,0，**只能靠源码顺序胜出**；提前加载会被 dark 色带盖掉。
+`App.tsx:22-23` 另有顺序依赖：`shell.css` 定义 `.shell` 基础底与 `[data-theme='dark'] .shell`（0,2,0），`material.css` 随后导入，`:is([data-material='acrylic'], [data-material='mica']) .shell` 同为 0,2,0，**只能靠源码顺序胜出**；提前加载会被 dark 色带盖掉。
 
 契约：① 令牌块永远在消费者之前，页面 CSS 不得重声明 `:root` 令牌；② 同特异性冲突靠「后加载者胜」，不用 `!important`；③ 需要让位时用 `:where()` 把特异性压到 0；④ 新增样式文件先判断属于「令牌 → 基础 → 组件 → 预设覆盖」哪一层再插入。
 
@@ -271,10 +271,10 @@ resolved === 当前 dataset.theme → flushSync 只提交状态，不启动过�
 2. **不得给主题令牌挂 `transition`**。`--dur-*` 只服务交互（hover / 展开 / 拖拽 / 显隐）与进出场；仅由 `data-theme` 引起的 `color` / `background` / `box-shadow` 过渡一律删除。主题整体由 View Transition 淡化，CSS 再过渡会出现「一部分渐变、一部分硬跳」。
 3. **新增令牌必须四套主题齐全**。主题相关令牌在 light / dark / sage / honey 四块**各自显式声明**（尤其 `--control-on-soft*`，注释明确要求不依赖 `:root` 继承）；主题无关才放 `:root`。只加一侧会让某主题悄悄沿用亮色值。
 4. **不得跨主题推导**。dark 的 `--desk-2/3`、`--pane`、阴影、选区透明度与 light 语义不同（§4.6），复制 light 比例再调亮度必然出错。
-5. **不透明优先**：组件填充用 `--*-solid`，否则 Acrylic 下材质从组件内部透出。
+5. **不透明优先**：组件填充用 `--*-solid`，否则窗口材质下材质会从组件内部透出。
 6. **界面字号走 `--fs-*`，正文 / 行高 / 缩放走 `--doc-*`**，时长走 `--dur-*`，缓动走 `--ease` / `--ease-out`；层级优先走 `--z-*`（当前仅 970–972 已令牌化，其余待收敛，新代码不得再写裸 `z-index`）。禁止裸 `0.2s`、`ease-in-out`、字面量 `z-index`，以及界面 `font-size` 数值字面量（封面首字 34 / 56 已登记例外）。
 7. **语义色不改语义**：`--ok` / `--warn` / `--danger` 只表达状态，不当品牌强调；`--brand` 会被系统强调色覆盖，不要当固定色画插画。
 8. **兼容层已删除**：`--bg` / `--fg` 已从四套主题移除，`body` 改用 `--desk-1` / `--text`；同组原 `--accent` / `--border` 已随更早批次清理删除。
-9. 改令牌后核对四套主题的正文 / 次要文字 / 控件描边 / 选区对比度，并在 Acrylic 开、关两种状态下各看一遍；若涉及主题或外观描述，同步教学书种子（`seedGuideBook/`）。
+9. 改令牌后核对四套主题的正文 / 次要文字 / 控件描边 / 选区对比度，并在窗口材质（亚克力 / 云母）开、关两种状态下各看一遍；若涉及主题或外观描述，同步教学书种子（`seedGuideBook/`）。
 
 最后核对：2026-11-09

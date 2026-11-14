@@ -142,7 +142,7 @@ export function createMainWindow(): BrowserWindow {
 
   // 启动时读取持久化的窗口材质并解析实际可生效值（非 Windows 11 22H2+ 降级 none）。
   const initialMaterial = resolveMaterial(readInitialWindowMaterial())
-  const acrylicEnabled = initialMaterial === 'acrylic'
+  const materialEnabled = initialMaterial !== 'none'
 
   // 应用图标：开发态取仓库内 build/icon.png；打包态取 extraResources 投放的 icon.png。
   // 文件内容恒定 256×256（文件名不再带尺寸后缀）：Electron 在 new BrowserWindow() 构造期
@@ -159,10 +159,10 @@ export function createMainWindow(): BrowserWindow {
     minHeight: DEFAULT_WINDOW_HEIGHT,
     show: false,
     icon: windowIcon,
-    // 开启 Acrylic 时窗口底全透明（透出 DWM 材质）；关闭时不透明，取近白中性色 #f3f3f3
-    // 避免创建瞬间黑闪。用 backgroundColor 的 alpha 通道而非 transparent:true，
-    // 规避后者在 Windows 上「无法缩放 / 无阴影」等副作用。
-    backgroundColor: acrylicEnabled ? '#00000000' : '#f3f3f3',
+    // 开启材质（亚克力 / 云母）时窗口底全透明（透出 DWM 材质）；关闭时不透明，
+    // 取近白中性色 #f3f3f3 避免创建瞬间黑闪。用 backgroundColor 的 alpha 通道
+    // 而非 transparent:true，规避后者在 Windows 上「无法缩放 / 无阴影」等副作用。
+    backgroundColor: materialEnabled ? '#00000000' : '#f3f3f3',
     backgroundMaterial: initialMaterial,
     titleBarStyle: 'hidden',
     titleBarOverlay: {

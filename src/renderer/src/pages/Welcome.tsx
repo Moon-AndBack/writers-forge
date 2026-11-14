@@ -16,7 +16,7 @@ export interface WelcomeProps {
 /**
  * 首次启动欢迎页（渲染在外壳 `.app-viewport` 内，标题栏 / 状态栏由外壳保留）。
  * 仅一步：填写笔名 → 落库并回调 `onFinish`。
- * 主题与窗口材质均由各自默认值生效（跟随系统 + Acrylic），引导不再干预。
+ * 主题与窗口材质均由各自默认值生效（跟随系统 + 亚克力），引导不再干预。
  * 卡片复用组件库窗口框架 `Window`，与 `Modal` 保持同一外观。
  */
 export default function Welcome({ onFinish }: WelcomeProps) {

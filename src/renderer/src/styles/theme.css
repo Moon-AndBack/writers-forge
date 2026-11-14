@@ -81,8 +81,8 @@
   --desk-spot-2: 880px 620px;
   --desk-spot-3: 700px 500px;
 
-  /* 窗口材质（Acrylic）开启时纯色底的透明度（主题无关）：与各主题 --desk-solid 经
-     color-mix 派生出半透明底，见 acrylic.css 的 [data-material='acrylic'] .shell */
+  /* 窗口材质（亚克力 / 云母）开启时纯色底的透明度（主题无关）：与各主题 --desk-solid 经
+     color-mix 派生出半透明底，见 material.css 的 [data-material] 规则 */
   --desk-solid-alpha: 70%;
 
   /* 文本选区底色（::selection，见 base.css）：由品牌色派生，四主题自动跟随。
@@ -102,7 +102,7 @@
   --desk-1: #dfe4f2;
   --desk-2: #eef0f6;
   --desk-3: #e6e9f4;
-  /* 窗口材质（Acrylic）开启时的纯色底：取 --desk-2，@70% 透明度（--desk-solid-alpha）透出 DWM 材质 */
+  /* 窗口材质（亚克力 / 云母）开启时的纯色底：取 --desk-2，@70% 透明度（--desk-solid-alpha）透出 DWM 材质 */
   --desk-solid: #eef0f6;
   /* 桌面渐变光斑：色相对齐原型 .desktop，alpha 为原浓度 ×0.2（极淡，近纯色观感） */
   --desk-glow-1: rgba(91, 77, 232, 0.044);
@@ -186,7 +186,7 @@
   --desk-1: #1c1c2b;
   --desk-2: #1c1c2b;
   --desk-3: #19202b;
-  /* 窗口材质（Acrylic）开启时的纯色底：dark 定为 #161616（与 shell.css dark 斜切带中段同值），
+  /* 窗口材质（亚克力 / 云母）开启时的纯色底：dark 定为 #161616（与 shell.css dark 斜切带中段同值），
      @70% 透明度（--desk-solid-alpha）透出 DWM 材质 */
   --desk-solid: #161616;
   --pane: #202020;
@@ -249,7 +249,7 @@
   --desk-1: #dbe9dc;
   --desk-2: #e9f1ea;
   --desk-3: #e0ebe2;
-  /* 窗口材质（Acrylic）开启时的纯色底：取 --desk-2，@70% 透明度（--desk-solid-alpha）透出 DWM 材质 */
+  /* 窗口材质（亚克力 / 云母）开启时的纯色底：取 --desk-2，@70% 透明度（--desk-solid-alpha）透出 DWM 材质 */
   --desk-solid: #e9f1ea;
   /* 桌面渐变光斑：色相对齐原型 html.sage，alpha 为原浓度 ×0.2（极淡） */
   --desk-glow-1: rgba(74, 157, 95, 0.036);
@@ -307,7 +307,7 @@
   --desk-1: #ece3cd;
   --desk-2: #f5edd9;
   --desk-3: #eee5d1;
-  /* 窗口材质（Acrylic）开启时的纯色底：取 --desk-2，@70% 透明度（--desk-solid-alpha）透出 DWM 材质 */
+  /* 窗口材质（亚克力 / 云母）开启时的纯色底：取 --desk-2，@70% 透明度（--desk-solid-alpha）透出 DWM 材质 */
   --desk-solid: #f5edd9;
   /* 桌面渐变光斑：色相对齐原型 html.honey，alpha 为原浓度 ×0.2（极淡） */
   --desk-glow-1: rgba(201, 148, 38, 0.036);
