@@ -7,8 +7,8 @@
    六个分区常驻渲染，仅切换 display。弹窗高度固定（`min(680px, 100vh - 90px)`），
    切换分区不跳动；滚动只发生在右侧 `.settings-content` 一层（弹窗 body 覆写为
    `padding: 0; overflow: hidden`，header / footer 保持自然高）。内容列约 630–656px，
-   控件列宽默认 280。两栏只用背景色差区分（导航 `--soft-solid` / 内容 `--pane`，
-   无分隔线）。卡片视觉基线对齐组件库卡片规格（surface.css 的
+   控件列宽默认 280。两栏完全同底色（均为 `--pane`），不设分隔线 / 描边 / 投影。
+   卡片视觉基线对齐组件库卡片规格（surface.css 的
    .wf-card__title / 副标题）与设置行排版；颜色一律取 styles/theme.css 令牌 /
    color-mix 派生（四主题自适应），控件复用 components/ui（Button / Select /
    Switch / Card）；卡片行无 hover 位移 / 缩放（遵守 §8）。
@@ -45,10 +45,9 @@
 }
 
 /* ---------- 左侧导航（五项） ---------- */
-/* 两栏只用背景色差区分：导航铺 --soft-solid（软底侧栏），右侧内容为 --pane；
-   不加右描边 / 侧投影 / ::after 竖线。选 --soft-solid 作导航底而非反过来，
-   是因为内容区里的分区卡本身就是 --soft-solid —— 若内容区也用软底，卡片会与
-   背景同色糊平；反过来「软底导航 + 面板底内容」两层都清晰。 */
+/* 两栏完全同底色：导航显式铺 --pane（与右侧 `.settings-content` 同一令牌），
+   不设右描边 / 侧投影 / ::after 竖线；两栏间距只由导航 12px 右内衬与内容
+   20px 左内衬形成。 */
 .settings-nav {
   flex: none;
   display: flex;
@@ -56,13 +55,12 @@
   gap: 4px;
   width: var(--settings-nav-w);
   padding: 4px 12px 16px 20px;
-  background: var(--soft-solid);
+  background: var(--pane);
 }
 
 /* 行规格按 AGENTS §8.5：内衬 9×10、gap 10、--r-lg、--fs-body / 500；
-   最小行高取控件档 32，保证可点区域。hover 取 --control-on-soft（软底上的
-   控件层）：亮色主题下 --soft-hover-solid 与 --soft-solid 同值（均 6%），
-   直接用它会让 hover 完全不可见（§4.1「软底卡内用 --control-on-soft」）。 */
+   最小行高取控件档 32，保证可点区域。行位于 --pane 底，hover 用标准口径
+   `--soft-hover-solid`（四套主题均与 --pane 有可见差值，见下方选中态注释）。 */
 .settings-nav__item {
   display: flex;
   align-items: center;
@@ -83,21 +81,22 @@
 }
 
 .settings-nav__item:hover {
-  background: var(--control-on-soft);
+  background: var(--soft-hover-solid);
   color: var(--text);
 }
 
-/* 选中态：品牌 12% + 导航软底混合 + 品牌文字 600（§8.5 公式；行位于软底容器，
-   混合基底取 --soft-solid）。不另造色条 / 下划线；选中行 hover 回落中性底，
-   叠加不产生第三种颜色。 */
+/* 选中态：品牌 12% + `--pane` 混合底 + 品牌文字 600（§8.5 基准公式，行位于
+   --pane 上）。不另造色条 / 下划线；选中行 hover 回落 `--soft-hover-solid`，
+   叠加不产生第三种颜色。四套主题的 hover 差值：light 6% 深字混白、dark 8%
+   白字混 #202020、sage 8% 绿混 #fcfffc、honey 7% 暖褐混 #fffef9，均可见。 */
 .settings-nav__item[aria-current='page'] {
-  background: color-mix(in srgb, var(--brand) 12%, var(--soft-solid));
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
   color: var(--brand);
   font-weight: 600;
 }
 
 .settings-nav__item[aria-current='page']:hover {
-  background: var(--control-on-soft);
+  background: var(--soft-hover-solid);
 }
 
 /* 行 / 分段项统一内嵌焦点环（§4.5 offset -1px，避免被栏宽裁切）。 */

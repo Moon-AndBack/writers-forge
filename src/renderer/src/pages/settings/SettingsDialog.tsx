@@ -30,8 +30,8 @@ export interface SettingsDialogProps {
  * 结构要点：
  * - 宽度用 `size="xl"`（880px，`.wf-window--xl`）；高度固定在
  *   `min(680px, calc(100vh - 90px))`，切换分区不跳动，只有窗口尺寸变化才变；
- * - **两栏**：左侧 `SettingsNav`（五项，184px，`--soft-solid` 软底）+ 右侧内容区
- *   （`--pane`，无分隔线）；`window.css` 的 body 内衬在本弹窗覆写为 0，滚动交给
+ * - **两栏**：左侧 `SettingsNav`（五项，184px）+ 右侧内容区，两栏同为 `--pane`
+ *   底色、无分隔线；`window.css` 的 body 内衬在本弹窗覆写为 0，滚动交给
  *   右侧 `.settings-content` 单层承接；
  * - 六个分区**全部常驻渲染**，仅以 `.settings-panel.is-active` 切换 `display`
  *   （仿写作页 `SidePane` 的 `.sp-panel`）：切页不会卸载 AI 草稿 / API Key 输入 /
