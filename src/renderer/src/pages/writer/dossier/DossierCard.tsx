@@ -20,7 +20,9 @@ import { EntityCardMorePopup } from '../entities/EntityCardMorePopup'
 import { PencilIcon } from '../icons'
 import { dossierCardRelations } from './dossierCardRelations'
 import type { DossierRow } from './dossierTree'
+import { FirstAppearanceLine } from './FirstAppearanceLine'
 import { entityChipClass } from './relationChip'
+import { useFirstAppearances } from './useFirstAppearances'
 import { useRelationLabels } from './useRelationLabels'
 
 /**
@@ -31,6 +33,8 @@ const MORE_CHIP_CLASS = 'dossier-card__chip--more'
 
 export interface DossierCardProps {
   row: DossierRow
+  /** 所属书籍 id（首次登场映射按书缓存）。 */
+  bookId: string
   active: boolean
   /**
    * 布局签名（单卡内容可用宽，px）：`auto-fill` 网格列宽随窗口 / 中栏拖拽变化，
@@ -64,6 +68,7 @@ export interface DossierCardProps {
 /** 单条设定卡：名称 + 子类型标签（有值才显示）+ 别名标签 + 正文前 4 行（逐段缩进）+ 关系标签；选中态落卡自身（无位移 / 缩放）。 */
 export function DossierCard({
   row,
+  bookId,
   active,
   layoutKey,
   onSelect,
@@ -91,6 +96,14 @@ export function DossierCard({
   // 关系胶囊数据（全量；出边「下级 文心城」+ 入边「上级 砚境」同口径，映射走 i18n；
   // `belongs_to` 一律只显示对端名，不再带「属于 / 所属」前缀）。
   const relationLabels = useRelationLabels()
+  // 首次登场：全书映射按书缓存（同书所有卡共享一次 IPC）；`undefined` = 无数据
+  // （加载中 / 失败）→ 不渲染该行，避免出现空行后再跳变或把失败说成「尚未登场」。
+  const firstAppearances = useFirstAppearances(bookId)
+  const firstAppearance =
+    firstAppearances.map !== null &&
+    Object.prototype.hasOwnProperty.call(firstAppearances.map, row.id)
+      ? firstAppearances.map[row.id]
+      : undefined
   const relations = dossierCardRelations(row.relations, relationLabels)
   // 本卡自身（实体模块 + 预设分类）的色系类名：仅右上类别标签使用。
   const ownChipClass = entityChipClass(row.entityType, row.presetKey)
@@ -210,6 +223,15 @@ export function DossierCard({
         )
       }
       descriptionClassName="dossier-card__desc"
+      info={
+        firstAppearance === undefined ? undefined : (
+          <FirstAppearanceLine
+            place={firstAppearance}
+            label={t('firstAppearance')}
+            emptyLabel={t('firstAppearanceNone')}
+          />
+        )
+      }
       chips={
         relations.items.length > 0 ? (
           <>

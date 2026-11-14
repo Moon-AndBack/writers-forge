@@ -1,0 +1,37 @@
+/* ============================================================
+   通用「位置」行（PlaceLine）
+   ------------------------------------------------------------------
+   伏笔卡的埋点 / 大纲埋点 / 回收位置与实体卡的首次登场共用同一实现
+   （AGENTS §9：不复制第二套位置行样式）。左侧固定标签 + 右侧单行截断值；
+   弱化态（占位 / 未登场）只换文字色，不与真实位置争夺注意力。
+   颜色 / 字号全部取 theme.css 令牌，四主题通用。
+   ============================================================ */
+
+.wf-place-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.wf-place-line__label {
+  flex: none;
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
+.wf-place-line__value {
+  min-width: 0;
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 占位（未锚定 / 未回收 / 尚未登场）：弱化色。 */
+.wf-place-line__value.is-muted {
+  color: var(--text-mute);
+}

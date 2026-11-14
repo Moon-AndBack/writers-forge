@@ -336,6 +336,7 @@ export default function DossierView({ bundle }: DossierViewProps) {
                 {visibleRows.map((row) => (
                   <DossierCard
                     key={row.id}
+                    bookId={bookId}
                     row={row}
                     active={row.id === activeId}
                     layoutKey={layoutKey}

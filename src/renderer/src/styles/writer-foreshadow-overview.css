@@ -88,11 +88,11 @@
   font-size: var(--fs-body);
 }
 
-.foreshadow-item.wf-entity-card--compact .foreshadow-item__place-label {
+.foreshadow-item.wf-entity-card--compact .wf-place-line__label {
   font-size: var(--fs-micro);
 }
 
-.foreshadow-item.wf-entity-card--compact .foreshadow-item__place-value {
+.foreshadow-item.wf-entity-card--compact .wf-place-line__value {
   font-size: var(--fs-micro);
 }
 

@@ -38,36 +38,6 @@
   flex: none;
 }
 
-/* 位置行：左侧固定标签 + 右侧单行截断值（埋点 / 回收两行同构）。 */
-.foreshadow-item__place {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  min-width: 0;
-}
-
-.foreshadow-item__place-label {
-  flex: none;
-  font-size: var(--fs-micro);
-  line-height: 1.5;
-  color: var(--text-mute);
-}
-
-.foreshadow-item__place-value {
-  min-width: 0;
-  font-size: var(--fs-body);
-  line-height: 1.5;
-  color: var(--text-dim);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 占位（未锚定 / 未回收 / 锚点失效）：弱化色，不与真实位置争夺注意力。 */
-.foreshadow-item__place-value.is-empty {
-  color: var(--text-mute);
-}
-
 /* 描述：紧跟名称下方（壳的 head → description → info → chips 顺序），统一 4 行裁剪；
    字号 / 行高 / 颜色 / 外边距由壳的 `.wf-entity-card__desc` 提供，此处只管裁剪。
    描述是纯文本（非多段 `<p>`），`-webkit-box` 按行计行可靠。 */

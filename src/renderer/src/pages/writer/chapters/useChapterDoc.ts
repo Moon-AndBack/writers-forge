@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/core'
 import { createLogger } from '@renderer/lib/log'
 import { useContentSwap } from '../../../components/editor/useContentSwap'
+import { FIRST_APPEARANCES_INVALIDATE_EVENT } from '../dossier/useFirstAppearances'
 import { useAutoSaveEnabled } from '../useAutoSaveEnabled'
 import { countCharacters, docToParagraphs, paragraphsToDocJSON } from './docParagraphs'
 import type { DocParagraph } from './docParagraphs'
@@ -91,6 +92,9 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
         setDirty(false)
         setLastSavedAt(new Date().toISOString())
         setStatus('ready')
+        // 正文已落库（快照相同会提前返回，不会走到这里）：广播首次登场失效，
+        // 主进程按内容版本增量重扫，渲染层后台重取。
+        window.dispatchEvent(new Event(FIRST_APPEARANCES_INVALIDATE_EVENT))
       } else {
         // 静默重试一次
         const retry = await window.api.chapters.saveParagraphs(chapterId, paragraphs)
@@ -100,6 +104,7 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
           setDirty(false)
           setLastSavedAt(new Date().toISOString())
           setStatus('ready')
+          window.dispatchEvent(new Event(FIRST_APPEARANCES_INVALIDATE_EVENT))
         } else {
           log.warn('段落保存失败（含一次重试）')
           setStatus('error')

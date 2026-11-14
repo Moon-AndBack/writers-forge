@@ -44,6 +44,8 @@ const dossier = {
       'The entry being edited belongs to this category. Move it to another category first.'
   },
   cardEmptyDesc: 'No summary',
+  firstAppearance: 'First appearance',
+  firstAppearanceNone: 'Not yet appeared',
   editAction: 'Edit',
   relationsAction: 'Relations',
   editDialog: {

@@ -16,6 +16,8 @@ const entities = {
   aliases: 'Aliases',
   tags: 'Tags',
   relations: 'Relations',
+  firstAppearance: 'First appearance',
+  firstAppearanceNone: 'Not yet appeared',
   notFound: 'Entity not found'
 } satisfies ZhCNResources['entities']
 

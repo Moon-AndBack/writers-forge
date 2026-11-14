@@ -16,6 +16,10 @@ const entities = {
   aliases: '别名',
   tags: '标签',
   relations: '关联',
+  /** 悬停卡「首次登场」位置行（仅匹配章节正文）。 */
+  firstAppearance: '首次登场',
+  /** 实体尚未在章节正文中出现（弱化色）。 */
+  firstAppearanceNone: '尚未登场',
   notFound: '未找到该实体'
 }
 

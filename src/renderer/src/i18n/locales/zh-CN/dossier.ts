@@ -60,6 +60,10 @@ const dossier = {
     deleteSubTypeLockedEditHint: '正在编辑的条目属于该分类，请先把条目改到其他分类再删除'
   },
   cardEmptyDesc: '暂无简介',
+  /** 卡片「首次登场」位置行（仅匹配章节正文）。 */
+  firstAppearance: '首次登场',
+  /** 实体尚未在章节正文中出现（弱化色）。 */
+  firstAppearanceNone: '尚未登场',
   editAction: '编辑',
   /** 卡片「关联关系」按钮（aria-label / title）。 */
   relationsAction: '关联关系',

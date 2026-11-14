@@ -234,7 +234,7 @@ IPC 共 **20 个** `worldEntity:*` 通道，按用途分四组：
 | 文件                                                                         | 职责                                                                                                                                     |
 | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | `DossierView.tsx`                                                            | 中栏装配：新建入口 + 卡片网格 + 编辑 / 关系 / 删除三个弹窗；两层悬停卡（关系胶囊 → 对端详情，「+N」浮窗内胶囊 → 第二层详情）的浮层状态机 |
-| `DossierCard.tsx`                                                            | 单卡：名称 / 别名 / 正文摘要 / 关系行；关系行按容器实测宽度做「+N」折叠                                                                  |
+| `DossierCard.tsx`                                                            | 单卡：名称 / 别名 / 正文摘要 / 首次登场位置 / 关系行；关系行按容器实测宽度做「+N」折叠                                                   |
 | `dossierCardRelations.ts` / `relationChip.ts`                                | 关系胶囊文案与配色类名（纯函数，卡片 / 悬停卡 / 浮窗三处共用）                                                                           |
 | `DossierCreateDialog.tsx` / `DossierEditDialog.tsx` / `SubTypeSelect.tsx`    | 名称、类别（子类）、别名、标签编辑；类别下拉含新增 / 删除自定义子类                                                                      |
 | `DossierDetail.tsx`                                                          | 右栏上下两张卡 + 底部保存条：上卡子类字段，下卡富文本正文；集中持草稿、比对脏态、点保存才提交「仅变更字段」补丁                          |
@@ -246,6 +246,8 @@ IPC 共 **20 个** `worldEntity:*` 通道，按用途分四组：
 | `orgChart.ts` / `orgChart/`                                                  | 势力组织架构：纯函数推导树（`buildOrgChart`，环 / 方向 / 多父收口）、画布容器、递归节点、拖拽缩放 hook、DOM 实测连线 hook                |
 
 正文高亮与悬停卡：`pages/writer/entities/entityHighlight.ts` 的 `EntityHighlight` 扩展按段落缓存匹配结果（键 = 书 + 词表版本 + 段落文本），装饰类名复用 `entityChipClass(type, presetKey)`；`pages/writer/entities/HoverCard.tsx` 按 `peerId` 走 `worldEntity:get` 取详情并内置 LRU 缓存。
+
+**实体首次登场**（2026-11）：数据由主进程 `match/firstAppearance.ts` 提供（`worldEntity:firstAppearances(bookId)`，按阅读序扫描章节正文，词表复用 `entityMatcher`，实体名 + 别名都参与；按词表版本 / 结构签名 / 各章内容版本校验，必要时整书构建或增量重扫）。渲染层 `useFirstAppearances` 按书缓存一次 IPC，章节正文保存成功后由 `useChapterDoc` 广播 `wf:first-appearances-invalidate` 并后台重取；设定档案卡（`DossierCard` 的 `info` 槽）与悬停卡（关联行之前）共用 `FirstAppearanceLine` + 共享 `PlaceLine`，位置串由 `formatChapterPlace` + `useChapterLabels` 生成（编号数字词跟随界面语言），只到章、不可点击，未登场显示弱化「尚未登场」，加载中 / 失败不渲染。悬停卡把加载状态并入 `contentKey`，异步到达后重新贴合锚点。
 
 **势力组织架构视图**（2026-11）：势力模块标题栏左侧提供「卡片 / 架构」切换（其它四域不显示，编辑正文时仍保留）。架构视图用 `worldEntity:list(faction)` + `worldEntity:list(worldview)` 取组织节点，并用 `worldEntity:list(character)` 补成员名（`belongs_to` 两端都需要实体行才能认定成员），用 `worldEntity:listRefsByBook(bookId, ['superior', 'subordinate', 'peer', 'belongs_to'])` 取 refs-only 关系（不 JOIN 正文），交给纯函数 `buildOrgChart` 推导：同一逻辑边双向存储归一、方向冲突 / 环 / 多父收口并回报 `conflicts`，`belongs_to` 按两端类型认定成员（反向存储标 `reversed`），未进入任何树的势力归 `orphans`。画布层（`orgChart/OrgChart.tsx` + `useOrgChartTransform` / `useOrgChartLines`）负责拖拽平移、滚轮 / 按钮缩放（0.3–2）、适应画布与 SVG 折线（按 DOM 实测位置，折叠 / 尺寸变化自动重测）；节点卡复用通用程序卡壳 `EntityStyleCard`（单行标题 + 子类彩色胶囊 + 底部成员胶囊，折叠为标题行右侧 22×22 图标按钮，卡片根保留 `data-org-node-id` 供连线测量）；冲突以可折叠「数据问题」条展示，孤儿势力单列「未接入层级」。`orgChart.ts` 为纯函数，不依赖 React / IPC。
 
@@ -259,5 +261,6 @@ IPC 共 **20 个** `worldEntity:*` 通道，按用途分四组：
 - **世界观自定义子类无字段存储**：`world_custom` 仅承载 item / faction 的自定义子类，世界观自定义分类只能写正文 / 别名 / 标签 / 关系，右栏不出字段组。
 - **关系缺少库级唯一约束**：同向重复边只能靠交互层候选过滤规避，脚本 / 批量导入路径需自行去重。
 - **旧语义码已被清空**：`worldRefs:hierarchy:v1` 迁移删除了白名单外的存量关系，读取侧仍保留 `semantic_code IS NULL` 的空码兜底（界面按「自定义关系」只显示对端名）。
+- **首次登场匹配的已知局限**：单字实体名（如「城」「剑」）在正文中任意同字都会命中，首次登场可能远早于真实叙事出场；短名被更长词覆盖时不单独计为首次登场；同名实体 / 别名共用同一词条时按重叠消解规则只保留一个命中，可能共享同一位置。当前只匹配章节正文（不含章名 / 大纲 / 剧情），精度到章，不提供点击跳转。
 
-最后核对：2026-11-14
+最后核对：2026-11-15

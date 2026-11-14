@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next'
 // 跨域复用档案域的胶囊纯函数（entities → dossier）：别名胶囊按模块 + 分类取色
 // （函数级依赖，不引入 dossier 组件；上提到共享层时此处随之改路径即可）。
 import { entityChipClass } from '../dossier/relationChip'
+import { FirstAppearanceLine } from '../dossier/FirstAppearanceLine'
+import { useFirstAppearances } from '../dossier/useFirstAppearances'
+import { useRichTextEditor } from '../../../components/editor/richTextEditorContext'
 import { HoverPopupShell } from '../../../components/HoverPopupShell'
 import { CARD_WIDTH } from '../../../components/popoverGeometry'
 import { POPOVER_HIDE_DELAY, POPOVER_SHOW_DELAY } from '../../../components/popoverTiming'
@@ -76,6 +79,9 @@ export function HoverCard({
 }: HoverCardProps) {
   const { t } = useTranslation('entities')
   const { t: tCommon } = useTranslation('common')
+  // 当前写作书（Provider 级 bookId，与设定库工具栏同源）：首次登场映射按书缓存。
+  const { bookId } = useRichTextEditor('chapter')
+  const firstAppearances = useFirstAppearances(bookId)
   const [detail, setDetail] = useState<EntityDetail | null>(null)
   const [loading, setLoading] = useState(false)
   const cardRef = useRef<HTMLDivElement | null>(null)
@@ -214,7 +220,24 @@ export function HoverCard({
   }, [anchor])
 
   /** 视觉重定位（实测口径）统一由 HoverPopupShell 负责：本组件只声明内容变化键（详情 / 加载态会改变卡片高度）。 */
-  const contentKey = `${detail !== null ? detail.id : 'none'}|${loading ? 'loading' : 'idle'}`
+  // 首次登场：`undefined` = 无数据（加载中 / 失败 / 实体不在映射内）→ 不渲染该行；
+  // `null` = 已匹配且未登场；有值 = 位置串。三者都计入 contentKey：异步到达后
+  // 卡片高度从「无行」变「有行」时必须重新贴合锚点。
+  const firstAppearance =
+    detail !== null &&
+    firstAppearances.map !== null &&
+    Object.prototype.hasOwnProperty.call(firstAppearances.map, detail.id)
+      ? firstAppearances.map[detail.id]
+      : undefined
+  const firstAppearanceKey =
+    firstAppearances.map === null
+      ? firstAppearances.loading
+        ? 'pending'
+        : 'hidden'
+      : firstAppearance === undefined
+        ? 'hidden'
+        : 'ready'
+  const contentKey = `${detail !== null ? detail.id : 'none'}|${loading ? 'loading' : 'idle'}|fa:${firstAppearanceKey}`
 
   if (!anchor) return null
 
@@ -274,6 +297,13 @@ export function HoverCard({
               ))}
             </div>
           ) : null}
+          {firstAppearance === undefined ? null : (
+            <FirstAppearanceLine
+              place={firstAppearance}
+              label={t('firstAppearance')}
+              emptyLabel={t('firstAppearanceNone')}
+            />
+          )}
           {detail.relations.length > 0 && (
             <EntityCardRelations
               relations={detail.relations}

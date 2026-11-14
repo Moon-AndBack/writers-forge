@@ -32,7 +32,7 @@ import { deriveForeshadowStatus } from '../../../../../shared/foreshadowStatus'
 import { TrashIcon } from '../../../components/icons'
 import { useChipOverflow } from '../../../components/useChipOverflow'
 import { useOverflowPopup } from '../../../components/useOverflowPopup'
-import { EntityStyleCard, IconButton, Tag, useTooltip } from '../../../components/ui'
+import { EntityStyleCard, IconButton, PlaceLine, Tag } from '../../../components/ui'
 import { EntityCardMorePopup } from '../entities/EntityCardMorePopup'
 import type { EntityCardMoreItem } from '../entities/EntityCardMorePopup'
 import type { useEntityHover } from '../entities/useEntityHover'
@@ -76,45 +76,6 @@ export interface ForeshadowItemProps {
   onSelect?: (id: number) => void
   /** 请求删除（由中栏视图弹二次确认，本卡不直接落库）。 */
   onDelete?: (id: number) => void
-}
-
-interface PlaceLineProps {
-  label: string
-  value: string
-  /** 值为占位文案（未锚定 / 未回收 / 失效）时改用弱化色。 */
-  empty: boolean
-}
-
-/**
- * 单行「位置」：左侧固定标签 + 右侧单行截断值。
- *
- * tooltip 挂在**值元素**而非整行：截断（`text-overflow: ellipsis`）只发生在值上，
- * 悬停左侧标签不应弹出位置；且锚点宽就是值本身，浮层水平居中更贴合被截断的文本。
- * 空占位（未锚定 / 未回收 / 锚点失效）不给 `content`，`useTooltip` 即不显示浮层。
- * 无障碍：值文本在 DOM 中始终完整（省略号只是视觉裁剪），读屏本就能取到全值；
- * 另由 `anchorProps` 附带 `aria-describedby`（指向浮层），与项目其它 tooltip 同口径。
- */
-function PlaceLine({ label, value, empty }: PlaceLineProps) {
-  const { anchorRef, anchorProps, tooltip } = useTooltip<HTMLSpanElement>({
-    content: empty ? '' : value,
-    placement: 'top'
-  })
-
-  return (
-    <>
-      {tooltip}
-      <div className="foreshadow-item__place">
-        <span className="foreshadow-item__place-label">{label}</span>
-        <span
-          ref={anchorRef}
-          {...anchorProps}
-          className={`foreshadow-item__place-value${empty ? ' is-empty' : ''}`}
-        >
-          {value}
-        </span>
-      </div>
-    </>
-  )
 }
 
 export default function ForeshadowItem({
@@ -251,18 +212,22 @@ export default function ForeshadowItem({
       descriptionClassName="foreshadow-item__desc"
       info={
         <>
-          <PlaceLine label={t('detail.plant')} value={plantText} empty={plantTarget === null} />
+          <PlaceLine
+            label={t('detail.plant')}
+            value={plantText}
+            tone={plantTarget === null ? 'muted' : 'normal'}
+          />
           {plant2Text === null ? null : (
             <PlaceLine
               label={t('detail.plant2')}
               value={plant2Text}
-              empty={plant2Target === null}
+              tone={plant2Target === null ? 'muted' : 'normal'}
             />
           )}
           <PlaceLine
             label={t('detail.recover')}
             value={recoverText}
-            empty={recoverTarget === null}
+            tone={recoverTarget === null ? 'muted' : 'normal'}
           />
         </>
       }
