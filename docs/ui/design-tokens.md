@@ -45,43 +45,44 @@
 
 ---
 
-## 3. 主题无关令牌（31 条）
+## 3. 主题无关令牌（32 条）
 
 `:root`（`theme.css:10-93`）中取值与主题无关的令牌：
 
-| 变量                   | 值 / 含义                                  | 用途                                                               |
-| ---------------------- | ------------------------------------------ | ------------------------------------------------------------------ |
-| `--page-width`         | `620px`                                    | 正文栏最大宽度                                                     |
-| `--doc-font`           | 系统默认字体栈                             | 文档正文，与 `typographyContext.ts` 的 `DEFAULT_DOC_FONT` 逐字一致 |
-| `--doc-line`           | `2`                                        | 正文行高倍数                                                       |
-| `--doc-zoom`           | `1`                                        | 正文缩放，`calc(18px * var(--doc-zoom))`                           |
-| `--doc-letter`         | `0.01em`                                   | 正文字距                                                           |
-| `--fs-micro`           | `10px`                                     | 微字（Badge / 徽标 / 关闭图标 / 元信息提示）                       |
-| `--fs-body`            | `12px`                                     | 界面基准（输入 / 按钮 / 紧凑正文）                                 |
-| `--fs-title`           | `14px`                                     | 卡片 / 详情 / 弹窗标题                                             |
-| `--fs-display`         | `20px`                                     | 展示档：欢迎标题 / 视口占位                                        |
-| `--fs-display-lg`      | `26px`                                     | 展示档：文档标题                                                   |
-| `--r-lg`               | `8px`                                      | 界面统一圆角（面板 / 卡片 / 浮层 / 控件 / 列表行 / Tag / Badge）   |
-| `--r-pill`             | `999px`                                    | 胶囊 / chip / 开关轨道 / 进度条 / 滚动条全圆                       |
-| `--control-h-sm/md/lg` | `32px`                                     | 控件高度单档；三值同名仅为兼容旧引用                               |
-| `--font`               | Segoe UI Variable / 微软雅黑 / PingFang 栈 | 界面字体（挂在 `body`）                                            |
-| `--serif`              | 宋体 / Source Han Serif / Georgia 栈       | 衬线字体（书封、摘录）                                             |
-| `--mono`               | Cascadia Mono / Consolas 栈                | 等宽字体（代码、字数）                                             |
-| `--ease`               | `cubic-bezier(0.33, 0, 0.67, 1)`           | 对称缓动，交互与主题淡化共用                                       |
-| `--ease-out`           | `cubic-bezier(0.22, 1, 0.36, 1)`           | 进场专用（快出慢入）                                               |
-| `--dur-fast`           | `120ms`                                    | 状态反馈（hover / 颜色 / 背景）                                    |
-| `--dur-slow`           | `240ms`                                    | 位移 / 尺寸变化 / 展开收起 / 进场                                  |
-| `--z-hover-card`       | `970`                                      | 悬停卡浮层                                                         |
-| `--z-popover`          | `971`                                      | 「+N」等浮窗                                                       |
-| `--z-popover-nested`   | `972`                                      | 嵌套详情卡                                                         |
-| `--z-row-raised`       | `1`                                        | 行内拖拽抬升（非浮层）                                             |
-| `--desk-spot-1/2/3`    | `1000×640` / `880×620` / `700×500`（px）   | `.shell` 三层 radial 光斑的椭圆尺寸                                |
-| `--desk-solid-alpha`   | `70%`                                      | 材质开启时 `--desk-solid` 的保留不透明度                           |
-| `--selection-bg`       | `brand 22%` + transparent                  | 全局 `::selection` 底色，随当前主题 `--brand` 变化                 |
+| 变量                      | 值 / 含义                                  | 用途                                                               |
+| ------------------------- | ------------------------------------------ | ------------------------------------------------------------------ |
+| `--page-width`            | `620px`                                    | 正文栏最大宽度                                                     |
+| `--doc-font`              | 系统默认字体栈                             | 文档正文，与 `typographyContext.ts` 的 `DEFAULT_DOC_FONT` 逐字一致 |
+| `--doc-line`              | `2`                                        | 正文行高倍数                                                       |
+| `--doc-zoom`              | `1`                                        | 正文缩放，`calc(18px * var(--doc-zoom))`                           |
+| `--doc-letter`            | `0.01em`                                   | 正文字距                                                           |
+| `--fs-micro`              | `10px`                                     | 微字（Badge / 徽标 / 关闭图标 / 元信息提示）                       |
+| `--fs-body`               | `12px`                                     | 界面基准（输入 / 按钮 / 紧凑正文）                                 |
+| `--fs-title`              | `14px`                                     | 卡片 / 详情 / 弹窗标题                                             |
+| `--fs-display`            | `20px`                                     | 展示档：欢迎标题 / 视口占位                                        |
+| `--fs-display-lg`         | `26px`                                     | 展示档：文档标题                                                   |
+| `--r-lg`                  | `8px`                                      | 界面统一圆角（面板 / 卡片 / 浮层 / 控件 / 列表行 / Tag / Badge）   |
+| `--r-pill`                | `999px`                                    | 胶囊 / chip / 开关轨道 / 进度条 / 滚动条全圆                       |
+| `--control-h-sm/md/lg`    | `32px`                                     | 控件高度单档；三值同名仅为兼容旧引用                               |
+| `--font`                  | Segoe UI Variable / 微软雅黑 / PingFang 栈 | 界面字体（挂在 `body`）                                            |
+| `--serif`                 | 宋体 / Source Han Serif / Georgia 栈       | 衬线字体（书封、摘录）                                             |
+| `--mono`                  | Cascadia Mono / Consolas 栈                | 等宽字体（代码、字数）                                             |
+| `--ease`                  | `cubic-bezier(0.33, 0, 0.67, 1)`           | 对称缓动，交互与主题淡化共用                                       |
+| `--ease-out`              | `cubic-bezier(0.22, 1, 0.36, 1)`           | 进场专用（快出慢入）                                               |
+| `--dur-fast`              | `120ms`                                    | 状态反馈（hover / 颜色 / 背景）                                    |
+| `--dur-slow`              | `240ms`                                    | 位移 / 尺寸变化 / 展开收起 / 进场                                  |
+| `--z-hover-card`          | `970`                                      | 悬停卡浮层                                                         |
+| `--z-popover`             | `971`                                      | 「+N」等浮窗                                                       |
+| `--z-popover-nested`      | `972`                                      | 嵌套详情卡                                                         |
+| `--z-row-raised`          | `1`                                        | 行内拖拽抬升（非浮层）                                             |
+| `--desk-spot-1/2/3`       | `1000×640` / `880×620` / `700×500`（px）   | `.shell` 三层 radial 光斑的椭圆尺寸                                |
+| `--desk-solid-alpha`      | `70%`                                      | acrylic 的 `--desk-solid` 保留不透明度                             |
+| `--desk-solid-alpha-mica` | `60%`                                      | mica 的 `--desk-solid` 保留不透明度                                |
+| `--selection-bg`          | `brand 22%` + transparent                  | 全局 `::selection` 底色，随当前主题 `--brand` 变化                 |
 
 > CSS 会把 `border-radius` 钳制到 `min(宽, 高) / 2`：≤16px 元素设 8px 后渲染为正圆（16px 复选框 / 分组箭头），18×20 回收站箭头约 89% 半径（近圆），22px Tag / Badge 约 73% 半径。这是两档统一的必然结果，不是刻意设计（详见 [`design-language.md`](./design-language.md) §1.2 / §9 #20）。
 
-分组计数：排版 5、字号 5、圆角 2、控件高度 3、字体 3、动效 4、层级 4、光斑 3、材质 1、选区 1，共 **31** 条。层级令牌覆盖 970–972 三档（悬停卡 < 浮窗 < 嵌套卡）与行内抬升 1；970–972 仅 `entity-highlight.css` / `writer-right-panels.css` 引用，`--z-row-raised` 仅用于行内拖拽；其余层级仍是字面量：60（下拉 / 主题面板）、100 / 101（活动栏）、900（状态栏弹窗）、940（格式工具条）、980（活动筛选）、990（tooltip）、1000（Modal）、1040（Select / Combobox）、1100（Toast），另有 1–20 的局部层叠。目标档位与收敛计划见 `design-language.md` §6.2。注释明确本组光斑仅 light / sage / honey 生效——dark 由 `shell.css` 的 `[data-theme='dark'] .shell` 整体替换为无光斑的斜切色带，**四主题块均不覆写** `--desk-spot-*`。
+分组计数：排版 5、字号 5、圆角 2、控件高度 3、字体 3、动效 4、层级 4、光斑 3、材质 2、选区 1，共 **32** 条。层级令牌覆盖 970–972 三档（悬停卡 < 浮窗 < 嵌套卡）与行内抬升 1；970–972 仅 `entity-highlight.css` / `writer-right-panels.css` 引用，`--z-row-raised` 仅用于行内拖拽；其余层级仍是字面量：60（下拉 / 主题面板）、100 / 101（活动栏）、900（状态栏弹窗）、940（格式工具条）、980（活动筛选）、990（tooltip）、1000（Modal）、1040（Select / Combobox）、1100（Toast），另有 1–20 的局部层叠。目标档位与收敛计划见 `design-language.md` §6.2。注释明确本组光斑仅 light / sage / honey 生效——dark 由 `shell.css` 的 `[data-theme='dark'] .shell` 整体替换为无光斑的斜切色带，**四主题块均不覆写** `--desk-spot-*`。
 
 ---
 
@@ -187,9 +188,9 @@
 材质（亚克力 / 云母）链路：
 
 1. `WindowMaterialProvider` 在 `<html>` 写 `data-material='acrylic' | 'mica' | 'none'`（实际生效材质）。
-2. 开启时 `material.css:26-28` 把 `.shell` 底色换为 `color-mix(in srgb, var(--desk-solid) var(--desk-solid-alpha), transparent)`，即各主题纯色底保留 **70%** 不透明度；同时 `body` 背景置透明（`material.css:32-34`），否则 `body` 的不透明背景会挡住 DWM 材质。两种材质共用同一套壳层 / body 规则（亚克力实时模糊，云母采样壁纸但不模糊）。
+2. 开启时 `.shell` 依材质使用不同 scrim：acrylic 通过 `--desk-solid-alpha` 保留 **70%** 不透明度，mica 通过 `--desk-solid-alpha-mica` 保留 **60%** 不透明度；同时 `body` 背景置透明（`material.css:37-39`），否则 `body` 的不透明背景会挡住 DWM 材质。亚克力实时模糊，云母采样壁纸但不模糊。
 3. 面板 / 侧栏 / 编辑区继续用不透明 `--pane`，**只有组件缝隙**透出材质。这正是 `-solid` 组存在的理由：若沿半透明 `--soft`，材质会从每张卡内部透出，文字对比度随壁纸漂移。
-4. `--desk-solid-alpha` 是主题无关的单一旋钮（70%），四主题共用；dark 的 `--desk-solid` 取 `#161616`（与色带中段同值），避免深色下材质偏亮。主进程窗口底：材质开 `#00000000`，关 `#f3f3f3`，避免创建瞬间黑闪（`window.ts:162-166`）。
+4. `--desk-solid-alpha` 与 `--desk-solid-alpha-mica` 是主题无关的 scrim 旋钮，四主题共用，分别固定为 acrylic 70% 与 mica 60%；dark 的 `--desk-solid` 取 `#161616`（与色带中段同值），避免深色下材质偏亮。主进程窗口底：材质开 `#00000000`，关 `#f3f3f3`，避免创建瞬间黑闪（`window.ts:162-166`）。
 
 选择顺序：**`--soft-solid` 容器上的输入类控件用 `--control-on-soft*`；普通卡片 / 按钮用 `--*-solid`；只有确需透出下层的浮层才用半透明档**。
 
@@ -259,7 +260,7 @@ resolved === 当前 dataset.theme → flushSync 只提交状态，不启动过�
 | 7    | `chip-pill.css`                                        | 胶囊基类，就地派生 `--chip-fg`                                                                                                                                      |
 | 8    | `chip-preset-colors.css`                               | **必须最后**：`.chip-p-*` 与 `.chip-m-*` 同为 0,1,0，只有后加载才能覆盖模块基色；其配对文字色也必须压过 `chip-pill.css` 的派生色，否则首帧「实色底 + 低对比字」闪烁 |
 
-`App.tsx:22-23` 另有顺序依赖：`shell.css` 定义 `.shell` 基础底与 `[data-theme='dark'] .shell`（0,2,0），`material.css` 随后导入，`:is([data-material='acrylic'], [data-material='mica']) .shell` 同为 0,2,0，**只能靠源码顺序胜出**；提前加载会被 dark 色带盖掉。
+`App.tsx:22-23` 另有顺序依赖：`shell.css` 定义 `.shell` 基础底与 `[data-theme='dark'] .shell`（0,2,0），`material.css` 随后导入；`[data-material='acrylic'] .shell` 与 `[data-material='mica'] .shell` 也同为 0,2,0，**只能靠源码顺序胜出**；提前加载会被 dark 色带盖掉。
 
 契约：① 令牌块永远在消费者之前，页面 CSS 不得重声明 `:root` 令牌；② 同特异性冲突靠「后加载者胜」，不用 `!important`；③ 需要让位时用 `:where()` 把特异性压到 0；④ 新增样式文件先判断属于「令牌 → 基础 → 组件 → 预设覆盖」哪一层再插入。
 

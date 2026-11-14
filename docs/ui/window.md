@@ -115,8 +115,8 @@
 - `WindowMaterialProvider` 计算 `material = setting !== 'none' && supported ? setting : 'none'`，`enabled = material !== 'none'`（`WindowMaterialProvider.tsx:52-53`）。
 - 状态写入根元素 `data-material`：写**实际材质名** `acrylic` / `mica` / `none`（`WindowMaterialProvider.tsx:55-57`）。
 - `styles/material.css` 依 `data-material` 生效：
-  - `:is([data-material='acrylic'], [data-material='mica']) .shell` 用 `color-mix(... var(--desk-solid-alpha), transparent)` 换成半透明纯色底（`material.css:26-28`）。
-  - `:is([data-material='acrylic'], [data-material='mica']) body` 置透明，否则 body 底会挡住 DWM 材质（`material.css:32-34`）。
+  - `[data-material='acrylic'] .shell` 用 `--desk-solid-alpha`（70%）混合纯色底；`[data-material='mica'] .shell` 用 `--desk-solid-alpha-mica`（60%）（`material.css:26-34`）。
+  - `:is([data-material='acrylic'], [data-material='mica']) body` 置透明，否则 body 底会挡住 DWM 材质（`material.css:37-39`）。
 - 切换时三件事同步：调主进程、写 `data-material`、经 `settings:set` 持久化（`WindowMaterialProvider.tsx:59-72`）。
 - 主进程返回的实际值与请求不一致时（如系统不支持），Provider 回退本地状态（`WindowMaterialProvider.tsx:64-68`）。
 - 窗口材质入口：标题栏主题面板与「设置 → 外观与主题」页均提供三档选择，两处共享 `WindowMaterialProvider`，状态天然同步。
