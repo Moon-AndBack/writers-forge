@@ -73,6 +73,8 @@ export interface ActivityBarFilterPopoverProps {
   onKeepOpen: () => void
   /** 指针离开浮层：附带事件，供活动栏按 `relatedTarget` 判断是否仍在 hover 区域。 */
   onLeave: (event: ReactMouseEvent<HTMLDivElement>) => void
+  /** 主动关闭浮层：选择分类 / 提交搜索后由活动栏收起浮层并交还焦点。 */
+  onClose: () => void
 }
 
 export default function ActivityBarFilterPopover({
@@ -81,7 +83,8 @@ export default function ActivityBarFilterPopover({
   anchorRect,
   shellRef,
   onKeepOpen,
-  onLeave
+  onLeave,
+  onClose
 }: ActivityBarFilterPopoverProps) {
   const { t: tDossier } = useTranslation('dossier')
   const { t: tInspiration } = useTranslation('inspiration')
@@ -297,6 +300,7 @@ export default function ActivityBarFilterPopover({
       setForeshadowFilter({ status: value === null ? null : (value as ForeshadowDisplayStatus) })
     }
     requestSwitch(module)
+    onClose()
   }
 
   /**
@@ -309,6 +313,7 @@ export default function ActivityBarFilterPopover({
   const handleSearchSubmit = (): void => {
     flushQuery()
     requestSwitch(module)
+    onClose()
   }
 
   return (

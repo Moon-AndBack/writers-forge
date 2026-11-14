@@ -89,6 +89,8 @@ export function ActivityBar(): ReactElement {
    * 两处收起计时器在回调开头都读它，指针或焦点仍在浮层内时一律不收起。
    */
   const filterEngagedRef = useRef(false)
+  /** 主动关闭后交还焦点的一次性抑制：避免图标 onFocus 重新展开浮层。 */
+  const suppressFilterFocusRef = useRef(false)
 
   /** 浮层根节点回调 ref（HoverPopupShell 的 `elementRef`）。 */
   const setFilterNode = useCallback((node: HTMLDivElement | null): void => {
@@ -97,7 +99,8 @@ export function ActivityBar(): ReactElement {
   const {
     anchorRef: pillRef,
     anchorProps: pillAnchor,
-    tooltip: pillTooltip
+    tooltip: pillTooltip,
+    cancelShow: cancelPillTooltipShow
   } = useTooltip<HTMLDivElement>({
     content: t('moduleBar'),
     placement: 'right'
@@ -129,6 +132,43 @@ export function ActivityBar(): ReactElement {
     []
   )
 
+  // 竖条展开时取消胶囊 tooltip 尚未触发的显示计时，避免「模块栏」气泡压在已展开的栏上。
+  useEffect(() => {
+    if (shown) cancelPillTooltipShow()
+  }, [cancelPillTooltipShow, shown])
+
+  // 全局兜底：窗口失焦（Alt+Tab / 最小化）或指针快速移出视口时 mouseleave 可能丢失，
+  // 清掉全部挂起计时并直接收起浮层与竖条，避免残留展开态。
+  useEffect(() => {
+    const closeAll = (): void => {
+      if (showTimer.current !== null) {
+        window.clearTimeout(showTimer.current)
+        showTimer.current = null
+      }
+      if (hideTimer.current !== null) {
+        window.clearTimeout(hideTimer.current)
+        hideTimer.current = null
+      }
+      if (filterShowTimer.current !== null) {
+        window.clearTimeout(filterShowTimer.current)
+        filterShowTimer.current = null
+      }
+      if (filterHideTimer.current !== null) {
+        window.clearTimeout(filterHideTimer.current)
+        filterHideTimer.current = null
+      }
+      filterEngagedRef.current = false
+      setFilterTarget(null)
+      setShown(false)
+    }
+    window.addEventListener('blur', closeAll)
+    document.documentElement.addEventListener('mouseleave', closeAll)
+    return () => {
+      window.removeEventListener('blur', closeAll)
+      document.documentElement.removeEventListener('mouseleave', closeAll)
+    }
+  }, [])
+
   const open = (delay: number): void => {
     if (pinned) return
     if (showTimer.current !== null) window.clearTimeout(showTimer.current)
@@ -137,13 +177,16 @@ export function ActivityBar(): ReactElement {
   }
 
   /**
-   * 焦点是否仍在浮层内（浮层是 body portal，只能按节点包含关系判断）。
-   * 用于在鼠标离开 / 焦点离开时重算「保持打开」这一单一布尔状态。
+   * 焦点是否仍停留在浮层的**文本输入**中（浮层是 body portal，只能按节点包含关系判断）。
+   * 分类 chip / 搜索按钮等可聚焦控件不算：点完按钮后焦点若留在其上，
+   * 不应让浮层与竖条永久钉住（点击按钮属于一次性操作，不是持续占用）。
    */
   const isFilterFocused = useCallback((): boolean => {
     const node = filterNodeRef.current
     const focused = document.activeElement
-    return node !== null && focused !== null && node.contains(focused)
+    if (node === null || focused === null || !node.contains(focused)) return false
+    if (focused instanceof HTMLInputElement) return true
+    return focused instanceof HTMLElement && focused.isContentEditable
   }, [])
 
   /**
@@ -187,6 +230,41 @@ export function ActivityBar(): ReactElement {
       filterHideTimer.current = null
     }
   }, [])
+
+  /**
+   * 主动收起筛选浮层（选择分类 / 提交搜索 / Escape 共用）：
+   * 清掉展开与收起计时、复位「保持打开」，再把焦点交还触发图标。
+   * 指针已不在活动栏上时按常规延迟收起整栏；仍在栏上则保持展开。
+   */
+  const dismissFilter = useCallback((): void => {
+    const anchorEl = filterTarget?.anchorEl ?? null
+    if (filterShowTimer.current !== null) {
+      window.clearTimeout(filterShowTimer.current)
+      filterShowTimer.current = null
+    }
+    cancelFilterHide()
+    cancelHide()
+    filterEngagedRef.current = false
+    setFilterTarget(null)
+    if (anchorEl !== null && anchorEl.isConnected) {
+      // focus 事件同步派发：若已聚焦 / 不可聚焦而未触发，立即复位，避免吞掉下一次键盘聚焦。
+      suppressFilterFocusRef.current = true
+      anchorEl.focus({ preventScroll: true })
+      suppressFilterFocusRef.current = false
+    }
+    if (!barRef.current?.matches(':hover')) scheduleHide()
+  }, [cancelFilterHide, cancelHide, filterTarget, scheduleHide])
+
+  // 浮层展开期间：Escape 收起并交还焦点（已被上层弹层处理的事件不重复响应）。
+  useEffect(() => {
+    if (filterTarget === null) return undefined
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.defaultPrevented || event.isComposing || event.key !== 'Escape') return
+      dismissFilter()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [dismissFilter, filterTarget])
 
   /** 挂起收起浮层：延迟结束再判「指针 / 焦点是否仍在浮层内」，避免栏永久展开。 */
   const scheduleFilterHide = useCallback((): void => {
@@ -351,6 +429,8 @@ export function ActivityBar(): ReactElement {
               onFocus={
                 filterModule
                   ? (event) => {
+                      // 主动关闭交还焦点时的一次性抑制：程序化 focus 不得重新展开浮层。
+                      if (suppressFilterFocusRef.current) return
                       // 仅键盘聚焦（`:focus-visible`）展开，指针路径交给 hover。
                       if (event.currentTarget.matches(':focus-visible')) {
                         openFilter(filterModule, event.currentTarget)
@@ -385,6 +465,7 @@ export function ActivityBar(): ReactElement {
           shellRef={setFilterNode}
           onKeepOpen={engageFilter}
           onLeave={releaseFilter}
+          onClose={dismissFilter}
         />
       ) : null}
     </>

@@ -39,6 +39,8 @@ export interface UseTooltipResult<T extends HTMLElement = HTMLElement> {
   anchorProps: TooltipAnchorProps
   /** 提示浮层节点（经 createPortal 挂到 body），无内容时为 null。 */
   tooltip: ReactNode
+  /** 取消尚未触发的显示计时（不改变当前可见状态）。 */
+  cancelShow: () => void
 }
 
 const GAP = 8
@@ -162,6 +164,14 @@ export function useTooltip<T extends HTMLElement = HTMLElement>(
     }, showDelay)
   }, [clearTimers, content, disabled, showDelay])
 
+  /** 只取消尚未触发的显示计时，不影响已显示状态（调用方可主动让位给同级浮层）。 */
+  const cancelShow = useCallback((): void => {
+    if (showTimer.current !== null) {
+      window.clearTimeout(showTimer.current)
+      showTimer.current = null
+    }
+  }, [])
+
   const hide = useCallback((): void => {
     clearTimers()
     hideTimer.current = window.setTimeout(() => {
@@ -169,6 +179,13 @@ export function useTooltip<T extends HTMLElement = HTMLElement>(
       setVisible(false)
     }, hideDelay)
   }, [clearTimers, hideDelay])
+
+  // 窗口失焦（Alt+Tab / 最小化）：鼠标快速移出窗口可能丢 mouseleave，统一收起避免残留。
+  useEffect(() => {
+    const onBlur = (): void => hide()
+    window.addEventListener('blur', onBlur)
+    return () => window.removeEventListener('blur', onBlur)
+  }, [hide])
 
   // 内容被清空 / 禁用时收起：在微任务中更新，避免在 effect 体内同步 setState
   // （react-hooks/set-state-in-effect）。定时器同步清理。
@@ -226,7 +243,7 @@ export function useTooltip<T extends HTMLElement = HTMLElement>(
     )
   }
 
-  return { anchorRef, anchorProps, tooltip }
+  return { anchorRef, anchorProps, tooltip, cancelShow }
 }
 
 export default useTooltip
