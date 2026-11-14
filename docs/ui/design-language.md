@@ -26,7 +26,7 @@
 代表位置：
 
 - L1：左右栏 / 面板用 `--pane`；写作中栏（`.editor-pane`，章节 / 大纲，含回收站）用 `--doc-surface`（`theme.css`）——light / dark 与 `--pane` 同值，sage / honey 为护眼纸色 `#f0f8f0` / `#faf6e8`。纸面作用域（`.editor-head` / `.editor-scroll` / `.editor-foot` / `.trash-view`）内的 `--soft-solid` 等 5 个软底令牌按本主题基色重派生（`writer.css`），避免焦点底与块级底和纸面同色。
-- L2：`.pane-region`（`src/renderer/src/styles/components/surface.css:145-149`，`--soft-solid` + `padding: 6px` + `--r-lg`）。
+- L2：`.pane-region`（`src/renderer/src/styles/components/surface.css:145-149`，`--soft-solid` + `padding: 6px` + `--r-lg`）；右栏字段卡 / 保存条 / 页签卡（`--soft-solid` 直接落在 `--pane` 上，无外描边，边界靠明度差 + 间距）。
 - L3：`.wf-card`（`surface.css:16-28`）、`.wf-card__body`（`surface.css:122-127`，`padding: 14px 16px`）、`.wf-entity-card`（`components/entity-card.css:16-26`）。
 - L4：`.on-soft .wf-input`（`components/form.css:125-130`）、`.wf-readonly-block`（`surface.css:155-160`，`10px 12px` + `--control-on-soft-line` inset 环）。
 - 浮层：`.wf-window`（`components/window.css:9-25`）、`__body`（`window.css:88`）、`__footer`（`window.css:106`）。
@@ -34,6 +34,7 @@
 ### 1.2 规则
 
 - **MUST** 同一区域只使用一种表面语言：`--pane` 上的分区用 `--soft-solid`；`--soft-solid` 上的控件 / 只读块用 `--control-on-soft`；不得在同一容器内混用两套底色。
+- **MUST** 直接落在栏容器（`--pane` / `--doc-surface`）上的软底分区、字段卡、保存条、页签卡不加外描边；边界由 `--soft-solid` 与底色的明度差 + 间距承担。`--soft-solid` 之上需要再分层时，用 `--pane` 内容卡或 `--control-on-soft` + `--control-on-soft-line`。
 - **MUST** 同色软底不得再套同色软底卡。需要再分层时改用 `--control-on-soft`、`--pane`，或仅用描边 / 间距分区。
 - **MUST** 组件填充用不透明令牌（`--*-solid`、`--pane`、`--control-on-soft`）；`--soft` 等半透明档只允许用于确需透出下层的浮层（当前 3 处：`writer-ai.css` 3）。
 - **MUST** 圆角只用两档：`--r-lg`（8）用于全部界面元素；`--r-pill`（999）用于胶囊 / chip / 开关轨道 / 进度条 / 滚动条。正圆（`50%`）仅用于图标按钮与状态点；≤3px 的装饰微条与贴平（`0`）为例外。既有微圆角 / 同心内圆字面量仅限 §9 例外表原地保留，不得扩散。

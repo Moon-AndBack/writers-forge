@@ -17,10 +17,9 @@
 
 /* 总览卡底色改 `--pane`：列表卡已由通用 `pane-region` 提供 `--soft-solid` 软底，
    卡若仍用中栏的 `--soft-solid` 会与容器同色，故改 `--pane` 让卡成为软底之上的
-   内容层。常态不投影，只留 `--line` 细描边作为边界。 */
+   内容层。常态不投影、不加描边，边界由明度差 + 网格间距承担。 */
 .inspiration-overview-grid > .inspiration-card {
   background: var(--pane);
-  border: 1px solid var(--line);
   box-shadow: none;
 }
 
@@ -96,7 +95,6 @@
   gap: 12px;
   padding: 14px;
   background: var(--soft-solid);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
 
@@ -159,8 +157,8 @@
   gap: 4px;
 }
 
-/* 底部返回栏：与伏笔只读详情 / 各保存条同一套容器（--soft-solid 软底 + --line
-   细描边 + --r-lg 圆角 + 10 / 12 内衬）；按钮挂共享类 `.wf-btn--on-soft`。 */
+/* 底部返回栏：与伏笔只读详情 / 各保存条同一套容器（--soft-solid 软底 +
+   --r-lg 圆角 + 10 / 12 内衬）；按钮挂共享类 `.wf-btn--on-soft`。 */
 .inspiration-readonly__bar {
   display: flex;
   flex: none;
@@ -168,6 +166,5 @@
   gap: 10px;
   padding: 10px 12px;
   background: var(--soft-solid);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }

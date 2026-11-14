@@ -8,7 +8,7 @@
    起点卡头与内容区统一用字段底座（`--soft-solid` + 透明边 + `--r-lg`，
    hover / 聚焦环由底座提供）：卡头为 section 底座 + 内部透明输入框，
    内容区直接以 `.short-rich-field` 控件底座作根。场景两卡仍用
-   `.timeline-card`（`--soft-solid` + 1px `--line` + `--r-lg` + 14px 内衬）。
+   `.timeline-card`（`--soft-solid` + `--r-lg` + 14px 内衬）。
    场景正文直接铺在卡片软底上（`.rp-read` 内滚），
    不再套 `.wf-readonly-block` 值块。剧情模块共用的 `.plot-editor` /
    `.plot-field` 等类留在 writer-plot-editor.css，本文件只放时间线专属规则。
@@ -35,7 +35,6 @@
   gap: 12px;
   padding: 14px;
   background: var(--soft-solid);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
 
@@ -118,8 +117,8 @@
   letter-spacing: var(--doc-letter);
 }
 
-/* 保存条：与剧情 / 设定档案 / 伏笔同款外观（--soft-solid 软底 + --line 描边 +
-   --r-lg 圆角）；`SaveBar` 内部按钮自带 `margin-left: auto` 靠右。
+/* 保存条：与剧情 / 设定档案 / 伏笔同款外观（--soft-solid 软底 + --r-lg 圆角）；
+   `SaveBar` 内部按钮自带 `margin-left: auto` 靠右。
    `.rp-body` 已有 8px gap，故不再叠 `margin-top`。 */
 .timeline-save-bar {
   display: flex;
@@ -128,7 +127,6 @@
   gap: 10px;
   padding: 10px 12px;
   background: var(--soft-solid);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
 

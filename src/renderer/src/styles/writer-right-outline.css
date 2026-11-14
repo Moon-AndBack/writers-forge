@@ -22,7 +22,7 @@
 
 /* ---------- 单栏（下拉 + 展示区） ----------
    底座不再手写复刻（AGENTS §9）：JSX 侧直接挂通用 `pane-region`（--soft-solid 底 +
-   --r-lg 圆角 + 6px 内衬）、`rp-card`（--line 内描边 + 卡片内衬）与 `on-soft`
+   --r-lg 圆角 + 6px 内衬）、`rp-card`（卡片内衬）与 `on-soft`
    （软底上的控件换 --control-on-soft 底 + 描边，见 form.css）；域类只补纵向布局。 */
 .rp-outline__pane {
   display: flex;

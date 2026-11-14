@@ -4,7 +4,7 @@
    上段只放子类表内字段（`SubtypeFieldsPanel`）：世界观 / 物品功法 / 势力各自的
    专属字段组、物品预设子类的品阶 / 档位、自定义子类的键值字段；名称 / 类别 / 别名 /
    标签 / 关系均不在右栏出现。下段仍是富文本正文编辑器。
-   两段各为独立卡片（`--soft-solid` 底色 + `--line` 描边 + `--r-lg` 圆角），间距一致；
+   两段各为独立卡片（`--soft-solid` 底色 + `--r-lg` 圆角），间距一致；
    底部保存条为第三张独立卡片，只承载手动保存按钮（批 B 起右栏改为手动保存）。
    本文件只承载分栏布局与正文编辑器容器样式；通用字段 / 关系 / 卡片样式仍在
    `writer-dossier.css`。
@@ -49,7 +49,6 @@
   overflow-y: auto;
   padding: 12px;
   background: var(--soft-solid);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
 
@@ -70,12 +69,11 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--soft-solid);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
 
 /* 底部保存条：独立底色卡片（与上方字段卡 / 正文卡区分），固定高度不参与压缩。
-   内边距 / 底色 / 描边 / 圆角与上方两卡同令牌（--soft-solid + --line + --r-lg）；
+   内边距 / 底色 / 圆角与上方两卡同令牌（--soft-solid + --r-lg）；
    `margin-top` 补足与正文卡的 8px 间距（`.rp-body` 本身无 gap）。
    颜色一律取 theme.css 令牌；无 transform（§8）。 */
 .dossier-save-bar {
@@ -86,7 +84,6 @@
   margin-top: 8px;
   padding: 10px 12px;
   background: var(--soft-solid);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
 

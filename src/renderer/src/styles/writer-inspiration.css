@@ -102,7 +102,6 @@
   gap: 12px;
   padding: 14px;
   background: var(--soft-solid);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
 
@@ -134,7 +133,7 @@
   resize: none;
 }
 
-/* 保存条：与伏笔 / 剧情右栏同款软底卡片（--soft-solid + --line + --r-lg）。
+/* 保存条：与伏笔 / 剧情右栏同款软底卡片（--soft-solid + --r-lg）。
    仅剩右侧「保存」按钮（自带 margin-left: auto 靠右），左侧无其它动作。 */
 .inspiration-save-bar {
   display: flex;
@@ -143,6 +142,5 @@
   gap: 10px;
   padding: 10px 12px;
   background: var(--soft-solid);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }

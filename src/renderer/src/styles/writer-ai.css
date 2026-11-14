@@ -97,9 +97,9 @@
 
 /* ---------- 会话栏（面板头部） ----------
    一行三控件：当前会话下拉（占满剩余宽度）· 会话操作（⋯）· 新建（+）。
-   整行独立软底承载（--soft-solid + --r-lg + --line 内描边 + 四面 4 内衬），
+   整行独立软底承载（--soft-solid + --r-lg + 四面 4 内衬），不加外描边；
    并挂 `.on-soft`：Select 触发器换 --control-on-soft 底 + 描边（见 form.css），
-   与容器分层而不糊成一片。只改颜色 / 描边，无 transform（AGENTS §8）。 */
+   以控件内描边与容器分层。只改颜色 / 描边，无 transform（AGENTS §8）。 */
 .ai-panel__sessionbar {
   flex: none;
   display: flex;
@@ -109,7 +109,6 @@
   padding: 4px;
   border-radius: var(--r-lg);
   background: var(--soft-solid);
-  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 /* 下拉占满剩余宽度；标签单行省略（只显示会话名，不带时间后缀）。
@@ -266,7 +265,7 @@
    底色对齐右栏其余列表卡（`.pane-region` 口径：--soft-solid 软底 + --r-lg 圆角），
    不再透出 `.rp-panel` 的栏底。气泡在此底之上再分层（见下）：
    user = --control-on-soft（软底上再深 / 再亮一档的层）+ 37% 描边；
-   assistant = --pane（内容卡层）+ --line 描边；四套主题下均与容器可分。
+   assistant = --pane（内容卡层），不加描边，靠与容器软底的明度差区分。
    `gap` 已承接原「角色标签」腾出的纵向留白（气泡上方不再有一行小字）。 */
 .ai-chat {
   display: flex;
@@ -386,11 +385,11 @@
   box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
 }
 
-/* assistant：左侧整宽卡面（--pane 内容卡层，与 --soft-solid 容器区分），便于阅读 Markdown。 */
+/* assistant：左侧整宽卡面（--pane 内容卡层，与 --soft-solid 容器形成明度差），
+   便于阅读 Markdown；不加描边（§1.2）。 */
 .ai-msg--assistant .ai-msg__bubble {
   width: 100%;
   background: var(--pane);
-  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .ai-msg__text {

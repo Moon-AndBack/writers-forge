@@ -177,7 +177,6 @@
   gap: 12px;
   padding: 14px;
   background: var(--soft-solid);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
 
@@ -310,8 +309,8 @@
   white-space: pre-wrap;
 }
 
-/* 保存条 / 只读详情底部返回栏共用同一套容器（--soft-solid 软底 + --line 细描边 +
-   --r-lg 圆角 + 10 / 12 内衬）；两者语义不同（一个含保存与废弃动作，一个只放返回），
+/* 保存条 / 只读详情底部返回栏共用同一套容器（--soft-solid 软底 + --r-lg 圆角 +
+   10 / 12 内衬）；两者语义不同（一个含保存与废弃动作，一个只放返回），
    只共享外观、不共享组件（`SaveBar` 固定带 primary 保存按钮，不适用于只读详情）。 */
 .foreshadow-save-bar,
 .foreshadow-detail-bar {
@@ -321,7 +320,6 @@
   gap: 10px;
   padding: 10px 12px;
   background: var(--soft-solid);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
 

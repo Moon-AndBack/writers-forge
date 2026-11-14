@@ -45,15 +45,14 @@
    （与剧情 / AI 页签同款）。卡若仍用中栏的 `--soft-solid`，会与容器同色，故改
    `--pane` 让卡成为软底之上的内容层。根节点仍带 `foreshadow-item` 类（由
    `EntityStyleCard` 的 `className` 透传），覆盖选择器口径不变。
-   常态**不要投影**：显式撤掉通用 `.wf-card--halo` 的常态 `--sh-sm`，只留 `--line`
-   细描边作为边界（壳根元素本身 `border: none`，无阴影后卡身会糊进 `--soft-solid`
-   容器）。卡片现在可点进只读详情，故 hover / 键盘焦点**恢复**通用
-   `.wf-card--halo:hover` 的同一套边缘光晕（品牌色描边环 + 外发光，纯阴影，无
-   transform，AGENTS §8）；下方规则以 0,3,0 显式回写，避免被常态 0,2,0 的
-   `box-shadow: none` 压住（`surface.css` 与本文样式加载次序不定）。 */
+   常态**不加描边、不投影**：显式撤掉通用 `.wf-card--halo` 的常态 `--sh-sm`，
+   边界由 `--pane` 与容器 `--soft-solid` 的明度差 + 网格间距承担。卡片现在可点进
+   只读详情，故 hover / 键盘焦点**恢复**通用 `.wf-card--halo:hover` 的同一套边缘
+   光晕（品牌色描边环 + 外发光，纯阴影，无 transform，AGENTS §8）；下方规则以
+   0,3,0 显式回写，避免被常态 0,2,0 的 `box-shadow: none` 压住（`surface.css` 与
+   本文样式加载次序不定）。 */
 .foreshadow-overview-grid > .foreshadow-item {
   background: var(--pane);
-  border: 1px solid var(--line);
   box-shadow: none;
 }
 

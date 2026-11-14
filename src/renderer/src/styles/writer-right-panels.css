@@ -61,11 +61,12 @@
   justify-content: center;
 }
 
-/* ---------- 底色卡 ---------- */
+/* ---------- 卡片外壳 ---------- */
+/* 底色由通用 `.pane-region`（或 `.ai-chat` 等域类）提供；本类只保留内衬与
+   伸缩档，不加内描边——边界由软底与栏底的明度差 + 间距承担（§1.2）。 */
 .rp-card {
   flex: none;
   padding: 6px;
-  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 /* 列表卡：占据剩余高度，列表自身滚动（切页签 / 点详情不丢滚动位置）。 */
@@ -163,8 +164,9 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--line-color, var(--brand)) 20%, transparent);
 }
 
-/* 卡片吃满内容列（覆盖中栏 clamp 宽），底改 `--pane` + `--line` 描边，
-   与伏笔右栏总览卡同一观感；壳的内衬 / 最小高按右栏收窄，且不再限制最大高
+/* 卡片吃满内容列（覆盖中栏 clamp 宽），底改 `--pane`、不加描边，
+   与伏笔右栏总览卡同一观感（边界由与软底容器的明度差 + 间距承担）；
+   壳的内衬 / 最小高按右栏收窄，且不再限制最大高
    （内容自然撑高，卡内胶囊不会被裁掉）。 */
 .rp-plot-timeline .plot-scene-card.wf-entity-card {
   flex: 0 0 100%;
@@ -175,7 +177,6 @@
   gap: 6px;
   padding: 11px 13px;
   background: var(--pane);
-  border: 1px solid var(--line);
 }
 
 .rp-plot-timeline .plot-scene-title {

@@ -39,7 +39,7 @@
   animation: wf-enter-up var(--dur-slow) var(--ease) backwards;
 }
 
-/* 表单字段分组：本批起同时承载正文卡底座（仅 plot 视图追加底色 / 描边 / 圆角，
+/* 表单字段分组：本批起同时承载正文卡底座（仅 plot 视图追加底色 / 圆角，
    见下方 `[data-view='plot']` 规则）；时间线右栏自有卡片，不引用本类。 */
 .plot-editor-fields {
   display: flex;
@@ -61,12 +61,11 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
-  /* 正文卡：独立底色（--soft-solid + --line + --r-lg），口径同设定档案
+  /* 正文卡：独立底色（--soft-solid + --r-lg），口径同设定档案
      `.dossier-body-panel`；圆角处裁掉内部滚动内容，滚动仍由
      `.plot-body-editor` 承载。 */
   overflow: hidden;
   background: var(--soft-solid);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
 
@@ -148,7 +147,7 @@
 }
 
 /* 底部保存条（剧情编辑器）：独立底色卡片，与正文卡同令牌
-   （--soft-solid + --line + --r-lg），`flex: none` 固定不参与压缩；
+   （--soft-solid + --r-lg），`flex: none` 固定不参与压缩；
    与正文卡的 8px 间距由 `.plot-editor` 的 gap 提供。无 transform（§8）。 */
 .rp-view[data-view='plot'] .plot-save-bar {
   flex: none;
@@ -157,6 +156,5 @@
   gap: 10px;
   padding: 10px 12px;
   background: var(--soft-solid);
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
