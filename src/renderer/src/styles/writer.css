@@ -12,6 +12,7 @@
 @import './writer-side.css';
 @import './writer-outline.css';
 @import './writer-editor.css';
+@import './writer-paper-lines.css';
 @import './writer-outline-blocks.css';
 @import './writer-right-panels.css';
 @import './writer-right-outline.css';

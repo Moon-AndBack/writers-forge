@@ -21,6 +21,8 @@ import { BeforeCloseFlushProvider } from './shell/beforeCloseFlushProvider'
 import { ActivityPinnedProvider } from './shell/activityPinnedProvider'
 import { useActivityPinned } from './shell/activityPinned'
 import { RightPaneVisibilityProvider } from './shell/rightPaneVisibilityProvider'
+import { PaperLinesProvider } from './shell/PaperLinesProvider'
+import { PAPER_LINES_DEFAULT } from './shell/paperLines'
 import StatusBar, { StatusBarProvider } from './shell/statusBar'
 import { useResolvedStatusBarSlots } from './shell/statusBarContext'
 import { TitleBarActionsProvider } from './shell/titleBarActionsProvider'
@@ -187,13 +189,16 @@ function StartupViewRedirect({
  * 页面内容渲染于 .app-viewport。
  * `initialActivityPinned` 由 main.tsx 启动预取（`activityBarPinned`）透传给
  * `ActivityPinnedProvider`，首帧即恢复活动栏固定态、避免闪烁；
+ * `initialPaperLines` 同样由启动预取（`paperLines`）透传给 `PaperLinesProvider`；
  * `initialDefaultView` 同样由启动预取（`defaultView`），仅用于首屏重定向。
  */
 export default function App({
   initialActivityPinned,
+  initialPaperLines = PAPER_LINES_DEFAULT,
   initialDefaultView = DEFAULT_DEFAULT_VIEW
 }: {
   initialActivityPinned?: boolean
+  initialPaperLines?: boolean
   initialDefaultView?: DefaultView
 }) {
   // 主题变化时同步系统标题栏 overlay（非 Electron 环境自动跳过）。
@@ -216,83 +221,85 @@ export default function App({
         <ActivityPinnedProvider initialPinned={initialActivityPinned}>
           <RightPaneVisibilityProvider>
             <TypographyProvider>
-              <ActivityBarProvider>
-                {/* 关闭前统一保存：页面（Writer）注册 flush 处理器，外壳统一保存；
+              <PaperLinesProvider initialEnabled={initialPaperLines}>
+                <ActivityBarProvider>
+                  {/* 关闭前统一保存：页面（Writer）注册 flush 处理器，外壳统一保存；
                       主进程拦截窗口 close → 通知 → `BeforeCloseFlushBridge` 落盘 → 回执后关窗。
                       桥必须位于 Provider 内层才能取到 flush 处理器。 */}
-                <BeforeCloseFlushProvider>
-                  <BeforeCloseFlushBridge />
-                  {/* 模块切换未保存守卫：活动栏图标 / 筛选浮层的「切换模块」经
+                  <BeforeCloseFlushProvider>
+                    <BeforeCloseFlushBridge />
+                    {/* 模块切换未保存守卫：活动栏图标 / 筛选浮层的「切换模块」经
                         `useRequestSwitch` 交由页面注册的守卫裁决（当前仅设定档案右栏有脏草稿
                         时弹两态确认）；无注册者时降级为直接 setActive。 */}
-                  <UnsavedSwitchGuardProvider>
-                    {/* 设定档案筛选条件：入口在活动栏、消费在中栏，Provider 挂在两者共同祖先
+                    <UnsavedSwitchGuardProvider>
+                      {/* 设定档案筛选条件：入口在活动栏、消费在中栏，Provider 挂在两者共同祖先
                         （口径同 TypographyProvider）；bookId 由 pathname 解析，唯一真源。 */}
-                    <DossierFilterProvider>
-                      {/* 灵感筛选条件与已用标签：与设定档案同一范式，入口活动栏浮层、消费中栏网格。 */}
-                      <InspirationFilterProvider>
-                        <ActivityActionsProvider>
-                          <div className="shell">
-                            <TitleBar settingsLocked={status !== 'done'} />
+                      <DossierFilterProvider>
+                        {/* 灵感筛选条件与已用标签：与设定档案同一范式，入口活动栏浮层、消费中栏网格。 */}
+                        <InspirationFilterProvider>
+                          <ActivityActionsProvider>
+                            <div className="shell">
+                              <TitleBar settingsLocked={status !== 'done'} />
 
-                            <ActivityBarSlot />
+                              <ActivityBarSlot />
 
-                            <main className="app-viewport">
-                              {/* 启动首屏：按 `defaultView` 跳章节 / 大纲；仅启动时尝试一次。 */}
-                              <StartupViewRedirect
-                                defaultView={initialDefaultView}
-                                enabled={status === 'done'}
-                              />
-                              {status === 'loading' ? (
-                                <ViewportPlaceholder />
-                              ) : (
-                                /* 路由页懒加载：只包裹路由出口，标题栏 / 活动栏 / 状态栏外壳
+                              <main className="app-viewport">
+                                {/* 启动首屏：按 `defaultView` 跳章节 / 大纲；仅启动时尝试一次。 */}
+                                <StartupViewRedirect
+                                  defaultView={initialDefaultView}
+                                  enabled={status === 'done'}
+                                />
+                                {status === 'loading' ? (
+                                  <ViewportPlaceholder />
+                                ) : (
+                                  /* 路由页懒加载：只包裹路由出口，标题栏 / 活动栏 / 状态栏外壳
                                      首帧即渲染；fallback 与上面的引导占位同款，衔接无跳变。 */
-                                <Suspense fallback={<ViewportPlaceholder />}>
-                                  <Routes>
-                                    <Route
-                                      path="/"
-                                      element={
-                                        status === 'required' ? (
-                                          <Welcome onFinish={complete} />
-                                        ) : (
-                                          <Bookshelf />
-                                        )
-                                      }
-                                    />
-                                    <Route
-                                      path="/write/:bookId"
-                                      element={
-                                        status === 'required' ? (
-                                          <Navigate to="/" replace />
-                                        ) : (
-                                          <WriteRoute />
-                                        )
-                                      }
-                                    />
-                                    {/* 设置已改为标题栏齿轮唤起的弹窗（`SettingsDialog`），
+                                  <Suspense fallback={<ViewportPlaceholder />}>
+                                    <Routes>
+                                      <Route
+                                        path="/"
+                                        element={
+                                          status === 'required' ? (
+                                            <Welcome onFinish={complete} />
+                                          ) : (
+                                            <Bookshelf />
+                                          )
+                                        }
+                                      />
+                                      <Route
+                                        path="/write/:bookId"
+                                        element={
+                                          status === 'required' ? (
+                                            <Navigate to="/" replace />
+                                          ) : (
+                                            <WriteRoute />
+                                          )
+                                        }
+                                      />
+                                      {/* 设置已改为标题栏齿轮唤起的弹窗（`SettingsDialog`），
                                       不再占用路由；未匹配路径一律回首页。 */}
-                                    <Route path="*" element={<Navigate to="/" replace />} />
-                                  </Routes>
-                                </Suspense>
-                              )}
-                            </main>
+                                      <Route path="*" element={<Navigate to="/" replace />} />
+                                    </Routes>
+                                  </Suspense>
+                                )}
+                              </main>
 
-                            <StatusBar
-                              className={isWriter ? 'is-writer' : undefined}
-                              leading={isWriter ? <StatusBarLeading /> : undefined}
-                            >
-                              <StatusBarWidgets />
-                            </StatusBar>
-                          </div>
-                        </ActivityActionsProvider>
-                      </InspirationFilterProvider>
-                    </DossierFilterProvider>
-                  </UnsavedSwitchGuardProvider>
-                </BeforeCloseFlushProvider>
-                {/* 数据健康自检：启动拉取一次，发现问题即弹 Modal（跨路由恒定，位于 Provider 层内） */}
-                <DiagnosticsGate />
-              </ActivityBarProvider>
+                              <StatusBar
+                                className={isWriter ? 'is-writer' : undefined}
+                                leading={isWriter ? <StatusBarLeading /> : undefined}
+                              >
+                                <StatusBarWidgets />
+                              </StatusBar>
+                            </div>
+                          </ActivityActionsProvider>
+                        </InspirationFilterProvider>
+                      </DossierFilterProvider>
+                    </UnsavedSwitchGuardProvider>
+                  </BeforeCloseFlushProvider>
+                  {/* 数据健康自检：启动拉取一次，发现问题即弹 Modal（跨路由恒定，位于 Provider 层内） */}
+                  <DiagnosticsGate />
+                </ActivityBarProvider>
+              </PaperLinesProvider>
             </TypographyProvider>
           </RightPaneVisibilityProvider>
         </ActivityPinnedProvider>

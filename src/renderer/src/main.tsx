@@ -16,6 +16,7 @@ import i18n, { initI18n } from './i18n'
 import { LocaleProvider } from './i18n/LocaleProvider'
 import { LOCALE_SETTING_KEY, resolveLocale } from './i18n/config'
 import { ACTIVITY_PINNED_SETTING_KEY, DEFAULT_ACTIVITY_PINNED } from './shell/activityPinned'
+import { PAPER_LINES_SETTING_KEY, decodePaperLines } from './shell/paperLines'
 import {
   DEFAULT_VIEW_SETTING_KEY,
   resolveDefaultView,
@@ -24,9 +25,9 @@ import {
 import './styles/index.css'
 
 /**
- * 批量读取「其余」启动设置（主题 / 窗口材质 / 活动栏固定态）：一次 `settings:all` IPC
- * 替代 3 次 `settings:get`。主进程该通道已剔除 `ai:*` / `onedrive:credentials:*` 敏感键，
- * 故本函数只用于取非敏感键（`theme` / `windowMaterial` / `activityBarPinned`）。
+ * 批量读取「其余」启动设置（主题 / 窗口材质 / 活动栏固定态 / 稿纸横线）：一次 `settings:all` IPC
+ * 替代 4 次 `settings:get`。主进程该通道已剔除 `ai:*` / `onedrive:credentials:*` 敏感键，
+ * 故本函数只用于取非敏感键（`theme` / `windowMaterial` / `activityBarPinned` / `paperLines`）。
  * 无 window.api（纯浏览器预览）/ IPC 异常时返回空对象，由调用方回退各自默认值。
  */
 async function readBootSettings(): Promise<Record<string, string>> {
@@ -38,8 +39,8 @@ async function readBootSettings(): Promise<Record<string, string>> {
 }
 
 /**
- * 启动时从数据库预取用户选择的主题（含 'system'）、窗口材质与活动栏固定态，校验后作为
- * 初始值传入对应 Provider，避免异步读取导致的浅色 / 背景 / 活动栏态闪屏。无 window.api
+ * 启动时从数据库预取用户选择的主题（含 'system'）、窗口材质、活动栏固定态与稿纸横线开关，
+ * 校验后作为初始值传入对应 Provider，避免异步读取导致的浅色 / 背景 / 活动栏态闪屏。无 window.api
  * （纯浏览器预览）时回退各自默认值，不阻塞渲染。
  *
  * 时序分两段（避免串行等待）：
@@ -73,6 +74,8 @@ async function bootstrap(): Promise<void> {
   )
   if (normalizedMaterial) initialMaterial = normalizedMaterial
   if (bootSettings[ACTIVITY_PINNED_SETTING_KEY] === 'true') initialActivityPinned = true
+  // 正文稿纸横线：默认关闭，仅持久化值恰为 'true' 时开启
+  const initialPaperLines = decodePaperLines(bootSettings[PAPER_LINES_SETTING_KEY] ?? null)
   // 默认打开视图：非法 / 历史值（如已移除的 `recent`）/ 缺省一律回落书架（应用既有首屏）
   const initialDefaultView: DefaultView = resolveDefaultView(bootSettings[DEFAULT_VIEW_SETTING_KEY])
 
@@ -81,6 +84,11 @@ async function bootstrap(): Promise<void> {
      内过渡到固定态的 64px（写作页整体横向滑动一下）。这里预写同值属空操作，
      Provider 之后照常投影。 */
   document.body.classList.toggle('act-pinned', initialActivityPinned)
+
+  /* 稿纸横线同理：Provider 的 `useEffect` 晚于首帧绘制，预写 dataset 属性可让
+     首帧直接按持久化值绘制（或保持无线），避免正文先无线、随后整片虚线闪入。
+     Provider 挂载后照常投影，写入同值属空操作。 */
+  document.documentElement.dataset.paperLines = initialPaperLines ? 'true' : 'false'
 
   // HashRouter：生产环境 file:// 协议下 BrowserRouter 会白屏
   createRoot(document.getElementById('root')!).render(
@@ -93,6 +101,7 @@ async function bootstrap(): Promise<void> {
                 <HashRouter>
                   <App
                     initialActivityPinned={initialActivityPinned}
+                    initialPaperLines={initialPaperLines}
                     initialDefaultView={initialDefaultView}
                   />
                 </HashRouter>

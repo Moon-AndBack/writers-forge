@@ -11,10 +11,20 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v149'
+export const CHAPTER_SEED_VERSION = 'v150'
 
 /**
- * 最近版本变更日志（v149；更早版本见上述历史文件）。
+ * 最近版本变更日志（v150；更早版本见上述历史文件）。
+ *
+ * `v150`（正文稿纸横线批）：外观设置新增「稿纸横线」开关（settings 键 `paperLines`，
+ * 默认关闭）。开启后章节 / 大纲中栏编辑区与右栏「大纲」只读正文的每个顶层段落经
+ * `::after` 铺 `1lh` 周期的 `--line` 背景瓦片，再用横向 repeating mask 切成虚线；
+ * `1lh` 随行高 / 字号 / 缩放自动变化，段落间距不参与周期，故不会跨段错位，且不改布局。
+ * 作用域限定 `.ep-view[data-view='chapters'|'outline']` 与 `.rp-outline`；剧情正文 /
+ * 设定档案 / 伏笔与实体描述、列表 / 引用 / 代码块 / 标题均不画线。启动预取 `paperLines`
+ * 并预写 `documentElement.dataset.paperLines`，避免首帧闪烁。教学文案同步（卷五
+ * 「主题外观」、大纲「主题与排版」）。纯渲染层 + 教学文案改动：无 DB 迁移，
+ * 升版本只重灌教学书。
  *
  * `v149`（势力组织架构视图批）：势力模块中栏新增「卡片 / 架构」切换。架构视图经
  * `worldEntity:listRefsByBook` 的 refs-only 通道取全书关系（superior / subordinate /

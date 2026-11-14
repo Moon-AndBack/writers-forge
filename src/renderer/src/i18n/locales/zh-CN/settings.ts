@@ -36,6 +36,10 @@ const settings = {
     label: '主题模式',
     description: '跟随系统或指定明暗 / 预设主题'
   },
+  paperLines: {
+    label: '稿纸横线',
+    description: '在正文每行下方显示一条虚线，仅影响编辑区与右栏只读正文'
+  },
   data: {
     title: '数据与备份',
     description: '本地备份、恢复与整库导出',

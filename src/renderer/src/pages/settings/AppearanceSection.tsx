@@ -1,11 +1,17 @@
 import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Select } from '../../components/ui'
+import { Select, Switch } from '../../components/ui'
 import type { ThemeId } from '../../theme/themes'
 import { useTheme } from '../../theme/useTheme'
+import {
+  PAPER_LINES_DEFAULT,
+  PAPER_LINES_SETTING_KEY,
+  decodePaperLines
+} from '../../shell/paperLines'
 import SectionCard from './SectionCard'
 import SettingRow from './SettingRow'
 import { settingRowDescriptionId } from './settingRowIds'
+import { useSettingsValue } from './useSettingsValue'
 
 /**
  * 通用设置 · 外观与主题组。
@@ -23,7 +29,13 @@ export default function AppearanceSection() {
   const { t } = useTranslation('theme')
   const { t: tSettings } = useTranslation('settings')
   const { theme, themes, setTheme } = useTheme()
+  const paperLines = useSettingsValue(
+    PAPER_LINES_SETTING_KEY,
+    PAPER_LINES_DEFAULT,
+    decodePaperLines
+  )
   const themeModeId = useId()
+  const paperLinesId = useId()
 
   return (
     <SectionCard
@@ -43,6 +55,20 @@ export default function AppearanceSection() {
           options={themes.map((item) => ({ value: item.id, label: t(item.labelKey) }))}
           ariaLabel={tSettings('themeMode.label')}
           onChange={(value) => setTheme(value as ThemeId)}
+        />
+      </SettingRow>
+
+      <SettingRow
+        controlId={paperLinesId}
+        label={tSettings('paperLines.label')}
+        description={tSettings('paperLines.description')}
+      >
+        <Switch
+          id={paperLinesId}
+          aria-describedby={settingRowDescriptionId(paperLinesId)}
+          checked={paperLines.value}
+          aria-label={tSettings('paperLines.label')}
+          onChange={(event) => paperLines.setValue(event.target.checked)}
         />
       </SettingRow>
     </SectionCard>

@@ -36,6 +36,11 @@ const settings = {
     label: 'Theme mode',
     description: 'Follow the system or pick a light/dark preset theme'
   },
+  paperLines: {
+    label: 'Paper lines',
+    description:
+      'Show a dashed line under each line of body text in the editor and the read-only body in the right pane'
+  },
   data: {
     title: 'Data & backup',
     description: 'Local backup, restore and full-database export',

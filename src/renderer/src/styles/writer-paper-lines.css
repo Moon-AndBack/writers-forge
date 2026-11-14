@@ -1,0 +1,68 @@
+/* ============================================================
+   正文稿纸横线（设置 · 外观与主题 →「稿纸横线」，默认关闭）
+   ------------------------------------------------------------------
+   仅在 `html[data-paper-lines='true']` 下生效，作用域限定：
+   - 章节 / 大纲中栏编辑区的顶层段落；
+   - 右栏「大纲」页签只读正文的顶层段落。
+   剧情正文、设定档案正文、伏笔 / 实体描述、列表 / 引用 / 代码块 / 标题
+   均不画线（行高与版式不同，统一铺线会错位或过密）。
+
+   实现：每个顶层段落用绝对定位的 `::after` 铺满正文 content box，
+   以 `1lh` 为周期重复一张「底部 1px 横线」的背景瓦片，再用横向
+   repeating-linear-gradient 的 mask 切成虚线。`1lh` 直接取当前元素
+   行盒高度，随 `--doc-line` / `--doc-zoom` / 字号自动变化；段落间距
+   不参与瓦片周期，故从第二段起也不会累积错位。
+
+   为何不把线画在 p 的 `background-image`：正文 p 的 `:hover` / `:focus`
+   用 `background` 简写换底色（writer-editor-doc.css），会一并清掉背景图。
+   ============================================================ */
+
+/* 章节 / 大纲编辑区：p 自身有 padding 2px 8px、左右 margin -8px
+   （writer-editor-doc.css），inset 2px 8px 正好对齐 content box。 */
+html[data-paper-lines='true'] .ep-view[data-view='chapters'] .doc-body .ProseMirror > p::after,
+html[data-paper-lines='true'] .ep-view[data-view='outline'] .doc-body .ProseMirror > p::after {
+  content: '';
+  position: absolute;
+  inset: 2px 8px;
+  pointer-events: none;
+  user-select: none;
+
+  /* 每个 1lh 瓦片底部一条 1px 横线 */
+  background-image: linear-gradient(to top, var(--line) 0 1px, transparent 1px);
+  background-size: 100% 1lh;
+  background-repeat: repeat-y;
+
+  /* 横向切成虚线：0.25em 实 / 0.25em 空。mask 只取 alpha，
+     用 currentColor（正文色恒为不透明令牌）避免颜色字面量。 */
+  -webkit-mask-image: repeating-linear-gradient(
+    to right,
+    currentColor 0 0.25em,
+    transparent 0.25em 0.5em
+  );
+  mask-image: repeating-linear-gradient(to right, currentColor 0 0.25em, transparent 0.25em 0.5em);
+}
+
+/* 右栏「大纲」只读正文：p 无 padding，inset 0 即 content box；
+   基础规则未给 p 定位上下文，仅在开关开启时补 relative。 */
+html[data-paper-lines='true'] .rp-outline .rp-read .ProseMirror > p {
+  position: relative;
+}
+
+html[data-paper-lines='true'] .rp-outline .rp-read .ProseMirror > p::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+
+  background-image: linear-gradient(to top, var(--line) 0 1px, transparent 1px);
+  background-size: 100% 1lh;
+  background-repeat: repeat-y;
+
+  -webkit-mask-image: repeating-linear-gradient(
+    to right,
+    currentColor 0 0.25em,
+    transparent 0.25em 0.5em
+  );
+  mask-image: repeating-linear-gradient(to right, currentColor 0 0.25em, transparent 0.25em 0.5em);
+}
