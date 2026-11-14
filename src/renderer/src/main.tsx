@@ -38,6 +38,15 @@ async function readBootSettings(): Promise<Record<string, string>> {
   }
 }
 
+/** 启动时预取系统是否支持窗口材质；无 window.api / IPC 异常时视为不支持。 */
+async function readMaterialSupported(): Promise<boolean> {
+  try {
+    return (await window.api?.windowMaterial.materialSupported()) === true
+  } catch {
+    return false
+  }
+}
+
 /**
  * 启动时从数据库预取用户选择的主题（含 'system'）、窗口材质、活动栏固定态与稿纸横线开关，
  * 校验后作为初始值传入对应 Provider，避免异步读取导致的浅色 / 背景 / 活动栏态闪屏。无 window.api
@@ -64,8 +73,12 @@ async function bootstrap(): Promise<void> {
     /* 读取失败（无 API / IPC 异常）时回退系统语言 */
   }
 
-  // 阶段 2：语言包加载 与 其余设置批量读取 并行；initI18n 须在 render 前完成（首帧即目标语言）
-  const [bootSettings] = await Promise.all([readBootSettings(), initI18n(initialLocale)])
+  // 阶段 2：语言包加载 与 其余设置批量读取、材质支持预取 并行；initI18n 须在 render 前完成（首帧即目标语言）
+  const [bootSettings, initialSupported] = await Promise.all([
+    readBootSettings(),
+    readMaterialSupported(),
+    initI18n(initialLocale)
+  ])
 
   const savedTheme = bootSettings[THEME_SETTING_KEY]
   if (isThemeId(savedTheme)) initialTheme = savedTheme
@@ -97,7 +110,10 @@ async function bootstrap(): Promise<void> {
         <LocaleProvider initialLocale={initialLocale}>
           <ThemeProvider initialTheme={initialTheme}>
             <ChipColorProvider>
-              <WindowMaterialProvider initialMaterial={initialMaterial}>
+              <WindowMaterialProvider
+                initialMaterial={initialMaterial}
+                initialSupported={initialSupported}
+              >
                 <HashRouter>
                   <App
                     initialActivityPinned={initialActivityPinned}
