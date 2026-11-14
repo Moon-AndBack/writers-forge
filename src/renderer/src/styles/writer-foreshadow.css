@@ -329,7 +329,7 @@
 }
 
 /* 软底容器内的次按钮（保存条「废弃 / 恢复」、只读详情「返回」）统一挂共享类
-   `.wf-btn--on-soft`（components/button.css：--control-on-soft 灰底 + 内描边，
+   `.wf-btn--on-soft`（components/button.css：--control-on-soft 灰底，默认无描边，
    hover / 按压加深填充，禁用保留灰底），此处不再重复声明。 */
 
 /* ---------- 右栏「伏笔」页签：只读详情 ---------- */
@@ -338,8 +338,8 @@
 
    字段软底块（名称 / 描述 / 相关实体三块统一）：容器 `.foreshadow-fields.on-soft`
    已铺 `--soft-solid` 软底，块内若用同色会糊成一片，故复用通用只读值块
-   `.wf-readonly-block`（components/surface.css：--control-on-soft 底 +
-   --control-on-soft-line 内描边 + 10 / 12 内衬，JSX 侧追加类）。
+   `.wf-readonly-block`（components/surface.css：--control-on-soft 底，默认无描边，
+   + 10 / 12 内衬，JSX 侧追加类）。
    块只裹「值」，标签（描述 / 相关实体）留在块外——与编辑态「标签在上、控件在下」
    的层级一致；名称块的标题与状态本就是值，直接落在块内。 */
 .foreshadow-detail__head {

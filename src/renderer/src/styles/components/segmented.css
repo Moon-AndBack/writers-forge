@@ -42,10 +42,12 @@
   );
   /* 同心：容器 8 − 横向内衬 3 = 5（改前 6−3=3，角部视觉间距不变）。 */
   border-radius: 5px;
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
-  box-shadow:
-    var(--sh-xs),
-    inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent);
+  /* 选中底板：默认态无品牌描边，选中可辨性由底色差 + 品牌文字 + 字重承担。
+     混合比例取 --seg-thumb-bg（四主题各自定义，见 theme.css），高于 §8.5
+     列表行选中态的 12%——thumb 没有「行位于卡片内」的背景差可依赖（轨道底
+     即 --soft-solid），且 honey / dark 下品牌色与轨道明度接近，需更高比例。 */
+  background: var(--seg-thumb-bg);
+  box-shadow: var(--sh-xs);
   pointer-events: none;
 }
 
@@ -95,7 +97,7 @@
 }
 
 /* 选中态：只保留品牌色文字与 600 字重；
-   高亮底 / 描边 / 投影统一由容器内 .wf-seg__thumb 承载。 */
+   高亮底 / 投影统一由容器内 .wf-seg__thumb 承载（无描边）。 */
 .wf-seg__item.is-active {
   color: var(--brand);
   font-weight: 600;

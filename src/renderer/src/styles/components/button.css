@@ -115,13 +115,12 @@
 /* ---------- 软底容器内的次按钮 ----------
    容器已是 `--soft-solid` 软底（右栏详情卡 / 保存条 / 返回栏）时，secondary 的同色
    填充与 ghost 的透明底都会与容器糊平；改用「软底上的控件」令牌
-   `--control-on-soft` 灰底 + `--control-on-soft-line` 细描边（与 form.css 的
-   `.on-soft` 同口径，四主题通用）。hover / 按压只加深填充，按压位移沿用基类。
-   禁用态保留灰底、撤掉描边：box-shadow 由更高特异性的 `.wf-btn:disabled` 归零，
+   `--control-on-soft` 灰底（与 form.css 的 `.on-soft` 同口径，四主题通用）。
+   默认态无描边，边界靠底色差；hover / 按压只加深填充，按压位移沿用基类。
+   禁用态保留灰底：box-shadow 由更高特异性的 `.wf-btn:disabled` 归零，
    本类只需保持底色。 */
 .wf-btn--on-soft {
   background: var(--control-on-soft);
-  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
 }
 .wf-btn--on-soft:hover:not(:disabled),
 .wf-btn--on-soft:active:not(:disabled) {

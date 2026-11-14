@@ -51,10 +51,10 @@
   opacity: 0.6;
 }
 
-/* 「有底色容器上的控件」（.on-soft）：与 form.css 的输入控件规则同口径。 */
+/* 「有底色容器上的控件」（.on-soft）：与 form.css 的输入控件规则同口径
+   （默认态只换底色、不补描边；focus-within 回 --pane + 品牌线）。 */
 .on-soft .short-rich-field {
   background: var(--control-on-soft);
-  border-color: var(--control-on-soft-line);
 }
 
 .on-soft .short-rich-field:hover:not(.is-disabled) {
@@ -68,7 +68,6 @@
 
 .on-soft .short-rich-field.is-disabled {
   background: var(--control-on-soft);
-  border-color: var(--control-on-soft-line);
 }
 
 /* 编辑器内容：撑满字段高度；段落零外边距（短字段不做长文段距）。 */

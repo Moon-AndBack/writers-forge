@@ -115,7 +115,7 @@ src/
 
 ### 8.2 表面层级
 
-- **MUST** 按五层组织：L0 桌面 `.shell`（`--desk-*`）→ L1 栏 / 编辑区（`--pane`）→ L2 分区（`--soft-solid`，内衬 6px，圆角 `--r-lg`）→ L3 卡片（`--soft-solid`，内衬 14×16，`--r-lg`，`--sh-xs` / `--sh-sm`）→ L4 控件 / 只读块（`--control-on-soft` + `--control-on-soft-line` 内描边，只读块 10×12、输入类 9×12）。浮层独立于五层，用 `--pane` + `--sh-sm`。
+- **MUST** 按五层组织：L0 桌面 `.shell`（`--desk-*`）→ L1 栏 / 编辑区（`--pane`）→ L2 分区（`--soft-solid`，内衬 6px，圆角 `--r-lg`）→ L3 卡片（`--soft-solid`，内衬 14×16，`--r-lg`，`--sh-xs` / `--sh-sm`）→ L4 控件 / 只读块（`--control-on-soft`，**默认态无描边**，边界靠与 `--soft-solid` 的底色差；仅 focus / invalid / checked 等状态使用描边，只读块 10×12、输入类 9×12）。浮层独立于五层，用 `--pane` + `--sh-sm`。
 - **MUST** 同色软底不得再套同色软底卡；需要再分层时改用 `--control-on-soft`、`--pane`，或仅用描边 / 间距分区。
 - **MUST** 内衬固定：栏内衬 8px、分区内衬 6px、卡片 14×16px、弹窗 body 4×20×16px（上 / 左右 / 下）；不得在同类容器另立内衬。
 - **SHOULD** 层级优先用底色 + 间距 / 描边表达，不用阴影堆叠制造伪层级。

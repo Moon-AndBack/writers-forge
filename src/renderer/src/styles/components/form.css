@@ -137,20 +137,18 @@
    问题：`.wf-input` / `.wf-select__trigger` 默认也用 --soft-solid 填充 → 控件与
    容器同色，看不出边界。
    做法：容器挂 `.on-soft`，内部输入框 / 多行文本 / 下拉触发器改用
-   --control-on-soft 令牌（四套主题各自定义，浅色系比 --soft-solid 深一档、暗色系
-   更亮，见 theme.css），并补一圈 --control-on-soft-line 描边；hover 更深一档，
-   聚焦仍回到 --pane + 品牌环。
+   --control-on-soft 令牌（四套主题各自定义，明度高于 --soft-solid 一档，
+   见 theme.css）；**默认态不再补描边**，边界只靠这层底色差，描边只留给
+   focus / invalid / checked 等状态。hover 更深一档，聚焦回到 --pane + 品牌环。
    说明：选择器特异性 (0,2,0) 高于基类 (0,1,0)，且本段位于 form-select.css 的
    @import 之后、与基类状态规则同权重时靠后取胜，无需 `!important`。
    ============================================================ */
 .on-soft .wf-input,
 .on-soft .wf-select__trigger {
   background: var(--control-on-soft);
-  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
 }
 .on-soft .wf-textarea {
   background: var(--control-on-soft);
-  border-color: var(--control-on-soft-line);
 }
 .on-soft .wf-input:hover:not(:disabled):not(:read-only):not([aria-readonly='true']),
 .on-soft .wf-textarea:hover:not(:disabled):not(:read-only):not([aria-readonly='true']),
@@ -175,20 +173,15 @@
 .on-soft .wf-input:read-only,
 .on-soft .wf-input[aria-readonly='true'] {
   background: var(--control-on-soft);
-  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
 }
-/* 只读输入仍可获得焦点：描边保持 on-soft 线色，但聚焦环不能被上面的单层
-   内描边吞掉（改造前 border-color 归只读规则、box-shadow 环仍由基类聚焦态提供）。 */
+/* 只读输入仍可获得焦点：默认态无描边，聚焦只补品牌环，不再画中性内线。 */
 .on-soft .wf-input:is(:read-only, [aria-readonly='true']):focus {
-  box-shadow:
-    inset 0 0 0 1px var(--control-on-soft-line),
-    0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
 }
 .on-soft .wf-textarea:disabled,
 .on-soft .wf-textarea:read-only,
 .on-soft .wf-textarea[aria-readonly='true'] {
   background: var(--control-on-soft);
-  border-color: var(--control-on-soft-line);
 }
 
 /* ============================================================

@@ -14,8 +14,8 @@ export interface SectionCardProps {
  *   本组件不叠加描边或底色；
  * - 行间分隔线由 settings.css 的 `.settings-row + .settings-row` 提供；
  * - 内容行容器挂 `.on-soft`：卡片本身是 --soft-solid 软底，内部 Input / Select
- *   改用 --control-on-soft + --control-on-soft-line（见 form.css），避免控件与
- *   卡片同色糊平。该类只作用于内部表单控件，不改卡片自身背景。
+ *   改用 --control-on-soft（见 form.css；默认态无描边），避免控件与卡片同色糊平。
+ *   该类只作用于内部表单控件，不改卡片自身背景。
  */
 export function SectionCard({ children }: SectionCardProps) {
   return (

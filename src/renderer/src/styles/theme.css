@@ -132,18 +132,24 @@
      容器同色、边界不可辨。本组用高于 --soft-solid（6%）的 --text 比例混入 --pane——
      浅色系 --text 为深色，故控件**更深**。
 
-     当前取向：**控件底接近卡片底，边界靠描边**。10% 档控件底约 #e8e8e8、卡片底约
-     #f1f1f1（对比约 1.09:1，只留一档极轻的层次，观感明亮）；边界不再靠加深填充，
-     而由 --control-on-soft-line 的 37% 细描边承担（描边对控件底约 2.25:1，清晰可辨）。
-     旧 15% 档 1.21:1 控件偏黑，故本批再压一档。
-     聚焦态仍回到 --pane + 品牌环（见 form.css 的 `.on-soft`）。
+     当前取向：**默认态无描边，边界靠底色差**。13% 档控件底约 #e1e1e1、卡片底约
+     #f1f1f1（明度比约 1.16:1），去掉旧 10% 档「接近同色 + 37% 内描边」的第二套
+     描边语言；--control-on-soft-line 只留给 focus / invalid / checked 等状态线
+     （见 form.css 的 `.on-soft`）。13% 是去线后仍能一眼分辨控件边界的最低档。
+     聚焦态仍回到 --pane + 品牌环。
 
-     ▸ 快速微调：只调下面这三个比例，即可整体调亮 / 调暗控件底与描边强度
+     ▸ 快速微调：只调下面这三个比例，即可整体调亮 / 调暗控件底与状态线强度
        （调低比例 → 控件更接近卡片底、更亮；调高 → 更深、对比更强）。
        四套主题**各自显式定义**，不依赖 :root 继承。 */
-  --control-on-soft: color-mix(in srgb, var(--text) 10%, var(--pane));
-  --control-on-soft-hover: color-mix(in srgb, var(--text) 14%, var(--pane));
+  --control-on-soft: color-mix(in srgb, var(--text) 13%, var(--pane));
+  --control-on-soft-hover: color-mix(in srgb, var(--text) 18%, var(--pane));
   --control-on-soft-line: color-mix(in srgb, var(--text) 37%, transparent);
+
+  /* 分段控件选中底板专用（.wf-seg__thumb）：比例 19%，明显高于 §8.5 列表行
+     选中态的 12%——thumb 没有「行位于卡片内」的背景差可依赖（轨道底即
+     --soft-solid），且本批去掉了 1px 品牌描边，选中可辨性只能由底色差 +
+     品牌文字承载。honey 24% / dark 18%，见各主题块。 */
+  --seg-thumb-bg: color-mix(in srgb, var(--brand) 19%, var(--pane));
 
   /* 文本 */
   --text: #1a1a1a;
@@ -206,12 +212,16 @@
 
   /* 「有底色容器上的控件」（暗色）：语义同亮色块（快速微调同样只调下面三个比例）。
      --text 为白，取 14% 混入 --pane 即**更亮**于 --soft-solid（5%），控件底约
-     #3f3f3f、卡片底约 #2b2b2b，对比约 1.34:1；hover 19% 再亮一档。描边按白 22%
-     混透明，暗底上可见。dark 下控件本就亮于底色（不会「偏黑」），故保留 14% 不再
-     压低，避免与卡片底糊平。 */
+     #3f3f3f、卡片底约 #2b2b2b，明度比约 1.35:1；hover 19% 再亮一档。默认态无
+     描边（底色差已足够），--control-on-soft-line 只用于状态线。dark 下控件本就
+     亮于底色（不会「偏黑」），故保留 14% 不再压低，避免与卡片底糊平。 */
   --control-on-soft: color-mix(in srgb, var(--text) 14%, var(--pane));
   --control-on-soft-hover: color-mix(in srgb, var(--text) 19%, var(--pane));
   --control-on-soft-line: color-mix(in srgb, var(--text) 22%, transparent);
+
+  /* 分段控件选中底板：dark 的 --pane 与软底差更小，18% 时对轨道明度比约
+     1.13:1（17% 仅约 1.09），保留品牌蓝调差异以维持选中可辨。 */
+  --seg-thumb-bg: color-mix(in srgb, var(--brand) 18%, var(--pane));
 
   --text: #ffffff;
   --text-dim: #c8c8c8;
@@ -272,14 +282,16 @@
   --pill-bg-hover-solid: color-mix(in srgb, rgb(20, 60, 30) 11%, var(--pane));
 
   /* 「有底色容器上的控件」（浅绿）：沿用本主题软底色的基色 rgb(20, 60, 30) 推导
-     ——10% 混入 --pane（--soft-solid 同基色 6%），控件底约 #e5ece6、卡片底约
-     #eef3ef，对比约 1.08:1，仍带本主题绿调。当前取向：**控件底接近卡片底，边界
-     靠描边**——边界由同基色 37% 透明描边承担（描边对控件底约 2.0:1；旧 15% / 32%
-     档控件偏黑、对比 1.18:1）。
+     ——13% 混入 --pane（--soft-solid 同基色 6%），控件底约 #dee6df、卡片底约
+     #eef3ef，明度比约 1.13:1，仍带本主题绿调。当前取向：**默认态无描边，边界靠
+     底色差**；37% 状态线只留给 focus / invalid / checked（见 form.css 的 `.on-soft`）。
      快速微调：只改下面三个比例（调低更亮 / 调高更深）。 */
-  --control-on-soft: color-mix(in srgb, rgb(20, 60, 30) 10%, var(--pane));
-  --control-on-soft-hover: color-mix(in srgb, rgb(20, 60, 30) 14%, var(--pane));
+  --control-on-soft: color-mix(in srgb, rgb(20, 60, 30) 13%, var(--pane));
+  --control-on-soft-hover: color-mix(in srgb, rgb(20, 60, 30) 18%, var(--pane));
   --control-on-soft-line: color-mix(in srgb, rgb(20, 60, 30) 37%, transparent);
+
+  /* 分段控件选中底板：19%（对轨道明度比约 1.10:1），绿调品牌色相参与区分。 */
+  --seg-thumb-bg: color-mix(in srgb, var(--brand) 19%, var(--pane));
 
   --text: #1a2a1e;
   --text-dim: #4e6254;
@@ -330,14 +342,17 @@
   --pill-bg-hover-solid: color-mix(in srgb, rgb(80, 60, 10) 10%, var(--pane));
 
   /* 「有底色容器上的控件」（浅黄）：沿用本主题软底色的基色 rgb(80, 60, 10) 推导
-     ——10% 混入 --pane（--soft-solid 同基色 6%），控件底约 #eeebe1、卡片底约
-     #f5f2eb，对比约 1.07:1，仍带本主题暖黄调。当前取向：**控件底接近卡片底，边界
-     靠描边**——边界由同基色 37% 透明描边承担（描边对控件底约 1.9:1；旧 15% / 32%
-     档控件偏黑、对比 1.17:1）。
+     ——13% 混入 --pane（--soft-solid 同基色 6%），控件底约 #e8e5da、卡片底约
+     #f5f2eb，明度比约 1.13:1，仍带本主题暖黄调。当前取向：**默认态无描边，边界靠
+     底色差**；37% 状态线只留给 focus / invalid / checked（见 form.css 的 `.on-soft`）。
      快速微调：只改下面三个比例（调低更亮 / 调高更深）。 */
-  --control-on-soft: color-mix(in srgb, rgb(80, 60, 10) 10%, var(--pane));
-  --control-on-soft-hover: color-mix(in srgb, rgb(80, 60, 10) 14%, var(--pane));
+  --control-on-soft: color-mix(in srgb, rgb(80, 60, 10) 13%, var(--pane));
+  --control-on-soft-hover: color-mix(in srgb, rgb(80, 60, 10) 18%, var(--pane));
   --control-on-soft-line: color-mix(in srgb, rgb(80, 60, 10) 37%, transparent);
+
+  /* 分段控件选中底板：honey 的品牌色与纸面明度最接近，提到 24% 才够
+     （对轨道明度比约 1.13:1；19% 仅约 1.08）。 */
+  --seg-thumb-bg: color-mix(in srgb, var(--brand) 24%, var(--pane));
 
   --text: #2b2415;
   --text-dim: #6a5c3c;

@@ -232,8 +232,8 @@ body.is-resizing .splitter {
   --soft-solid: color-mix(in srgb, rgb(20, 60, 30) 6%, var(--doc-surface));
   --soft-hover-solid: color-mix(in srgb, rgb(20, 60, 30) 8%, var(--doc-surface));
   --soft-press-solid: color-mix(in srgb, rgb(20, 60, 30) 11%, var(--doc-surface));
-  --control-on-soft: color-mix(in srgb, rgb(20, 60, 30) 10%, var(--doc-surface));
-  --control-on-soft-hover: color-mix(in srgb, rgb(20, 60, 30) 14%, var(--doc-surface));
+  --control-on-soft: color-mix(in srgb, rgb(20, 60, 30) 13%, var(--doc-surface));
+  --control-on-soft-hover: color-mix(in srgb, rgb(20, 60, 30) 18%, var(--doc-surface));
 }
 
 [data-theme='honey']
@@ -245,8 +245,8 @@ body.is-resizing .splitter {
   --soft-solid: color-mix(in srgb, rgb(80, 60, 10) 6%, var(--doc-surface));
   --soft-hover-solid: color-mix(in srgb, rgb(80, 60, 10) 7%, var(--doc-surface));
   --soft-press-solid: color-mix(in srgb, rgb(80, 60, 10) 10%, var(--doc-surface));
-  --control-on-soft: color-mix(in srgb, rgb(80, 60, 10) 10%, var(--doc-surface));
-  --control-on-soft-hover: color-mix(in srgb, rgb(80, 60, 10) 14%, var(--doc-surface));
+  --control-on-soft: color-mix(in srgb, rgb(80, 60, 10) 13%, var(--doc-surface));
+  --control-on-soft-hover: color-mix(in srgb, rgb(80, 60, 10) 18%, var(--doc-surface));
 }
 
 .rightpane {

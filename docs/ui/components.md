@@ -590,7 +590,8 @@ tooltip 通过 `aria-describedby` 关联（仅在有文案时）。`title` 被�
 | `readOnly` / `disabled` | 原生                 | `undefined`       | 只读 / 禁用（只读时底色与光标同步降级） |
 
 **关键类名**：`.wf-input`、`.wf-input--sm/lg`、`.wf-input.is-invalid`（也支持
-`[aria-invalid='true']` 选择器）；父容器加 `.on-soft` 可在柔和底容器上换用更深的控件底色。
+`[aria-invalid='true']` 选择器）；父容器加 `.on-soft` 可在柔和底容器上换用
+`--control-on-soft` 控件底色（默认态无描边，聚焦 / 错误态仍保留状态线）。
 
 **键盘与无障碍**：完全使用原生输入行为，无自定义键盘处理。组件**不带标签**，
 必须经 `FormField` 的 `label` + `htmlFor`（或 `aria-label`）提供可访问名称；
@@ -746,7 +747,8 @@ Tab / Shift+Tab 在面板内首尾循环（无可聚焦元素时落回面板）�
 | `'aria-label'` | `string`                            | `undefined` | 分段组无障碍名称                       |
 
 **关键类名**：`.wf-seg`、`.wf-seg--sm`、`.wf-seg--fill`（外部追加的等分变体）、
-`.wf-seg__item`、`.wf-seg__thumb`（`--wf-seg-*` 实测驱动的滑动选中底板）。
+`.wf-seg__item`、`.wf-seg__thumb`（`--wf-seg-*` 实测驱动的滑动选中底板；默认态
+无描边，底色取 `--seg-thumb-bg`，四主题分别按 19% / 18% / 19% / 24% 混入品牌色）。
 
 **键盘与无障碍**：`role="group"` + `aria-label`；每个按钮 `aria-pressed` 表示选中。
 **不是** `tablist` / `radiogroup` 语义：所有按钮都参与 Tab 序列，无方向键漫游。

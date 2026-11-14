@@ -150,13 +150,13 @@
 
 /* ---------- Readonly block 只读值块 ----------
    软底容器（`.on-soft` 卡）内承载只读值的最小块：`--control-on-soft` 底 +
-   `--control-on-soft-line` 内描边 + `--r-lg` 圆角 + 10 / 12 内衬（与输入类控件
-   对齐）。伏笔只读详情（名称行 / 描述 / 相关实体）与时间线右栏场景详情共用。 */
+   `--r-lg` 圆角 + 10 / 12 内衬（与输入类控件对齐）。默认态无描边，边界靠与
+   `--soft-solid` 的底色差；焦点 / 错误等状态线由具体场景另行叠加。伏笔只读详情
+   （名称行 / 描述 / 相关实体）与时间线右栏场景详情共用。 */
 .wf-readonly-block {
   padding: 10px 12px;
   background: var(--control-on-soft);
   border-radius: var(--r-lg);
-  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
 }
 
 /* 值块也可能挂在只读富文本（`.rp-read`）上：其自带 8px 内衬且位于页面级样式，
