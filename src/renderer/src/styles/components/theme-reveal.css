@@ -12,7 +12,7 @@
       commit 时写入，所以它始终代表新主题。
    3. `__badge`：目标主题大图标 + 品牌柔光晕，居中显示。
 
-   动画全部由 WAAPI 驱动（时长 / 缓动取 `--dur-slow` / `--ease` /
+   动画全部由 WAAPI 驱动（时长取 `--dur-theme-reveal`，缓动取 `--ease` /
    `--ease-out`），本文件只提供静态结构与基础态：
    - 只动 opacity / transform，不逐帧改 blur 半径；
    - 减少动效时 JS 不创建该层，CSS 再兜底隐藏。

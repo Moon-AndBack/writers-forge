@@ -6,14 +6,14 @@
  * 拍摄前就 fire-and-forget 地让主进程切换 `nativeTheme.themeSource`，原生背板
  * 直接跳变，于是出现「底色先变、三栏后变」。
  *
- * 本方案的时序（总时长约 720ms = 240 模糊 + 240 交叉 + 240 淡出）：
+ * 本方案的时序（总时长 1.2s = 400 模糊 + 400 交叉 + 400 淡出）：
  *
  * ```
- * 建立覆盖层，__blur 淡入（--dur-slow）
+ * 建立覆盖层，__blur 淡入（--dur-theme-reveal）
  *   ↘ 同时调用主进程 theme:apply（system 档 await 权威明暗）
  *   → 两者都完成后，同一帧 commit：
  *       dataset.theme + flushSync React 状态 + 插入目标主题大图标 + tint 开始交叉
- *   → 覆盖层淡出（--dur-slow），图标缩放淡出
+ *   → 覆盖层淡出（--dur-theme-reveal），图标缩放淡出
  *   → 移除覆盖层，恢复交互
  * ```
  *
@@ -42,8 +42,8 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
 const TINT_VAR = '--wf-theme-reveal-tint'
 const TARGET_TINT_VAR = '--wf-theme-reveal-target'
 
-/** 与 `theme.css` 的 `--dur-slow` 对齐；令牌读取失败时的回退值（毫秒）。 */
-const FALLBACK_DURATION = 240
+/** 与 `theme.css` 的 `--dur-theme-reveal` 对齐；令牌读取失败时的回退值（毫秒）。 */
+const FALLBACK_DURATION = 400
 /** 与 `theme.css` 的 `--ease` 对齐（对称曲线）；令牌读取失败时的回退值。 */
 const FALLBACK_EASING = 'cubic-bezier(0.33, 0, 0.67, 1)'
 /** 与 `theme.css` 的 `--ease-out` 对齐（进场曲线）；令牌读取失败时的回退值。 */
@@ -89,7 +89,7 @@ function prefersReducedMotion(): boolean {
  */
 function readRevealMotion(): { duration: number; easing: string; easingOut: string } {
   const styles = getComputedStyle(document.documentElement)
-  const duration = Number.parseFloat(styles.getPropertyValue('--dur-slow'))
+  const duration = Number.parseFloat(styles.getPropertyValue('--dur-theme-reveal'))
   const easing = styles.getPropertyValue('--ease').trim()
   const easingOut = styles.getPropertyValue('--ease-out').trim()
 
@@ -216,7 +216,7 @@ function createContext(): RevealContext {
   }
 
   // 一次性拦截：动画期间用户按键不应穿透到遮罩后的界面；第一次按键后解除，
-  // 避免键盘被长期吞掉（遮罩本身在 720ms 内移除）。
+  // 避免键盘被长期吞掉（遮罩本身在 1.2s 内移除）。
   ctx.keyBlock = (event: KeyboardEvent): void => {
     event.preventDefault()
     event.stopPropagation()

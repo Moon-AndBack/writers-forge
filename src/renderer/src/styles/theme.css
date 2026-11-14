@@ -44,11 +44,16 @@
   --mono: 'Cascadia Mono', 'Consolas', ui-monospace, SFMono-Regular, Menlo, monospace;
   --ease: cubic-bezier(0.33, 0, 0.67, 1);
 
-  /* 动效时长两档（统一取用，禁止再写裸时长）：
+  /* 通用动效时长两档（统一取用，禁止再写裸时长）：
      --dur-fast 用于状态反馈（hover / 颜色 / 背景），
      --dur-slow 用于位置移动、尺寸变化、展开收起与进场。 */
   --dur-fast: 120ms;
   --dur-slow: 240ms;
+
+  /* 主题切换覆盖层专用时长（400ms）：仅 `theme/themeReveal.ts` 的三段
+     （模糊 / 交叉 / 淡出）消费，总时长 3 × 400ms = 1.2s。与 --dur-slow
+     （240ms，通用位移 / 进场）区分；放慢 / 加快只改此值，三段等比缩放。 */
+  --dur-theme-reveal: 400ms;
 
   /* 主题切换（data-theme 变更）本身**不做 CSS transition**：界面色几乎全部
      经主题令牌派生，可过渡的只有其中一部分属性，同屏「一部分渐变、一部分

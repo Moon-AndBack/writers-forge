@@ -307,12 +307,13 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 32 
 
 ### 7.1 令牌
 
-| 令牌         | 值                               | 用途                                           | 定义位置              |
-| ------------ | -------------------------------- | ---------------------------------------------- | --------------------- |
-| `--dur-fast` | 120ms                            | hover / 图标态 / 行操作浮现 / 颜色与背景反馈   | `styles/theme.css:48` |
-| `--dur-slow` | 240ms                            | 位移 / 尺寸变化 / 展开收起 / 进场 / Modal 退场 | `styles/theme.css:49` |
-| `--ease`     | `cubic-bezier(0.33, 0, 0.67, 1)` | 对称缓动，交互与主题淡化共用                   | `styles/theme.css:45` |
-| `--ease-out` | `cubic-bezier(0.22, 1, 0.36, 1)` | 进场专用（快出慢入）                           | `styles/theme.css:65` |
+| 令牌                 | 值                               | 用途                                           | 定义位置              |
+| -------------------- | -------------------------------- | ---------------------------------------------- | --------------------- |
+| `--dur-fast`         | 120ms                            | hover / 图标态 / 行操作浮现 / 颜色与背景反馈   | `styles/theme.css:50` |
+| `--dur-slow`         | 240ms                            | 位移 / 尺寸变化 / 展开收起 / 进场 / Modal 退场 | `styles/theme.css:51` |
+| `--dur-theme-reveal` | 400ms                            | 主题切换覆盖层三阶段（模糊 / 交叉 / 淡出）     | `styles/theme.css:56` |
+| `--ease`             | `cubic-bezier(0.33, 0, 0.67, 1)` | 对称缓动，交互与主题淡化共用                   | `styles/theme.css:45` |
+| `--ease-out`         | `cubic-bezier(0.22, 1, 0.36, 1)` | 进场专用（快出慢入）                           | `styles/theme.css:71` |
 
 ### 7.2 卡片 hover 光晕
 
@@ -342,12 +343,12 @@ box-shadow:
 
 ### 7.3 主题切换
 
-主题切换**不使用** CSS transition，也**不使用** View Transitions，而由 `theme/themeReveal.ts` 动态创建全屏覆盖层（`components/theme-reveal.css`）：
+主题切换**不使用** CSS transition，也**不使用** View Transitions，而由 `theme/themeReveal.ts` 动态创建全屏覆盖层（`components/theme-reveal.css`）。三个阶段各 400ms（`--dur-theme-reveal`），总时长 1.2s：
 
-1. `__blur` 以 `backdrop-filter: blur(12px)` + 旧主题 55% tint 淡入（`--dur-slow`）；
+1. `__blur` 以 `backdrop-filter: blur(12px)` + 旧主题 55% tint 淡入（`--dur-theme-reveal`）；
 2. 遮罩内调用主进程 `theme:apply`（`system` 档 await 权威明暗），完成后**同一帧**写入 `dataset.theme` 与 React 状态（`flushSync`）；
-3. `__tint` 交叉到目标主题色（`--dur-slow`），`__badge` 显示目标主题大图标（112px、stroke 1.35、品牌 18% 柔光晕）；
-4. 整层淡出（`--dur-slow`），图标缩放淡出，移除遮罩。
+3. `__tint` 交叉到目标主题色（`--dur-theme-reveal`），`__badge` 显示目标主题大图标（112px、stroke 1.35、品牌 18% 柔光晕）；
+4. 整层淡出（`--dur-theme-reveal`），图标缩放淡出，移除遮罩。
 
 - 覆盖层 `z-index: var(--z-theme-reveal)`（1105），**仅动画期间存在，动画结束即移除**。
 - 减少动效、页面隐藏、覆盖层创建或动画异常时直接切换，不显示遮罩。
