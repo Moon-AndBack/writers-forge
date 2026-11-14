@@ -83,8 +83,6 @@
 
   /* acrylic 的主题无关 scrim 不透明度；与各主题 --desk-solid 经 color-mix 派生半透明底 */
   --desk-solid-alpha: 70%;
-  /* mica 专用 scrim 不透明度；仅由 material.css 的 mica 规则消费 */
-  --desk-solid-alpha-mica: 60%;
 
   /* 文本选区底色（::selection，见 base.css）：由品牌色派生，四主题自动跟随。
      data-theme 与 :root 同挂在 <html> 上，故此处 var(--brand) 解析到当前主题的
