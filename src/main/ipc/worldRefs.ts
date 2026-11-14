@@ -1,7 +1,9 @@
 import { ipcMain } from 'electron'
 import { logger } from '../logger'
+import { getDb } from '../database'
 import {
   addWorldRef,
+  listRefsByBook,
   listSemanticCodes,
   listWorldRefs,
   listWorldRefsTo,
@@ -20,6 +22,7 @@ import { isRecord } from './worldSubtypeFields'
  * - worldEntity:listRefs           (id, semanticCode?)  → WorldRefRow[]（出边）
  * - worldEntity:listIncomingRefs   (id, semanticCode?)  → WorldRefRow[]（入边）
  * - worldEntity:listSemanticCodes  ()                   → WorldSemanticCodeRow[]
+ * - worldEntity:listRefsByBook     ({ bookId, codes? }) → BookRefRow[]（refs-only）
  * - worldEntity:addRef             (input)              → WorldRefRow | null
  * - worldEntity:updateRef          (id, patch)          → WorldRefRow | null
  * - worldEntity:removeRef          (id)                 → boolean
@@ -150,6 +153,19 @@ function readFilterCode(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined
 }
 
+/** 可选语义码数组筛选项：未提供 → undefined；含非字符串 → null（非法）；空项被丢弃。 */
+function readFilterCodes(value: unknown): string[] | null | undefined {
+  if (value === undefined) return undefined
+  if (!Array.isArray(value)) return null
+  const codes: string[] = []
+  for (const item of value) {
+    if (typeof item !== 'string') return null
+    const code = item.trim()
+    if (code !== '') codes.push(code)
+  }
+  return codes
+}
+
 /** 注册通用引用通道（由 `registerWorldEntitiesIpc` 末尾调用）。 */
 export function registerWorldRefsIpc(): void {
   ipcMain.handle('worldEntity:listRefs', (_event, id: unknown, semanticCode: unknown) => {
@@ -163,6 +179,15 @@ export function registerWorldRefsIpc(): void {
   })
 
   ipcMain.handle('worldEntity:listSemanticCodes', () => listSemanticCodes())
+
+  ipcMain.handle('worldEntity:listRefsByBook', (_event, input: unknown) => {
+    if (!isRecord(input)) return []
+    const bookId = typeof input.bookId === 'string' ? input.bookId.trim() : ''
+    if (bookId === '') return []
+    const codes = readFilterCodes(input.codes)
+    if (codes === null) return []
+    return listRefsByBook(getDb(), bookId, codes)
+  })
 
   ipcMain.handle('worldEntity:addRef', (_event, input: unknown) => {
     const parsed = parseRefInput(input)

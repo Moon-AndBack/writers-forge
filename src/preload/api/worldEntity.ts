@@ -25,6 +25,8 @@ export const worldEntityApi = {
   listIncomingRefs: (id, semanticCode) =>
     ipcRenderer.invoke('worldEntity:listIncomingRefs', id, semanticCode),
   listSemanticCodes: () => ipcRenderer.invoke('worldEntity:listSemanticCodes'),
+  listRefsByBook: (bookId, codes) =>
+    ipcRenderer.invoke('worldEntity:listRefsByBook', { bookId, codes }),
   addRef: (input) => ipcRenderer.invoke('worldEntity:addRef', input),
   updateRef: (id, patch) => ipcRenderer.invoke('worldEntity:updateRef', id, patch),
   removeRef: (id) => ipcRenderer.invoke('worldEntity:removeRef', id),

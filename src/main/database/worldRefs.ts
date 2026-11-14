@@ -1,3 +1,4 @@
+import type Database from 'better-sqlite3'
 import { getDb } from './index'
 import type {
   UpdateWorldRefPatch,
@@ -64,6 +65,47 @@ export function listWorldRefs(entityId: number, semanticCode?: string): WorldRef
 /** 列出实体**入边**引用（按 sort_order, id）；可选按语义码筛选。 */
 export function listWorldRefsTo(entityId: number, semanticCode?: string): WorldRefRow[] {
   return selectRefs('to_id', entityId, semanticCode)
+}
+
+/**
+ * refs-only 关系行：图谱 / 组织架构等批量推导场景只取端点与语义码，
+ * 不 JOIN 实体正文（`world_texts.body` 单条上限 2 MB，全量拉取会撑爆 IPC）。
+ */
+export interface BookRefRow {
+  id: number
+  fromId: number
+  toId: number
+  semanticCode: string
+  sortOrder: number
+}
+
+/**
+ * 列出某书全部引用（refs-only，按 `sort_order, id`）。
+ *
+ * - `codes` 缺省或为空数组 = 不筛选；`semantic_code IS NULL` 的残留行以空串返回，
+ *   由调用方按需忽略。
+ * - 不校验实体是否软删：图谱侧以实体列表为准过滤，避免额外 JOIN 成本。
+ */
+export function listRefsByBook(
+  db: Database.Database,
+  bookId: string,
+  codes?: readonly string[]
+): BookRefRow[] {
+  const conditions = ['book_id = ?']
+  const params: Array<string> = [bookId]
+  if (codes !== undefined && codes.length > 0) {
+    conditions.push(`semantic_code IN (${codes.map(() => '?').join(', ')})`)
+    params.push(...codes)
+  }
+  return db
+    .prepare(
+      `SELECT id, from_id AS fromId, to_id AS toId,
+              COALESCE(semantic_code, '') AS semanticCode, sort_order AS sortOrder
+       FROM world_refs
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY sort_order, id`
+    )
+    .all(...params) as BookRefRow[]
 }
 
 /**

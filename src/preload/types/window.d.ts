@@ -78,6 +78,7 @@ import type { BackupApi } from './backup'
 import type { AiApi } from './ai'
 import type { ImagePayload, ImageRow } from './images'
 import type {
+  BookRefRow,
   CreateWorldEntityInput,
   UpdateWorldEntityPatch,
   UpdateWorldPowerSystemPatch,
@@ -253,6 +254,8 @@ export interface Api {
     listIncomingRefs: (id: number, semanticCode?: string) => Promise<WorldRefRow[]>
     /** 关系类型字典（界面下拉；`from_type` / `to_type` 仅为元数据） */
     listSemanticCodes: () => Promise<WorldSemanticCodeRow[]>
+    /** 某书全量引用（refs-only，不 JOIN 正文；组织架构 / 图谱批量推导用） */
+    listRefsByBook: (bookId: string, codes?: string[]) => Promise<BookRefRow[]>
     /** 新增关系；语义码必填且须在字典内 */
     addRef: (input: WorldRefInput) => Promise<WorldRefRow | null>
     /** 更新关系（语义码 / 补充说明 / 备注 / 序 / 有效期） */
