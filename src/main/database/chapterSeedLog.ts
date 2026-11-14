@@ -11,10 +11,15 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v158'
+export const CHAPTER_SEED_VERSION = 'v159'
 
 /**
- * 最近版本变更日志（v158；更早版本见上述历史文件）。
+ * 最近版本变更日志（v159；更早版本见上述历史文件）。
+ *
+ * `v159`（云备份服务商配置批）：设置入口统一显示「云备份」，页首新增「云服务商」
+ * 选择行，当前唯一已接入选项为 OneDrive。选择值存于普通设置键 `cloudBackupProvider`，
+ * 未知值回落 OneDrive；当前选择驱动 OneDrive 内容分支，不改动凭据、登录态与备份链路。
+ * 教学书与集成文档同步。无 DB 迁移，升版本只重灌教学书。
  *
  * `v158`（窗口材质三档批）：窗口材质由「亚克力 / 关闭」二档扩展为
  * 「亚克力 / 云母 / 关闭」三档，默认仍为亚克力。主进程 `WindowMaterial` 与

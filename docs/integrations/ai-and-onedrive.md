@@ -1,6 +1,6 @@
-# AI 接入与 OneDrive 备份
+# AI 接入与云备份（OneDrive）
 
-Writer's Forge 有两个「离开本机」的集成面：AI 服务商（OpenAI 兼容协议）与 OneDrive（Microsoft Graph）。两者都由主进程独占网络与密钥，渲染层只拿非敏感视图与结构化错误码。
+Writer's Forge 有两个「离开本机」的集成面：AI 服务商（OpenAI 兼容协议）与云备份（当前唯一服务商为 OneDrive，使用 Microsoft Graph）。云备份页的选择配置写入普通设置键 `cloudBackupProvider`，未知或空值安全回落到 `onedrive`；目前没有其它已接入云服务商。两者都由主进程独占网络与密钥，渲染层只拿非敏感视图与结构化错误码。
 
 - AI 能力层：`src/main/ai/`（6 文件，1,172 行）
 - AI 接入层：`src/main/ipc/ai.ts` + `aiValidate.ts` + `aiChat.ts`
@@ -247,7 +247,7 @@ onedrive:signIn / onedrive:listBackups / onedrive:restoreBackup（ipc/onedrive.t
 
 ## 8. 备份流程
 
-> 云端能力：OneDrive 链路同时提供上传、远端列表、下载 / 恢复与删除。设置页「OneDrive 云备份」分区的「云端备份」区会自动列出 `approot` 根路径中的快照，每行右侧提供恢复与删除：恢复先统一落盘、二次确认，再下载到系统临时目录并复用本地恢复流程替换数据库；删除先二次确认，确认后从 OneDrive 移除（进入 OneDrive 回收站，可找回）。恢复前自动创建本地 `pre-restore` 安全副本，成功后应用自动重启；下载 / 恢复期间可取消。本地备份与恢复仍是独立的 `backup:*` 链路。
+> 云端能力：设置入口已统一命名为「云备份」，页首「云服务商」选择目前只有 OneDrive 一个真实可用选项；选择值保存为普通设置键 `cloudBackupProvider`，不属于凭据域。OneDrive 链路提供上传、远端列表、下载 / 恢复与删除。云备份页的「云端备份」区会自动列出 `approot` 根路径中的快照，每行右侧提供恢复与删除：恢复先统一落盘、二次确认，再下载到系统临时目录并复用本地恢复流程替换数据库；删除先二次确认，确认后从 OneDrive 移除（进入 OneDrive 回收站，可找回）。恢复前自动创建本地 `pre-restore` 安全副本，成功后应用自动重启；下载 / 恢复期间可取消。本地备份与恢复仍是独立的 `backup:*` 链路。
 
 ### 8.1 打包内容
 

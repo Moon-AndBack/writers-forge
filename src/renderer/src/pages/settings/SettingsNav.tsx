@@ -16,7 +16,7 @@ export interface SettingsNavProps {
  * - 语义：`<nav aria-label>` + 按钮，选中项用 `aria-current="page"`；
  *   不用 `role="tablist"`（项目无先例，且需要额外方向键与 roving tabindex）。
  * - 标签复用各分区现有标题 key（`settings:*` / `ai:section.title` /
- *   `onedrive:section.title`），不复制文案。
+ *   `onedrive:section.title`）；OneDrive namespace 在此提供通用「云备份」入口名。
  * - 选中态严格按 AGENTS §8.5：品牌 12% + `--pane` 混合底、品牌文字 600 字重；
  *   hover 回落 `--soft-hover-solid`，不另造色条 / 下划线。
  */

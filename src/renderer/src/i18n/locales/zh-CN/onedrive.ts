@@ -1,5 +1,5 @@
 /**
- * OneDrive 备份命名空间（`onedrive`）：设置页「OneDrive 云备份」分区的全部文案。
+ * OneDrive 备份命名空间（`onedrive`）：设置页「云备份」分区及 OneDrive 实现文案。
  *
  * 约定：
  * - `error.*` 与主进程 `OneDriveErrorCode` 的 25 个值一一对应，渲染层经
@@ -10,7 +10,12 @@
  */
 const onedrive = {
   section: {
-    title: 'OneDrive 云备份'
+    title: '云备份'
+  },
+  provider: {
+    label: '云服务商',
+    description: '目前仅支持 OneDrive；服务商选择会保存在本机设置中。',
+    oneDrive: 'OneDrive'
   },
   account: {
     label: '账户状态',

@@ -7,7 +7,13 @@ import type { ZhCNResources } from '../zh-CN'
 
 const onedrive = {
   section: {
-    title: 'OneDrive cloud backup'
+    title: 'Cloud backup'
+  },
+  provider: {
+    label: 'Cloud provider',
+    description:
+      'Only OneDrive is currently supported. This provider choice is saved in local settings.',
+    oneDrive: 'OneDrive'
   },
   account: {
     label: 'Account status',
