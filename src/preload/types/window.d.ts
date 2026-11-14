@@ -451,6 +451,14 @@ export interface Api {
   }
   /** 系统强调色（品牌色）：仅 light / dark 主题消费，sage / honey 用主题静态色 */
   systemTheme: {
+    /**
+     * 应用主题档位到 nativeTheme（仅 Windows 写入 themeSource），返回解析后的权威明暗；
+     * 非法入参返回 null。渲染层切回 `system` 时用返回值校正系统明暗。
+     */
+    apply: (theme: string) => Promise<{
+      resolvedTheme: 'light' | 'dark' | 'sage' | 'honey'
+      shouldUseDarkColors: boolean
+    } | null>
     /** 读取系统强调色，已解析为 `#rrggbb`；系统不支持 / 读取失败时为 null */
     getAccentColor: () => Promise<string | null>
     /** 订阅系统强调色变化，返回取消订阅函数 */

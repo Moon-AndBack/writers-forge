@@ -38,10 +38,11 @@
 | `THEME_SETTING_KEY`           | `'theme'`                                  | settings 表持久化键（`themes.ts:34`）                           |
 | `isThemeId()`                 | 字符串守卫                                 | 校验持久化值（`themes.ts:36-38`）                               |
 
-解析规则（`ThemeProvider.tsx:23-27`）：`system` 在系统深色时解析为 `dark`、否则 `light`；其余四档原样返回。系统明暗由 `useSyncExternalStore` 订阅 `(prefers-color-scheme: dark)`（`ThemeProvider.tsx:29-41`），切换实时生效。
+解析规则（`ThemeProvider.tsx:16-20`）：`system` 在系统深色时解析为 `dark`、否则 `light`；其余四档原样返回。系统明暗保存在可写的 `systemDark` 状态（初值取 `matchMedia`），并由空依赖 effect 订阅 `(prefers-color-scheme: dark)` 的 change 事件实时更新（`ThemeProvider.tsx:36-49`）——订阅只注册一次，`setTheme` 重建不会重复订阅 / 退订。
 
-- `data-theme` **只写解析结果**，绝不写 `system`（`ThemeProvider.tsx:55-61`）。四套主题块不需要也不应出现 `[data-theme='system']`。
-- settings 保存的是**用户选择本身**（`ThemeProvider.tsx:66-69`），取值可以是 `system`；启动时 `main.tsx:34-42` 预取并经 `isThemeId` 校验后传入 `initialTheme`，避免异步读取造成闪屏。易混淆点：**`system` 会落库，但不会进 `data-theme`**——前者是偏好，后者是生效值。
+- **切回 `system` 时以主进程返回的权威明暗为准**：主进程按应用主题设置 `nativeTheme.themeSource` 后，`matchMedia` 返回的是被覆盖后的值而非真实 OS 状态。`setTheme('system')` 先经 `theme:apply` 取回 `shouldUseDarkColors`，同批校正 `systemDark` 与档位后再提交，避免从 sage 切回 system（OS 深色）时先解析成 light、随后媒体查询翻回再硬切 dark 的「先浅后深」（`ThemeProvider.tsx:96-117`；主进程映射见 [`window.md`](./window.md) §4.7）。显式 light / dark / sage / honey 不受此影响：它们不读系统明暗。
+- `data-theme` **只写解析结果**，绝不写 `system`（`ThemeProvider.tsx:51-57`）。四套主题块不需要也不应出现 `[data-theme='system']`。
+- settings 保存的是**用户选择本身**（`ThemeProvider.tsx:62-65`），取值可以是 `system`；启动时 `main.tsx:34-42` 预取并经 `isThemeId` 校验后传入 `initialTheme`，避免异步读取造成闪屏。易混淆点：**`system` 会落库，但不会进 `data-theme`**——前者是偏好，后者是生效值。
 
 ---
 
@@ -201,8 +202,8 @@
 
 1. 主进程 `getAccentColor()`（`main/theme.ts:56-64`）读 `systemPreferences.getAccentColor()`，`normalizeAccent()` 归一为 `#rrggbb`（`main/theme.ts:27-48`）。Electron 44 / Windows 返回**无 `#` 的 8 位 RRGGBBAA**（如 `0078D4FF`），归一化丢弃 alpha。
 2. 读取失败 / 值非法返回 `null`，**不设固定兜底色**，渲染层据此回退主题静态色。
-3. 渲染层经 `window.api.systemTheme.getAccentColor()` 首取，并 `onAccentChange()` 订阅（`preload/index.ts:362-366`）。
-4. `setupThemeWatchers()`（`main/theme.ts:78-90`）监听 `nativeTheme.on('updated')`——系统明暗、高对比、强调色改动通常伴随该事件——向所有窗口发 `theme:accent:changed`（通道常量 `ACCENT_CHANGED_CHANNEL`，`main/theme.ts:18`）；IPC 在 `main/ipc/theme.ts` 注册。
+3. 渲染层经 `window.api.systemTheme.getAccentColor()` 首取，并 `onAccentChange()` 订阅（`preload/index.ts:449-458`）。
+4. `setupThemeWatchers()`（`main/theme.ts:148-165`）监听 `nativeTheme.on('updated')`——系统明暗、高对比、强调色改动通常伴随该事件——向所有窗口发 `theme:accent:changed`（通道常量 `ACCENT_CHANGED_CHANNEL`，`main/theme.ts:18`）；IPC 在 `main/ipc/theme.ts` 注册。
 5. `useSystemAccent()` 用 `useLayoutEffect` 写 `<html>` 内联样式：`--brand` = 强调色，`--brand-2` = `deriveBrand2(强调色)`（`color.ts:72-77`：深色向白混 32%、亮色向黑混 28%）；非 light/dark 或强调色为空时 `removeProperty` 清除覆盖。
 
 - 覆盖在内联样式上，**`--brand` 的实际值随系统变化**；文档里的 `#5b4de8`、`#8b7ff0` 只能当回退值。订阅常驻、不随主题重建：从 sage / honey 切回 light / dark 会立即用缓存的强调色重新覆盖。
@@ -215,22 +216,32 @@
 
 ### 7.1 主动切换
 
-`ThemeProvider.setTheme()`（`ThemeProvider.tsx:71-99`）：
+`ThemeProvider.setTheme()`（`ThemeProvider.tsx:88-126`）：
 
 ```
-next === theme                  → 直接返回（不重复过渡）
-resolved === 当前 dataset.theme → flushSync 只提交状态，不启动过渡
-否则                            → runThemeReveal(() => {
-                                    dataset.theme = resolved
-                                    flushSync(() => setThemeState(next))
-                                  })
+next === theme → 直接返回（不重复过渡）
+
+显式档（light / dark / sage / honey）：
+  后台 fire-and-forget theme:apply(next)（失败静默，不影响渲染层主题）
+  resolved === 当前 dataset.theme → flushSync 只提交状态，不启动过渡
+  否则                            → runThemeReveal(() => {
+                                      dataset.theme = resolved
+                                      flushSync(() => setThemeState(next))
+                                    })
+
+system 档：
+  seq = ++requestSeq
+  await theme:apply('system') → { resolvedTheme, shouldUseDarkColors }
+  过期（seq 已变）→ 丢弃
+  成功 → setSystemDark(shouldUseDarkColors) + 按上面的相同 / 过渡分支提交
+  失败 / null → 回退当前 systemDark，不提交错误档位
 ```
 
-- 第二分支处理「当前是 `system` 且系统为暗，用户改选 `dark`」：`data-theme` 前后都为 `dark`，两张快照一致，过渡会空转成「没反应」，故只更新选中态。持久化 effect（`ThemeProvider.tsx:66-69`）保存用户选择（可为 `system`），`window.api` 缺失时静默跳过。
+- 「dataset 相同只提交状态」分支处理「当前是 `system` 且系统为暗，用户改选 `dark`」：`data-theme` 前后都为 `dark`，两张快照一致，过渡会空转成「没反应」，故只更新选中态。`system` 档不在 IPC 返回前提交选中态：本地 IPC 往返为亚毫秒级，等待权威值可避免「先提交错误解析、后纠正」的额外闪烁路径。持久化 effect（`ThemeProvider.tsx:62-65`）保存用户选择（可为 `system`），`window.api` 缺失时静默跳过。
 
 ### 7.2 被动切换
 
-`resolvedTheme` 变化 → `useEffect` 直接写 `dataset.theme`（`ThemeProvider.tsx:55-61`），**不经** `runThemeReveal`：用户没有主动操作，整屏动画反而突兀。这是有意设计。
+`resolvedTheme` 变化 → `useEffect` 直接写 `dataset.theme`（`ThemeProvider.tsx:51-57`），**不经** `runThemeReveal`：用户没有主动操作，整屏动画反而突兀。这是有意设计。
 
 ### 7.3 过渡实现
 

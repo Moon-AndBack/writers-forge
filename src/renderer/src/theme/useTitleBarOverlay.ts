@@ -38,11 +38,12 @@ function applyOverlay(): void {
 
 /**
  * 把主题变化同步到系统标题栏 overlay（Window Controls Overlay）：
- * theme 变化时读取 `--text-dim` 的实际色值作为 symbolColor。
+ * resolvedTheme 变化时读取 `--text-dim` 的实际色值作为 symbolColor。
+ * 依赖解析后的主题而非 `theme`，`system` 档下系统明暗变化（WCO 符号色需翻转）也能更新。
  * 非 Electron 环境（window.api?.titleBar 不存在）静默跳过。
  */
 export function useTitleBarOverlay(): void {
-  const { theme } = useTheme()
+  const { resolvedTheme } = useTheme()
 
   useEffect(() => {
     // ThemeProvider 的 effect 在子组件之后写 dataset.theme，
@@ -52,5 +53,5 @@ export function useTitleBarOverlay(): void {
     return () => {
       cancelAnimationFrame(raf)
     }
-  }, [theme])
+  }, [resolvedTheme])
 }

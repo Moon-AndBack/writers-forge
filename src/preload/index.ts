@@ -436,6 +436,16 @@ const api = {
     boundsWidth: (): Promise<number> => ipcRenderer.invoke('window:bounds:get')
   },
   systemTheme: {
+    /**
+     * 应用主题档位到 nativeTheme（仅 Windows 写入 themeSource），返回解析后的权威明暗；
+     * 非法入参返回 null。渲染层切回 `system` 时用返回值校正系统明暗。
+     */
+    apply: (
+      theme: string
+    ): Promise<{
+      resolvedTheme: 'light' | 'dark' | 'sage' | 'honey'
+      shouldUseDarkColors: boolean
+    } | null> => ipcRenderer.invoke('theme:apply', theme),
     /** 读取系统强调色，已解析为 `#rrggbb`；系统不支持 / 读取失败时为 null */
     getAccentColor: (): Promise<string | null> => ipcRenderer.invoke('theme:accent:get'),
     /** 订阅系统强调色变化，返回取消订阅函数（内部 removeListener，不暴露 ipcRenderer） */

@@ -6,6 +6,7 @@
 - 创建与装配：`src/main/window.ts`
 - 尺寸与持久化：`src/main/windowState.ts`
 - 材质：`src/main/windowMaterial.ts`、`src/renderer/src/theme/windowMaterial.ts`
+- 主题明暗：`src/main/theme.ts`、`src/main/ipc/theme.ts`、`src/renderer/src/theme/ThemeProvider.tsx`
 - 宽度磁吸：`src/main/resizeSnap.ts`、`src/main/ipc/snap.ts`、`src/renderer/src/pages/bookshelf/useShelfSnap.ts`
 - 标题栏 overlay：`src/main/ipc/window.ts`、`src/renderer/src/theme/useTitleBarOverlay.ts`
 - 渲染层样式：`styles/material.css`、`styles/statusbar.css`、`styles/shell.css`、`styles/bookshelf.css`
@@ -128,12 +129,32 @@
 - 窗口已销毁：直接返回默认常量（`windowMaterial.ts:99`）。
 - 渲染层查询 `materialSupported` 失败视为不支持，三档选择置灰（`WindowMaterialProvider.tsx:36-49`）。
 
+### 4.7 材质明暗与应用主题
+
+DWM 云母 / 亚克力的明暗在 Windows 上由系统主题决定。主进程此前从未设置 `nativeTheme.themeSource`，因此应用选择 light / sage / honey 而 Windows 为深色时，材质仍按深色渲染，浅色界面后像垫了一块深色板。现在主进程按持久化主题设置 `themeSource`（仅 Windows）：
+
+| 应用档位 | `themeSource` | 材质明暗 |
+| -------- | ------------- | -------- |
+| `system` | `'system'`    | 跟随系统 |
+| `light`  | `'light'`     | 浅色     |
+| `dark`   | `'dark'`      | 深色     |
+| `sage`   | `'light'`     | 浅色     |
+| `honey`  | `'light'`     | 浅色     |
+
+- 映射实现在 `themeIdToNativeThemeSource()`（`src/main/theme.ts:98-109`）；sage / honey 没有独立的 DWM 明暗，统一按浅色映射，`system` 原样交给 Electron 跟随系统，不在应用层二次解析。
+- **启动**：`src/main/index.ts:65` 在 `getDb()` 之后、`registerIpc()` 与 `createMainWindow()` 之前调用 `applyThemeSource(readInitialThemeId())`，保证窗口创建时第一帧 DWM 明暗已正确。持久化值缺失 / 非法回退 `system`（`theme.ts:112-121`）。
+- **运行时**：IPC `theme:apply`（`src/main/ipc/theme.ts:13-18`）经 `isThemeId` 校验，非法返回 `null`；合法时调用 `applyThemeSource()` 并返回 `{ resolvedTheme, shouldUseDarkColors }`。preload 暴露为 `window.api.systemTheme.apply`（`src/preload/index.ts:438-448`）。
+- `applyThemeSource()` 仅 Windows 写 `themeSource`；非 Windows 保持系统设置，只返回当前 `shouldUseDarkColors`。赋值前比较当前值，相同则跳过；异常记录 warning 并回退 `'light'`（`theme.ts:131-144`）。
+- **切回 `system` 的时序**：`ThemeProvider` 先 `await window.api.systemTheme.apply('system')`，用返回的 `shouldUseDarkColors` 同批校正 `systemDark` 与 `theme`，再走过渡 / `dataset.theme` 提交流程（`ThemeProvider.tsx:96-117`）。原因：`themeSource` 被强制为 light / dark 期间 `matchMedia` 返回覆盖后的值；若按它预解析，从 sage 切回 `system`（OS 深色）会先播放 sage→light 再硬切 dark（先浅后深）。`requestSeq` 丢弃 IPC 往返期间被新选择取代的过期结果。
+- `system` 档下系统明暗被动变化仍由 `matchMedia` 的 change 订阅驱动，`resolvedTheme` 变化后直接写 `dataset.theme`（无整屏过渡）；WCO 符号色改为依赖 `resolvedTheme`，系统明暗变化时也会重取 `--text-dim`（`useTitleBarOverlay.ts:46,56`）。
+- **实机验证待办**：代码只能保证 `nativeTheme.themeSource` 与 `shouldUseDarkColors` 正确；**DWM 云母是否随 per-window 深色模式指示变色无法由代码证明**，需在 Windows 11 实机切换系统深色与应用 light / sage / honey / dark 验证。若实机只有窗口 frame 变色而云母不变，本方案需重新评估。
+
 ## 5. 自绘标题栏与 WCO
 
 - `titleBarStyle: 'hidden'` 隐藏系统标题栏，右上角保留窗口控制按钮（WCO），高度 **42**（`window.ts:86-91`）。
 - 初始符号色 `#5c5c5c`；背景保持全透明，让自绘标题栏与 DWM 材质透出（`window.ts:88-89`；`useTitleBarOverlay.ts:5-8`）。
 - CSS `.titlebar` 高度同为 42px（`styles/shell.css:86-91`），三处（主进程 overlay / 渲染层常量 / CSS）必须一致。
-- 主题切换后由 `useTitleBarOverlay()` 读取 `--text-dim` 作为新的 `symbolColor`，读取失败回退 `#5c5c5c`（`useTitleBarOverlay.ts:11-18,44-55`）。
+- 主题切换或系统明暗变化后，由 `useTitleBarOverlay()` 读取 `--text-dim` 作为新的 `symbolColor`，读取失败回退 `#5c5c5c`（`useTitleBarOverlay.ts:11-18,40-57`）。
 - 同步延迟一帧（`requestAnimationFrame`），确保取到新主题下的令牌值（`useTitleBarOverlay.ts:47-54`）。
 - IPC `window:titlebar:set-overlay` 仅 Windows 生效；非 Windows 直接返回 `false`，参数非法或窗口缺失同样返回 `false`（`src/main/ipc/window.ts:41-58`）。
 - preload 暴露为 `window.api.titleBar.setOverlay`（`src/preload/index.ts:341-344`）。

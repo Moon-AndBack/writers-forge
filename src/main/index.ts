@@ -6,6 +6,7 @@ import { registerIpc } from './ipc'
 import { configureLogger, logger } from './logger'
 import { cleanupLegacyOneDriveClientId } from './onedrive/clientIdCleanup'
 import { registerResizeSnap } from './resizeSnap'
+import { applyThemeSource, readInitialThemeId } from './theme'
 import { createMainWindow } from './window'
 
 // 必须在 app ready 之前、且早于任何 app.getPath('userData') / getDb() 调用
@@ -58,6 +59,10 @@ function startApplication(): void {
       log.error('数据库初始化失败', error)
       throw error
     }
+
+    // 主题 → DWM 材质明暗：必须在建窗前应用，保证首帧窗口材质即与持久化主题一致。
+    // 仅 Windows 写入 nativeTheme.themeSource；读取 / 应用异常均已在内部降级，不阻断启动。
+    applyThemeSource(readInitialThemeId())
 
     // 一次性清理已下线的自定义 clientId；失败只记日志，不阻断启动。
     cleanupLegacyOneDriveClientId()
