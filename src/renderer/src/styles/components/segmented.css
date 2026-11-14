@@ -145,6 +145,23 @@
   height: 100%;
 }
 
+/* ---------- 两行网格变体（窄容器四档） ----------
+   选项按 2 列等宽排布，每项仍为 32px 高；容器高度随行数撑开。
+   滑块沿用组件的 offsetLeft / offsetTop 实测值：第二行的 --wf-seg-y
+   自然落在第一行之下的行首，`transform: translate(x, y + inset)` 与
+   现有过渡即可正确跨行滑动，无需组件侧特判。 */
+.wf-seg--grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  height: auto;
+}
+.wf-seg--grid .wf-seg__item {
+  height: var(--control-h-md);
+  padding-inline: 6px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wf-seg__item {
     transition: none;

@@ -124,8 +124,16 @@
    `:root::view-transition-group()`；后代写法 `html[...] ::view-transition-old(root)`
    反而要求 html 是 html 的后代，命不中。
    特异性 (0,1,2) 高于上面的 (0,0,1)，与源码顺序无关地胜出；上层 `animation: none`
-   由上面的规则继续生效。亚克力 / 云母共用同一套真交叉规则。 */
-html:is([data-material='acrylic'], [data-material='mica'])::view-transition-old(root),
-html:is([data-material='acrylic'], [data-material='mica'])::view-transition-new(root) {
+   由上面的规则继续生效。亚克力 / 云母 / 云母增强共用同一套真交叉规则。 */
+html:is(
+    [data-material='acrylic'],
+    [data-material='mica'],
+    [data-material='tabbed']
+  )::view-transition-old(root),
+html:is(
+    [data-material='acrylic'],
+    [data-material='mica'],
+    [data-material='tabbed']
+  )::view-transition-new(root) {
   mix-blend-mode: plus-lighter;
 }

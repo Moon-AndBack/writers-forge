@@ -419,8 +419,10 @@ const api = {
       ipcRenderer.invoke('window:titlebar:set-overlay', options)
   },
   windowMaterial: {
-    /** 切换窗口系统材质（'acrylic' / 'mica' / 'none'）；返回实际生效值（不支持时降级 'none'） */
-    set: (material: 'acrylic' | 'mica' | 'none'): Promise<'acrylic' | 'mica' | 'none' | null> =>
+    /** 切换窗口系统材质（'acrylic' / 'mica' / 'tabbed' / 'none'）；返回实际生效值（不支持时降级 'none'） */
+    set: (
+      material: 'acrylic' | 'mica' | 'tabbed' | 'none'
+    ): Promise<'acrylic' | 'mica' | 'tabbed' | 'none' | null> =>
       ipcRenderer.invoke('window:setMaterial', material),
     /** 当前系统是否支持窗口材质（Electron 限制：仅 Windows 11 22H2+） */
     materialSupported: (): Promise<boolean> => ipcRenderer.invoke('window:materialSupported')

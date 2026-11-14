@@ -8,10 +8,11 @@ const log = logger.scope('windowMaterial')
 /**
  * 窗口系统材质（Windows DWM 材质）。
  *
- * 三种取值：`acrylic` 亚克力（实时模糊背后内容）/ `mica` 云母（采样桌面壁纸）/
+ * 四种取值：`acrylic` 亚克力（实时模糊背后内容）/ `mica` 云母（采样桌面壁纸）/
+ * `tabbed` 云母（增强）（Mica Alt，同样采样壁纸，着色强于普通云母）/
  * `none` 关闭（不透明，回退到渲染层光斑渐变）。
  */
-export type WindowMaterial = 'acrylic' | 'mica' | 'none'
+export type WindowMaterial = 'acrylic' | 'mica' | 'tabbed' | 'none'
 
 /** settings 表持久化键名（存用户选择本身） */
 export const WINDOW_MATERIAL_SETTING_KEY = 'windowMaterial'
@@ -44,16 +45,17 @@ const MATERIAL_WINDOW_COLOR = '#00000000'
 /**
  * 把持久化 / IPC 传入的原始值规范化为当前取值。
  *
- * 三档均为合法值，不做旧值迁移；其余非法值返回 null。
+ * 四档均为合法值，不做旧值迁移；其余非法值返回 null。
  */
 export function normalizeWindowMaterial(value: unknown): WindowMaterial | null {
-  if (value === 'acrylic' || value === 'mica' || value === 'none') return value
+  if (value === 'acrylic' || value === 'mica' || value === 'tabbed' || value === 'none')
+    return value
   return null
 }
 
-/** 类型守卫：仅接受三档合法取值。 */
+/** 类型守卫：仅接受四档合法取值。 */
 export function isWindowMaterial(value: unknown): value is WindowMaterial {
-  return value === 'acrylic' || value === 'mica' || value === 'none'
+  return value === 'acrylic' || value === 'mica' || value === 'tabbed' || value === 'none'
 }
 
 /**

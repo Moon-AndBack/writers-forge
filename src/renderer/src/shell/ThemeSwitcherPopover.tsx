@@ -16,7 +16,8 @@ import '../styles/theme-switcher.css'
  *   1. 标题「外观主题」；
  *   2. 「跟随系统」开关行——开启即 `setTheme('system')`；关闭时落到当前解析主题
  *      （`resolvedTheme`），避免视觉跳变（等价「用当前选中的四主题之一」）；
- *   3. 「窗口材质」三档行——亚克力 / 云母 / 关闭，切换主进程 backgroundMaterial +
+ *   3. 「窗口材质」四档行——亚克力 / 云母 / 云母（增强）/ 关闭（2×2 两行），
+ *      切换主进程 backgroundMaterial +
  *      根元素 `data-material` + settings 持久化（由 WindowMaterialProvider 负责）；
  *   4. 四张主题预览卡（light / dark / sage / honey）2 列网格——`system` 已由
  *      开关行取代，故不再出卡。点击任一卡 `setTheme(id)` 并关闭（持久化由
@@ -135,10 +136,11 @@ export default function ThemeSwitcherPopover() {
               </span>
             </div>
             <Segmented
-              className="wf-seg--fill"
+              className="wf-seg--grid"
               options={[
                 { value: 'acrylic', label: t('material.acrylic'), disabled: !materialSupported },
                 { value: 'mica', label: t('material.mica'), disabled: !materialSupported },
+                { value: 'tabbed', label: t('material.tabbed'), disabled: !materialSupported },
                 { value: 'none', label: t('material.none'), disabled: !materialSupported }
               ]}
               value={material}

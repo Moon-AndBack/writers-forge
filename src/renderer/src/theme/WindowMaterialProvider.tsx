@@ -8,7 +8,7 @@ import {
 } from './windowMaterial'
 
 /**
- * 窗口材质（亚克力 / 云母 / 关闭）Provider：包裹窗口外壳。
+ * 窗口材质（亚克力 / 云母 / 云母增强 / 关闭）Provider：包裹窗口外壳。
  *
  * - `material` 是**实际生效**的材质：系统不支持时恒为 'none'，`enabled` 由其派生；
  * - 切换时：① 经 `window.api.windowMaterial.set` 切换主进程 `backgroundMaterial`；
@@ -16,8 +16,8 @@ import {
  * - 切换按方向有序进行，避免窗口底与页面底色错位（白闪 / 露底）：
  *   开启时等主进程返回后再透明页面；关闭时先让页面不透明，再回退窗口底；
  * - 状态变化时把结果投影到 `document.documentElement.dataset.material`，
- *   由 `styles/material.css` 的 `:is([data-material='acrylic'], [data-material='mica']) .shell`
- *   覆盖底部背景。
+ *   由 `styles/material.css` 的 `[data-material]` 规则（acrylic 独立，
+ *   mica / tabbed 共用 `:is(...)`）覆盖底部背景。
  *
  * 说明：主进程已在建窗前读取同一 settings 键并应用材质，故启动时传 `initialMaterial`
  * 即可，无需渲染层再读库；`supported` 由 main.tsx 启动预取 `materialSupported` 后经

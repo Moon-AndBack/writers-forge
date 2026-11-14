@@ -77,7 +77,7 @@
 | `--z-popover-nested`   | `972`                                      | 嵌套详情卡                                                         |
 | `--z-row-raised`       | `1`                                        | 行内拖拽抬升（非浮层）                                             |
 | `--desk-spot-1/2/3`    | `1000×640` / `880×620` / `700×500`（px）   | `.shell` 三层 radial 光斑的椭圆尺寸                                |
-| `--desk-solid-alpha`   | `50%`                                      | acrylic 的 `--desk-solid` 保留不透明度（mica 不使用）              |
+| `--desk-solid-alpha`   | `50%`                                      | acrylic 的 `--desk-solid` 保留不透明度（mica / tabbed 不使用）     |
 | `--selection-bg`       | `brand 22%` + transparent                  | 全局 `::selection` 底色，随当前主题 `--brand` 变化                 |
 
 > CSS 会把 `border-radius` 钳制到 `min(宽, 高) / 2`：≤16px 元素设 8px 后渲染为正圆（16px 复选框 / 分组箭头），18×20 回收站箭头约 89% 半径（近圆），22px Tag / Badge 约 73% 半径。这是两档统一的必然结果，不是刻意设计（详见 [`design-language.md`](./design-language.md) §1.2 / §9 #20）。
@@ -187,12 +187,12 @@
 | `--soft-press-solid`                        | 按下态                       | 标题栏按钮                                           |
 | `--pill-bg-solid` / `--pill-bg-hover-solid` | 胶囊底 / hover               | `statusbar-widgets.css`                              |
 
-材质（亚克力 / 云母）链路：
+材质（亚克力 / 云母 / 云母增强）链路：
 
-1. `WindowMaterialProvider` 在 `<html>` 写 `data-material='acrylic' | 'mica' | 'none'`（实际生效材质）。
-2. 开启时 `.shell` 依材质分别处理：acrylic 通过 `--desk-solid-alpha` 保留 **50%** 不透明度的纯色 scrim（遮罩更薄、材质参与度 50%）；mica 的 `.shell` 为 `transparent`，不叠 scrim，标题栏与状态栏同样透明，直接透出云母。同时 `body` 背景置透明（`material.css:35-37`），否则 `body` 的不透明背景会挡住 DWM 材质。亚克力实时模糊、更透，云母采样壁纸着色、偏实色；客户区材质的实际可见性以实机为准（`backgroundColor` 的 alpha 需 `transparent: true` 才保证生效，本项目未开启）。
+1. `WindowMaterialProvider` 在 `<html>` 写 `data-material='acrylic' | 'mica' | 'tabbed' | 'none'`（实际生效材质）。
+2. 开启时 `.shell` 依材质分别处理：acrylic 通过 `--desk-solid-alpha` 保留 **50%** 不透明度的纯色 scrim（遮罩更薄、材质参与度 50%）；mica 与 tabbed 的 `.shell` 为 `transparent`，不叠 scrim，标题栏与状态栏同样透明，直接透出云母（tabbed 即 Mica Alt，DWM 着色更强，但仍不透明、不模糊背后内容）。同时 `body` 背景置透明（`material.css:40-42`），否则 `body` 的不透明背景会挡住 DWM 材质。亚克力实时模糊、更透，云母采样壁纸着色、偏实色；客户区材质的实际可见性以实机为准（`backgroundColor` 的 alpha 需 `transparent: true` 才保证生效，本项目未开启）。
 3. 面板 / 侧栏 / 编辑区继续用不透明 `--pane`，**只有组件缝隙**透出材质。这正是 `-solid` 组存在的理由：若沿半透明 `--soft`，材质会从每张卡内部透出，文字对比度随壁纸漂移。
-4. `--desk-solid-alpha` 是 acrylic 专用的主题无关 scrim 旋钮，四主题共用，固定为 50%（mica 不使用 scrim，规则未动）；dark 的 `--desk-solid` 取 `#161616`（与色带中段同值），避免深色下材质偏亮。主进程窗口底：材质开 `#00000000`，关 `#f3f3f3`，避免创建瞬间黑闪（`window.ts:162-166`）；该 alpha 仅在 `transparent: true` 时保证生效，本项目未开启，材质可见性以实机为准。
+4. `--desk-solid-alpha` 是 acrylic 专用的主题无关 scrim 旋钮，四主题共用，固定为 50%（mica / tabbed 不使用 scrim，规则未动）；dark 的 `--desk-solid` 取 `#161616`（与色带中段同值），避免深色下材质偏亮。主进程窗口底：材质开 `#00000000`，关 `#f3f3f3`，避免创建瞬间黑闪（`window.ts:162-166`）；该 alpha 仅在 `transparent: true` 时保证生效，本项目未开启，材质可见性以实机为准。
 
 选择顺序：**`--soft-solid` 容器上的输入类控件用 `--control-on-soft*`；普通卡片 / 按钮用 `--*-solid`；只有确需透出下层的浮层才用半透明档**。
 
@@ -272,7 +272,7 @@ system 档：
 | 7    | `chip-pill.css`                                        | 胶囊基类，就地派生 `--chip-fg`                                                                                                                                      |
 | 8    | `chip-preset-colors.css`                               | **必须最后**：`.chip-p-*` 与 `.chip-m-*` 同为 0,1,0，只有后加载才能覆盖模块基色；其配对文字色也必须压过 `chip-pill.css` 的派生色，否则首帧「实色底 + 低对比字」闪烁 |
 
-`App.tsx:22-23` 另有顺序依赖：`shell.css` 定义 `.shell` 基础底与 `[data-theme='dark'] .shell`（0,2,0），`material.css` 随后导入；`[data-material='acrylic'] .shell` 与 `[data-material='mica'] .shell` 也同为 0,2,0，**只能靠源码顺序胜出**；提前加载会被 dark 色带盖掉。
+`App.tsx:22-23` 另有顺序依赖：`shell.css` 定义 `.shell` 基础底与 `[data-theme='dark'] .shell`（0,2,0），`material.css` 随后导入；`[data-material='acrylic'] .shell` 与 `:is([data-material='mica'], [data-material='tabbed']) .shell` 也同为 0,2,0，**只能靠源码顺序胜出**；提前加载会被 dark 色带盖掉。
 
 契约：① 令牌块永远在消费者之前，页面 CSS 不得重声明 `:root` 令牌；② 同特异性冲突靠「后加载者胜」，不用 `!important`；③ 需要让位时用 `:where()` 把特异性压到 0；④ 新增样式文件先判断属于「令牌 → 基础 → 组件 → 预设覆盖」哪一层再插入。
 

@@ -4,7 +4,7 @@
  * 属 `src/preload/types/` 按域拆分产物（`index.d.ts` 超 §3 的 500 行上限）。
  * **单一真源**：经 `import type` 取用，不逐字镜像（理由见 `database.d.ts` 文件头）。
  *
- * ⚠️ 窗口材质的 `'acrylic' | 'mica' | 'none'` 与标题栏覆盖选项是**渲染层唯一持有**的形状
+ * ⚠️ 窗口材质的 `'acrylic' | 'mica' | 'tabbed' | 'none'` 与标题栏覆盖选项是**渲染层唯一持有**的形状
  * （主进程按值处理、不导出该类型），故本地声明。
  */
 
@@ -35,8 +35,8 @@ export type {
   SnapStatus
 }
 
-/** 系统窗口材质档位：`'acrylic'` 亚克力 / `'mica'` 云母（仅 Windows 11 22H2+）/ `'none'` 关。 */
-export type WindowMaterial = 'acrylic' | 'mica' | 'none'
+/** 系统窗口材质档位：`'acrylic'` 亚克力 / `'mica'` 云母 / `'tabbed'` 云母（增强，Mica Alt）（仅 Windows 11 22H2+）/ `'none'` 关。 */
+export type WindowMaterial = 'acrylic' | 'mica' | 'tabbed' | 'none'
 
 /** 标题栏覆盖层配置（主进程 `window:titlebar:set-overlay` 入参）。 */
 export interface TitleBarOverlayOptions {

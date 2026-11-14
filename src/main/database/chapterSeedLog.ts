@@ -11,10 +11,21 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v160'
+export const CHAPTER_SEED_VERSION = 'v161'
 
 /**
- * 最近版本变更日志（v160；更早版本见上述历史文件）。
+ * 最近版本变更日志（v161；更早版本见上述历史文件）。
+ *
+ * `v161`（云母增强材质档批）：窗口材质由「亚克力 / 云母 / 关闭」三档扩展为
+ * 「亚克力 / 云母 / 云母（增强）/ 关闭」四档，新增取值 `tabbed`（Electron
+ * `setBackgroundMaterial('tabbed')` → DWM `DWMSBT_TABBEDWINDOW`，即 Mica Alt）。
+ * 增强档由 DWM 加强壁纸着色，但仍不透明、不模糊背后内容；默认仍为亚克力。
+ * 主进程 `WindowMaterial`、渲染层 `WindowMaterialSetting`、preload 类型与
+ * normalize 白名单同步扩展；`material.css`（mica / tabbed 共用透明外壳、
+ * 不叠 scrim）、`motion.css`（View Transition 真交叉）与 `themeReveal.ts`
+ * 的材质集合同步覆盖。设置页 `Select` 四档、主题面板分段控件改 2×2 两行；
+ * i18n 中英文、`docs/ui/window.md`、`docs/ui/design-tokens.md` 与教学书
+ * （卷五「窗口材质」、大纲「主题与排版」）同步。无 DB 迁移，升版本只重灌教学书。
  *
  * `v160`（亚克力遮罩减薄 + 材质文案纠偏批）：`--desk-solid-alpha` 由 **70% 降为 50%**，
  * 亚克力实时模糊的材质参与度由 30% 提升到 50%（mica 不使用该令牌，规则未动，仍直接透出）。

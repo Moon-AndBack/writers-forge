@@ -74,6 +74,7 @@ export default function AppearanceSection() {
           options={[
             { value: 'acrylic', label: t('material.acrylic') },
             { value: 'mica', label: t('material.mica') },
+            { value: 'tabbed', label: t('material.tabbed') },
             { value: 'none', label: t('material.none') }
           ]}
           disabled={!windowMaterial.supported}

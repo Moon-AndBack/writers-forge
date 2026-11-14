@@ -20,8 +20,9 @@ const theme = {
     label: '窗口材质',
     acrylic: '亚克力',
     mica: '云母',
+    tabbed: '云母（增强）',
     none: '关闭',
-    supportedDesc: '亚克力实时模糊、更透；云母采样壁纸着色、偏实色',
+    supportedDesc: '亚克力实时模糊更透；云母偏实色；云母（增强）着色更强、仍不透明',
     unsupportedDesc: '当前系统不支持（需 Windows 11 22H2+）',
     aria: '窗口材质'
   },
