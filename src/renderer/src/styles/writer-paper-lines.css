@@ -1,9 +1,9 @@
 /* ============================================================
    正文稿纸横线（设置 · 外观与主题 →「稿纸横线」，默认关闭）
    ------------------------------------------------------------------
-   仅在 `html[data-paper-lines='true']` 下生效，作用域限定：
+   仅在 `html[data-paper-lines='true']` 下生效，只作用于编辑区：
    - 章节 / 大纲中栏编辑区的顶层段落；
-   - 右栏「大纲」页签只读正文的顶层段落。
+   - 右栏「大纲」等只读正文不铺线，避免与编辑区视觉重复。
    剧情正文、设定档案正文、伏笔 / 实体描述、列表 / 引用 / 代码块 / 标题
    均不画线（行高与版式不同，统一铺线会错位或过密）。
 
@@ -34,31 +34,6 @@ html[data-paper-lines='true'] .ep-view[data-view='outline'] .doc-body .ProseMirr
 
   /* 横向切成虚线：0.25em 实 / 0.25em 空。mask 只取 alpha，
      用 currentColor（正文色恒为不透明令牌）避免颜色字面量。 */
-  -webkit-mask-image: repeating-linear-gradient(
-    to right,
-    currentColor 0 0.25em,
-    transparent 0.25em 0.5em
-  );
-  mask-image: repeating-linear-gradient(to right, currentColor 0 0.25em, transparent 0.25em 0.5em);
-}
-
-/* 右栏「大纲」只读正文：p 无 padding，inset 0 即 content box；
-   基础规则未给 p 定位上下文，仅在开关开启时补 relative。 */
-html[data-paper-lines='true'] .rp-outline .rp-read .ProseMirror > p {
-  position: relative;
-}
-
-html[data-paper-lines='true'] .rp-outline .rp-read .ProseMirror > p::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  user-select: none;
-
-  background-image: linear-gradient(to top, var(--line) 0 1px, transparent 1px);
-  background-size: 100% 1lh;
-  background-repeat: repeat-y;
-
   -webkit-mask-image: repeating-linear-gradient(
     to right,
     currentColor 0 0.25em,
