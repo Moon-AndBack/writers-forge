@@ -21,6 +21,8 @@ export interface VolumesStore {
   volumes: VolumeRow[]
   /** 是否仍在首次加载。 */
   loading: boolean
+  /** 最近一次读取失败信息（`null` = 正常；消费方据此展示错误态与重试）。 */
+  loadError: unknown | null
   /** 重新拉取卷列表（写操作后调用）。 */
   reload: () => Promise<void>
   /** 新建卷，成功返回新卷（本 hook 内已 reload）。 */
@@ -42,18 +44,22 @@ export interface VolumesStore {
 export function useVolumes(bookId: string): VolumesStore {
   const [volumes, setVolumes] = useState<VolumeRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<unknown | null>(null)
 
   const reload = useCallback(async (): Promise<void> => {
     const api = window.api?.chapters
     if (!api || bookId === '') {
       setVolumes([])
+      setLoadError(null)
       setLoading(false)
       return
     }
     try {
       setVolumes(await api.listVolumes(bookId))
+      setLoadError(null)
     } catch (error) {
       log.warn('卷列表加载失败', error)
+      setLoadError(error)
     } finally {
       setLoading(false)
     }
@@ -66,15 +72,20 @@ export function useVolumes(bookId: string): VolumesStore {
       if (!api || bookId === '') {
         if (active) {
           setVolumes([])
+          setLoadError(null)
           setLoading(false)
         }
         return
       }
       try {
         const next = await api.listVolumes(bookId)
-        if (active) setVolumes(next)
+        if (active) {
+          setVolumes(next)
+          setLoadError(null)
+        }
       } catch (error) {
         log.warn('卷列表加载失败', error)
+        if (active) setLoadError(error)
       } finally {
         if (active) setLoading(false)
       }
@@ -147,5 +158,14 @@ export function useVolumes(bookId: string): VolumesStore {
     [reload]
   )
 
-  return { volumes, loading, reload, createVolume, renameVolume, deleteVolume, reorderVolume }
+  return {
+    volumes,
+    loading,
+    loadError,
+    reload,
+    createVolume,
+    renameVolume,
+    deleteVolume,
+    reorderVolume
+  }
 }

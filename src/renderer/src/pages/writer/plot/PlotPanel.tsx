@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
+import { LoadErrorState } from '../../../components/LoadErrorState'
 import { IconButton, Select } from '../../../components/ui'
 import { PencilIcon } from '../icons'
 import { TrashIcon } from '../../../components/icons'
@@ -22,6 +23,12 @@ export interface PlotPanelProps {
   lines: PlotLineRow[]
   /** 全书未删除场景（用于统计各线节点数）。 */
   scenes: PlotSceneRow[]
+  /** 剧情树是否仍在首次加载（三态顺序：loading → error → empty）。 */
+  loading: boolean
+  /** 剧情树读取失败（仅在无任何剧情线时展示错误态）。 */
+  loadError: string | null
+  /** 重试读取剧情树。 */
+  onRetry: () => void
   /** 当前选中剧情线 id（页面层持有，与中栏 / 右栏共享）。 */
   activeLineId: number | null
   /** 剧情线选中回调。 */
@@ -48,6 +55,9 @@ export interface PlotPanelProps {
 export default function PlotPanel({
   lines,
   scenes,
+  loading,
+  loadError,
+  onRetry,
   activeLineId,
   onSelectLine,
   onUpdateLine,
@@ -58,6 +68,7 @@ export default function PlotPanel({
 }: PlotPanelProps) {
   const { t } = useTranslation('plot')
   const { t: tTimeline } = useTranslation('timeline')
+  const { t: tCommon } = useTranslation('common')
   // 编辑态：正在编辑的剧情线行（null = 未开弹窗；弹窗三字段初始值取自该行）。
   const [editingLine, setEditingLine] = useState<PlotLineRow | null>(null)
   const confirm = useConfirm()
@@ -123,7 +134,13 @@ export default function PlotPanel({
             emptyText={tTimeline('emptyTitle')}
           />
         </div>
-        {lines.length === 0 ? (
+        {loading ? (
+          /* 首读：先于错误 / 空态判定，避免数据未回来时先闪「还没有剧情线」。 */
+          <div className="rp-list-empty">{tCommon('loading')}</div>
+        ) : loadError !== null && lines.length === 0 ? (
+          /* 读取失败且无任何剧情线：与真空态区分，给出重试入口。 */
+          <LoadErrorState compact onRetry={onRetry} />
+        ) : lines.length === 0 ? (
           /* 空态：无任何剧情线时居中提示；引导文案指路标题栏「新建剧情线」入口。 */
           <EmptyState
             compact

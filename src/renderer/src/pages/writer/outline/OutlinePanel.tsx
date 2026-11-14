@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconButton } from '../../../components/ui'
 import { EmptyState } from '../../../components/EmptyState'
+import { LoadErrorState } from '../../../components/LoadErrorState'
 import { ChevronIcon, DocIcon, PencilIcon, PlusIcon } from '../icons'
 import { TrashIcon } from '../../../components/icons'
 import { useConfirm } from '../chapters/useConfirm'
@@ -31,6 +32,12 @@ export interface OutlinePanelProps {
   volumes: VolumeRow[]
   /** 未删除条目（`scope='entry'`：卷下 / 分组下 / 置顶独立条目）。 */
   chapters: OutlineItemRow[]
+  /** 大纲条目树是否仍在首次加载（三态顺序：loading → error → empty）。 */
+  loading: boolean
+  /** 大纲条目树读取失败（仅在无任何条目 / 卷时展示错误态）。 */
+  loadError: unknown | null
+  /** 重试读取大纲条目树。 */
+  onRetry: () => void
   /** 当前大纲编辑选中态（页面层持有，与中栏编辑器共享；条目高亮按 id 判定）。 */
   activeSelection: OutlineSelection | null
   /** 大纲编辑目标打开回调（条目 / 分组 / 卷行点击 → 中栏编辑）。 */
@@ -63,6 +70,9 @@ export default function OutlinePanel({
   bookId,
   volumes,
   chapters,
+  loading,
+  loadError,
+  onRetry,
   activeSelection,
   onOpenTarget,
   onRenameVolume,
@@ -74,6 +84,7 @@ export default function OutlinePanel({
   onCreateEntryInGroup
 }: OutlinePanelProps) {
   const { t } = useTranslation('outline')
+  const { t: tCommon } = useTranslation('common')
   const labels = useChapterLabels()
   // 卷 / 分组展开态（白名单，本面板统一持有）：默认全部收起，仅展开当前编辑项所属项。
   // 置顶区（分组容器）与卷区共用同一份状态，避免两套逻辑漂移。
@@ -215,7 +226,13 @@ export default function OutlinePanel({
   return (
     <div className="pane-body">
       <div className="pane-scroll">
-        {isEmpty ? (
+        {loading ? (
+          /* 首读：先于错误 / 空态判定，避免数据未回来时先闪「还没有创建卷」。 */
+          <div className="rp-list-empty">{tCommon('loading')}</div>
+        ) : loadError !== null && isEmpty ? (
+          /* 读取失败且无任何内容：与真空态区分，给出重试入口。 */
+          <LoadErrorState compact onRetry={onRetry} />
+        ) : isEmpty ? (
           /* 空态：无非卷条目且无任何卷时居中提示；引导文案指路标题栏「添加」按钮。 */
           <EmptyState
             compact

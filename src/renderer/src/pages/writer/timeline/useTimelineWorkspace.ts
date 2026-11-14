@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { createLogger } from '@renderer/lib/log'
 import type { RichTextBodyValue } from '../../../components/editor/useRichTextBodyEditor'
 import {
   parseTimelineList,
@@ -13,6 +14,9 @@ import { countPlotLinesByTimeline } from './timelinePlotCounts'
 
 /** 缺省时间线名称：留空，由展示层经 `t('timeline.defaultName')` 兜底（不落库中文默认名）。 */
 const DEFAULT_TIMELINE_NAME = ''
+
+/** 时间线设置读写日志（转发至主进程落盘）。 */
+const log = createLogger('timeline')
 
 /** 起点保存补丁：字段为 `undefined` 表示不改，只提交实际变更的列（避免半保存）。 */
 export interface TimelineOriginPatch {
@@ -39,6 +43,8 @@ export interface TimelineWorkspace {
   descriptionJson: string
   /** 是否已完成首读。 */
   loaded: boolean
+  /** 最近一次读取失败信息（`null` = 正常；首读失败时 `loaded` 保持 false）。 */
+  loadError: unknown | null
   /** 切换选中时间线（写 `timeline:active:<bookId>`）。 */
   selectTimeline: (id: string) => void
   /** 新建时间线（追加并选中；name 为空 → 空名，展示层经 `t('timeline.defaultName')` 兜底）。 */
@@ -69,40 +75,49 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
   const [list, setList] = useState<TimelineEntry[]>([])
   const [activeId, setActiveId] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [loadError, setLoadError] = useState<unknown | null>(null)
 
   const listKey = timelineListKey(bookId)
   const activeKey = timelineActiveKey(bookId)
 
   const load = useCallback(async () => {
-    const [listRaw, activeRaw] = await Promise.all([
-      window.api?.settings.get(listKey),
-      window.api?.settings.get(activeKey)
-    ])
-    let parsed = parseTimelineList(listRaw ?? null)
-    let active = activeRaw ?? null
+    // 重试入口先清掉错误：首读失败后 `loaded` 仍为 false，错误清空即回到加载态。
+    setLoadError(null)
+    try {
+      const [listRaw, activeRaw] = await Promise.all([
+        window.api?.settings.get(listKey),
+        window.api?.settings.get(activeKey)
+      ])
+      let parsed = parseTimelineList(listRaw ?? null)
+      let active = activeRaw ?? null
 
-    if (parsed.length === 0) {
-      const entry: TimelineEntry = {
-        id: 'default',
-        name: DEFAULT_TIMELINE_NAME,
-        origin: '',
-        originName: '',
-        description: '',
-        // 显式写空富文本：与保存路径的「双列」口径一致（读侧仍可兜底老数据）。
-        descriptionJson: ''
+      if (parsed.length === 0) {
+        const entry: TimelineEntry = {
+          id: 'default',
+          name: DEFAULT_TIMELINE_NAME,
+          origin: '',
+          originName: '',
+          description: '',
+          // 显式写空富文本：与保存路径的「双列」口径一致（读侧仍可兜底老数据）。
+          descriptionJson: ''
+        }
+        parsed = [entry]
+        active = 'default'
+        await window.api?.settings.set(listKey, serializeTimelineList(parsed))
+        await window.api?.settings.set(activeKey, active)
+      } else if (!active || !parsed.some((entry) => entry.id === active)) {
+        active = parsed[0].id
+        await window.api?.settings.set(activeKey, active)
       }
-      parsed = [entry]
-      active = 'default'
-      await window.api?.settings.set(listKey, serializeTimelineList(parsed))
-      await window.api?.settings.set(activeKey, active)
-    } else if (!active || !parsed.some((entry) => entry.id === active)) {
-      active = parsed[0].id
-      await window.api?.settings.set(activeKey, active)
-    }
 
-    setList(parsed)
-    setActiveId(active)
-    setLoaded(true)
+      setList(parsed)
+      setActiveId(active)
+      setLoaded(true)
+    } catch (error) {
+      // 首读失败：`loaded` 保持 false，由左栏错误态提供重试；不再产生未处理 rejection。
+      log.warn('时间线加载失败', error)
+      setLoadError(error)
+    }
   }, [listKey, activeKey])
 
   useEffect(() => {
@@ -314,6 +329,7 @@ export function useTimelineWorkspace(bookId: string): TimelineWorkspace {
     description,
     descriptionJson,
     loaded,
+    loadError,
     selectTimeline,
     createTimeline,
     updateOrigin,

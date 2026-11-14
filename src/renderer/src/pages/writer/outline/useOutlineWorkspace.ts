@@ -18,6 +18,10 @@ export interface OutlineWorkspace {
   outlineItems: OutlineItemRow[]
   /** 大纲页可见卷（`normal`+`group`，附动态 `numberIndex`）。 */
   outlineVolumes: VolumeRow[]
+  /** 大纲条目树 / 大纲卷源是否仍在首次加载（左栏三态判定）。 */
+  outlineLoading: boolean
+  /** 大纲条目树读取失败信息（`null` = 正常）。 */
+  outlineLoadError: unknown | null
   /** 各承载卷纲的卷（正文卷 / 分组）的卷纲载体行（供 EditorPane 解析 contentId）。 */
   outlineVolumeRows: OutlineVolumeContentRef[]
   /** 当前有效选中大纲编辑目标（显式选中仍在列表中则用之，否则回退默认条目）。 */
@@ -65,6 +69,8 @@ export function useOutlineWorkspace(
   // 大纲树接库：条目 CRUD（卷读写见 `useVolumes` / `useOutlineVolumes`）。
   const {
     chapters: outlineItems,
+    loading: outlineTreeLoading,
+    loadError: outlineLoadError,
     reload: reloadOutline,
     createChapter: createOutlineChapter,
     createGroup: createOutlineGroup,
@@ -76,6 +82,7 @@ export function useOutlineWorkspace(
   const {
     volumes: outlineVolumes,
     outlineVolumeRows,
+    loading: outlineVolumesLoading,
     reload: reloadOutlineVolumes
   } = useOutlineVolumes(bookId)
   // 用户显式选中的大纲编辑目标（null = 尚未选择）；与章节选中互不干扰（切模块各自独立）。
@@ -216,6 +223,8 @@ export function useOutlineWorkspace(
     outlineItems,
     outlineVolumes,
     outlineVolumeRows,
+    outlineLoading: outlineTreeLoading || outlineVolumesLoading,
+    outlineLoadError,
     activeOutlineSelection,
     reloadOutlineVolumes,
     reloadOutline,

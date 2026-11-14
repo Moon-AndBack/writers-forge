@@ -17,12 +17,14 @@
  *   每卡传自己的胶囊；悬停实体胶囊经事件委托（整组网格挂一个 `HoverCard`）显示实体卡；
  * - **布局签名**：观察首个分组网格的单卡内容可用宽（`useStableMeasure`），拖宽右栏后
  *   触发实体胶囊容量重测，否则「+N」收口会停在旧宽度；
- * - 全书无伏笔时显示空态；首次加载且无数据时显示通用加载文案。
+ * - 全书无伏笔时显示空态；首次加载且无数据时显示通用加载文案；读取失败且无数据时
+ *   显示通用失败态（可重试），与灵感总览一致。
  */
 import { useMemo, useState } from 'react'
 import type { ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import { readGridCardWidth } from '../../../components/cardGridMetrics'
+import { LoadErrorState } from '../../../components/LoadErrorState'
 import { useStableMeasure } from '../../../components/useStableMeasure'
 import type { ChapterRow, VolumeRow } from '../chapters/chapterTree'
 import { HoverCard } from '../entities/HoverCard'
@@ -61,7 +63,7 @@ export function ForeshadowOverviewPanel({
 }: ForeshadowOverviewPanelProps): ReactElement {
   const { t } = useTranslation('foreshadow')
   const { t: tCommon } = useTranslation('common')
-  const { groups, total, loading } = useBookForeshadowGroups(bookId, active)
+  const { groups, total, loading, loadError, reload } = useBookForeshadowGroups(bookId, active)
   // 摊平分组：实体匹配按「行」批量计算（与中栏共用同一批量通道与段落缓存）。
   const rows = useMemo(() => groups.flatMap((group) => group.rows), [groups])
   // 列表 → 只读详情：`selectedId` 只在右栏内切换；行被删 / 刷新后按 id 派生为 `null`，
@@ -90,6 +92,8 @@ export function ForeshadowOverviewPanel({
         <div className="pane-region rp-card rp-card--list" hidden={selectedRow !== null}>
           {loading && total === 0 ? (
             <div className="rp-list-empty">{tCommon('loading')}</div>
+          ) : loadError && total === 0 ? (
+            <LoadErrorState compact onRetry={reload} />
           ) : total === 0 ? (
             <div className="rp-list-empty">{t('overview.empty')}</div>
           ) : (

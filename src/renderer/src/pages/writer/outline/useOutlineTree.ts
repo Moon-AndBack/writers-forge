@@ -19,6 +19,8 @@ export interface OutlineTree {
   chapters: OutlineItemRow[]
   /** 是否仍在首次加载。 */
   loading: boolean
+  /** 最近一次读取失败信息（`null` = 正常；消费方据此展示错误态与重试）。 */
+  loadError: unknown | null
   /** 重新拉取条目（写操作后调用）。 */
   reload: () => Promise<void>
   /** 新建条目（`title` 可空 = 纯自定义名、无编号）。
@@ -46,18 +48,22 @@ export interface OutlineTree {
 export function useOutlineTree(bookId: string): OutlineTree {
   const [chapters, setChapters] = useState<OutlineItemRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<unknown | null>(null)
 
   const reload = useCallback(async (): Promise<void> => {
     const api = window.api?.outline
     if (!api || bookId === '') {
       setChapters([])
+      setLoadError(null)
       setLoading(false)
       return
     }
     try {
       setChapters(await api.list(bookId))
+      setLoadError(null)
     } catch (error) {
       log.warn('大纲树加载失败', error)
+      setLoadError(error)
     } finally {
       setLoading(false)
     }
@@ -70,15 +76,20 @@ export function useOutlineTree(bookId: string): OutlineTree {
       if (!api || bookId === '') {
         if (active) {
           setChapters([])
+          setLoadError(null)
           setLoading(false)
         }
         return
       }
       try {
         const next = await api.list(bookId)
-        if (active) setChapters(next)
+        if (active) {
+          setChapters(next)
+          setLoadError(null)
+        }
       } catch (error) {
         log.warn('大纲树加载失败', error)
+        if (active) setLoadError(error)
       } finally {
         if (active) setLoading(false)
       }
@@ -193,6 +204,7 @@ export function useOutlineTree(bookId: string): OutlineTree {
   return {
     chapters,
     loading,
+    loadError,
     reload,
     createChapter,
     createGroup,

@@ -187,6 +187,7 @@ const ai = {
       deleteFailed: '删除会话失败，请重试',
       busyHint: '生成中无法切换或管理会话，请先停止生成。',
       loading: '正在载入会话…',
+      loadFailed: '会话列表加载失败，请重试',
       empty: '该章还没有会话，点「新建」开始一段新对话。'
     },
     empty: {

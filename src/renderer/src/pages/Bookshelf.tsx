@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trans, useTranslation } from 'react-i18next'
 import { LoadErrorState } from '../components/LoadErrorState'
-import { IconButton, useToast } from '../components/ui'
+import { EmptyState } from '../components/EmptyState'
+import { Button, IconButton, useToast } from '../components/ui'
 import { useSetStatusBar } from '../shell/statusBarContext'
 import { useSetTitleBarActions } from '../shell/titleBarActions'
 import { BookCard } from './bookshelf/BookCard'
@@ -74,10 +75,13 @@ function localId(): string {
  */
 export default function Bookshelf() {
   const { t } = useTranslation('bookshelf')
+  const { t: tCommon } = useTranslation('common')
   const booksApi = window.api?.books
   const [bookList, setBookList] = useState<Book[]>(() =>
     window.api?.books ? [] : [...FALLBACK_BOOKS]
   )
+  // 首读态：先于错误 / 空态判定，避免数据回来前先闪「还没有书籍」。
+  const [loading, setLoading] = useState(() => window.api?.books !== undefined)
   // 书架读取失败标记：区分「书架真的是空的」与「读取失败」（后者给出重试）。
   const [loadError, setLoadError] = useState(false)
   const [statsByBook, setStatsByBook] = useState<Record<string, BookStats>>({})
@@ -157,10 +161,14 @@ export default function Bookshelf() {
         if (!active) return
         setBookList(rows)
         setLoadError(false)
+        setLoading(false)
       })
       .catch(() => {
         /* 读取失败：标记错误态，避免把「读取失败」显示成「书架为空」 */
-        if (active) setLoadError(true)
+        if (active) {
+          setLoadError(true)
+          setLoading(false)
+        }
       })
     // 微任务中拉取统计，避免在 effect 内同步触发 setState（react-hooks/set-state-in-effect）。
     void Promise.resolve().then(loadStats)
@@ -405,9 +413,46 @@ export default function Bookshelf() {
         onSortChange={setSort}
       />
 
-      {loadError && bookList.length === 0 ? (
+      {loading ? (
+        /* 首读：先于错误 / 空态判定，避免数据未回来时先闪「还没有书籍」。 */
+        <EmptyState className="bookshelf-empty" title={tCommon('loading')} />
+      ) : loadError && bookList.length === 0 ? (
         /* 读取失败且无可用数据：与「书架为空」区分，给出重试入口。 */
         <LoadErrorState onRetry={() => void refresh()} />
+      ) : bookList.length === 0 ? (
+        /* 真空态：一本书都没有（与「筛选 / 搜索无结果」分开）。 */
+        <EmptyState
+          className="bookshelf-empty"
+          title={t('empty.title')}
+          description={
+            <>
+              <span>{t('empty.description')}</span>
+              <Button variant="primary" onClick={() => setDialogOpen(true)}>
+                {t('newBook')}
+              </Button>
+            </>
+          }
+        />
+      ) : books.length === 0 ? (
+        /* 有书但当前筛选 / 搜索无结果：给清除条件入口，不误导成「书架为空」。 */
+        <EmptyState
+          className="bookshelf-empty"
+          title={t('empty.filteredTitle')}
+          description={
+            <>
+              <span>{t('empty.filteredDescription')}</span>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setFilter('all')
+                  setQuery('')
+                }}
+              >
+                {t('empty.clearFilters')}
+              </Button>
+            </>
+          }
+        />
       ) : (
         <div className="book-grid" ref={gridRef}>
           {books.map((book) => (

@@ -16,6 +16,8 @@ export interface AiSessionsState {
   activeSessionId: number | null
   /** 是否正在拉取会话列表。 */
   loading: boolean
+  /** 当前书会话列表读取是否失败（按书作用域隔离；切书后不残留）。 */
+  loadError: boolean
   /** 重载列表；`preferId` 优先作为当前选中（新建会话后使用）。 */
   refresh: (preferId?: number) => Promise<void>
   /** 切换会话（null = 新对话草稿）。 */
@@ -49,6 +51,8 @@ export function useAiSessions(input: {
 
   const [state, setState] = useState<SessionScope>({ key: '', list: [], activeId: null })
   const [loading, setLoading] = useState(false)
+  // 读取失败标记按书隔离：只记录失败作用域 key，切书后旧书错误不残留。
+  const [loadError, setLoadError] = useState<{ key: string } | null>(null)
   /** 当前作用域 key（异步 refresh 回来时对照，丢弃切书前的过期结果）。 */
   const scopeKeyRef = useRef(key)
 
@@ -70,9 +74,10 @@ export function useAiSessions(input: {
       const scopeKey = bookId
       try {
         const list = await api.sessions.list(bookId)
+        // 切书后才回来的旧请求：不写回，避免把新书的列表状态覆盖成旧书。
+        if (scopeKeyRef.current !== scopeKey) return
+        setLoadError(null)
         setState((prev) => {
-          // 切书后才回来的旧请求：不写回，避免把新书的列表状态覆盖成旧书。
-          if (scopeKeyRef.current !== scopeKey) return prev
           const sameScope = prev.key === scopeKey
           // preferId 只在「新作用域」或「当前已是该条」时采纳：避免迟到的创建刷新
           // 把用户随后手动切到的会话 / 新建草稿抢回去。
@@ -93,6 +98,7 @@ export function useAiSessions(input: {
           return { key: scopeKey, list, activeId }
         })
       } catch (error) {
+        if (scopeKeyRef.current === scopeKey) setLoadError({ key: scopeKey })
         chatLog.warn('AI 会话列表读取失败', error)
       }
     },
@@ -112,13 +118,17 @@ export function useAiSessions(input: {
         if (!api) return
         const list = await api.sessions.list(bookId)
         if (cancelled) return
+        setLoadError(null)
         setState((prev) => {
           const preferred = prev.key === key ? prev.activeId : null
           const keep = preferred !== null && list.some((row) => row.id === preferred)
           return { key, list, activeId: keep ? preferred : (list[0]?.id ?? null) }
         })
       } catch (error) {
-        if (!cancelled) chatLog.warn('AI 会话列表读取失败', error)
+        if (!cancelled) {
+          setLoadError({ key })
+          chatLog.warn('AI 会话列表读取失败', error)
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -181,6 +191,8 @@ export function useAiSessions(input: {
     activeSessionId: scoped.activeId,
     // 切书时 state.key 尚未跟上：对外仍算加载中，避免空态文案闪一下。
     loading: active && (state.key !== key || loading),
+    // 只暴露当前书的错误：上一本书的失败标记在切书后自然失效。
+    loadError: loadError?.key === key,
     refresh,
     select,
     notifyCreated,

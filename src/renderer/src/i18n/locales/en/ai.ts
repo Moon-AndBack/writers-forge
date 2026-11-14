@@ -190,6 +190,7 @@ const ai = {
       deleteFailed: 'Failed to delete the conversation, please try again',
       busyHint: 'You cannot switch or manage conversations while generating; stop first.',
       loading: 'Loading conversation…',
+      loadFailed: 'Failed to load the conversation list. Please try again.',
       empty: 'No conversations in this chapter yet. Click "New" to start one.'
     },
     empty: {

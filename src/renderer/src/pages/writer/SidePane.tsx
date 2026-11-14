@@ -25,6 +25,12 @@ interface SidePaneProps {
   volumes: VolumeRow[]
   /** 未删除章（后端顺序：按卷分组、组内 pin 段序）。 */
   chapters: ChapterRow[]
+  /** 章节树 / 共享卷池是否仍在首次加载（左栏三态判定）。 */
+  chaptersLoading: boolean
+  /** 章节树或共享卷池读取失败（左栏错误态）。 */
+  chaptersLoadError: unknown | null
+  /** 重试读取章节树与共享卷池。 */
+  onRetryChapters: () => void
   /** 当前选中章节 id（页面层持有，与中栏编辑器共享）。 */
   activeChapterId: number | null
   /** 章节选中回调（传章节 id）。 */
@@ -49,6 +55,12 @@ interface SidePaneProps {
   outlineVolumes: VolumeRow[]
   /** 大纲未删除条目（`scope='entry'`）。 */
   outlineItems: OutlineItemRow[]
+  /** 大纲条目树 / 大纲卷源是否仍在首次加载。 */
+  outlineLoading: boolean
+  /** 大纲条目树读取失败。 */
+  outlineLoadError: unknown | null
+  /** 重试读取大纲条目树与大纲卷源。 */
+  onRetryOutline: () => void
   /** 当前大纲编辑选中态（页面层持有，与中栏编辑器共享）。 */
   activeOutlineSelection: OutlineSelection | null
   /** 大纲编辑目标打开回调（条目 / 分组 / 卷行点击 → 中栏编辑）。 */
@@ -73,6 +85,12 @@ interface SidePaneProps {
   allPlotLines: PlotLineRow[]
   /** 全书未删除剧情场景（用于统计各线节点数）。 */
   plotScenes: PlotSceneRow[]
+  /** 剧情树是否仍在首次加载。 */
+  plotLoading: boolean
+  /** 剧情树读取失败。 */
+  plotError: string | null
+  /** 重试读取剧情树。 */
+  onRetryPlot: () => void
   /** 当前选中剧情线 id（页面层持有，与中栏 / 右栏共享）。 */
   activePlotLineId: number | null
   /** 剧情线选中回调。 */
@@ -83,6 +101,12 @@ interface SidePaneProps {
   onDeletePlotLine: (id: number) => void
   /** 时间线列表（左栏）。 */
   timelineEntries: TimelineEntry[]
+  /** 时间线是否仍在首次读取。 */
+  timelineLoading: boolean
+  /** 时间线读取失败。 */
+  timelineLoadError: unknown | null
+  /** 重试读取时间线列表。 */
+  onRetryTimeline: () => void
   /** 当前选中时间线 id。 */
   activeTimelineId: string | null
   /** 时间线选中回调。 */
@@ -106,6 +130,9 @@ export function SidePane({
   autoHidden,
   volumes,
   chapters,
+  chaptersLoading,
+  chaptersLoadError,
+  onRetryChapters,
   activeChapterId,
   onSelectChapter,
   onCreateChapter,
@@ -118,6 +145,9 @@ export function SidePane({
   isVolumeFull,
   outlineVolumes,
   outlineItems,
+  outlineLoading,
+  outlineLoadError,
+  onRetryOutline,
   activeOutlineSelection,
   onOpenOutlineTarget,
   onRenameOutlineVolume,
@@ -130,11 +160,17 @@ export function SidePane({
   plotLines,
   allPlotLines,
   plotScenes,
+  plotLoading,
+  plotError,
+  onRetryPlot,
   activePlotLineId,
   onSelectPlotLine,
   onUpdatePlotLine,
   onDeletePlotLine,
   timelineEntries,
+  timelineLoading,
+  timelineLoadError,
+  onRetryTimeline,
   activeTimelineId,
   onSelectTimeline,
   onRenameTimeline,
@@ -165,6 +201,9 @@ export function SidePane({
           bookId={bookId}
           volumes={volumes}
           chapters={chapters}
+          loading={chaptersLoading}
+          loadError={chaptersLoadError}
+          onRetry={onRetryChapters}
           activeChapterId={activeChapterId}
           onSelectChapter={onSelectChapter}
           onCreateChapter={onCreateChapter}
@@ -184,6 +223,9 @@ export function SidePane({
           bookId={bookId}
           volumes={outlineVolumes}
           chapters={outlineItems}
+          loading={outlineLoading}
+          loadError={outlineLoadError}
+          onRetry={onRetryOutline}
           activeSelection={activeOutlineSelection}
           onOpenTarget={onOpenOutlineTarget}
           onRenameVolume={onRenameOutlineVolume}
@@ -200,6 +242,9 @@ export function SidePane({
         <PlotPanel
           lines={plotLines}
           scenes={plotScenes}
+          loading={plotLoading}
+          loadError={plotError}
+          onRetry={onRetryPlot}
           activeLineId={activePlotLineId}
           onSelectLine={onSelectPlotLine}
           onUpdateLine={onUpdatePlotLine}
@@ -213,6 +258,9 @@ export function SidePane({
       <div className={`sp-panel${module === 'timeline' ? ' is-active' : ''}`} data-view="timeline">
         <TimelinePanel
           timelines={timelineEntries}
+          loading={timelineLoading}
+          loadError={timelineLoadError}
+          onRetry={onRetryTimeline}
           activeId={activeTimelineId}
           onSelect={onSelectTimeline}
           onRename={onRenameTimeline}

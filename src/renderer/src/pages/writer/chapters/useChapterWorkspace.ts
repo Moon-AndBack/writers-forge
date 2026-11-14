@@ -16,6 +16,12 @@ import { useChapterTree, type ChapterTree, type CreateChapterInput } from './use
 export interface ChapterWorkspace {
   /** 未删除章（后端顺序：按卷分组、组内 pin 段序）。 */
   chapters: ChapterRow[]
+  /** 章节树是否仍在首次加载。 */
+  chaptersLoading: boolean
+  /** 章节树读取失败信息（`null` = 正常）。 */
+  chaptersLoadError: unknown | null
+  /** 重新拉取章节树（错误态重试 / 回收站刷新共用）。 */
+  reloadChapters: () => Promise<void>
   /** 改章节状态（两态），成功后就地更新 `chapters`。 */
   setStatus: ChapterTree['setStatus']
   /** 中栏是否切换到回收站视图。 */
@@ -61,6 +67,8 @@ export function useChapterWorkspace(bookId: string, onTrashChanged?: () => void)
   // 章节树接库：仅章（卷读写已剥离至共享卷源）+ 状态切换（两态）+ 增删改 / pin / 重排（v2）。
   const {
     chapters,
+    loading: chaptersLoading,
+    loadError: chaptersLoadError,
     setStatus,
     reload,
     renameChapter,
@@ -187,6 +195,9 @@ export function useChapterWorkspace(bookId: string, onTrashChanged?: () => void)
 
   return {
     chapters,
+    chaptersLoading,
+    chaptersLoadError,
+    reloadChapters: reload,
     setStatus,
     trashOpen,
     activeChapterId,

@@ -8,6 +8,13 @@ import type { ZhCNResources } from '../zh-CN'
 const bookshelf = {
   newBook: 'New Book',
   defaultAuthor: 'Anonymous',
+  empty: {
+    title: 'No books yet',
+    description: 'Create a book to start writing your story.',
+    filteredTitle: 'No matching books',
+    filteredDescription: 'Try changing the status filter or search terms.',
+    clearFilters: 'Clear filters'
+  },
   filter: {
     all: 'All',
     writing: 'Ongoing',

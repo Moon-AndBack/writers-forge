@@ -13,6 +13,13 @@
 const bookshelf = {
   newBook: '新建书籍',
   defaultAuthor: '未署名',
+  empty: {
+    title: '还没有书籍',
+    description: '新建一本书，开始记录你的故事。',
+    filteredTitle: '没有找到匹配的书籍',
+    filteredDescription: '试试调整状态筛选或搜索关键词。',
+    clearFilters: '清除筛选'
+  },
   filter: {
     all: '全部',
     writing: '连载中',

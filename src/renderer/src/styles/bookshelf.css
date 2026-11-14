@@ -128,6 +128,14 @@
   padding: 2px 4px 14px;
 }
 
+/* 书架空态：说明文案 + 操作按钮纵向排布（复用 EmptyState 结构，仅本页容器内生效）。 */
+.bookshelf-empty .placeholder-desc {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
 /* ---------- 书籍卡片 ---------- */
 /* 固定卡宽 200px：grid 轨道由 `.book-grid` 的 `repeat(auto-fit, 200px)` 锁定，
    卡片宽度与轨道一致，不会被拉伸 / 压缩。

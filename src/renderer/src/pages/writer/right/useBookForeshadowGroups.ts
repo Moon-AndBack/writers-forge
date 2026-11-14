@@ -15,9 +15,10 @@
  * - **竞态**：每轮请求带自增 `seq`，乱序 / 过期响应一律丢弃；卸载或切走页签时递增
  *   序号使在途响应作废；
  * - **换书**：返回值按 `bookId` 隔离，换书瞬间不把上一本书的分组短暂套到新书上；
- * - **失败**：保留上一轮成功数据（首次加载失败则落空态），下次刷新事件 / 重进页签重试。
+ * - **失败**：保留上一轮成功数据；当前书无可用数据时暴露 `loadError`，由视图显示错误态，
+ *   `reload()` 供手动重试（下次刷新事件 / 重进页签也会重试）。
  */
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ForeshadowDisplayStatus } from '../../../../../shared/foreshadowStatus'
 import { deriveForeshadowStatus } from '../../../../../shared/foreshadowStatus'
 import { FORESHADOW_MARKS_REFRESH_EVENT } from '../../../components/editor/useForeshadowMarks'
@@ -61,6 +62,17 @@ export interface BookForeshadowGroups {
   total: number
   /** 是否有在途请求（列表非空时不闪加载态）。 */
   loading: boolean
+  /** 当前书读取是否失败（仅列表为空时用于失败态）。 */
+  loadError: boolean
+  /** 重新拉取（失败态「重试」/ 面板外部触发）。 */
+  reload: () => void
+}
+
+/** 按书隔离的读取结果（`loadError` 随书切换自然失效）。 */
+interface BookForeshadowState {
+  bookId: string
+  rows: ForeshadowRow[]
+  loadError: boolean
 }
 
 /** 无数据时的恒等空数组（换书瞬间复用，引用稳定）。 */
@@ -70,13 +82,16 @@ const EMPTY_ROWS: ForeshadowRow[] = []
  * 拉全书伏笔并按派生状态分组。`bookId` 为空或页签未激活时不发请求。
  */
 export function useBookForeshadowGroups(bookId: string, active: boolean): BookForeshadowGroups {
-  const [state, setState] = useState<{ bookId: string; rows: ForeshadowRow[] }>({
+  const [state, setState] = useState<BookForeshadowState>({
     bookId: '',
-    rows: []
+    rows: [],
+    loadError: false
   })
   const [loading, setLoading] = useState(false)
   // 请求序号：仅最新一轮结果可写回（丢弃乱序 / 过期响应）。
   const seqRef = useRef(0)
+  // 手动重试键：`reload()` 递增即重跑加载 effect。
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     if (!active || bookId === '') return
@@ -88,12 +103,17 @@ export function useBookForeshadowGroups(bookId: string, active: boolean): BookFo
         .list(bookId)
         .then((next) => {
           if (seq !== seqRef.current) return
-          setState({ bookId, rows: next })
+          setState({ bookId, rows: next, loadError: false })
           setLoading(false)
         })
         .catch(() => {
           if (seq !== seqRef.current) return
-          // 保留上一轮成功数据；首次失败自然落空态（下次事件 / 重进页签重试）。
+          // 保留上一轮成功数据（同书）；换书后失败则落空列表 + 失败态。
+          setState((prev) =>
+            prev.bookId === bookId
+              ? { ...prev, loadError: true }
+              : { bookId, rows: [], loadError: true }
+          )
           setLoading(false)
         })
     }
@@ -105,15 +125,18 @@ export function useBookForeshadowGroups(bookId: string, active: boolean): BookFo
       seqRef.current += 1
       window.removeEventListener(FORESHADOW_MARKS_REFRESH_EVENT, load)
     }
-  }, [bookId, active])
+  }, [bookId, active, reloadKey])
+
+  const reload = useCallback((): void => setReloadKey((key) => key + 1), [])
 
   // 换书瞬间按空列表分组，避免上一本书的分组短暂套到新书上。
   const groups = useMemo(
     () => groupBookForeshadows(state.bookId === bookId ? state.rows : EMPTY_ROWS),
     [state, bookId]
   )
-  const total = state.bookId === bookId ? state.rows.length : 0
-  return { groups, total, loading }
+  const sameBook = state.bookId === bookId
+  const total = sameBook ? state.rows.length : 0
+  return { groups, total, loading, loadError: sameBook && state.loadError, reload }
 }
 
 export default useBookForeshadowGroups

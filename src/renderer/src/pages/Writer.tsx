@@ -76,15 +76,26 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
 
   // 共享卷源：章节 / 大纲两域唯一卷读写入口（两页同源渲染，写后同步可见）。
   // 读章节页可见卷（`normal`+`custom`）；大纲页另经 `useOutlineVolumes` 取（含 `group`、排除 `custom`）。
-  const { volumes, createVolume, renameVolume, deleteVolume, reload } = useVolumes(bookId ?? '')
+  const {
+    volumes,
+    loading: volumesLoading,
+    loadError: volumesLoadError,
+    createVolume,
+    renameVolume,
+    deleteVolume,
+    reload: reloadVolumes
+  } = useVolumes(bookId ?? '')
 
   // 大纲域装配（条目树 + 大纲卷源 + 选中派生 + 大纲动作）：集中于 useOutlineWorkspace；
-  // 卷写入口沿用页面层共享卷源；回收站操作另刷新共享卷列表（`reload`）。
+  // 卷写入口沿用页面层共享卷源；回收站操作另刷新共享卷列表（`reloadVolumes`）。
   const {
     outlineItems,
     outlineVolumes,
     outlineVolumeRows,
+    outlineLoading,
+    outlineLoadError,
     activeOutlineSelection,
+    reloadOutline,
     reloadOutlineVolumes,
     handleOpenOutlineTarget,
     handleOutlineTrashChanged,
@@ -97,11 +108,14 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
     handleRenameOutlineItem,
     handleDeleteOutlineChapter,
     handleReorderOutlineChapter
-  } = useOutlineWorkspace(bookId ?? '', renameVolume, deleteVolume, reload)
+  } = useOutlineWorkspace(bookId ?? '', renameVolume, deleteVolume, reloadVolumes)
 
   // 章节域装配（章树 + 选中 / 回收站态 + 章节动作）：集中于 useChapterWorkspace；回收站回调另同步卷池。
   const {
     chapters,
+    chaptersLoading,
+    chaptersLoadError,
+    reloadChapters,
     setStatus,
     trashOpen,
     activeChapterId,
@@ -183,6 +197,16 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
     },
     [setStatus]
   )
+
+  /* ---------- 左栏读取失败重试（仅装配依赖：章节树 + 共享卷池 / 大纲树 + 大纲卷源） ---------- */
+  const handleRetryChapters = useCallback((): void => {
+    void reloadChapters()
+    void reloadVolumes()
+  }, [reloadChapters, reloadVolumes])
+  const handleRetryOutline = useCallback((): void => {
+    void reloadOutline()
+    void reloadOutlineVolumes()
+  }, [reloadOutline, reloadOutlineVolumes])
 
   /* ---------- 剧情页动作（左栏剧情线 / 中栏时间轴 / 右栏编辑器共享） ----------
      剧情装配见 usePlotWorkspace；剧情 / 时间线两处选中回调（更新选中 + 右栏隐藏时
@@ -292,6 +316,9 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
               autoHidden={sideHidden}
               volumes={volumes}
               chapters={chapters}
+              chaptersLoading={chaptersLoading || volumesLoading}
+              chaptersLoadError={chaptersLoadError ?? volumesLoadError}
+              onRetryChapters={handleRetryChapters}
               activeChapterId={activeChapterId}
               onSelectChapter={handleSelectChapter}
               onCreateChapter={handleCreateChapter}
@@ -304,6 +331,9 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
               isVolumeFull={isVolumeFull}
               outlineVolumes={outlineVolumes}
               outlineItems={outlineItems}
+              outlineLoading={outlineLoading}
+              outlineLoadError={outlineLoadError}
+              onRetryOutline={handleRetryOutline}
               activeOutlineSelection={activeOutlineSelection}
               onOpenOutlineTarget={handleOpenOutlineTarget}
               onRenameOutlineVolume={handleRenameOutlineVolume}
@@ -316,11 +346,17 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
               plotLines={plot.lines}
               allPlotLines={plot.allLines}
               plotScenes={plot.scenes}
+              plotLoading={plot.loading}
+              plotError={plot.error}
+              onRetryPlot={plot.reload}
               activePlotLineId={plot.activeLineId}
               onSelectPlotLine={plot.selectLine}
               onUpdatePlotLine={plot.updateLine}
               onDeletePlotLine={plot.deleteLine}
               timelineEntries={timeline.list}
+              timelineLoading={!timeline.loaded && timeline.loadError === null}
+              timelineLoadError={timeline.loadError}
+              onRetryTimeline={timeline.reload}
               activeTimelineId={timeline.activeId}
               onSelectTimeline={handleSelectTimeline}
               onRenameTimeline={handleRenameTimeline}

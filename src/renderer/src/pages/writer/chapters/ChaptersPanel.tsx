@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { IconButton } from '../../../components/ui'
 import { TrashIcon } from '../../../components/icons'
 import { EmptyState } from '../../../components/EmptyState'
+import { LoadErrorState } from '../../../components/LoadErrorState'
 import { ChevronIcon, PencilIcon, PlusIcon, SpecialChapterIcon, SpecialVolumeIcon } from '../icons'
 import { useTreeExpansion } from '../useTreeExpansion'
 import {
@@ -36,6 +37,12 @@ export interface ChaptersPanelProps {
   volumes: VolumeRow[]
   /** 未删除章（后端顺序：按卷分组、组内 pin 段序）。 */
   chapters: ChapterRow[]
+  /** 章节树 / 卷池是否仍在首次加载（三态顺序：loading → error → empty）。 */
+  loading: boolean
+  /** 章节树或卷池读取失败（仅在无可见卷时展示错误态）。 */
+  loadError: unknown | null
+  /** 重试读取章节树与卷池。 */
+  onRetry: () => void
   /** 当前选中章节 id（页面层持有，与中栏编辑器共享）。 */
   activeChapterId: number | null
   /** 章节选中回调。 */
@@ -74,6 +81,9 @@ export default function ChaptersPanel({
   bookId,
   volumes,
   chapters,
+  loading,
+  loadError,
+  onRetry,
   activeChapterId,
   onSelectChapter,
   onCreateChapter,
@@ -86,6 +96,7 @@ export default function ChaptersPanel({
   isVolumeFull
 }: ChaptersPanelProps) {
   const { t } = useTranslation('chapters')
+  const { t: tCommon } = useTranslation('common')
   const labels = useChapterLabels()
   // 卷展开态（白名单）：默认全部收起，仅展开当前编辑章所属卷。
   const { isOpen, toggle: toggleVolume, open: openVolume, seedOnce } = useTreeExpansion(bookId)
@@ -420,7 +431,13 @@ export default function ChaptersPanel({
   return (
     <div className="pane-body">
       <div className="pane-scroll">
-        {visibleGroups.length === 0 ? (
+        {loading ? (
+          /* 首读：先于错误 / 空态判定，避免数据未回来时先闪「还没有创建卷」。 */
+          <div className="rp-list-empty">{tCommon('loading')}</div>
+        ) : loadError !== null && visibleGroups.length === 0 ? (
+          /* 读取失败且无可见卷：与真空态区分，给出重试入口。 */
+          <LoadErrorState compact onRetry={onRetry} />
+        ) : visibleGroups.length === 0 ? (
           /* 空态：无任何可见卷时居中提示（复用通用 EmptyState 的紧凑变体）。
              未分卷卷空卡已从 visibleGroups 过滤，不会让空态失效；
              引导文案指路标题栏「新建卷」（入口不在本侧栏，故不给可点击假象）。 */

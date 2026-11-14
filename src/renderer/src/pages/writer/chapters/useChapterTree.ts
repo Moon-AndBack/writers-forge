@@ -29,6 +29,8 @@ export interface ChapterTree {
   chapters: ChapterRow[]
   /** 是否仍在首次加载。 */
   loading: boolean
+  /** 最近一次读取失败信息（`null` = 正常；消费方据此展示错误态与重试）。 */
+  loadError: unknown | null
   /** 重新拉取章（写操作后调用）。 */
   reload: () => Promise<void>
   /** 改章节状态（两态），成功后就地更新 `chapters`（无需整树重取）。 */
@@ -63,18 +65,22 @@ export interface ChapterTree {
 export function useChapterTree(bookId: string): ChapterTree {
   const [chapters, setChapters] = useState<ChapterRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<unknown | null>(null)
 
   const reload = useCallback(async (): Promise<void> => {
     const api = window.api?.chapters
     if (!api || bookId === '') {
       setChapters([])
+      setLoadError(null)
       setLoading(false)
       return
     }
     try {
       setChapters(await api.list(bookId))
+      setLoadError(null)
     } catch (error) {
       log.warn('章节树加载失败', error)
+      setLoadError(error)
     } finally {
       setLoading(false)
     }
@@ -87,15 +93,20 @@ export function useChapterTree(bookId: string): ChapterTree {
       if (!api || bookId === '') {
         if (active) {
           setChapters([])
+          setLoadError(null)
           setLoading(false)
         }
         return
       }
       try {
         const next = await api.list(bookId)
-        if (active) setChapters(next)
+        if (active) {
+          setChapters(next)
+          setLoadError(null)
+        }
       } catch (error) {
         log.warn('章节树加载失败', error)
+        if (active) setLoadError(error)
       } finally {
         if (active) setLoading(false)
       }
@@ -227,6 +238,7 @@ export function useChapterTree(bookId: string): ChapterTree {
   return {
     chapters,
     loading,
+    loadError,
     reload,
     setStatus,
     renameChapter,

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Textarea, useToast } from '../../../components/ui'
+import { Button, Textarea, useToast } from '../../../components/ui'
 import { useRichTextEditor } from '../../../components/editor/richTextEditorContext'
 import {
   clearSelectionMirror,
@@ -73,6 +73,7 @@ export interface AiPanelProps {
  */
 export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps) {
   const { t } = useTranslation('ai')
+  const { t: tCommon } = useTranslation('common')
   const { show: showToast, node: toastNode } = useToast()
   const { editor } = useRichTextEditor('chapter')
 
@@ -122,6 +123,7 @@ export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps
     sessions: sessionList,
     activeSessionId,
     loading: sessionsLoading,
+    loadError: sessionsLoadError,
     select: selectSession,
     notifyCreated: notifySessionCreated,
     refresh: refreshSessions,
@@ -310,22 +312,34 @@ export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps
   ]
 
   const emptyText =
-    hydrating || (sessionsLoading && sessionList.length === 0)
-      ? t('panel.sessions.loading')
-      : t('panel.empty.chat')
+    sessionsLoadError && sessionList.length === 0
+      ? tCommon('loadFailedTitle')
+      : hydrating || (sessionsLoading && sessionList.length === 0)
+        ? t('panel.sessions.loading')
+        : t('panel.empty.chat')
 
   return (
     <div className="rp-panel">
       {/* 会话栏：一行承载「当前会话下拉 + 操作 + 新建」（见 AiSessionBar） */}
-      <AiSessionBar
-        sessions={sessionList}
-        activeSessionId={activeSessionId}
-        busy={generating}
-        onSelect={selectSession}
-        onCreate={handleNewSession}
-        onRename={renameSession}
-        onDelete={removeSession}
-      />
+      {/* 会话列表读取失败且无可用会话：用行内错误替代会话栏，避免把失败显示成「新对话」。 */}
+      {sessionsLoadError && sessionList.length === 0 ? (
+        <div className="ai-panel__error" role="alert">
+          <span>{t('panel.sessions.loadFailed')}</span>
+          <Button size="sm" variant="secondary" onClick={() => void refreshSessions()}>
+            {tCommon('retry')}
+          </Button>
+        </div>
+      ) : (
+        <AiSessionBar
+          sessions={sessionList}
+          activeSessionId={activeSessionId}
+          busy={generating}
+          onSelect={selectSession}
+          onCreate={handleNewSession}
+          onRename={renameSession}
+          onDelete={removeSession}
+        />
+      )}
 
       {/* 主体：对话记录（占满剩余高度，自身滚动） */}
       <div ref={listRef} className="rp-card rp-card--list ai-chat">

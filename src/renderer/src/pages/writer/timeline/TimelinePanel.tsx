@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
+import { LoadErrorState } from '../../../components/LoadErrorState'
 import { IconButton, useToast } from '../../../components/ui'
 import { TrashIcon } from '../../../components/icons'
 import { PencilIcon } from '../icons'
@@ -10,6 +11,12 @@ import type { TimelineEntry } from './timelineOrigin'
 export interface TimelinePanelProps {
   /** 时间线列表。 */
   timelines: TimelineEntry[]
+  /** 是否仍在首次读取（三态顺序：loading → error → empty）。 */
+  loading: boolean
+  /** 时间线读取失败（仅在无任何时间线时展示错误态）。 */
+  loadError: unknown | null
+  /** 重试读取时间线列表。 */
+  onRetry: () => void
   /** 当前选中时间线 id。 */
   activeId: string | null
   /** 选中回调。 */
@@ -24,6 +31,9 @@ export interface TimelinePanelProps {
 
 export default function TimelinePanel({
   timelines,
+  loading,
+  loadError,
+  onRetry,
   activeId,
   onSelect,
   onRename,
@@ -31,6 +41,7 @@ export default function TimelinePanel({
   plotLineCounts
 }: TimelinePanelProps) {
   const { t } = useTranslation('timeline')
+  const { t: tCommon } = useTranslation('common')
   // 行内重命名态：正在改名的条目 id + 草稿名（与章节卷改名同款交互）。
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [draftName, setDraftName] = useState('')
@@ -76,7 +87,13 @@ export default function TimelinePanel({
   return (
     <div className="pane-body">
       <div className="pane-scroll">
-        {timelines.length === 0 ? (
+        {loading ? (
+          /* 首读：先于错误 / 空态判定，避免数据未回来时先闪「暂无时间线」。 */
+          <div className="rp-list-empty">{tCommon('loading')}</div>
+        ) : loadError !== null && timelines.length === 0 ? (
+          /* 读取失败且无任何时间线：与真空态区分，给出重试入口。 */
+          <LoadErrorState compact onRetry={onRetry} />
+        ) : timelines.length === 0 ? (
           <EmptyState compact title={t('emptyTitle')} description={t('emptyDesc')} />
         ) : (
           <div className="timeline-list pane-region">
