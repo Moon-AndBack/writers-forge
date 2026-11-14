@@ -36,7 +36,7 @@
 - **MUST** 同一区域只使用一种表面语言：`--pane` 上的分区用 `--soft-solid`；`--soft-solid` 上的控件 / 只读块用 `--control-on-soft`；不得在同一容器内混用两套底色。
 - **MUST** 直接落在栏容器（`--pane` / `--doc-surface`）上的软底分区、字段卡、保存条、页签卡不加外描边；边界由 `--soft-solid` 与底色的明度差 + 间距承担。`--soft-solid` 之上需要再分层时，用 `--pane` 内容卡或 `--control-on-soft`（默认态无描边，`--control-on-soft-line` 仅用于 focus / invalid / checked 等状态线）。
 - **MUST** 同色软底不得再套同色软底卡。需要再分层时改用 `--control-on-soft`、`--pane`，或仅用描边 / 间距分区。
-- **MUST** 组件填充用不透明令牌（`--*-solid`、`--pane`、`--control-on-soft`）；`--soft` 等半透明档只允许用于确需透出下层的浮层（当前 3 处：`writer-ai.css` 3）。
+- **MUST** 组件填充用不透明令牌（`--*-solid`、`--pane`、`--control-on-soft`）；`--soft` 等半透明档只允许用于确需透出下层的浮层（当前 2 处：`writer-ai.css` 2）。
 - **MUST** 圆角只用两档：`--r-lg`（8）用于全部界面元素；`--r-pill`（999）用于胶囊 / chip / 开关轨道 / 进度条 / 滚动条。正圆（`50%`）仅用于图标按钮与状态点；≤3px 的装饰微条与贴平（`0`）为例外。既有微圆角 / 同心内圆字面量仅限 §9 例外表原地保留，不得扩散。
 
   圆角两档（2026-11-14 统一）：

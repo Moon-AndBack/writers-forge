@@ -157,7 +157,7 @@
    位于输入框上方：一行开关 + 可选展开按钮，下方是限行文本。
    文本默认限 2 行（省略号），title 悬浮全文，展开后完整显示——
    风格句可能多条，全铺开会把输入区顶出可视范围。
-   底 / 描边取软底 + --line 一档（与 .ai-chat 同层语言），hover 只改颜色（§8）。 */
+   底取 --soft-solid 软底（与 .ai-chat 同层语言），不加描边；hover 只改颜色（§8）。 */
 .ai-panel__builtin {
   flex: none;
   display: flex;
@@ -165,8 +165,7 @@
   gap: 4px;
   padding: 6px 8px;
   border-radius: var(--r-lg);
-  background: var(--soft);
-  box-shadow: inset 0 0 0 1px var(--line);
+  background: var(--soft-solid);
 }
 
 /* 开关行：开关靠左，「展开 / 收起」靠右；无分类说明文字夹在中间（可换行）。 */

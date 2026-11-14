@@ -5,17 +5,12 @@
  * 颜色 / 圆角 / 动效全部取 `theme.css` 令牌；行 hover 只改背景，无位移 / 缩放。
  */
 
-/* ---------- 列表容器（夹在设置行之间，自带上下分隔线） ---------- */
+/* ---------- 列表容器（夹在设置行之间，靠 14/10 内衬与间距分组） ---------- */
 .settings-backup {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px 10px;
-  border-top: 1px solid var(--line);
-}
-
-.settings-backup + .settings-row {
-  border-top: 1px solid var(--line);
+  padding: 14px 10px;
 }
 
 .settings-backup__head {

@@ -12,7 +12,7 @@ export interface SectionCardProps {
  * - 卡片直接以设置行开始，不再渲染分区标题与描述（导航已表明当前分区）；
  * - 卡片底色 / 投影由 `Card` 的 `.wf-card` 提供（--soft-solid + --sh-sm），
  *   本组件不叠加描边或底色；
- * - 行间分隔线由 settings.css 的 `.settings-row + .settings-row` 提供；
+ * - 行间不再画分隔线，靠 settings.css 的 `.settings-row` 14/10 内衬与间距分组；
  * - 内容行容器挂 `.on-soft`：卡片本身是 --soft-solid 软底，内部 Input / Select
  *   改用 --control-on-soft（见 form.css；默认态无描边），避免控件与卡片同色糊平。
  *   该类只作用于内部表单控件，不改卡片自身背景。

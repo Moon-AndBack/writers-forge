@@ -54,7 +54,7 @@
   gap: 6px;
 }
 
-/* 模块名：说明筛选作用于哪个实体域。做成独立的标签块（底色 + 1px 内描边 + 圆角），
+/* 模块名：说明筛选作用于哪个实体域。做成独立的标签块（底色 + 圆角），
    与右侧搜索框在视觉上分开。高度对齐搜索框（同取 `--filter-input-h`），上下内衬
    交给固定高度承担，`padding` 只管左右；文字用 flex 垂直居中（行盒高度随字号变化
    时也不偏）。文字色保持 `--text-mute`：它是说明性标签而非可交互主文案，压暗一级
@@ -71,7 +71,6 @@
   white-space: nowrap;
   color: var(--text-mute);
   background: var(--soft-solid);
-  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 /* 搜索框：通用 `.wf-search` 已是 100% 宽，此处固定其高度为 `--filter-input-h`
@@ -144,10 +143,11 @@
   overflow-y: auto;
 }
 
-/* 每个分类是一枚独立 chip：自带细描边 + 圆角 + 内衬，宽度随文字自适应
+/* 每个分类是一枚独立 chip：自带软底 + 圆角 + 内衬，宽度随文字自适应
    （`flex: 0 0 auto` 不拉伸不压缩），不再占满整行。
-   未选中态：透明底 + `--line` 内描边（inset 阴影不占布局，与 `.act-filter__head`
-   描边口径一致），文字用正文色；hover 只加中性淡底，弱于选中态的品牌底。
+   未选中态：`--soft-solid` 软底、无描边（与 `.act-filter__head` 同层语言），
+   文字用正文色；hover 加深中性底（light 下 `--soft-hover-solid` 与软底同为 6%，
+   故取 `--soft-press-solid` 保证可见），弱于选中态的品牌底。
    `padding: 3px 9px` + `line-height: 1.4`（12px × 1.4 ≈ 17px）→ chip 高约 23px，
    比原单列行（约 27px）更紧凑，适合横向铺排。 */
 .act-filter__item {
@@ -159,8 +159,7 @@
   padding: 3px 9px;
   border: 0;
   border-radius: var(--r-lg);
-  background: transparent;
-  box-shadow: inset 0 0 0 1px var(--line);
+  background: var(--soft-solid);
 
   font-family: inherit;
   font-size: var(--fs-body);
@@ -176,7 +175,7 @@
 }
 
 .act-filter__item:hover {
-  background: var(--soft-hover-solid);
+  background: var(--soft-press-solid);
 }
 
 /* 选中态用品牌色三重标记（淡底 + 描边 + 文字色）与未选中拉开层级；

@@ -137,7 +137,7 @@
   max-height: none;
 }
 
-/* 去投影：设置页分区卡片不再带悬浮阴影，分层交给「软底 + 行分隔线」。
+/* 去投影：设置页分区卡片不再带悬浮阴影，分层交给「软底 + 行内衬」。
    只在设置弹窗面板 `.wf-settings-modal` 内覆盖，全局 `.wf-card`（书架 / 写作
    等页面的卡片）保持 surface.css 原样。分区卡非 interactive，本无 hover 光晕；
    此处在同一规则内一并覆盖 `:hover`，防止将来误传 interactive 时又冒出投影
@@ -158,18 +158,13 @@
 }
 
 /* ---------- 设置项行（三槽：名称 + 说明 / 控件） ---------- */
-/* 行本身非交互：不设 hover 底色（避免暗示可点击），仅用分隔线区隔。
+/* 行本身非交互：不设 hover 底色（避免暗示可点击），靠 14/10 内衬与间距区隔。
    原 hover 用 --soft-solid，与卡片底色同值（亮色下均为 6%），本就不可见。 */
 .settings-row {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 12px 10px;
-}
-
-/* 行间分隔线（对齐 theme-switcher.css 的 .ts-row）。 */
-.settings-row + .settings-row {
-  border-top: 1px solid var(--line);
+  padding: 14px 10px;
 }
 
 .settings-row__info {

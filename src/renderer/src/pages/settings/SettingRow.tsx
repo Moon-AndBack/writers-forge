@@ -24,8 +24,8 @@ export interface SettingRowProps {
 /**
  * 设置项行：左「名称 + 说明」、右「控件」三槽布局，复用 `SectionCard` 的行容器
  * 与 settings.css 的 `.settings-row` 排版；配色全部走 theme.css 令牌。
- * 行本身非交互元素：不设 hover 底色，仅由 `.settings-row + .settings-row`
- * 分隔线区隔（无位移 / 缩放，遵守 §8）。
+ * 行本身非交互元素：不设 hover 底色，靠 `.settings-row` 的 14/10 内衬与间距区隔
+ * （无位移 / 缩放，遵守 §8）。
  *
  * 无障碍：仅当显式下传 `controlId` 时，标签为 `<label htmlFor>`，与行内主控件
  * 显式关联；省略时控件槽是动作按钮组，标签用 `<span>`，避免指向不存在的 id。

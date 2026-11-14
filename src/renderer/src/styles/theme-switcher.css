@@ -50,14 +50,14 @@
 
 /* 设置行（跟随系统 / 窗口材质）：左侧文本 + 右侧控件。
    窗口材质行用 `--stack` 变体：四档分段控件以 2×2 两行放到文字下方，
-   避免 252px 浮层在「说明 + 四档」单行排布时被挤压。 */
+   避免 252px 浮层在「说明 + 四档」单行排布时被挤压。
+   去行间横线后，纵向内衬由 8 提到 10 维持行间呼吸感。 */
 .ts-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 4px;
-  border-top: 1px solid var(--line);
+  padding: 10px 4px;
 }
 
 .ts-row--stack {
@@ -85,14 +85,14 @@
   color: var(--text-mute);
 }
 
-/* 四张主题预览卡 2 列网格（`system` 已成开关行，故不再出卡） */
+/* 四张主题预览卡 2 列网格（`system` 已成开关行，故不再出卡）。
+   去顶线后由 12 + 8 的上间距与上方设置行分组。 */
 .ts-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 12px;
   padding-top: 8px;
-  border-top: 1px solid var(--line);
 }
 
 /* 预览卡：三栏缩影卡面（左图标条 / 中正文 / 右信息栏），不透明。

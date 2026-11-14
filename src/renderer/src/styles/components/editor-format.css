@@ -227,7 +227,8 @@
   min-width: 0;
   height: var(--control-h-sm);
   padding: 0 8px;
-  border: 1px solid var(--line);
+  /* 默认态无可见描边，仅保留透明 1px 承载 :focus 品牌边线（盒高不变）。 */
+  border: 1px solid transparent;
   border-radius: var(--r-lg);
   font-family: inherit;
   font-size: var(--fs-body);
@@ -245,7 +246,8 @@
   width: 100%;
   height: var(--control-h-sm);
   padding: 0 8px;
-  border: 1px solid var(--line);
+  /* 同 .wf-format-pop__num：默认无可见描边，透明边只承载 :focus 品牌边线。 */
+  border: 1px solid transparent;
   border-radius: var(--r-lg);
   font-family: inherit;
   font-size: var(--fs-body);
