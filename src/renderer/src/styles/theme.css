@@ -50,9 +50,10 @@
   --dur-fast: 120ms;
   --dur-slow: 240ms;
 
-  /* 主题切换覆盖层专用时长（400ms）：仅 `theme/themeReveal.ts` 的三段
-     （模糊 / 交叉 / 淡出）消费，总时长 3 × 400ms = 1.2s。与 --dur-slow
-     （240ms，通用位移 / 进场）区分；放慢 / 加快只改此值，三段等比缩放。 */
+  /* 主题切换覆盖层专用时长（400ms）：仅 `theme/themeReveal.ts` 消费。四段按
+     1× / 0.5× / 1× / 0.5× 使用（模糊 / 不透明遮罩 / 交叉 / 淡出），合计
+     3 × 400ms = 1.2s。与 --dur-slow（240ms，通用位移 / 进场）区分；
+     放慢 / 加快只改此值，四段等比缩放。 */
   --dur-theme-reveal: 400ms;
 
   /* 主题切换（data-theme 变更）本身**不做 CSS transition**：界面色几乎全部
@@ -61,9 +62,9 @@
      ① 唯一承载桌面底色的 `.shell` 是多层渐变（dark 另为硬编码色带），
         background-image 不可插值，必然硬跳；
      ② 整窗过渡由**全屏模糊覆盖层**完成（见 `theme/themeReveal.ts` +
-        `styles/components/theme-reveal.css`）：先模糊盖住窗口，遮罩内由
-        主进程切换原生材质并同帧写入 dataset / React 状态，再交叉 tint、
-        显示目标主题大图标后淡出——原生背板与三栏在同一遮罩后一起换。
+        `styles/components/theme-reveal.css`）：先模糊盖住窗口，再把遮罩提升到
+        完全不透明，遮罩内由主进程切换原生材质并同帧写入 dataset / React 状态，
+        再交叉 tint、显示目标主题大图标后淡出——原生背板与三栏在同一遮罩后一起换。
      结论：`--dur-*` 只用于交互（hover / 展开 / 拖拽 / 显隐）与进出场动画，
      **不得**挂在仅由主题令牌引起的 color / background / box-shadow 上；
      发现「只有切换主题才会触发」的过渡，一律删除。 */

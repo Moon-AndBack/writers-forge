@@ -248,16 +248,17 @@ system 档：
 
 ### 7.3 覆盖层实现
 
-`runThemeReveal()`（`themeReveal.ts`）不再使用 View Transitions，改为动态创建全屏覆盖层（`components/theme-reveal.css`），三段各 400ms，总时长 **1.2s**：
+`runThemeReveal()`（`themeReveal.ts`）不再使用 View Transitions，改为动态创建全屏覆盖层（`components/theme-reveal.css`），总时长 **1.2s**（`--dur-theme-reveal` 400ms；四段按 1× / 0.5× / 1× / 0.5× 分配）：
 
-1. **模糊**（`--dur-theme-reveal` 400ms）：`__blur` 以 `backdrop-filter: blur(12px)` + 旧主题 `--desk-solid` 55% tint 淡入；tint 值在创建时固化，避免 commit 后 `data-theme` 变化把旧色一起换掉。
-2. **解析**：与模糊并行调用 `theme:apply`（system 档 await 权威明暗）。两者都完成后才 commit，保证原生材质 / DWM 背板在遮罩完全不透明时变化——这是修复「底色先变、三栏后变」的关键。
-3. **交叉**（`--dur-theme-reveal` 400ms）：同一同步段写 `dataset.theme` + `flushSync` React 状态；随后读取新主题 `--desk-solid` 写入 `__tint`，tint 从 0 → 1、中心 `__badge` 插入目标主题图标（112px、stroke 1.35、品牌 18% 柔光）并缩放淡入。
-4. **淡出**（`--dur-theme-reveal` 400ms）：整层 opacity 1 → 0，图标同时放大淡出，完成后移除 DOM 与 keydown 拦截。
+1. **模糊**（400ms）：`__blur` 以 `backdrop-filter: blur(12px)` + 旧主题 `--desk-solid` 55% tint 淡入；tint 值在创建时固化，避免 commit 后 `data-theme` 变化把旧色一起换掉。
+2. **不透明遮罩**（200ms）：`__veil` 用旧主题 `--desk-solid` 100% 纯色升到 `opacity: 1`。
+3. **解析**：遮罩完全不透明后才调用 `theme:apply`（system 档 await 权威明暗），且到调用之间没有 await；等待期间遮罩拦截指针与键盘，超过 3s 未返回按本地解析强制提交。这是修复「底色先变、三栏后变」的关键。
+4. **交叉**（400ms）：同一同步段写 `dataset.theme` + `flushSync` React 状态；随后读取新主题 `--desk-solid` 写入 `__tint`，tint 从 0 → 1、中心 `__badge` 插入目标主题图标（112px、stroke 1.35、品牌 18% 柔光）并缩放淡入。
+5. **淡出**（200ms）：整层 opacity 1 → 0，图标同时放大淡出，完成后移除 DOM、把 `__veil` / `__tint` 归零并解除键盘拦截。
 
 - 只动 `opacity` / `transform`，不逐帧改 blur 半径；时长读 `--dur-theme-reveal`、缓动读 `--ease` / `--ease-out`，读失败回退常量。
 - 覆盖层 `z-index: var(--z-theme-reveal)`（1105），仅在动画期间存在。
-- 快速连切：模块级 `revealSequence` 丢弃过期解析；处于 `blurring` / `revealing` 的覆盖层被复用，取消旧 WAAPI 动画后按最新目标重放 tint / 图标，**不重新模糊**；进入 `fading` 后新建覆盖层。
+- 快速连切：模块级 `revealSequence` 丢弃过期解析；处于 `blurring` / `veiling` / `revealing` 的覆盖层被复用，取消旧 WAAPI 动画后把旧主题色对齐到当前 `data-theme`、目标层与图标归零，再按最新目标重放 tint / 图标，**不重新模糊**；进入 `fading` 后新建覆盖层。
 - 降级（直接 resolve + commit，不显示遮罩）：`prefers-reduced-motion: reduce`、页面隐藏、覆盖层创建抛错、动画异常；已解析时补提交一次（幂等），保证主题永不因动画失败而不切。
 
 ### 7.4 旧方案已移除

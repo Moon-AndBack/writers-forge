@@ -1,35 +1,30 @@
 /**
  * 主题切换的**全屏模糊覆盖层**（不再使用 View Transitions）。
  *
- * 为什么要覆盖层：默认窗口材质为亚克力，`.shell` 只有 50% 不透明，剩余底色来自
- * 窗口背后的 DWM 材质——那部分不参与任何 DOM 快照。旧方案在 View Transition
- * 拍摄前就 fire-and-forget 地让主进程切换 `nativeTheme.themeSource`，原生背板
- * 直接跳变，于是出现「底色先变、三栏后变」。
- *
- * 本方案的时序（总时长 1.2s = 400 模糊 + 400 交叉 + 400 淡出）：
+ * 亚克力窗口下 `.shell` 只有 50% 不透明，剩余底色来自 DWM 材质；旧方案在
+ * View Transition 快照前就切换 `nativeTheme.themeSource`，原生背板直接跳变，
+ * 于是「底色先变、三栏后变」。本方案改为严格串行（总 1.2s）：
  *
  * ```
- * 建立覆盖层，__blur 淡入（--dur-theme-reveal）
- *   ↘ 同时调用主进程 theme:apply（system 档 await 权威明暗）
- *   → 两者都完成后，同一帧 commit：
- *       dataset.theme + flushSync React 状态 + 插入目标主题大图标 + tint 开始交叉
- *   → 覆盖层淡出（--dur-theme-reveal），图标缩放淡出
+ * __blur 淡入（--dur-theme-reveal，55% 旧主题 tint，仍见模糊）
+ *   → __veil 升到完全不透明（0.5 × 令牌，100% 旧主题纯色）
+ *   → 才调用主进程 theme:apply（system 档 await 权威明暗）
+ *   → 同一帧 commit：dataset.theme + flushSync + 目标 tint + 大图标
+ *   → __tint 0 → 1（--dur-theme-reveal）：旧纯色交叉到新纯色
+ *   → 覆盖层淡出（0.5 × 令牌），图标缩放淡出
  *   → 移除覆盖层，恢复交互
  * ```
  *
- * 关键是**等模糊层完全盖住窗口后才 commit**：原生材质在遮罩后变化，用户看不到
- * 「底色先变」。显式档的 `theme:apply` 只用于同步原生材质，不用它返回的
- * `resolvedTheme`（那是 DWM 明暗，sage / honey 下不等于应用主题）。
+ * 关键是 `theme:apply` 必须等 __veil 完全不透明后才发出，否则原生背板仍会在
+ * 遮罩几乎透明时跳变。显式档只用它同步原生材质，不采用其 `resolvedTheme`
+ * （DWM 明暗，sage / honey 下不等于应用主题）。
  *
- * 降级（任何一条都直接 resolve + commit，不显示遮罩）：
- * - `prefers-reduced-motion: reduce`；
- * - 页面处于隐藏状态；
- * - 覆盖层创建抛错；
- * - 动画抛错 / 被异常中断（`resolved` 已拿到时补提交一次，幂等）。
+ * 降级（直接 resolve + commit，不显示遮罩）：减少动效、页面隐藏、覆盖层创建
+ * 抛错、动画抛错 / 被中断（已解析时补提交一次，幂等）。`theme:apply` 超过
+ * `APPLY_TIMEOUT` 按本地解析强制提交并淡出；遮罩可见期间持续拦截指针与键盘。
  *
- * 快速连切由模块级序号守卫：新请求自增序号，旧请求在任意 await 点返回后发现
- * 序号过期即静默退出；仍处于可见阶段的覆盖层会被复用——取消旧动画、按最新目标
- * 重放 tint / 图标，不重新模糊。进入淡出阶段后则新建覆盖层。
+ * 快速连切由序号守卫：旧请求在 await 点发现序号过期即退出；可见阶段的覆盖层
+ * 复用（对齐旧主题色、目标层与图标归零后重放，不重新模糊），淡出阶段则新建。
  */
 
 import type { IconNode } from 'lucide'
@@ -38,7 +33,7 @@ import type { ResolvedThemeId } from './themes'
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
 const SVG_NS = 'http://www.w3.org/2000/svg'
-/** 覆盖层上的旧 / 新主题底色变量，由 CSS 以 color-mix 与透明混合。 */
+/** 覆盖层上的旧 / 新主题底色变量：`__veil` / `__tint` 分别取用，均为不透明色。 */
 const TINT_VAR = '--wf-theme-reveal-tint'
 const TARGET_TINT_VAR = '--wf-theme-reveal-target'
 
@@ -48,12 +43,18 @@ const FALLBACK_DURATION = 400
 const FALLBACK_EASING = 'cubic-bezier(0.33, 0, 0.67, 1)'
 /** 与 `theme.css` 的 `--ease-out` 对齐（进场曲线）；令牌读取失败时的回退值。 */
 const FALLBACK_EASING_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)'
+/** 半档阶段比例（升遮罩 / 淡出）：合计 3 × 400ms = 1.2s。 */
+const HALF_PHASE_RATIO = 0.5
+/** `theme:apply` 安全超时（毫秒，非动画时长）：IPC 卡死时按 `fallback()` 提交
+ * 并淡出，避免遮罩停在纯色上无法操作。 */
+const APPLY_TIMEOUT = 3000
 
-type RevealPhase = 'blurring' | 'revealing' | 'fading'
+type RevealPhase = 'blurring' | 'veiling' | 'revealing' | 'fading'
 
 interface RevealContext {
   root: HTMLDivElement
   blur: HTMLDivElement
+  veil: HTMLDivElement
   tint: HTMLDivElement
   badge: HTMLDivElement
   badgeInner: HTMLDivElement
@@ -61,13 +62,15 @@ interface RevealContext {
   phase: RevealPhase
   /** 模糊层是否已经完成入场（复用时跳过重新模糊）。 */
   blurVisible: boolean
+  /** 旧主题遮罩是否已完全不透明（复用时跳过重新升遮罩）。 */
+  veilOpaque: boolean
   keyBlock: ((event: KeyboardEvent) => void) | null
 }
 
 export interface ThemeRevealRequest {
   /** 遮罩内解析目标主题；system 档在此 await 主进程的权威明暗。 */
   resolve: () => Promise<ResolvedThemeId>
-  /** `resolve` 抛错时的同步回退（一般用当前已知系统明暗解析）。 */
+  /** `resolve` 抛错 / 超时时的同步回退（一般用当前已知系统明暗解析）。 */
   fallback: () => ResolvedThemeId
   /** 同一帧写入 `dataset.theme` 并 flushSync 提交 React 状态。 */
   commit: (resolved: ResolvedThemeId) => void
@@ -82,9 +85,7 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * 读取本次动画使用的时长 / 缓动。
- *
- * 读令牌而非写字面量：`theme.css` 约定「动效时长梯度统一取用，禁止再写裸时长」。
+ * 读取动画时长 / 缓动：读令牌而非写字面量（`theme.css` 约定禁止裸时长），
  * 令牌缺失 / 解析失败时回退到与当前令牌一致的常量，保证动画照常可见。
  */
 function readRevealMotion(): { duration: number; easing: string; easingOut: string } {
@@ -99,6 +100,11 @@ function readRevealMotion(): { duration: number; easing: string; easingOut: stri
     easing: easing.length > 0 ? easing : FALLBACK_EASING,
     easingOut: easingOut.length > 0 ? easingOut : FALLBACK_EASING_OUT
   }
+}
+
+/** 半档阶段时长（升遮罩 / 淡出）：0.5 × --dur-theme-reveal，取整毫秒。 */
+function halfPhase(duration: number): number {
+  return Math.max(1, Math.round(duration * HALF_PHASE_RATIO))
 }
 
 function readToken(name: string): string {
@@ -118,10 +124,8 @@ function ignore(animation: Animation): Promise<void> {
 }
 
 /**
- * 播放一段 WAAPI 动画并登记到上下文。
- *
- * 完成时 `commitStyles()` 固化末帧再 `cancel()`：后续快速连切取消动画时，
- * 元素不会跳回 CSS 基础态（例如模糊层从 1 掉回 0）。
+ * 播放 WAAPI 动画并登记。完成时 `commitStyles()` 固化末帧再 `cancel()`：
+ * 快速连切取消动画时，元素不会跳回 CSS 基础态（如模糊层从 1 掉回 0）。
  */
 function play(
   ctx: RevealContext,
@@ -187,12 +191,14 @@ function createContext(): RevealContext {
   const root = document.createElement('div')
   root.className = 'wf-theme-reveal'
   root.setAttribute('aria-hidden', 'true')
-  // 旧主题底色在建立瞬间固化：commit 后根上的 data-theme 会变，但模糊层的
-  // 颜色不能跟着 var() 一起跳，否则「旧 → 新」的交叉会少一半。
+  // 旧主题底色在建立瞬间固化：commit 后根上的 data-theme 会变，但 `__blur` /
+  // `__veil` 的颜色不能跟着 var() 一起跳，否则「旧 → 新」的交叉会少一半。
   root.style.setProperty(TINT_VAR, readToken('--desk-solid') || 'transparent')
 
   const blur = document.createElement('div')
   blur.className = 'wf-theme-reveal__blur'
+  const veil = document.createElement('div')
+  veil.className = 'wf-theme-reveal__veil'
   const tint = document.createElement('div')
   tint.className = 'wf-theme-reveal__tint'
   const badge = document.createElement('div')
@@ -200,30 +206,28 @@ function createContext(): RevealContext {
   const badgeInner = document.createElement('div')
   badgeInner.className = 'wf-theme-reveal__badge-inner'
   badge.appendChild(badgeInner)
-  root.append(blur, tint, badge)
+  root.append(blur, veil, tint, badge)
   document.body.appendChild(root)
 
   const ctx: RevealContext = {
     root,
     blur,
+    veil,
     tint,
     badge,
     badgeInner,
     animations: new Set(),
     phase: 'blurring',
     blurVisible: false,
+    veilOpaque: false,
     keyBlock: null
   }
 
-  // 一次性拦截：动画期间用户按键不应穿透到遮罩后的界面；第一次按键后解除，
-  // 避免键盘被长期吞掉（遮罩本身在 1.2s 内移除）。
+  // 动画期间持续拦截键盘，避免按键穿透到遮罩后的界面；遮罩移除时一并解除。
+  // 正常 1.2s；`theme:apply` 超时兜底时最长约 4.2s（400 + 200 + 3000 + 400 + 200）。
   ctx.keyBlock = (event: KeyboardEvent): void => {
     event.preventDefault()
     event.stopPropagation()
-    if (ctx.keyBlock) {
-      window.removeEventListener('keydown', ctx.keyBlock, true)
-      ctx.keyBlock = null
-    }
   }
   window.addEventListener('keydown', ctx.keyBlock, true)
 
@@ -235,20 +239,28 @@ function destroyContext(): void {
   if (!ctx) return
   activeContext = null
   stopAnimations(ctx)
+  // 两层纯色归零后再移除：下一轮（尤其是新建覆盖层）不会看到上一轮的旧主题色
+  ctx.veil.style.opacity = '0'
+  ctx.tint.style.opacity = '0'
+  ctx.veilOpaque = false
   if (ctx.keyBlock) window.removeEventListener('keydown', ctx.keyBlock, true)
   ctx.root.remove()
 }
 
 /**
- * 取得可复用的覆盖层。
- *
- * 处于 `fading` 阶段的层已接近不可见，复用会看到「淡出中途又被拉回」的跳变，
- * 因此直接销毁重建（重新模糊）；其余阶段复用并取消旧动画，保留模糊层。
+ * 取得可复用的覆盖层：`fading` 阶段已接近不可见，直接销毁重建（重新模糊）；
+ * 其余阶段复用并取消旧动画，保留模糊层。
  */
 function acquireContext(): RevealContext {
   if (activeContext && activeContext.phase !== 'fading') {
     const ctx = activeContext
     stopAnimations(ctx)
+    // 上一轮可能已经 commit：把旧主题基色对齐到当前 dataset，目标层与图标归零，
+    // 避免复用遮罩时残留上一轮的新主题色 / 图标。
+    ctx.root.style.setProperty(TINT_VAR, readToken('--desk-solid') || 'transparent')
+    ctx.tint.style.opacity = '0'
+    ctx.badge.style.opacity = '0'
+    ctx.badgeInner.style.transform = 'scale(0.86)'
     ctx.phase = 'blurring'
     return ctx
   }
@@ -288,12 +300,67 @@ async function ensureBlurVisible(
   ctx.blurVisible = true
 }
 
-async function resolveTarget(request: ThemeRevealRequest): Promise<ResolvedThemeId> {
-  try {
-    return await request.resolve()
-  } catch {
-    return request.fallback()
+/**
+ * 把旧主题纯色遮罩提升到完全不透明：返回时 `__veil` 的 opacity 已固化到行内
+ * 样式 1，调用方在它之后**不再有 await** 就直接发出 `theme:apply`。
+ */
+async function ensureVeilOpaque(
+  ctx: RevealContext,
+  motion: ReturnType<typeof readRevealMotion>,
+  seq: number
+): Promise<void> {
+  if (ctx.veilOpaque) return
+
+  ctx.phase = 'veiling'
+  const full = halfPhase(motion.duration)
+  const from = currentOpacity(ctx.veil)
+  // 复用未完成的遮罩时按剩余比例缩短
+  const remaining = Math.max(0, Math.round(full * (1 - from)))
+  if (remaining === 0) {
+    ctx.veil.style.opacity = '1'
+    ctx.veilOpaque = true
+    return
   }
+
+  const animation = play(
+    ctx,
+    ctx.veil,
+    [{ opacity: from }, { opacity: 1 }],
+    remaining,
+    motion.easing
+  )
+  await ignore(animation)
+  if (seq !== revealSequence) return
+  // 固化到行内样式，不依赖 fill / commitStyles 的执行顺序
+  ctx.veil.style.opacity = '1'
+  ctx.veilOpaque = true
+}
+
+/**
+ * 解析目标主题；`theme:apply` 超过 `APPLY_TIMEOUT` 按 `fallback()` 收口。
+ * 永不 reject：保证遮罩一定会继续走 commit → 交叉 → 淡出，不会停在纯色上。
+ */
+function resolveTarget(request: ThemeRevealRequest): Promise<ResolvedThemeId> {
+  return new Promise((resolve) => {
+    let settled = false
+    let timer = 0
+    const settle = (value: ResolvedThemeId): void => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timer)
+      resolve(value)
+    }
+    timer = window.setTimeout(() => settle(request.fallback()), APPLY_TIMEOUT)
+
+    try {
+      request.resolve().then(
+        (value) => settle(value),
+        () => settle(request.fallback())
+      )
+    } catch {
+      settle(request.fallback())
+    }
+  })
 }
 
 /** 无遮罩降级：解析完成后直接提交（仍受序号守卫）。 */
@@ -312,17 +379,19 @@ async function orchestrate(
   let resolved: ResolvedThemeId | null = null
 
   try {
-    // 模糊淡入与主进程解析并行；两者都完成后才 commit，保证原生材质在
-    // 遮罩完全不透明时变化。resolve 永不 reject（内部已回退）。
-    const resolvedPromise = resolveTarget(request)
-    const [target] = await Promise.all([
-      resolvedPromise.then((value) => {
-        resolved = value
-        return value
-      }),
-      ensureBlurVisible(ctx, motion, seq)
-    ])
+    // ① 模糊淡入：仍是半透明遮罩，用户能看到模糊后的界面。
+    await ensureBlurVisible(ctx, motion, seq)
     if (seq !== revealSequence) return
+
+    // ② 提升到完全不透明遮罩（旧主题纯色），此前不调用主进程。
+    await ensureVeilOpaque(ctx, motion, seq)
+    if (seq !== revealSequence) return
+
+    // ③ 遮罩已完全不透明，且到 resolveTarget 之间没有 await：此刻切换原生材质，
+    //    用户看不到 DWM 背板变化。超时按 fallback 提交，避免遮罩停在纯色上。
+    const target = await resolveTarget(request)
+    if (seq !== revealSequence) return
+    resolved = target
 
     if (target === document.documentElement.dataset.theme) {
       // 解析结果与当前生效主题相同（典型：显式 dark → system，且系统正好是深色）：
@@ -332,7 +401,7 @@ async function orchestrate(
       return
     }
 
-    // 同一帧：dataset + React 状态 + 目标主题 tint + 图标。
+    // ④ 同一帧：dataset + React 状态 + 目标主题 tint + 图标。
     request.commit(target)
     ctx.phase = 'revealing'
     ctx.root.style.setProperty(TARGET_TINT_VAR, readToken('--desk-solid') || 'transparent')
@@ -362,20 +431,15 @@ async function orchestrate(
     await Promise.all([ignore(tint), ignore(badge), ignore(badgeIn)])
     if (seq !== revealSequence) return
 
-    // 淡出：整层透明度下降，图标同时轻微放大并淡出。
+    // ⑤ 淡出：整层透明度下降，图标同时轻微放大并淡出。
     ctx.phase = 'fading'
-    const fade = play(
-      ctx,
-      ctx.root,
-      [{ opacity: 1 }, { opacity: 0 }],
-      motion.duration,
-      motion.easing
-    )
+    const fadeDuration = halfPhase(motion.duration)
+    const fade = play(ctx, ctx.root, [{ opacity: 1 }, { opacity: 0 }], fadeDuration, motion.easing)
     const badgeOut = play(
       ctx,
       ctx.badgeInner,
       [{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }],
-      motion.duration,
+      fadeDuration,
       motion.easingOut
     )
     await Promise.all([ignore(fade), ignore(badgeOut)])

@@ -343,12 +343,12 @@ box-shadow:
 
 ### 7.3 主题切换
 
-主题切换**不使用** CSS transition，也**不使用** View Transitions，而由 `theme/themeReveal.ts` 动态创建全屏覆盖层（`components/theme-reveal.css`）。三个阶段各 400ms（`--dur-theme-reveal`），总时长 1.2s：
+主题切换**不使用** CSS transition，也**不使用** View Transitions，而由 `theme/themeReveal.ts` 动态创建全屏覆盖层（`components/theme-reveal.css`）。总时长 1.2s（`--dur-theme-reveal` 为 400ms，四段按 1× / 0.5× / 1× / 0.5× 分配）：
 
-1. `__blur` 以 `backdrop-filter: blur(12px)` + 旧主题 55% tint 淡入（`--dur-theme-reveal`）；
-2. 遮罩内调用主进程 `theme:apply`（`system` 档 await 权威明暗），完成后**同一帧**写入 `dataset.theme` 与 React 状态（`flushSync`）；
-3. `__tint` 交叉到目标主题色（`--dur-theme-reveal`），`__badge` 显示目标主题大图标（112px、stroke 1.35、品牌 18% 柔光晕）；
-4. 整层淡出（`--dur-theme-reveal`），图标缩放淡出，移除遮罩。
+1. `__blur` 以 `backdrop-filter: blur(12px)` + 旧主题 55% tint 淡入 400ms（此时仍半透明，能看到模糊后的界面）；
+2. `__veil` 用旧主题 100% 纯色在 200ms 内升到完全不透明，**此后才**调用主进程 `theme:apply`（`system` 档 await 权威明暗）；遮罩可见期间拦截指针与键盘，apply 超过 3s 未返回则按本地解析强制提交；
+3. 拿到权威明暗后**同一帧**写入 `dataset.theme` 与 React 状态（`flushSync`）；`__tint` 用新主题 100% 纯色在 400ms 内从 0 → 1 交叉，`__badge` 显示目标主题大图标（112px、stroke 1.35、品牌 18% 柔光晕）；
+4. 整层 200ms 淡出，图标缩放淡出，移除遮罩并把 `__veil` / `__tint` 归零。
 
 - 覆盖层 `z-index: var(--z-theme-reveal)`（1105），**仅动画期间存在，动画结束即移除**。
 - 减少动效、页面隐藏、覆盖层创建或动画异常时直接切换，不显示遮罩。
@@ -421,7 +421,7 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 | 27  | 色板任意色块内线                   | `components/display-extras.css:25-35`                                                                                                                                                                                | `inset 0 0 0 1px var(--line)`                                       | 任意色块需内线才能在浅 / 深底上辨认                                            | 仅 `.wf-swatch__item`                                                              |
 | 28  | 格式指示条内描边                   | `components/editor-format.css:381-392`                                                                                                                                                                               | `color-mix(in srgb, var(--text) 18%, transparent)`                  | 3px 装饰条承载任意字色，需随主题翻转的细边定形                                 | 仅 `.wf-format-pop__ind`                                                           |
 | 29  | 开发态展示框                       | `styleguide/styleguide-showcase.css:247-254`                                                                                                                                                                         | `1px solid var(--line)`                                             | 开发态样式展示，非产品界面                                                     | 仅 `.sg-drawer-frame`                                                              |
-| 30  | 主题切换整窗遮罩                   | `styles/components/theme-reveal.css:40-48,63-84`                                                                                                                                                                     | `backdrop-filter: blur(12px)` + 55% `--desk-solid` tint；图标 112px | 主题切换需在遮罩内完成原生材质与渲染层同帧切换，并遮住 DWM 背板跳变            | 仅 `.wf-theme-reveal`；动画期间存在，结束即移除                                    |
+| 30  | 主题切换整窗遮罩                   | `styles/components/theme-reveal.css:45-62,76-97`                                                                                                                                                                     | `backdrop-filter: blur(12px)` + 55% `--desk-solid` tint；图标 112px | 主题切换需在遮罩内完成原生材质与渲染层切换，并完全遮住 DWM 背板跳变            | 仅 `.wf-theme-reveal`；动画期间存在，结束即移除                                    |
 
 ---
 

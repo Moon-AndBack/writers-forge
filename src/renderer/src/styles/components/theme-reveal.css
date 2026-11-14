@@ -5,15 +5,16 @@
    不是常驻界面层。层级 `--z-theme-reveal`（1105，位于 Toast 1100 之上：
    这是覆盖整个窗口的瞬时层，动画期间必须压过 Toast 与 Modal）。
 
-   三个子层：
-   1. `__blur`：整窗 backdrop 模糊 + 旧主题纯色 tint（变量由 JS 在建立时
-      固化，避免 commit 后 `data-theme` 变化把旧色一起换掉）。
-   2. `__tint`：目标主题纯色 tint，commit 后从 0 → 1 交叉；颜色变量在
-      commit 时写入，所以它始终代表新主题。
-   3. `__badge`：目标主题大图标 + 品牌柔光晕，居中显示。
+   四个子层（自下而上）：
+   1. `__blur`：整窗 backdrop 模糊 + 旧主题 55% tint，淡入时仍能看到模糊后的界面。
+   2. `__veil`：旧主题 100% 纯色，随后提升到完全不透明；此后原生材质与三栏的
+      任何变化都被完全遮住。
+   3. `__tint`：新主题 100% 纯色，commit 后从 0 → 1 交叉；颜色变量在 commit 时
+      写入，所以它始终代表新主题。
+   4. `__badge`：目标主题大图标 + 品牌柔光晕，居中显示。
 
-   动画全部由 WAAPI 驱动（时长取 `--dur-theme-reveal`，缓动取 `--ease` /
-   `--ease-out`），本文件只提供静态结构与基础态：
+   动画全部由 WAAPI 驱动（时长取 `--dur-theme-reveal`，升遮罩 / 淡出取半档，
+   缓动取 `--ease` / `--ease-out`），本文件只提供静态结构与基础态：
    - 只动 opacity / transform，不逐帧改 blur 半径；
    - 减少动效时 JS 不创建该层，CSS 再兜底隐藏。
    ============================================================ */
@@ -29,13 +30,15 @@
 }
 
 .wf-theme-reveal__blur,
+.wf-theme-reveal__veil,
 .wf-theme-reveal__tint {
   position: absolute;
   inset: 0;
   will-change: opacity;
 }
 
-/* 旧主题模糊层：tint 的 alpha 只遮住一部分，保留模糊后的界面轮廓。
+/* 旧主题模糊层：55% tint 只遮住一部分，保留模糊后的界面轮廓；随后由
+   `__veil` 提升到完全不透明，commit 不依赖这层遮蔽。
    `--wf-theme-reveal-tint` 由 themeReveal.ts 在创建时写入 `--desk-solid` 的值。
    例外：整窗 backdrop 模糊与 55% desk tint 仅用于主题切换遮罩，
    已登记于 docs/ui/design-language.md 例外表第 30 条，不得挪作常规浮层。 */
@@ -45,9 +48,17 @@
   opacity: 0;
 }
 
-/* 新主题 tint：commit 后写入 `--wf-theme-reveal-target` 并淡入，与模糊层做交叉。 */
+/* 旧主题不透明遮罩：在调用主进程 `theme:apply` 前升到 opacity: 1，
+   保证原生背板 / 三栏颜色跳变完全不可见。各主题 `--desk-solid` 均为不透明色。 */
+.wf-theme-reveal__veil {
+  background: var(--wf-theme-reveal-tint, var(--desk-solid));
+  opacity: 0;
+}
+
+/* 新主题不透明 tint：commit 后写入 `--wf-theme-reveal-target` 并从 0 → 1，
+   在旧主题纯色上完成交叉，结束后整层再淡出。 */
 .wf-theme-reveal__tint {
-  background: color-mix(in srgb, var(--wf-theme-reveal-target, var(--desk-solid)) 55%, transparent);
+  background: var(--wf-theme-reveal-target, var(--desk-solid));
   opacity: 0;
 }
 
