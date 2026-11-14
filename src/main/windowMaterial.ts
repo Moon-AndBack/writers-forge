@@ -1,4 +1,4 @@
-import type { BrowserWindow } from 'electron'
+import { nativeTheme, type BrowserWindow } from 'electron'
 import { logger } from './logger'
 import { getSetting } from './database/settings'
 
@@ -6,13 +6,21 @@ import { getSetting } from './database/settings'
 const log = logger.scope('windowMaterial')
 
 /**
- * 窗口系统材质（Windows DWM 材质）。
+ * 窗口材质（用户可见设置 / IPC 取值）。
  *
- * 四种取值：`acrylic` 亚克力（实时模糊背后内容）/ `mica` 云母（采样桌面壁纸）/
- * `tabbed` 云母（增强）（Mica Alt，同样采样壁纸，着色强于普通云母）/
+ * 三档：`acrylic` 亚克力（实时模糊背后内容）/ `mica` 云母（采样桌面壁纸）/
  * `none` 关闭（不透明，回退到渲染层光斑渐变）。
+ * 云母的实际 DWM 档位随应用明暗自动解析，见 `resolveDwmMaterial`。
  */
-export type WindowMaterial = 'acrylic' | 'mica' | 'tabbed' | 'none'
+export type WindowMaterial = 'acrylic' | 'mica' | 'none'
+
+/**
+ * 实际下发给 DWM 的材质（主进程内部取值）。
+ *
+ * 比用户可见档多一个 `tabbed`（Mica Alt，着色强于普通云母）：仅由
+ * `resolveDwmMaterial` 在浅色主题下把 `mica` 解析而来，不对外暴露。
+ */
+export type DwmMaterial = 'acrylic' | 'mica' | 'tabbed' | 'none'
 
 /** settings 表持久化键名（存用户选择本身） */
 export const WINDOW_MATERIAL_SETTING_KEY = 'windowMaterial'
@@ -42,20 +50,27 @@ const FALLBACK_WINDOW_COLOR = '#f3f3f3'
 /** 开启材质时的窗口底：全透明，让 DWM 材质从窗口与 Web 内容之间透出 */
 const MATERIAL_WINDOW_COLOR = '#00000000'
 
+/** 当前用户选择（未按平台 / 明暗降级），供主题明暗变化后重新解析 DWM 材质。 */
+let currentSelection: WindowMaterial = DEFAULT_WINDOW_MATERIAL
+
+/** 各窗口已下发的 DWM 材质：重复应用相同值时跳过原生调用，避免无谓重绘。 */
+const appliedMaterials = new WeakMap<BrowserWindow, DwmMaterial>()
+
 /**
  * 把持久化 / IPC 传入的原始值规范化为当前取值。
  *
- * 四档均为合法值，不做旧值迁移；其余非法值返回 null。
+ * 三档均为合法值；旧版「云母（增强）」的持久化值 `tabbed` **迁移为 `mica`**，
+ * 避免老用户设置回落到默认亚克力造成观感突变；其余非法值返回 null。
  */
 export function normalizeWindowMaterial(value: unknown): WindowMaterial | null {
-  if (value === 'acrylic' || value === 'mica' || value === 'tabbed' || value === 'none')
-    return value
+  if (value === 'tabbed') return 'mica'
+  if (value === 'acrylic' || value === 'mica' || value === 'none') return value
   return null
 }
 
-/** 类型守卫：仅接受四档合法取值。 */
+/** 类型守卫：仅接受三档用户可见取值。 */
 export function isWindowMaterial(value: unknown): value is WindowMaterial {
-  return value === 'acrylic' || value === 'mica' || value === 'tabbed' || value === 'none'
+  return value === 'acrylic' || value === 'mica' || value === 'none'
 }
 
 /**
@@ -91,22 +106,69 @@ export function resolveMaterial(material: WindowMaterial): WindowMaterial {
 }
 
 /**
- * 应用材质到窗口，返回**实际生效**的材质（不支持时降级 none）。
+ * 把用户可见材质解析为实际下发给 DWM 的材质。
+ *
+ * `mica` 按应用明暗自动选择档位：浅色（light / sage / honey）用 `tabbed`
+ * （Mica Alt，壁纸着色更强），深色用标准 `mica`。明暗来自 `nativeTheme`
+ * （由 `applyThemeSource()` 按应用主题维护）；其余档位原样返回。
+ */
+export function resolveDwmMaterial(material: WindowMaterial): DwmMaterial {
+  if (material !== 'mica') return material
+  return nativeTheme.shouldUseDarkColors ? 'mica' : 'tabbed'
+}
+
+/**
+ * 记录建窗时已由构造参数应用的材质（用户选择 + 实际 DWM 值）。
+ *
+ * 建窗路径没走 `applyWindowMaterial`，需要在此登记，主题明暗变化时才能判断
+ * 「解析结果与窗口当前实际材质是否相同」，避免重复调用 `setBackgroundMaterial`。
+ */
+export function rememberInitialWindowMaterial(win: BrowserWindow, material: WindowMaterial): void {
+  currentSelection = material
+  appliedMaterials.set(win, resolveDwmMaterial(resolveMaterial(material)))
+}
+
+/**
+ * 主题明暗变化后重新解析并应用云母材质（浅色 Mica Alt / 深色 Mica）。
+ *
+ * 仅当当前选择为 `mica`、且解析出的 DWM 材质与窗口当前实际材质不同时才重设；
+ * 系统强调色变化等无关 `updated` 事件不会触发原生重绘。返回实际生效的选择值，
+ * 未重设时返回 null。
+ */
+export function reapplyWindowMaterialForTheme(win: BrowserWindow): WindowMaterial | null {
+  if (win.isDestroyed() || currentSelection !== 'mica') return null
+
+  const dwmMaterial = resolveDwmMaterial(resolveMaterial('mica'))
+  if (appliedMaterials.get(win) === dwmMaterial) return null
+
+  return applyWindowMaterial(win, 'mica')
+}
+
+/**
+ * 应用材质到窗口，返回**实际生效**的用户选择（不支持时降级 none）。
  *
  * - 非 Windows 11 22H2+：`setBackgroundMaterial` 属平台 no-op，提前降级避免副作用；
  * - 调用异常（被销毁 / 平台拒绝）时回退不透明并返回 none；
- * - 同步窗口底：任意材质开启时透明（透出 DWM 材质），关闭时不透明（回退现有渐变底）。
+ * - 同步窗口底：任意材质开启时透明（透出 DWM 材质），关闭时不透明（回退现有渐变底）；
+ * - 同一窗口重复应用相同 DWM 材质时直接跳过原生调用（主题切换 / 强调色更新
+ *   可能频繁触发，避免无谓的材质重设）。
  */
 export function applyWindowMaterial(win: BrowserWindow, material: WindowMaterial): WindowMaterial {
   if (win.isDestroyed()) return DEFAULT_WINDOW_MATERIAL
 
+  currentSelection = material
   const effective = resolveMaterial(material)
+  const dwmMaterial = resolveDwmMaterial(effective)
+
+  if (appliedMaterials.get(win) === dwmMaterial) return effective
+
   try {
-    win.setBackgroundMaterial(effective)
-    win.setBackgroundColor(effective !== 'none' ? MATERIAL_WINDOW_COLOR : FALLBACK_WINDOW_COLOR)
+    win.setBackgroundMaterial(dwmMaterial)
+    win.setBackgroundColor(dwmMaterial !== 'none' ? MATERIAL_WINDOW_COLOR : FALLBACK_WINDOW_COLOR)
+    appliedMaterials.set(win, dwmMaterial)
   } catch (error) {
     // 平台拒绝 / 窗口状态异常：回退不透明并记录（不应发生）。
-    log.error('应用窗口材质失败，回退不透明', { material, effective, error })
+    log.error('应用窗口材质失败，回退不透明', { material, dwmMaterial, error })
     return DEFAULT_WINDOW_MATERIAL
   }
   return effective

@@ -83,9 +83,8 @@
    - new：在其上从 0 → 1 淡入，新主题渐渐浮上来。
 
    ② 窗口材质（亚克力 / 云母）模式：**真交叉 + plus-lighter 叠加**。
-   此时 body 透明，三档外壳 alpha 不同：acrylic 为 50% 不透明纯色 scrim
-   （--desk-solid-alpha，暗色下压暗），mica 无 scrim，tabbed 仅暗色叠
-   --mica-alt-scrim-alpha（8%）提亮层、浅色无；同一主题内 a 恒定。覆盖式叠加
+   此时 body 透明，两档外壳 alpha 不同：acrylic 为 50% 不透明纯色 scrim
+   （--desk-solid-alpha，暗色下压暗），mica 无 scrim；同一主题内 a 恒定。覆盖式叠加
    会把两层快照的 alpha 相加（如亚克力 0.50 → 0.75），表现为过渡中越来越实、
    快照撤掉后又跳回通透。改为 old / new 各自按 a·(1-t) / a·t 预乘相加后，
    合计恒为 a，材质参与度全程不变（跨主题切换时 a 可变，属预期的渐变）。
@@ -126,16 +125,8 @@
    `:root::view-transition-group()`；后代写法 `html[...] ::view-transition-old(root)`
    反而要求 html 是 html 的后代，命不中。
    特异性 (0,1,2) 高于上面的 (0,0,1)，与源码顺序无关地胜出；上层 `animation: none`
-   由上面的规则继续生效。亚克力 / 云母 / 云母增强共用同一套真交叉规则。 */
-html:is(
-    [data-material='acrylic'],
-    [data-material='mica'],
-    [data-material='tabbed']
-  )::view-transition-old(root),
-html:is(
-    [data-material='acrylic'],
-    [data-material='mica'],
-    [data-material='tabbed']
-  )::view-transition-new(root) {
+   由上面的规则继续生效。亚克力 / 云母共用同一套真交叉规则。 */
+html:is([data-material='acrylic'], [data-material='mica'])::view-transition-old(root),
+html:is([data-material='acrylic'], [data-material='mica'])::view-transition-new(root) {
   mix-blend-mode: plus-lighter;
 }

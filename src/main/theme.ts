@@ -1,6 +1,7 @@
 import { BrowserWindow, nativeTheme, systemPreferences } from 'electron'
 import { getSetting } from './database/settings'
 import { logger } from './logger'
+import { reapplyWindowMaterialForTheme } from './windowMaterial'
 
 /** 主题域日志 scope。 */
 const log = logger.scope('theme')
@@ -158,6 +159,10 @@ export function setupThemeWatchers(): void {
     const color = getAccentColor()
     for (const win of BrowserWindow.getAllWindows()) {
       if (!win.isDestroyed()) {
+        // themeSource='system' 时系统明暗变化也走该事件：重新解析云母的 DWM 档位。
+        // 仅在当前选择为 mica 且解析结果与窗口实际材质不同时才重设，强调色等
+        // 无关更新会被短路，不触发原生材质重绘。
+        reapplyWindowMaterialForTheme(win)
         win.webContents.send(ACCENT_CHANGED_CHANNEL, color)
       }
     }

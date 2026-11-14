@@ -1,23 +1,21 @@
 /* ============================================================
-   窗口材质（亚克力 / 云母 / 云母增强）—— 桌面底色覆盖
+   窗口材质（亚克力 / 云母）—— 桌面底色覆盖
    ------------------------------------------------------------------
    开启时 `.shell` 从「3 层光斑 + 线性渐变」（dark 为斜切色带，见 shell.css）
    切换为透明底：acrylic 经 `--desk-solid` 保留 50% 不透明度的纯色 scrim；
-   mica 不叠任何 scrim，直接透出 DWM 材质（采样桌面壁纸，不模糊）；
-   tabbed 即 Mica Alt，着色更强，暗色下额外叠 `--mica-alt-scrim-alpha` 提亮层
-   （浅色不叠），但同样不透明、不模糊背后内容。
+   mica 不叠任何 scrim，直接透出 DWM 材质（采样桌面壁纸，不模糊）。
    面板 / 侧栏 / 编辑区仍用不透明 --pane，内容保持可读。
-   亚克力实时模糊背后内容，三档材质共用同一套 body 透明规则。
+   亚克力实时模糊背后内容，两档材质共用同一套 body 透明规则。
 
    组织方式：
    - 四主题纯色底在 theme.css 提供 `--desk-solid`（light/sage/honey 取 --desk-2，
      dark 取 #161616）；acrylic 使用 `--desk-solid-alpha`（50%），经 color-mix
-     派生半透明底；mica 的 `.shell` 为 transparent；tabbed 浅色同样 transparent，
-     暗色另叠 `--mica-alt-scrim-alpha` 提亮层；
+     派生半透明底；mica 的 `.shell` 为 transparent；
    - 根元素标记由 WindowMaterialProvider 写入实际材质名：
      亚克力 `data-material='acrylic'`、云母 `data-material='mica'`、
-     云母增强 `data-material='tabbed'`、
      关闭 `data-material='none'`（不命中本文件规则 → 回退 shell.css 的光斑渐变）。
+     渲染层不写 `tabbed`：浅色主题下主进程实际把 mica 解析为 DWM 的 Mica Alt
+     （`tabbed`，着色更强），深色用标准 Mica；该选择在 DWM 侧完成，与这里无关。
 
    落位与优先级：
    - 独立小文件，避免 shell.css 触碰 500 行上限；
@@ -31,24 +29,15 @@
   background: color-mix(in srgb, var(--desk-solid) var(--desk-solid-alpha), transparent);
 }
 
-/* mica / tabbed 不叠 scrim：整窗外壳（含标题栏、状态栏）直接透出云母。
-   增强档（Mica Alt）仍不透明、不模糊背后内容；其暗色偏黑由下面的提亮层处理。 */
-:is([data-material='mica'], [data-material='tabbed']) .shell {
+/* mica 不叠 scrim：整窗外壳（含标题栏、状态栏）直接透出云母。
+   不透明、不模糊背后内容；浅色主题下 DWM 实际材质为着色更强的 Mica Alt，
+   深色为标准 Mica（系统默认渲染），由主进程按应用明暗决定，渲染层标记始终为 mica。 */
+[data-material='mica'] .shell {
   background: transparent;
-}
-
-/* 云母（增强）暗色提亮层：Mica Alt 在暗色下比普通云母更黑，这里用 --text 的
-   低 alpha 白层把 DWM 输出整体提亮。它是「提亮层」而非「遮罩」：不会让材质
-   更透明，壁纸着色会轻微变淡。只对暗色生效——浅色主题 --text 是深色，叠上去
-   方向相反变暗，且浅色 Mica Alt 没有偏黑问题。
-   特异性 (0,3,0) 高于上面的 (0,2,0) 与 shell.css 的 [data-theme='dark'] .shell，
-   不依赖导入顺序；background 简写一并复位 dark 的四层色带（background-image）。 */
-[data-theme='dark'][data-material='tabbed'] .shell {
-  background: color-mix(in srgb, var(--text) var(--mica-alt-scrim-alpha), transparent);
 }
 
 /* 材质态下把 body 画布底置透明：否则 body 的不透明背景会垫在 .shell scrim 之后，
    挡住 DWM 材质。仅清 body / 画布底，面板等组件不受影响。 */
-:is([data-material='acrylic'], [data-material='mica'], [data-material='tabbed']) body {
+:is([data-material='acrylic'], [data-material='mica']) body {
   background: transparent;
 }

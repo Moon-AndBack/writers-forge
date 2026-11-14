@@ -7,10 +7,10 @@
  *   `styles/components/motion.css` 关闭），新快照在它之上从 0 → 1 淡入。
  *   因此任何中间帧都是一次不透明混合，不会出现两层同时半透明导致的
  *   「透底泛灰」（亮 / 暗主题明度差极大，真交叉会闪灰）。
- * - **窗口材质模式**（`data-material` 为 `'acrylic'` / `'mica'` / `'tabbed'`）：真交叉 + `plus-lighter`
- *   ——此时 body 透明，三档外壳 alpha 不同：acrylic 为 `.shell` 的 50% 不透明
- *   纯色 scrim（`--desk-solid-alpha`，暗色下压暗），mica 无 scrim，tabbed 仅暗色
- *   叠 `--mica-alt-scrim-alpha` 提亮层（浅色无）；同一主题内 a 恒定。
+ * - **窗口材质模式**（`data-material` 为 `'acrylic'` / `'mica'`）：真交叉 + `plus-lighter`
+ *   ——此时 body 透明，两档外壳 alpha 不同：acrylic 为 `.shell` 的 50% 不透明
+ *   纯色 scrim（`--desk-solid-alpha`，暗色下压暗），mica 无 scrim；同一主题内 a
+ *   恒定。
  *   覆盖式淡化会让两层快照的 alpha 相加（如亚克力 0.50 → 0.75），表现为过渡期间
  *   越来越实、快照撤掉后又跳回通透。故 new 淡入的同时 old 同步淡出，两层以
  *   `mix-blend-mode: plus-lighter` 按 a·(1-t) / a·t 预乘相加，合计恒为 a，
@@ -36,8 +36,13 @@
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
 
-/** 窗口材质（亚克力 / 云母 / 云母增强）在根元素上的标记值，与 `styles/material.css` 的选择器一致。 */
-const MATERIAL_MARKERS = new Set(['acrylic', 'mica', 'tabbed'])
+/**
+ * 窗口材质（亚克力 / 云母）在根元素上的标记值，与 `styles/material.css` 的选择器一致。
+ *
+ * 不含 `tabbed`：渲染层 `data-material` 不再写入该值；主进程仍可能在浅色主题下
+ * 把 `mica` 解析为 DWM 的 `tabbed`（Mica Alt），那属于主进程 / DWM 侧，与本集合无关。
+ */
+const MATERIAL_MARKERS = new Set(['acrylic', 'mica'])
 
 /** 与 `theme.css` 的 `--dur-slow` 对齐；令牌读取失败时的回退值（毫秒）。 */
 const FALLBACK_DURATION = 240
@@ -57,10 +62,10 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * 当前是否处于窗口材质模式（亚克力 / 云母 / 云母增强）。
+ * 当前是否处于窗口材质模式（亚克力 / 云母）。
  *
  * 读 `WindowMaterialProvider` 投影到根元素的 `data-material`：值为 `'acrylic'` /
- * `'mica'` / `'tabbed'` 时 `.shell` 才走材质底、body 才透明（见 `material.css`），
+ * `'mica'` 时 `.shell` 才走材质底、body 才透明（见 `material.css`），
  * 也只有此时需要 `plus-lighter` 真交叉。属性缺失 / `'none'` 一律按不透明模式
  * 处理（保持原覆盖式淡化）。
  */
@@ -134,7 +139,7 @@ export function runThemeReveal(applyTheme: () => void): void {
         if (hasWindowMaterial()) {
           // 窗口材质模式：old 同步淡出。与 new 一起在 `mix-blend-mode: plus-lighter`
           // 下按 a·(1-t) / a·t 预乘相加，合计恒为当前主题的 a（见 motion.css；
-          // acrylic 0.50，tabbed 暗色 0.08）——避免覆盖式叠加把 alpha 抬成
+          // acrylic 0.50，mica 无 scrim）——避免覆盖式叠加把 alpha 抬成
           // a + a·t → 过渡中越来越实、结束后跳回通透。
           //
           // `fill: 'forwards'`：动画结束后 old 必须保持 opacity 0 直到快照被移除。

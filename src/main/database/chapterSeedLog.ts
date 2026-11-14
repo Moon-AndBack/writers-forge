@@ -11,10 +11,19 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v162'
+export const CHAPTER_SEED_VERSION = 'v163'
 
 /**
- * 最近版本变更日志（v162；更早版本见上述历史文件）。
+ * 最近版本变更日志（v163；更早版本见上述历史文件）。
+ *
+ * `v163`（云母按明暗自动着色批）：移除用户可见的「云母（增强）」档，窗口材质回到
+ * 「亚克力 / 云母 / 关闭」三档；云母改由主进程按应用明暗自动选择 DWM 材质——浅色
+ * （light / sage / honey）用 Mica Alt（`tabbed`，着色更强），深色用标准 `mica`，
+ * 主题切换与系统明暗变化后经 `reapplyWindowMaterialForTheme` 重新应用（同值短路）。
+ * 删除暗色 8% 白提亮层（`--mica-alt-scrim-alpha` 及
+ * `[data-theme='dark'][data-material='tabbed']` 规则），暗色恢复系统默认渲染；
+ * 渲染层 `data-material` 不再写 `tabbed`。历史持久化值 `tabbed` 在归一化时迁移为
+ * `mica`，避免老用户设置突变。i18n、文档与教学书同步。无 DB 迁移，升版本只重灌教学书。
  *
  * `v162`（云母增强暗色提亮批）：暗色 + 云母（增强）下 `.shell` 新增
  * `--mica-alt-scrim-alpha`（8%）提亮层，用 `--text` 的半透明叠加减轻 Mica Alt

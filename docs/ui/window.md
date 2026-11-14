@@ -1,6 +1,6 @@
 # 窗口行为（Window）
 
-本文描述主窗口的创建参数、尺寸与持久化、窗口材质（亚克力 / 云母 / 云母增强）、自绘标题栏、宽度磁吸与开发态快捷键。
+本文描述主窗口的创建参数、尺寸与持久化、窗口材质（亚克力 / 云母 / 关闭）、自绘标题栏、宽度磁吸与开发态快捷键。
 所有数值以源码为准，标注为「文件:行号」。
 
 - 创建与装配：`src/main/window.ts`
@@ -20,7 +20,7 @@
 | `width` / `height`       | 持久化值，缺省 902 × 764                                             | 外框尺寸，单位 DIP                                                                       | `window.ts:75-76`、`windowState.ts:22-23` |
 | `minWidth` / `minHeight` | 902 × 764                                                            | 与默认尺寸相同，窗口不可再缩小                                                           | `window.ts:77-78`                         |
 | `backgroundColor`        | 材质生效 `#00000000`；否则 `#f3f3f3`                                 | `#AARRGGBB` 的 alpha 仅在 `transparent: true` 时生效；本项目未开启，材质可见性以实机为准 | `window.ts:165`                           |
-| `backgroundMaterial`     | `resolveMaterial()` 结果                                             | `acrylic` / `mica` / `tabbed` / `none`                                                   | `window.ts:144,166`                       |
+| `backgroundMaterial`     | `resolveDwmMaterial(resolveMaterial())` 结果                         | `acrylic` / `mica` / `tabbed` / `none`（`tabbed` 仅浅色 mica 的内部映射）                | `window.ts:150-151,173`                   |
 | `icon`                   | 开发态 `build/icon.png`；打包态 `resources/icon.png`                 | 路径由 `app.isPackaged` 分支决定；窗口图标只用 256（Windows 图标尺寸上限，无 4K）        | `window.ts:147-151,159`                   |
 | `titleBarStyle`          | `'hidden'`                                                           | 隐藏系统标题栏，渲染层自绘                                                               | `window.ts:86`                            |
 | `titleBarOverlay`        | `color: '#00000000'`、`symbolColor: '#5c5c5c'`、`height: 42`         | 仅保留右上角系统按钮（WCO）                                                              | `window.ts:87-91`                         |
@@ -78,62 +78,62 @@
 
 ### 4.1 取值
 
-窗口材质**有四种**（`src/main/windowMaterial.ts:14`）：
+窗口材质**有三档**（`src/main/windowMaterial.ts:15`）：
 
-| 值        | DWM 映射                 | 含义                                                                                  |
-| --------- | ------------------------ | ------------------------------------------------------------------------------------- |
-| `acrylic` | `DWMSBT_TRANSIENTWINDOW` | 亚克力：窗口底全透明，透出 DWM 实时模糊的背后内容                                     |
-| `mica`    | `DWMSBT_MAINWINDOW`      | 云母：窗口底全透明，透出采样桌面壁纸的 DWM 材质（不模糊）                             |
-| `tabbed`  | `DWMSBT_TABBEDWINDOW`    | 云母（增强 / Mica Alt）：同普通云母，着色更强；暗色下叠 8% 白提亮层，仍不透明、不模糊 |
-| `none`    | `DWMSBT_NONE`            | 关闭：不透明，回退渲染层光斑渐变                                                      |
+| 值        | DWM 映射                                    | 含义                                                                                                        |
+| --------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `acrylic` | `DWMSBT_TRANSIENTWINDOW`                    | 亚克力：窗口底全透明，透出 DWM 实时模糊的背后内容                                                           |
+| `mica`    | `DWMSBT_TABBEDWINDOW` / `DWMSBT_MAINWINDOW` | 云母：窗口底全透明，透出采样桌面壁纸的 DWM 材质（不模糊）；浅色实际为 Mica Alt（`tabbed`），深色为标准 Mica |
+| `none`    | `DWMSBT_NONE`                               | 关闭：不透明，回退渲染层光斑渐变                                                                            |
 
-- 默认值：`acrylic`（`windowMaterial.ts:24`；渲染层默认一致，`theme/windowMaterial.ts:17`）。
-- settings 键：`windowMaterial`（`windowMaterial.ts:17`、`theme/windowMaterial.ts:10`）。
-- 四档均为合法值，**不做旧值迁移**，其余非法值返回 `null`（`windowMaterial.ts:49-52`、`theme/windowMaterial.ts:25-29`）。
-- `tabbed` 即 Mica Alt：**仍不透明、不显示背后窗口，也不模糊背后内容**，只能让桌面壁纸的着色更明显；暗色下渲染层会叠 `--mica-alt-scrim-alpha`（8%）提亮层以减轻偏黑（只是提亮输出，不会更透明），浅色不叠。与普通云母的实际差异需在 Windows 11 实机对比。
+- 默认值：`acrylic`（`windowMaterial.ts:33`；渲染层默认一致，`theme/windowMaterial.ts:20`）。
+- settings 键：`windowMaterial`（`windowMaterial.ts:26`、`theme/windowMaterial.ts:13`）。
+- 三档均为合法值，其余非法值返回 `null`。旧版「云母（增强）」的持久化值 `tabbed` 在归一化时**迁移为 `mica`**，避免老用户设置回落到默认亚克力（`windowMaterial.ts:65-69`、`theme/windowMaterial.ts:28-32`）。
+- **云母按应用明暗自动选择 DWM 材质**：`resolveDwmMaterial()`（`windowMaterial.ts:115-118`）在 `nativeTheme.shouldUseDarkColors === false`（light / sage / honey）时把 `mica` 解析为 `tabbed`（Mica Alt，着色更强），深色解析为标准 `mica`。`tabbed` **仅存在于主进程 / DWM 侧**，不作为用户选项，渲染层 `data-material` 始终只写 `mica`；系统不支持材质时统一降级 `none`。
 
 ### 4.2 系统门槛
 
-- 仅 Windows：`process.platform === 'win32'`（`windowMaterial.ts:66`）。
-- 仅 Windows 11 22H2 及以上：build ≥ **22621**（`MATERIAL_MIN_BUILD`，`windowMaterial.ts:36,65-69`）。
-- 非 Windows / 低版本一律解析为 `none`（`resolveMaterial`，`windowMaterial.ts:86-89`）。
-- 门槛依据是 Electron `setBackgroundMaterial` 的实现限制，`acrylic` / `mica` / `tabbed` 同一门槛；Win10 原生亚克力不在此 API 暴露范围内（`windowMaterial.ts:27-34`）。
+- 仅 Windows：`process.platform === 'win32'`（`windowMaterial.ts:83`）。
+- 仅 Windows 11 22H2 及以上：build ≥ **22621**（`MATERIAL_MIN_BUILD`，`windowMaterial.ts:45,82-86`）。
+- 非 Windows / 低版本一律解析为 `none`（`resolveMaterial`，`windowMaterial.ts:104-106`）。
+- 门槛依据是 Electron `setBackgroundMaterial` 的实现限制，`acrylic` / `mica` 同一门槛；Win10 原生亚克力不在此 API 暴露范围内（`windowMaterial.ts:36-43`）。
 
 ### 4.3 启动应用流程
 
-1. 建窗前读 settings 键并归一化：`readInitialWindowMaterial()`（`windowMaterial.ts:75-84`）。
-2. `resolveMaterial()` 结合平台能力算出真实可生效值（`windowMaterial.ts:86-89`）。
-3. 由该值决定 `backgroundMaterial` 与 `backgroundColor`：非 `none` 时 `#00000000`，`none` 时 `#f3f3f3`（`window.ts:143-145,162-166`；常量在 `windowMaterial.ts:39,42`）。
-4. 渲染层 `main.tsx` 预取同一键、校验后作为 `WindowMaterialProvider` 的 `initialMaterial`，避免异步读取造成闪屏（`src/renderer/src/main.tsx:72-75,100`）。
+1. 建窗前读 settings 键并归一化：`readInitialWindowMaterial()`（`windowMaterial.ts:92-101`）。
+2. `resolveMaterial()` 结合平台能力算出真实可生效值（`windowMaterial.ts:104-106`）。
+3. 云母再经 `resolveDwmMaterial()` 按应用明暗解析为 `tabbed` / `mica`，结果用于 `backgroundMaterial`；`backgroundColor` 仍按生效值决定：非 `none` 时 `#00000000`，`none` 时 `#f3f3f3`（`window.ts:150-151,172-173`；常量在 `windowMaterial.ts:48,51`）。
+4. 建窗后 `rememberInitialWindowMaterial()` 登记初始选择与实际 DWM 值，供主题明暗变化时比较（`window.ts:190`、`windowMaterial.ts:126-129`）。
+5. 渲染层 `main.tsx` 预取同一键、校验后作为 `WindowMaterialProvider` 的 `initialMaterial`，避免异步读取造成闪屏（`src/renderer/src/main.tsx:72-75,100`）。
 
 ### 4.4 运行时切换
 
-- IPC `window:setMaterial`：入参经 `normalizeWindowMaterial()` 校验（四档均合法），非法返回 `null`，否则调用 `applyWindowMaterial()` 并返回**实际生效**值（`src/main/ipc/window.ts:62-73`）。
-- IPC `window:materialSupported`：返回当前系统是否支持窗口材质，渲染层据此禁用四档选择（`src/main/ipc/window.ts:77`）。
-- `applyWindowMaterial()` 内部：`setBackgroundMaterial(effective)` + 同步 `setBackgroundColor()`（`windowMaterial.ts:98-111`）。
+- IPC `window:setMaterial`：入参经 `normalizeWindowMaterial()` 校验（三档均合法，旧值 `tabbed` 迁移为 `mica`），非法返回 `null`，否则调用 `applyWindowMaterial()` 并返回**实际生效**的用户选择（`src/main/ipc/window.ts:67-78`）。
+- IPC `window:materialSupported`：返回当前系统是否支持窗口材质，渲染层据此禁用三档选择（`src/main/ipc/window.ts:82`）。
+- `applyWindowMaterial()` 内部：`resolveDwmMaterial()` 解析实际 DWM 材质 → 与窗口当前值不同才 `setBackgroundMaterial()` → 同步 `setBackgroundColor()`（`windowMaterial.ts:156-175`）。返回值为用户可见档位，不会是 `tabbed`。
 - preload 暴露为 `window.api.windowMaterial.set / materialSupported`（`src/preload/index.ts:421-427`）。
 
 ### 4.5 渲染层投影
 
-- `WindowMaterialProvider` 计算 `material = setting !== 'none' && supported ? setting : 'none'`，`enabled = material !== 'none'`（`WindowMaterialProvider.tsx:52-53`）。
-- 状态写入根元素 `data-material`：写**实际材质名** `acrylic` / `mica` / `tabbed` / `none`（`WindowMaterialProvider.tsx:55-57`）。
+- `WindowMaterialProvider` 计算 `material = setting !== 'none' && supported ? setting : 'none'`，`enabled = material !== 'none'`（`WindowMaterialProvider.tsx:42-43`）。
+- 状态写入根元素 `data-material`：写**实际材质名** `acrylic` / `mica` / `none`；**不写 `tabbed`**——浅色下主进程实际下发 Mica Alt，但渲染层标记始终为 `mica`（`WindowMaterialProvider.tsx:45-47,53-56`）。
 - `styles/material.css` 依 `data-material` 生效：
-  - `[data-material='acrylic'] .shell` 用 `--desk-solid-alpha`（50%）混合纯色底；`:is([data-material='mica'], [data-material='tabbed']) .shell` 为 `transparent`，不叠 scrim（`material.css:28-38`）。标题栏与状态栏在云母 / 云母增强下同样透明，不另设底色；其中云母增强在暗色下再由 `[data-theme='dark'][data-material='tabbed'] .shell` 叠 `--mica-alt-scrim-alpha`（8%）的 `--text` 提亮层（`material.css:40-48`，`background` 简写同时复位 dark 的四层色带；浅色不叠）。
-  - `:is([data-material='acrylic'], [data-material='mica'], [data-material='tabbed']) body` 置透明，否则 body 底会挡住 DWM 材质（`material.css:52-54`）。
-- 切换时三件事同步：调主进程、写 `data-material`、经 `settings:set` 持久化（`WindowMaterialProvider.tsx:59-72`）。
-- 主进程返回的实际值与请求不一致时（如系统不支持），Provider 回退本地状态（`WindowMaterialProvider.tsx:64-68`）。
-- 窗口材质入口：标题栏主题面板与「设置 → 外观与主题」页均提供四档选择，两处共享 `WindowMaterialProvider`，状态天然同步。
+  - `[data-material='acrylic'] .shell` 用 `--desk-solid-alpha`（50%）混合纯色底；`[data-material='mica'] .shell` 为 `transparent`，不叠 scrim（`material.css:28-37`）。标题栏与状态栏在云母下同样透明，不另设底色；浅色 Mica Alt / 深色标准 Mica 的差异完全由主进程决定，渲染层无提亮层。
+  - `:is([data-material='acrylic'], [data-material='mica']) body` 置透明，否则 body 底会挡住 DWM 材质（`material.css:41-43`）。
+- 切换时三件事同步：调主进程、写 `data-material`、经 `settings:set` 持久化（`WindowMaterialProvider.tsx:49-78`）。
+- 主进程返回的实际值与请求不一致时（如系统不支持），Provider 回退本地状态（`WindowMaterialProvider.tsx:72-76`）。
+- 窗口材质入口：标题栏主题面板与「设置 → 外观与主题」页均提供三档选择，两处共享 `WindowMaterialProvider`，状态天然同步。
 
 ### 4.6 失败降级
 
-- 平台不支持：`resolveMaterial` 提前降级 `none`，不会调用无效 API（`windowMaterial.ts:86-89,101`）。
-- 调用异常：`setBackgroundMaterial` 抛错时记录 `error` 并返回 `DEFAULT_WINDOW_MATERIAL`（当前为 `acrylic`，见 `windowMaterial.ts:105-109`）；窗口保持上一次底色，属边界现状，正常平台不触发。
-- 窗口已销毁：直接返回默认常量（`windowMaterial.ts:99`）。
-- 渲染层查询 `materialSupported` 失败视为不支持，四档选择置灰（`WindowMaterialProvider.tsx:36-49`）。
+- 平台不支持：`resolveMaterial` 提前降级 `none`，不会调用无效 API（`windowMaterial.ts:104-106,157`）。
+- 调用异常：`setBackgroundMaterial` 抛错时记录 `error` 并返回 `DEFAULT_WINDOW_MATERIAL`（当前为 `acrylic`，见 `windowMaterial.ts:165-173`）；窗口保持上一次底色，属边界现状，正常平台不触发。
+- 窗口已销毁：直接返回默认常量（`windowMaterial.ts:157`）。
+- 渲染层查询 `materialSupported` 失败视为不支持，三档选择置灰（`WindowMaterialProvider.tsx:38`）。
 
 ### 4.7 材质明暗与应用主题
 
-DWM 材质（云母 / 云母增强 / 亚克力）的明暗在 Windows 上由系统主题决定。主进程此前从未设置 `nativeTheme.themeSource`，因此应用选择 light / sage / honey 而 Windows 为深色时，材质仍按深色渲染，浅色界面后像垫了一块深色板。现在主进程按持久化主题设置 `themeSource`（仅 Windows）：
+DWM 材质（云母 / 亚克力）的明暗在 Windows 上由系统主题决定。主进程此前从未设置 `nativeTheme.themeSource`，因此应用选择 light / sage / honey 而 Windows 为深色时，材质仍按深色渲染，浅色界面后像垫了一块深色板。现在主进程按持久化主题设置 `themeSource`（仅 Windows）：
 
 | 应用档位 | `themeSource` | 材质明暗 |
 | -------- | ------------- | -------- |
@@ -143,13 +143,15 @@ DWM 材质（云母 / 云母增强 / 亚克力）的明暗在 Windows 上由系�
 | `sage`   | `'light'`     | 浅色     |
 | `honey`  | `'light'`     | 浅色     |
 
-- 映射实现在 `themeIdToNativeThemeSource()`（`src/main/theme.ts:98-109`）；sage / honey 没有独立的 DWM 明暗，统一按浅色映射，`system` 原样交给 Electron 跟随系统，不在应用层二次解析。
-- **启动**：`src/main/index.ts:65` 在 `getDb()` 之后、`registerIpc()` 与 `createMainWindow()` 之前调用 `applyThemeSource(readInitialThemeId())`，保证窗口创建时第一帧 DWM 明暗已正确。持久化值缺失 / 非法回退 `system`（`theme.ts:112-121`）。
-- **运行时**：IPC `theme:apply`（`src/main/ipc/theme.ts:13-18`）经 `isThemeId` 校验，非法返回 `null`；合法时调用 `applyThemeSource()` 并返回 `{ resolvedTheme, shouldUseDarkColors }`。preload 暴露为 `window.api.systemTheme.apply`（`src/preload/index.ts:438-448`）。
-- `applyThemeSource()` 仅 Windows 写 `themeSource`；非 Windows 保持系统设置，只返回当前 `shouldUseDarkColors`。赋值前比较当前值，相同则跳过；异常记录 warning 并回退 `'light'`（`theme.ts:131-144`）。
+- 映射实现在 `themeIdToNativeThemeSource()`（`src/main/theme.ts:99-110`）；sage / honey 没有独立的 DWM 明暗，统一按浅色映射，`system` 原样交给 Electron 跟随系统，不在应用层二次解析。
+- **启动**：`src/main/index.ts:65` 在 `getDb()` 之后、`registerIpc()` 与 `createMainWindow()` 之前调用 `applyThemeSource(readInitialThemeId())`，保证窗口创建时第一帧 DWM 明暗已正确。持久化值缺失 / 非法回退 `system`（`theme.ts:113-122`）。
+- **运行时**：IPC `theme:apply`（`src/main/ipc/theme.ts:16-22`）经 `isThemeId` 校验，非法返回 `null`；合法时调用 `applyThemeSource()`，随后对发起窗口调用 `reapplyWindowMaterialForTheme()`，再返回 `{ resolvedTheme, shouldUseDarkColors }`。preload 暴露为 `window.api.systemTheme.apply`（`src/preload/index.ts:438-448`）。
+- **系统明暗被动变化**：`setupThemeWatchers()` 的 `nativeTheme.on('updated')`（`theme.ts:154-170`）对每个窗口调用 `reapplyWindowMaterialForTheme()`，覆盖「跟随系统」时系统在运行中切换明暗、导致 `mica` 需要在 Mica Alt / 标准 Mica 之间切换的场景。
+- **重新应用的条件与幂等**：仅当前用户选择为 `mica`，且 `resolveDwmMaterial()` 解析出的 DWM 材质与该窗口已记录的实际材质**不同**时才调用 `setBackgroundMaterial()`；相同则直接返回（`windowMaterial.ts:138-145,163`）。因此系统强调色等无关 `updated` 事件不会触发原生材质重绘，主题切换重复下发相同值也不会闪烁。
+- `applyThemeSource()` 仅 Windows 写 `themeSource`；非 Windows 保持系统设置，只返回当前 `shouldUseDarkColors`。赋值前比较当前值，相同则跳过；异常记录 warning 并回退 `'light'`（`theme.ts:132-145`）。
 - **切回 `system` 的时序**：`ThemeProvider` 先 `await window.api.systemTheme.apply('system')`，用返回的 `shouldUseDarkColors` 同批校正 `systemDark` 与 `theme`，再走过渡 / `dataset.theme` 提交流程（`ThemeProvider.tsx:96-117`）。原因：`themeSource` 被强制为 light / dark 期间 `matchMedia` 返回覆盖后的值；若按它预解析，从 sage 切回 `system`（OS 深色）会先播放 sage→light 再硬切 dark（先浅后深）。`requestSeq` 丢弃 IPC 往返期间被新选择取代的过期结果。
 - `system` 档下系统明暗被动变化仍由 `matchMedia` 的 change 订阅驱动，`resolvedTheme` 变化后直接写 `dataset.theme`（无整屏过渡）；WCO 符号色改为依赖 `resolvedTheme`，系统明暗变化时也会重取 `--text-dim`（`useTitleBarOverlay.ts:46,56`）。
-- **实机验证待办**：代码只能保证 `nativeTheme.themeSource` 与 `shouldUseDarkColors` 正确；**DWM 云母是否随 per-window 深色模式指示变色无法由代码证明**，需在 Windows 11 实机切换系统深色与应用 light / sage / honey / dark 验证。若实机只有窗口 frame 变色而云母不变，本方案需重新评估。
+- **实机验证待办**：代码只能保证 `nativeTheme.themeSource`、`shouldUseDarkColors` 与材质重新下发；**DWM 在 `tabbed` ↔ `mica` 之间切换时是否立即重绘无法由代码证明**，需在 Windows 11 实机切换 light / sage / honey / dark 验证。若主题切换瞬间材质有短暂不一致，需记录并反馈。
 
 ## 5. 自绘标题栏与 WCO
 
@@ -237,13 +239,13 @@ preload 对应 `window.api.windowSnap`（`src/preload/index.ts:352-361`）。配
 
 ## 9. 常见误区
 
-- **`mica` 与 `tabbed` 是合法材质**。合法值为 `acrylic` / `mica` / `tabbed` / `none`；`acrylic` 实时模糊背后内容，`mica` 采样桌面壁纸（不模糊），`tabbed`（Mica Alt）同样采样壁纸且仍不透明、不模糊，只是着色更强；其暗色额外叠 8% 白提亮层（`background` 颜色 alpha，不增加透明度）；三种材质门槛同为 Windows 11 22H2+（`windowMaterial.ts:14,49-52,65-69`）。
-- **不要写 `transparent: true`**。材质开启时设置 `backgroundColor: '#00000000'`；但 Electron 文档说明 `#AARRGGBB` 的 alpha 仅在 `transparent: true` 时生效，本项目因它在 Windows 上的副作用（无法缩放、无阴影、Snap / 窗口按钮异常）未开启，因此材质在客户区的实际可见性以实机为准，不依赖 alpha 生效（`window.ts:162-166`）。
-- **材质生效时禁止给背景再叠加 `backdrop-filter`**。DWM 已在系统层完成材质处理，渲染层再模糊会二次处理、破坏透明链路并增加掉帧；材质态只允许改 `background` 颜色 / 透明度（含 tabbed 暗色的 8% 提亮层，它只是背景色 alpha，不是 `backdrop-filter`），见 `material.css:28-54`。
+- **`mica` 是唯一会“变身”的材质**。用户可见合法值为 `acrylic` / `mica` / `none`；`acrylic` 实时模糊背后内容，`mica` 采样桌面壁纸（不模糊）。云母的实际 DWM 档位由 `resolveDwmMaterial()` 按应用明暗决定：浅色（light / sage / honey）用 `tabbed`（Mica Alt，着色更强），深色用标准 `mica`；`tabbed` 不对用户暴露。两种材质门槛同为 Windows 11 22H2+（`windowMaterial.ts:15,65-69,115-118`）。
+- **不要写 `transparent: true`**。材质开启时设置 `backgroundColor: '#00000000'`；但 Electron 文档说明 `#AARRGGBB` 的 alpha 仅在 `transparent: true` 时生效，本项目因它在 Windows 上的副作用（无法缩放、无阴影、Snap / 窗口按钮异常）未开启，因此材质在客户区的实际可见性以实机为准，不依赖 alpha 生效（`window.ts:169-174`）。
+- **材质生效时禁止给背景再叠加 `backdrop-filter`**。DWM 已在系统层完成材质处理，渲染层再模糊会二次处理、破坏透明链路并增加掉帧；材质态只允许改 `background` 颜色 / 透明度，且已无暗色提亮层，见 `material.css:28-43`。
 - **`material.ts` 已改名 `windowMaterial.ts`**（主进程与渲染层各一份），旧路径与旧文档引用均已失效。
-- **不存在 `window:material:*` 通道**。实际通道是 `window:setMaterial`、`window:materialSupported`、`window:titlebar:set-overlay`（`src/main/ipc/window.ts:41,62,77`）。
-- **渲染层标记是 `data-material`**，不是 `data-window-material`，也不是 `data-theme` 的附属值；四档分别写实际材质名 `acrylic` / `mica` / `tabbed` / `none`（`WindowMaterialProvider.tsx:55-57`）。
-- **`materialSupported` 只在 Windows 返回 true**，非 Windows 下四档选择必然置灰，属预期行为（`windowMaterial.ts:65-69`）。
+- **不存在 `window:material:*` 通道**。实际通道是 `window:setMaterial`、`window:materialSupported`、`window:titlebar:set-overlay`（`src/main/ipc/window.ts:45,67,82`）。
+- **渲染层标记是 `data-material`**，不是 `data-window-material`，也不是 `data-theme` 的附属值；三档分别写实际材质名 `acrylic` / `mica` / `none`，**不写 `tabbed`**（`WindowMaterialProvider.tsx:45-47`）。
+- **`materialSupported` 只在 Windows 返回 true**，非 Windows 下三档选择必然置灰，属预期行为（`windowMaterial.ts:82-86`）。
 - **最小尺寸不是 320 × 240**：320 / 240 只是持久化数据的合法下限；窗口实际最小值为 902 × 764（`windowState.ts:26-27`、`window.ts:77-78`）。
 - **磁吸不是全局能力**：离开书架页即 `clear`，其他页面拖动完全自由（`useShelfSnap.ts:129-138`）。
 

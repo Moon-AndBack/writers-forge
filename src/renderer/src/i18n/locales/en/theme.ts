@@ -21,10 +21,9 @@ const theme = {
     label: 'Window material',
     acrylic: 'Acrylic',
     mica: 'Mica',
-    tabbed: 'Mica (enhanced)',
     none: 'Off',
     supportedDesc:
-      'Acrylic blurs live and is more see-through; Mica is more solid; Mica (enhanced) tints stronger and stays opaque',
+      'Acrylic blurs live and is more see-through; Mica is more solid and tints stronger in light themes',
     unsupportedDesc: 'Not supported on this system (requires Windows 11 22H2+)',
     aria: 'Window material'
   },

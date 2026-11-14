@@ -61,8 +61,9 @@ export function registerWindowIpc(): void {
     }
   })
 
-  // 切换窗口系统材质（亚克力 / 云母 / 云母增强 / 关闭）：参数非法返回 null；无窗口返回 null。
+  // 切换窗口系统材质（亚克力 / 云母 / 关闭）：参数非法返回 null；无窗口返回 null。
   // 返回**实际生效**的材质（非 Windows 11 22H2+ 时降级 'none'），供渲染层校准选择状态。
+  // 云母的 DWM 档位（浅色 Mica Alt / 深色 Mica）由 applyWindowMaterial 内部解析。
   ipcMain.handle('window:setMaterial', (event, material: unknown) => {
     const normalized = normalizeWindowMaterial(material)
     if (!normalized) {
@@ -77,6 +78,6 @@ export function registerWindowIpc(): void {
   })
 
   // 当前系统是否支持窗口材质（Electron 限制：仅 Windows 11 22H2+）；
-  // 渲染层据此禁用四档选择并提示。
+  // 渲染层据此禁用三档选择并提示。
   ipcMain.handle('window:materialSupported', () => isMaterialSupported())
 }

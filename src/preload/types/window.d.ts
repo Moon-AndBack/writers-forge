@@ -434,7 +434,7 @@ export interface Api {
     setOverlay: (options: TitleBarOverlayOptions) => Promise<boolean>
   }
   windowMaterial: {
-    /** 切换窗口系统材质（'acrylic' / 'mica' / 'tabbed' / 'none'）；返回实际生效值（不支持时降级 'none'） */
+    /** 切换窗口系统材质（'acrylic' / 'mica' / 'none'）；返回实际生效值（不支持时降级 'none'） */
     set: (material: WindowMaterial) => Promise<WindowMaterial | null>
     /** 当前系统是否支持窗口材质（Electron 限制：仅 Windows 11 22H2+） */
     materialSupported: () => Promise<boolean>

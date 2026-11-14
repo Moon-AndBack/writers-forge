@@ -1,10 +1,13 @@
 import { createContext, useContext } from 'react'
 
 /**
- * 窗口材质设置（Windows DWM 材质：亚克力 / 云母 / 云母增强 / 关闭）。
+ * 窗口材质设置（Windows DWM 材质：亚克力 / 云母 / 关闭）。
  * 与主进程 `src/main/windowMaterial.ts` 的取值保持一致。
+ *
+ * 云母在浅色主题下由主进程实际下发 DWM 的 Mica Alt（着色更强）、深色下用标准
+ * Mica，该差异不暴露到这里，渲染层始终只持有 `'mica'`。
  */
-export type WindowMaterialSetting = 'acrylic' | 'mica' | 'tabbed' | 'none'
+export type WindowMaterialSetting = 'acrylic' | 'mica' | 'none'
 
 /** settings 表持久化键名（存用户选择本身，与主进程读取同一键）。 */
 export const WINDOW_MATERIAL_SETTING_KEY = 'windowMaterial'
@@ -19,21 +22,22 @@ export const DEFAULT_WINDOW_MATERIAL_SETTING: WindowMaterialSetting = 'acrylic'
 /**
  * 把持久化原始值规范化为当前取值。
  *
- * 四档均为合法值，不做旧值迁移；其余非法值返回 null。
+ * 三档均为合法值；旧版「云母（增强）」的持久化值 `tabbed` **迁移为 `mica`**，
+ * 避免老用户设置回落到默认亚克力；其余非法值返回 null。
  */
 export function normalizeWindowMaterialSetting(value: unknown): WindowMaterialSetting | null {
-  if (value === 'acrylic' || value === 'mica' || value === 'tabbed' || value === 'none')
-    return value
+  if (value === 'tabbed') return 'mica'
+  if (value === 'acrylic' || value === 'mica' || value === 'none') return value
   return null
 }
 
-/** 类型守卫：仅接受四档合法取值。 */
+/** 类型守卫：仅接受三档合法取值。 */
 export function isWindowMaterialSetting(value: unknown): value is WindowMaterialSetting {
-  return value === 'acrylic' || value === 'mica' || value === 'tabbed' || value === 'none'
+  return value === 'acrylic' || value === 'mica' || value === 'none'
 }
 
 export interface WindowMaterialContextValue {
-  /** 实际生效的材质：系统不支持时恒为 'none'（四档选择同步置灰） */
+  /** 实际生效的材质：系统不支持时恒为 'none'（三档选择同步置灰） */
   material: WindowMaterialSetting
   /** 是否处于任一材质开启状态（派生于 `material !== 'none'`，兼容旧消费点） */
   enabled: boolean

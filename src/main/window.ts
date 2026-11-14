@@ -8,7 +8,12 @@ import {
   readInitialWindowSize,
   registerWindowSizePersistence
 } from './windowState'
-import { readInitialWindowMaterial, resolveMaterial } from './windowMaterial'
+import {
+  readInitialWindowMaterial,
+  rememberInitialWindowMaterial,
+  resolveDwmMaterial,
+  resolveMaterial
+} from './windowMaterial'
 
 /** 窗口域日志 scope。 */
 const log = logger.scope('window')
@@ -141,7 +146,9 @@ export function createMainWindow(): BrowserWindow {
   const initialSize = readInitialWindowSize()
 
   // 启动时读取持久化的窗口材质并解析实际可生效值（非 Windows 11 22H2+ 降级 none）。
-  const initialMaterial = resolveMaterial(readInitialWindowMaterial())
+  // 云母再按当前应用明暗解析为 DWM 的 Mica Alt（浅色）或标准 Mica（深色）。
+  const initialSelection = readInitialWindowMaterial()
+  const initialMaterial = resolveMaterial(initialSelection)
   const materialEnabled = initialMaterial !== 'none'
 
   // 应用图标：开发态取仓库内 build/icon.png；打包态取 extraResources 投放的 icon.png。
@@ -163,7 +170,7 @@ export function createMainWindow(): BrowserWindow {
     // Electron 文档说明 #AARRGGBB 的 alpha 仅在 transparent:true 时生效；本应用因 transparent
     // 在 Windows 上的副作用（缩放 / 阴影 / Snap / 窗口按钮）未开启，材质可见性以实机为准。
     backgroundColor: materialEnabled ? '#00000000' : '#f3f3f3',
-    backgroundMaterial: initialMaterial,
+    backgroundMaterial: resolveDwmMaterial(initialMaterial),
     titleBarStyle: 'hidden',
     titleBarOverlay: {
       color: '#00000000',
@@ -178,6 +185,9 @@ export function createMainWindow(): BrowserWindow {
       nodeIntegration: false
     }
   })
+
+  // 登记建窗时已应用的材质，供主题明暗变化时判断是否需要重新下发 DWM 材质
+  rememberInitialWindowMaterial(mainWindow, initialSelection)
 
   // 持久化非最大化窗口尺寸（resize 防抖写库，close 补写）
   registerWindowSizePersistence(mainWindow)
