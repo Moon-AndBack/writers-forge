@@ -50,40 +50,43 @@
 
 `:root`（`theme.css:10-93`）中取值与主题无关的令牌：
 
-| 变量                   | 值 / 含义                                  | 用途                                                               |
-| ---------------------- | ------------------------------------------ | ------------------------------------------------------------------ |
-| `--page-width`         | `620px`                                    | 正文栏最大宽度                                                     |
-| `--doc-font`           | 系统默认字体栈                             | 文档正文，与 `typographyContext.ts` 的 `DEFAULT_DOC_FONT` 逐字一致 |
-| `--doc-line`           | `2`                                        | 正文行高倍数                                                       |
-| `--doc-zoom`           | `1`                                        | 正文缩放，`calc(18px * var(--doc-zoom))`                           |
-| `--doc-letter`         | `0.01em`                                   | 正文字距                                                           |
-| `--fs-micro`           | `10px`                                     | 微字（Badge / 徽标 / 关闭图标 / 元信息提示）                       |
-| `--fs-body`            | `12px`                                     | 界面基准（输入 / 按钮 / 紧凑正文）                                 |
-| `--fs-title`           | `14px`                                     | 卡片 / 详情 / 弹窗标题                                             |
-| `--fs-display`         | `20px`                                     | 展示档：欢迎标题 / 视口占位                                        |
-| `--fs-display-lg`      | `26px`                                     | 展示档：文档标题                                                   |
-| `--r-lg`               | `8px`                                      | 界面统一圆角（面板 / 卡片 / 浮层 / 控件 / 列表行 / Tag / Badge）   |
-| `--r-pill`             | `999px`                                    | 胶囊 / chip / 开关轨道 / 进度条 / 滚动条全圆                       |
-| `--control-h-sm/md/lg` | `32px`                                     | 控件高度单档；三值同名仅为兼容旧引用                               |
-| `--font`               | Segoe UI Variable / 微软雅黑 / PingFang 栈 | 界面字体（挂在 `body`）                                            |
-| `--serif`              | 宋体 / Source Han Serif / Georgia 栈       | 衬线字体（书封、摘录）                                             |
-| `--mono`               | Cascadia Mono / Consolas 栈                | 等宽字体（代码、字数）                                             |
-| `--ease`               | `cubic-bezier(0.33, 0, 0.67, 1)`           | 对称缓动，交互与主题淡化共用                                       |
-| `--ease-out`           | `cubic-bezier(0.22, 1, 0.36, 1)`           | 进场专用（快出慢入）                                               |
-| `--dur-fast`           | `120ms`                                    | 状态反馈（hover / 颜色 / 背景）                                    |
-| `--dur-slow`           | `240ms`                                    | 位移 / 尺寸变化 / 展开收起 / 进场                                  |
-| `--dur-theme-reveal`   | `400ms`                                    | 主题切换覆盖层三阶段（模糊 / 交叉 / 淡出），总 1.2s                |
-| `--z-hover-card`       | `970`                                      | 悬停卡浮层                                                         |
-| `--z-popover`          | `971`                                      | 「+N」等浮窗                                                       |
-| `--z-popover-nested`   | `972`                                      | 嵌套详情卡                                                         |
-| `--z-row-raised`       | `1`                                        | 行内拖拽抬升（非浮层）                                             |
-| `--desk-spot-1/2/3`    | `1000×640` / `880×620` / `700×500`（px）   | `.shell` 三层 radial 光斑的椭圆尺寸                                |
-| `--desk-solid-alpha`   | `50%`                                      | acrylic 的 `--desk-solid` 保留不透明度（mica 不使用）              |
-| `--selection-bg`       | `brand 22%` + transparent                  | 全局 `::selection` 底色，随当前主题 `--brand` 变化                 |
+| 变量                     | 值 / 含义                                  | 用途                                                               |
+| ------------------------ | ------------------------------------------ | ------------------------------------------------------------------ |
+| `--page-width`           | `620px`                                    | 正文栏最大宽度                                                     |
+| `--doc-font`             | 系统默认字体栈                             | 文档正文，与 `typographyContext.ts` 的 `DEFAULT_DOC_FONT` 逐字一致 |
+| `--doc-line`             | `2`                                        | 正文行高倍数                                                       |
+| `--doc-zoom`             | `1`                                        | 正文缩放，`calc(18px * var(--doc-zoom))`                           |
+| `--doc-letter`           | `0.01em`                                   | 正文字距                                                           |
+| `--fs-micro`             | `10px`                                     | 微字（Badge / 徽标 / 关闭图标 / 元信息提示）                       |
+| `--fs-body`              | `12px`                                     | 界面基准（输入 / 按钮 / 紧凑正文）                                 |
+| `--fs-title`             | `14px`                                     | 卡片 / 详情 / 弹窗标题                                             |
+| `--fs-display`           | `20px`                                     | 展示档：欢迎标题 / 视口占位                                        |
+| `--fs-display-lg`        | `26px`                                     | 展示档：文档标题                                                   |
+| `--r-lg`                 | `8px`                                      | 界面统一圆角（面板 / 卡片 / 浮层 / 控件 / 列表行 / Tag / Badge）   |
+| `--r-pill`               | `999px`                                    | 胶囊 / chip / 开关轨道 / 进度条 / 滚动条全圆                       |
+| `--control-h-sm/md/lg`   | `32px`                                     | 控件高度单档；三值同名仅为兼容旧引用                               |
+| `--font`                 | Segoe UI Variable / 微软雅黑 / PingFang 栈 | 界面字体（挂在 `body`）                                            |
+| `--serif`                | 宋体 / Source Han Serif / Georgia 栈       | 衬线字体（书封、摘录）                                             |
+| `--mono`                 | Cascadia Mono / Consolas 栈                | 等宽字体（代码、字数）                                             |
+| `--ease`                 | `cubic-bezier(0.33, 0, 0.67, 1)`           | 对称缓动，交互与主题淡化共用                                       |
+| `--ease-out`             | `cubic-bezier(0.22, 1, 0.36, 1)`           | 进场专用（快出慢入）                                               |
+| `--dur-fast`             | `120ms`                                    | 状态反馈（hover / 颜色 / 背景）                                    |
+| `--dur-slow`             | `240ms`                                    | 位移 / 尺寸变化 / 展开收起 / 进场                                  |
+| `--dur-theme-reveal`     | `400ms`                                    | 主题切换覆盖层三阶段（模糊 / 不透明遮罩 / tint 交叉），合计 1.0s   |
+| `--dur-theme-badge-in`   | `300ms`                                    | 主题切换图标入场（仅覆盖层图标消费）                               |
+| `--dur-theme-badge-hold` | `700ms`                                    | 主题切换图标完全可见停留（仅覆盖层图标消费）                       |
+| `--dur-theme-badge-out`  | `250ms`                                    | 主题切换图标淡出（仅覆盖层图标消费）                               |
+| `--z-hover-card`         | `970`                                      | 悬停卡浮层                                                         |
+| `--z-popover`            | `971`                                      | 「+N」等浮窗                                                       |
+| `--z-popover-nested`     | `972`                                      | 嵌套详情卡                                                         |
+| `--z-row-raised`         | `1`                                        | 行内拖拽抬升（非浮层）                                             |
+| `--desk-spot-1/2/3`      | `1000×640` / `880×620` / `700×500`（px）   | `.shell` 三层 radial 光斑的椭圆尺寸                                |
+| `--desk-solid-alpha`     | `50%`                                      | acrylic 的 `--desk-solid` 保留不透明度（mica 不使用）              |
+| `--selection-bg`         | `brand 22%` + transparent                  | 全局 `::selection` 底色，随当前主题 `--brand` 变化                 |
 
 > CSS 会把 `border-radius` 钳制到 `min(宽, 高) / 2`：≤16px 元素设 8px 后渲染为正圆（16px 复选框 / 分组箭头），18×20 回收站箭头约 89% 半径（近圆），22px Tag / Badge 约 73% 半径。这是两档统一的必然结果，不是刻意设计（详见 [`design-language.md`](./design-language.md) §1.2 / §9 #20）。
 
-分组计数：排版 5、字号 5、圆角 2、控件高度 3、字体 3、动效 4、层级 4、光斑 3、材质 1（`--desk-solid-alpha`）、选区 1，共 **31** 条。层级令牌覆盖 970–972 三档（悬停卡 < 浮窗 < 嵌套卡）与行内抬升 1；970–972 仅 `entity-highlight.css` / `writer-right-panels.css` 引用，`--z-row-raised` 仅用于行内拖拽；其余层级仍是字面量：60（下拉 / 主题面板）、100 / 101（活动栏）、900（状态栏弹窗）、940（格式工具条）、980（活动筛选）、990（tooltip）、1000（Modal）、1040（Select / Combobox）、1100（Toast），另有 1–20 的局部层叠。目标档位与收敛计划见 `design-language.md` §6.2。注释明确本组光斑仅 light / sage / honey 生效——dark 由 `shell.css` 的 `[data-theme='dark'] .shell` 整体替换为无光斑的斜切色带，**四主题块均不覆写** `--desk-spot-*`。
+分组计数：排版 5、字号 5、圆角 2、控件高度 3、字体 3、动效 7、层级 4、光斑 3、材质 1（`--desk-solid-alpha`）、选区 1，共 **34** 条。层级令牌覆盖 970–972 三档（悬停卡 < 浮窗 < 嵌套卡）与行内抬升 1；970–972 仅 `entity-highlight.css` / `writer-right-panels.css` 引用，`--z-row-raised` 仅用于行内拖拽；其余层级仍是字面量：60（下拉 / 主题面板）、100 / 101（活动栏）、900（状态栏弹窗）、940（格式工具条）、980（活动筛选）、990（tooltip）、1000（Modal）、1040（Select / Combobox）、1100（Toast），另有 1–20 的局部层叠。目标档位与收敛计划见 `design-language.md` §6.2。注释明确本组光斑仅 light / sage / honey 生效——dark 由 `shell.css` 的 `[data-theme='dark'] .shell` 整体替换为无光斑的斜切色带，**四主题块均不覆写** `--desk-spot-*`。
 
 ---
 
@@ -248,17 +251,18 @@ system 档：
 
 ### 7.3 覆盖层实现
 
-`runThemeReveal()`（`themeReveal.ts`）不再使用 View Transitions，改为动态创建全屏覆盖层（`components/theme-reveal.css`），总时长 **1.2s**（`--dur-theme-reveal` 400ms；四段按 1× / 0.5× / 1× / 0.5× 分配）：
+`runThemeReveal()`（`themeReveal.ts`）不再使用 View Transitions，改为动态创建全屏覆盖层（`components/theme-reveal.css`），不含 IPC 总时长 **1.85s**（模糊 400 + 不透明遮罩 200 + 图标入场 300 + 停留 700 + 淡出 250；tint 交叉 400 与图标入场并行）：
 
 1. **模糊**（400ms）：`__blur` 以 `backdrop-filter: blur(12px)` + 旧主题 `--desk-solid` 55% tint 淡入；tint 值在创建时固化，避免 commit 后 `data-theme` 变化把旧色一起换掉。
 2. **不透明遮罩**（200ms）：`__veil` 用旧主题 `--desk-solid` 100% 纯色升到 `opacity: 1`。
 3. **解析**：遮罩完全不透明后才调用 `theme:apply`（system 档 await 权威明暗），且到调用之间没有 await；等待期间遮罩拦截指针与键盘，超过 3s 未返回按本地解析强制提交。这是修复「底色先变、三栏后变」的关键。
-4. **交叉**（400ms）：同一同步段写 `dataset.theme` + `flushSync` React 状态；随后读取新主题 `--desk-solid` 写入 `__tint`，tint 从 0 → 1、中心 `__badge` 插入目标主题图标（112px、stroke 1.35、品牌 18% 柔光）并缩放淡入。
-5. **淡出**（200ms）：整层 opacity 1 → 0，图标同时放大淡出，完成后移除 DOM、把 `__veil` / `__tint` 归零并解除键盘拦截。
+4. **交叉 + 图标入场**（400ms / 300ms）：同一同步段写 `dataset.theme` + `flushSync` React 状态；随后读取新主题 `--desk-solid` 写入 `__tint`，tint 从 0 → 1；中心 `__badge` 插入目标主题图标（112px、stroke 1.35、品牌 18% 柔光）并按独立时长缩放淡入。
+5. **图标停留**（700ms）：tint 交叉在停留开始后 100ms 内收尾；图标保持 opacity 1 / scale 1 完全静止 700ms。
+6. **淡出**（250ms）：整层 opacity 1 → 0，图标同时放大淡出，两者同时结束；完成后移除 DOM、把 `__veil` / `__tint` 归零并解除键盘拦截。
 
-- 只动 `opacity` / `transform`，不逐帧改 blur 半径；时长读 `--dur-theme-reveal`、缓动读 `--ease` / `--ease-out`，读失败回退常量。
+- 只动 `opacity` / `transform`，不逐帧改 blur 半径；遮罩 / tint 读 `--dur-theme-reveal`、图标读 `--dur-theme-badge-in|hold|out`、缓动读 `--ease` / `--ease-out`，读失败回退常量。
 - 覆盖层 `z-index: var(--z-theme-reveal)`（1105），仅在动画期间存在。
-- 快速连切：模块级 `revealSequence` 丢弃过期解析；处于 `blurring` / `veiling` / `revealing` 的覆盖层被复用，取消旧 WAAPI 动画后把旧主题色对齐到当前 `data-theme`、目标层与图标归零，再按最新目标重放 tint / 图标，**不重新模糊**；进入 `fading` 后新建覆盖层。
+- 快速连切：模块级 `revealSequence` 丢弃过期解析；处于 `blurring` / `veiling` / `revealing` / `holding` 的覆盖层被复用，取消旧 WAAPI 动画与图标停留计时后把旧主题色对齐到当前 `data-theme`、目标层与图标归零，再按最新目标重放 tint / 图标，**不重新模糊**；进入 `fading` 后新建覆盖层。
 - 降级（直接 resolve + commit，不显示遮罩）：`prefers-reduced-motion: reduce`、页面隐藏、覆盖层创建抛错、动画异常；已解析时补提交一次（幂等），保证主题永不因动画失败而不切。
 
 ### 7.4 旧方案已移除

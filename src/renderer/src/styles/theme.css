@@ -50,11 +50,18 @@
   --dur-fast: 120ms;
   --dur-slow: 240ms;
 
-  /* 主题切换覆盖层专用时长（400ms）：仅 `theme/themeReveal.ts` 消费。四段按
-     1× / 0.5× / 1× / 0.5× 使用（模糊 / 不透明遮罩 / 交叉 / 淡出），合计
-     3 × 400ms = 1.2s。与 --dur-slow（240ms，通用位移 / 进场）区分；
-     放慢 / 加快只改此值，四段等比缩放。 */
+  /* 主题切换覆盖层专用时长（400ms）：仅 `theme/themeReveal.ts` 消费。三处按
+     1× / 0.5× / 1× 使用（模糊 / 不透明遮罩 / tint 交叉），合计 1.0s，另含
+     IPC 等待与图标独立时长。与 --dur-slow（240ms，通用位移 / 进场）区分；
+     放慢 / 加快只改此值，三处等比缩放。 */
   --dur-theme-reveal: 400ms;
+
+  /* 主题切换图标的独立时长：入场 300 + 完全可见停留 700 + 淡出 250 =
+     1250ms。仅主题切换图标的入场 / 停留 / 淡出消费，不与
+     --dur-theme-reveal 共用；停留偏长 / 偏短时只改 hold 一个值。 */
+  --dur-theme-badge-in: 300ms;
+  --dur-theme-badge-hold: 700ms;
+  --dur-theme-badge-out: 250ms;
 
   /* 主题切换（data-theme 变更）本身**不做 CSS transition**：界面色几乎全部
      经主题令牌派生，可过渡的只有其中一部分属性，同屏「一部分渐变、一部分

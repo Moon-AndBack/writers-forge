@@ -307,13 +307,16 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 32 
 
 ### 7.1 令牌
 
-| 令牌                 | 值                               | 用途                                           | 定义位置              |
-| -------------------- | -------------------------------- | ---------------------------------------------- | --------------------- |
-| `--dur-fast`         | 120ms                            | hover / 图标态 / 行操作浮现 / 颜色与背景反馈   | `styles/theme.css:50` |
-| `--dur-slow`         | 240ms                            | 位移 / 尺寸变化 / 展开收起 / 进场 / Modal 退场 | `styles/theme.css:51` |
-| `--dur-theme-reveal` | 400ms                            | 主题切换覆盖层三阶段（模糊 / 交叉 / 淡出）     | `styles/theme.css:56` |
-| `--ease`             | `cubic-bezier(0.33, 0, 0.67, 1)` | 对称缓动，交互与主题淡化共用                   | `styles/theme.css:45` |
-| `--ease-out`         | `cubic-bezier(0.22, 1, 0.36, 1)` | 进场专用（快出慢入）                           | `styles/theme.css:71` |
+| 令牌                     | 值                               | 用途                                                  | 定义位置              |
+| ------------------------ | -------------------------------- | ----------------------------------------------------- | --------------------- |
+| `--dur-fast`             | 120ms                            | hover / 图标态 / 行操作浮现 / 颜色与背景反馈          | `styles/theme.css:50` |
+| `--dur-slow`             | 240ms                            | 位移 / 尺寸变化 / 展开收起 / 进场 / Modal 退场        | `styles/theme.css:51` |
+| `--dur-theme-reveal`     | 400ms                            | 主题切换覆盖层三阶段（模糊 / 不透明遮罩 / tint 交叉） | `styles/theme.css:57` |
+| `--dur-theme-badge-in`   | 300ms                            | 主题切换图标入场（仅覆盖层图标消费）                  | `styles/theme.css:62` |
+| `--dur-theme-badge-hold` | 700ms                            | 主题切换图标完全可见停留（仅覆盖层图标消费）          | `styles/theme.css:63` |
+| `--dur-theme-badge-out`  | 250ms                            | 主题切换图标淡出（仅覆盖层图标消费）                  | `styles/theme.css:64` |
+| `--ease`                 | `cubic-bezier(0.33, 0, 0.67, 1)` | 对称缓动，交互与主题淡化共用                          | `styles/theme.css:45` |
+| `--ease-out`             | `cubic-bezier(0.22, 1, 0.36, 1)` | 进场专用（快出慢入）                                  | `styles/theme.css:79` |
 
 ### 7.2 卡片 hover 光晕
 
@@ -343,12 +346,13 @@ box-shadow:
 
 ### 7.3 主题切换
 
-主题切换**不使用** CSS transition，也**不使用** View Transitions，而由 `theme/themeReveal.ts` 动态创建全屏覆盖层（`components/theme-reveal.css`）。总时长 1.2s（`--dur-theme-reveal` 为 400ms，四段按 1× / 0.5× / 1× / 0.5× 分配）：
+主题切换**不使用** CSS transition，也**不使用** View Transitions，而由 `theme/themeReveal.ts` 动态创建全屏覆盖层（`components/theme-reveal.css`）。不含 IPC 总时长 1.85s（模糊 400 + 不透明遮罩 200 + 图标入场 300 + 停留 700 + 淡出 250；tint 交叉 400 与图标入场并行）：
 
 1. `__blur` 以 `backdrop-filter: blur(12px)` + 旧主题 55% tint 淡入 400ms（此时仍半透明，能看到模糊后的界面）；
 2. `__veil` 用旧主题 100% 纯色在 200ms 内升到完全不透明，**此后才**调用主进程 `theme:apply`（`system` 档 await 权威明暗）；遮罩可见期间拦截指针与键盘，apply 超过 3s 未返回则按本地解析强制提交；
-3. 拿到权威明暗后**同一帧**写入 `dataset.theme` 与 React 状态（`flushSync`）；`__tint` 用新主题 100% 纯色在 400ms 内从 0 → 1 交叉，`__badge` 显示目标主题大图标（112px、stroke 1.35、品牌 18% 柔光晕）；
-4. 整层 200ms 淡出，图标缩放淡出，移除遮罩并把 `__veil` / `__tint` 归零。
+3. 拿到权威明暗后**同一帧**写入 `dataset.theme` 与 React 状态（`flushSync`）；`__tint` 用新主题 100% 纯色在 400ms 内从 0 → 1 交叉，`__badge` 显示目标主题大图标（112px、stroke 1.35、品牌 18% 柔光晕），图标以独立时长 300ms 缩放淡入；
+4. 图标完全可见后停留 700ms（`--dur-theme-badge-hold`），tint 交叉在停留开始后 100ms 内收尾；停留期间图标 opacity 1 / scale 1，完全静止；
+5. 整层与图标同时淡出 250ms（`--dur-theme-badge-out`，图标同时放大），移除遮罩并把 `__veil` / `__tint` 归零。
 
 - 覆盖层 `z-index: var(--z-theme-reveal)`（1105），**仅动画期间存在，动画结束即移除**。
 - 减少动效、页面隐藏、覆盖层创建或动画异常时直接切换，不显示遮罩。

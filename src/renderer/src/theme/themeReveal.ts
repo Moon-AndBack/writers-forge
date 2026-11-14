@@ -3,7 +3,7 @@
  *
  * 亚克力窗口下 `.shell` 只有 50% 不透明，剩余底色来自 DWM 材质；旧方案在
  * View Transition 快照前就切换 `nativeTheme.themeSource`，原生背板直接跳变，
- * 于是「底色先变、三栏后变」。本方案改为严格串行（总 1.2s）：
+ * 于是「底色先变、三栏后变」。本方案改为严格串行（不含 IPC 总 1.85s）：
  *
  * ```
  * __blur 淡入（--dur-theme-reveal，55% 旧主题 tint，仍见模糊）
@@ -11,7 +11,8 @@
  *   → 才调用主进程 theme:apply（system 档 await 权威明暗）
  *   → 同一帧 commit：dataset.theme + flushSync + 目标 tint + 大图标
  *   → __tint 0 → 1（--dur-theme-reveal）：旧纯色交叉到新纯色
- *   → 覆盖层淡出（0.5 × 令牌），图标缩放淡出
+ *   → 图标入场（--dur-theme-badge-in）→ 完全可见停留（--dur-theme-badge-hold）
+ *   → 覆盖层与图标一起淡出（--dur-theme-badge-out），图标同时轻微放大
  *   → 移除覆盖层，恢复交互
  * ```
  *
@@ -24,11 +25,19 @@
  * `APPLY_TIMEOUT` 按本地解析强制提交并淡出；遮罩可见期间持续拦截指针与键盘。
  *
  * 快速连切由序号守卫：旧请求在 await 点发现序号过期即退出；可见阶段的覆盖层
- * 复用（对齐旧主题色、目标层与图标归零后重放，不重新模糊），淡出阶段则新建。
+ * 复用（取消旧动画与图标停留计时，对齐旧主题色、目标层与图标归零后重放，不重新
+ * 模糊），淡出阶段则新建。
  */
 
 import type { IconNode } from 'lucide'
 import { THEME_ICONS } from './themeIcons'
+import {
+  cancelHold,
+  halfPhase,
+  readRevealMotion,
+  waitHold,
+  type HoldSlot
+} from './themeRevealMotion'
 import type { ResolvedThemeId } from './themes'
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
@@ -37,21 +46,13 @@ const SVG_NS = 'http://www.w3.org/2000/svg'
 const TINT_VAR = '--wf-theme-reveal-tint'
 const TARGET_TINT_VAR = '--wf-theme-reveal-target'
 
-/** 与 `theme.css` 的 `--dur-theme-reveal` 对齐；令牌读取失败时的回退值（毫秒）。 */
-const FALLBACK_DURATION = 400
-/** 与 `theme.css` 的 `--ease` 对齐（对称曲线）；令牌读取失败时的回退值。 */
-const FALLBACK_EASING = 'cubic-bezier(0.33, 0, 0.67, 1)'
-/** 与 `theme.css` 的 `--ease-out` 对齐（进场曲线）；令牌读取失败时的回退值。 */
-const FALLBACK_EASING_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)'
-/** 半档阶段比例（升遮罩 / 淡出）：合计 3 × 400ms = 1.2s。 */
-const HALF_PHASE_RATIO = 0.5
 /** `theme:apply` 安全超时（毫秒，非动画时长）：IPC 卡死时按 `fallback()` 提交
  * 并淡出，避免遮罩停在纯色上无法操作。 */
 const APPLY_TIMEOUT = 3000
 
-type RevealPhase = 'blurring' | 'veiling' | 'revealing' | 'fading'
+type RevealPhase = 'blurring' | 'veiling' | 'revealing' | 'holding' | 'fading'
 
-interface RevealContext {
+interface RevealContext extends HoldSlot {
   root: HTMLDivElement
   blur: HTMLDivElement
   veil: HTMLDivElement
@@ -82,29 +83,6 @@ let activeContext: RevealContext | null = null
 
 function prefersReducedMotion(): boolean {
   return window.matchMedia(REDUCED_MOTION_QUERY).matches
-}
-
-/**
- * 读取动画时长 / 缓动：读令牌而非写字面量（`theme.css` 约定禁止裸时长），
- * 令牌缺失 / 解析失败时回退到与当前令牌一致的常量，保证动画照常可见。
- */
-function readRevealMotion(): { duration: number; easing: string; easingOut: string } {
-  const styles = getComputedStyle(document.documentElement)
-  const duration = Number.parseFloat(styles.getPropertyValue('--dur-theme-reveal'))
-  const easing = styles.getPropertyValue('--ease').trim()
-  const easingOut = styles.getPropertyValue('--ease-out').trim()
-
-  return {
-    // 0 / NaN 视为无效：时长为 0 就是瞬切，正是本函数要避免的结果
-    duration: Number.isFinite(duration) && duration > 0 ? duration : FALLBACK_DURATION,
-    easing: easing.length > 0 ? easing : FALLBACK_EASING,
-    easingOut: easingOut.length > 0 ? easingOut : FALLBACK_EASING_OUT
-  }
-}
-
-/** 半档阶段时长（升遮罩 / 淡出）：0.5 × --dur-theme-reveal，取整毫秒。 */
-function halfPhase(duration: number): number {
-  return Math.max(1, Math.round(duration * HALF_PHASE_RATIO))
 }
 
 function readToken(name: string): string {
@@ -152,8 +130,9 @@ function play(
   return animation
 }
 
-/** 取消并固化上下文中的全部动画（供复用与销毁使用）。 */
+/** 取消并固化上下文中的全部动画与图标停留计时（供复用与销毁使用）。 */
 function stopAnimations(ctx: RevealContext): void {
+  cancelHold(ctx)
   for (const animation of [...ctx.animations]) {
     try {
       animation.commitStyles()
@@ -217,6 +196,7 @@ function createContext(): RevealContext {
     badge,
     badgeInner,
     animations: new Set(),
+    hold: null,
     phase: 'blurring',
     blurVisible: false,
     veilOpaque: false,
@@ -224,7 +204,8 @@ function createContext(): RevealContext {
   }
 
   // 动画期间持续拦截键盘，避免按键穿透到遮罩后的界面；遮罩移除时一并解除。
-  // 正常 1.2s；`theme:apply` 超时兜底时最长约 4.2s（400 + 200 + 3000 + 400 + 200）。
+  // 正常约 1.85s；`theme:apply` 超时兜底时最长约 4.85s
+  // （400 + 200 + 3000 + 入场 300 + 停留 700 + 淡出 250）。
   ctx.keyBlock = (event: KeyboardEvent): void => {
     event.preventDefault()
     event.stopPropagation()
@@ -249,7 +230,7 @@ function destroyContext(): void {
 
 /**
  * 取得可复用的覆盖层：`fading` 阶段已接近不可见，直接销毁重建（重新模糊）；
- * 其余阶段复用并取消旧动画，保留模糊层。
+ * 其余阶段（含图标停留）复用并取消旧动画与停留计时，保留模糊层。
  */
 function acquireContext(): RevealContext {
   if (activeContext && activeContext.phase !== 'fading') {
@@ -407,39 +388,45 @@ async function orchestrate(
     ctx.root.style.setProperty(TARGET_TINT_VAR, readToken('--desk-solid') || 'transparent')
     setBadgeIcon(ctx.badgeInner, THEME_ICONS[target])
 
-    const tint = play(
-      ctx,
-      ctx.tint,
-      [{ opacity: 0 }, { opacity: 1 }],
-      motion.duration,
-      motion.easing
-    )
+    // tint 交叉仍按 --dur-theme-reveal 独立播放：不推迟图标入场后的停留窗口，
+    // 交叉会在停留开始后的 100ms 内收尾。
+    play(ctx, ctx.tint, [{ opacity: 0 }, { opacity: 1 }], motion.duration, motion.easing)
     const badge = play(
       ctx,
       ctx.badge,
       [{ opacity: 0 }, { opacity: 1 }],
-      motion.duration,
+      motion.badgeIn,
       motion.easingOut
     )
     const badgeIn = play(
       ctx,
       ctx.badgeInner,
       [{ transform: 'scale(0.86)' }, { transform: 'scale(1)' }],
-      motion.duration,
+      motion.badgeIn,
       motion.easingOut
     )
-    await Promise.all([ignore(tint), ignore(badge), ignore(badgeIn)])
+    await Promise.all([ignore(badge), ignore(badgeIn)])
     if (seq !== revealSequence) return
 
-    // ⑤ 淡出：整层透明度下降，图标同时轻微放大并淡出。
+    // ⑤ 停留：图标完全可见且静止（opacity 1 / scale 1），时长独立于 tint 交叉。
+    ctx.phase = 'holding'
+    await waitHold(ctx, motion.badgeHold)
+    if (seq !== revealSequence) return
+
+    // ⑥ 淡出：图标与整层同时开始、同时结束，时长同为 --dur-theme-badge-out。
     ctx.phase = 'fading'
-    const fadeDuration = halfPhase(motion.duration)
-    const fade = play(ctx, ctx.root, [{ opacity: 1 }, { opacity: 0 }], fadeDuration, motion.easing)
+    const fade = play(
+      ctx,
+      ctx.root,
+      [{ opacity: 1 }, { opacity: 0 }],
+      motion.badgeOut,
+      motion.easing
+    )
     const badgeOut = play(
       ctx,
       ctx.badgeInner,
       [{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }],
-      fadeDuration,
+      motion.badgeOut,
       motion.easingOut
     )
     await Promise.all([ignore(fade), ignore(badgeOut)])
