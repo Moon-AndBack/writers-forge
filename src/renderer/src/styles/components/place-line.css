@@ -35,3 +35,40 @@
 .wf-place-line__value.is-muted {
   color: var(--text-mute);
 }
+
+/* 胶囊变体（首次登场）：透明底 + 1px 细描边，把整行（标签 + 位置串）包成一颗
+   静态信息胶囊。不承担点击 / 悬停，故无 hover 底色、无 transform / transition。
+   设定档案卡的信息槽是 flex column（默认 stretch），`align-self: flex-start`
+   让胶囊按内容收口；悬停卡内为普通块级流，该声明不生效也无副作用。
+   颜色 / 字号 / 圆角全部取 theme.css 令牌，四主题通用。 */
+.wf-place-line--pill {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 6px;
+  max-width: 100%;
+  padding: 2px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: transparent;
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* 标签与值同字号 / 行高，靠色阶（mute → dim）区分层次。 */
+.wf-place-line--pill .wf-place-line__label {
+  line-height: 1.6;
+}
+
+.wf-place-line--pill .wf-place-line__value {
+  font-size: var(--fs-micro);
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+/* 尚未登场：保留胶囊形态，只把值降到弱化色。描边不随之弱化——胶囊是静态信息
+   容器而非状态指示，统一 1px --line 可避免出现第二档描边强度（不新增令牌）。 */
+.wf-place-line--pill .wf-place-line__value.is-muted {
+  color: var(--text-mute);
+}

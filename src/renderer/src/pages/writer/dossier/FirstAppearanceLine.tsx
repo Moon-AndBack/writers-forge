@@ -58,7 +58,8 @@ export function FirstAppearanceLine({ place, label, emptyLabel }: FirstAppearanc
   )
 
   if (place === undefined) return null
-  if (place === null) return <PlaceLine label={label} value={emptyLabel} tone="muted" />
+  if (place === null)
+    return <PlaceLine label={label} value={emptyLabel} tone="muted" variant="pill" />
 
   const chapter: PlaceChapter = {
     kind: place.chapterKind,
@@ -72,7 +73,13 @@ export function FirstAppearanceLine({ place, label, emptyLabel }: FirstAppearanc
     title: place.volumeTitle
   }
 
-  return <PlaceLine label={label} value={formatChapterPlace(volume, chapter, placeLabels)} />
+  return (
+    <PlaceLine
+      label={label}
+      value={formatChapterPlace(volume, chapter, placeLabels)}
+      variant="pill"
+    />
+  )
 }
 
 export default FirstAppearanceLine

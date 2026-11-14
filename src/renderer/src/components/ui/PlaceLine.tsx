@@ -8,6 +8,9 @@
  * 无障碍：值文本在 DOM 中始终完整（省略号只是视觉裁剪），读屏本就能取到全值；
  * 另由 `anchorProps` 附带 `aria-describedby`（指向浮层），与项目其它 tooltip 同口径。
  *
+ * 形态：默认 `plain`（伏笔卡位置行）；`pill` 把整行包进透明底细描边胶囊，
+ * 仅供首次登场使用，两者共用同一结构与 tooltip 能力。
+ *
  * 样式见 `styles/components/place-line.css`（AGENTS §9：不复制第二套位置行样式）。
  */
 import { useTooltip } from './Tooltip'
@@ -21,10 +24,18 @@ export interface PlaceLineProps {
   title?: string
   /** 显示语气：`normal` 正常值；`muted` 占位 / 未登场（弱化色，不弹 tooltip）。 */
   tone?: 'normal' | 'muted'
+  /** 形态：`plain` 默认单行；`pill` 透明底细描边胶囊（首次登场）。 */
+  variant?: 'plain' | 'pill'
 }
 
 /** 单行位置行：标签 + 单行截断值（+ 可选 tooltip）。 */
-export function PlaceLine({ label, value, title, tone = 'normal' }: PlaceLineProps) {
+export function PlaceLine({
+  label,
+  value,
+  title,
+  tone = 'normal',
+  variant = 'plain'
+}: PlaceLineProps) {
   const muted = tone === 'muted'
   const { anchorRef, anchorProps, tooltip } = useTooltip<HTMLSpanElement>({
     content: muted ? '' : (title ?? value),
@@ -34,7 +45,7 @@ export function PlaceLine({ label, value, title, tone = 'normal' }: PlaceLinePro
   return (
     <>
       {tooltip}
-      <div className="wf-place-line">
+      <div className={`wf-place-line${variant === 'pill' ? ' wf-place-line--pill' : ''}`}>
         <span className="wf-place-line__label">{label}</span>
         <span
           ref={anchorRef}
