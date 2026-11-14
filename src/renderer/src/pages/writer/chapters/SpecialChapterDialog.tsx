@@ -56,7 +56,7 @@ export default function SpecialChapterDialog({ onClose, onSubmit }: SpecialChapt
       ariaLabel={t('specialChapterDialog.title')}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {tCommon('cancel')}
           </Button>
           <Button variant="primary" onClick={submit}>

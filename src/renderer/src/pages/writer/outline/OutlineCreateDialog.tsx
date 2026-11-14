@@ -60,7 +60,7 @@ export default function OutlineCreateDialog({
       ariaLabel={t('add')}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {tCommon('cancel')}
           </Button>
           <Button variant="primary" disabled={!canSubmit} onClick={submit}>

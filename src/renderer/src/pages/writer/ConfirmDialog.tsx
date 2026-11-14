@@ -53,7 +53,7 @@ export function ConfirmDialog({
       ariaLabel={title}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={confirming}>
+          <Button variant="secondary" onClick={onClose} disabled={confirming}>
             {resolvedCancelText}
           </Button>
           <Button

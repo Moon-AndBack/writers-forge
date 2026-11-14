@@ -105,7 +105,7 @@ export function BookFormDialog({
             ) : null}
           </div>
           <span className="bf-footer-spacer" />
-          <Button variant="ghost" onClick={form.handleClose}>
+          <Button variant="secondary" onClick={form.handleClose}>
             {tCommon('cancel')}
           </Button>
           <Button

@@ -200,7 +200,7 @@ export function AiSessionBar({
         size="sm"
         footer={
           <>
-            <Button variant="ghost" disabled={renameBusy} onClick={closeRename}>
+            <Button variant="secondary" disabled={renameBusy} onClick={closeRename}>
               {t('panel.sessions.cancel')}
             </Button>
             <Button

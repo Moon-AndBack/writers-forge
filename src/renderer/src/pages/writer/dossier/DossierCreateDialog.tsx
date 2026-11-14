@@ -66,7 +66,7 @@ export default function DossierCreateDialog({
       ariaLabel={dialogTitle}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {tCommon('cancel')}
           </Button>
           <Button variant="primary" onClick={submit} disabled={!canSubmit}>

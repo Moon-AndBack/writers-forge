@@ -59,7 +59,7 @@ export default function NewVolumeDialog({ onClose, onSubmit }: NewVolumeDialogPr
       ariaLabel={t('newVolumeDialog.title')}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {tCommon('cancel')}
           </Button>
           <Button variant="primary" disabled={!canSubmit} onClick={submit}>

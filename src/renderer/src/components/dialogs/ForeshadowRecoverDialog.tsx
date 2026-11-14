@@ -177,7 +177,11 @@ export default function ForeshadowRecoverDialog({
       ariaLabel={t('recover.title')}
       footer={
         <>
-          <Button variant="ghost" onMouseDown={(event) => event.preventDefault()} onClick={onClose}>
+          <Button
+            variant="secondary"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={onClose}
+          >
             {t('action.cancel')}
           </Button>
           <Button

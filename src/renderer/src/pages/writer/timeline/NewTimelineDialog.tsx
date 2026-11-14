@@ -42,7 +42,7 @@ export default function NewTimelineDialog({ bookId, onClose, onSubmit }: NewTime
       ariaLabel={t('newDialog.title')}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {tCommon('cancel')}
           </Button>
           <Button variant="primary" onClick={submit}>

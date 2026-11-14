@@ -114,7 +114,11 @@ export default function OneDriveSection() {
                   <Button variant="primary" loading>
                     {t('account.signIn')}
                   </Button>
-                  <Button variant="ghost" onClick={od.handleCancelSignIn}>
+                  <Button
+                    variant="secondary"
+                    className="wf-btn--on-soft"
+                    onClick={od.handleCancelSignIn}
+                  >
                     {t('account.cancelSignIn')}
                   </Button>
                 </>

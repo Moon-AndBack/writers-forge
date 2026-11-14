@@ -83,7 +83,7 @@ export default function DossierRelationsDialog({
       ariaLabel={title}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose}>
             {tCommon('close')}
           </Button>
           <Button variant="primary" onClick={draft.addRelation} disabled={!draft.canAdd}>
