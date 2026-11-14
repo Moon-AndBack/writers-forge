@@ -1,19 +1,12 @@
 /* ============================================================
    势力组织架构视图（orgChart）
    ------------------------------------------------------------------
-   画布：拖拽平移 + 滚轮 / 按钮缩放 + 适应画布；节点卡片按层级取
-   --brand 不同混色比例作左侧色条，成员胶囊复用全局 chip-pill。
+   画布：拖拽平移 + 滚轮 / 按钮缩放 + 适应画布；节点卡复用通用程序卡壳
+   （EntityStyleCard：单行标题 + 子类胶囊 + 底部成员胶囊），成员胶囊复用
+   全局 chip-pill；折叠为标题行右侧图标按钮。
    卡片 hover 只做边缘光晕（颜色 / 描边 / 阴影），无位移 / 缩放（§8.8）。
    浮层缩放控件属 chrome 浮层域（24px），与状态栏同档。
    ============================================================ */
-
-/* ---------- 中栏视图切换条（仅势力模块） ---------- */
-.dossier-viewbar {
-  flex: none;
-  display: flex;
-  justify-content: flex-end;
-  padding: 8px 28px 0;
-}
 
 /* 架构视图占满中栏滚动区：滚动容器改为不滚动的 flex 容器，画布自己平移 / 缩放。 */
 .editor-scroll.is-org {
@@ -162,107 +155,24 @@
   gap: 36px;
 }
 
-/* 卡片：左侧色条按层级取 --brand 不同混色比例（0 最深 → 3+ 最浅）。 */
-.org-chart__card {
-  --org-depth-mix: 100%;
-  position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas:
-    'icon main members'
-    'footer footer footer';
-  align-items: center;
-  gap: 8px 10px;
+/* 卡片：通用程序卡壳（EntityStyleCard）+ 画布域约束。
+   400px 是画布密度约束（先例：剧情场景卡 320）；卡片整体可用来拖拽画布，
+   光标覆写为 grab（`.wf-entity-card--readonly` 默认箭头）。通用壳自带
+   `wf-enter-up` 进场（8px 位移），位移期间连线测量会对不齐，这里关闭。 */
+.org-chart__card.wf-entity-card {
   width: 400px;
-  box-sizing: border-box;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-left: 3px solid color-mix(in srgb, var(--brand) var(--org-depth-mix), var(--pane));
-  border-radius: var(--r-lg);
-  background: var(--soft-solid);
-  box-shadow: var(--sh-xs);
-  transition:
-    box-shadow var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease),
-    background var(--dur-fast) var(--ease);
+  cursor: grab;
+  animation: none;
 }
 
-.org-chart__node[data-depth='1'] > .org-chart__card {
-  --org-depth-mix: 70%;
+.org-chart.is-panning .org-chart__card.wf-entity-card {
+  cursor: grabbing;
 }
 
-.org-chart__node[data-depth='2'] > .org-chart__card {
-  --org-depth-mix: 50%;
-}
-
-.org-chart__node[data-depth='3'] > .org-chart__card {
-  --org-depth-mix: 35%;
-}
-
-/* 边缘光晕（§8.8）：只改颜色 / 描边 / 阴影，无 transform。 */
-.org-chart__card:hover {
-  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
-  border-left-color: color-mix(in srgb, var(--brand) var(--org-depth-mix), var(--pane));
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
-    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
-    var(--sh-sm),
-    var(--panel-ring);
-}
-
-.org-chart__icon {
-  grid-area: icon;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid color-mix(in srgb, var(--brand) var(--org-depth-mix), transparent);
-  border-radius: var(--r-lg);
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
-  color: color-mix(in srgb, var(--brand) var(--org-depth-mix), var(--text));
-}
-
-.org-chart__main {
-  grid-area: main;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.org-chart__name {
-  color: var(--text);
-  font-size: var(--fs-title);
-  font-weight: 600;
-  line-height: 1.4;
-  overflow-wrap: anywhere;
-}
-
-.org-chart__meta {
-  color: var(--text-mute);
-  font-size: var(--fs-micro);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.org-chart__members {
-  grid-area: members;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  justify-content: flex-end;
-  gap: 4px;
-  max-width: 190px;
-}
-
+/* 成员胶囊：尺寸由壳的 `.wf-entity-card__chips .chip-pill` 统一提供，
+   此处只保留单枚胶囊的宽度约束与省略。 */
 .org-chart__member {
   max-width: 100%;
-  padding: 1px 8px;
-  font-size: var(--fs-micro);
-  font-weight: 500;
-  line-height: 1.6;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -274,35 +184,10 @@
   font-size: var(--fs-micro);
 }
 
-.org-chart__footer {
-  grid-area: footer;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.org-chart__toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: var(--control-h-md);
-  padding: 0 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  background: var(--control-on-soft);
-  color: var(--text-dim);
-  font-family: inherit;
+/* 递归人数：与子类胶囊同处 meta 行，弱化为元信息。 */
+.org-chart__count {
+  color: var(--text-mute);
   font-size: var(--fs-micro);
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
-}
-
-.org-chart__toggle:hover {
-  background: var(--control-on-soft-hover);
-  color: var(--text);
 }
 
 .org-chart__toggle-icon {

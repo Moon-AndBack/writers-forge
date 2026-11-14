@@ -247,7 +247,7 @@ IPC 共 **20 个** `worldEntity:*` 通道，按用途分四组：
 
 正文高亮与悬停卡：`pages/writer/entities/entityHighlight.ts` 的 `EntityHighlight` 扩展按段落缓存匹配结果（键 = 书 + 词表版本 + 段落文本），装饰类名复用 `entityChipClass(type, presetKey)`；`pages/writer/entities/HoverCard.tsx` 按 `peerId` 走 `worldEntity:get` 取详情并内置 LRU 缓存。
 
-**势力组织架构视图**（2026-11）：势力模块中栏顶部提供「卡片 / 架构」切换（其它四域不显示）。架构视图用 `worldEntity:list(faction)` + `worldEntity:list(worldview)` 取组织节点，并用 `worldEntity:list(character)` 补成员名（`belongs_to` 两端都需要实体行才能认定成员），用 `worldEntity:listRefsByBook(bookId, ['superior', 'subordinate', 'peer', 'belongs_to'])` 取 refs-only 关系（不 JOIN 正文），交给纯函数 `buildOrgChart` 推导：同一逻辑边双向存储归一、方向冲突 / 环 / 多父收口并回报 `conflicts`，`belongs_to` 按两端类型认定成员（反向存储标 `reversed`），未进入任何树的势力归 `orphans`。画布层（`orgChart/OrgChart.tsx` + `useOrgChartTransform` / `useOrgChartLines`）负责拖拽平移、滚轮 / 按钮缩放（0.3–2）、适应画布与 SVG 折线（按 DOM 实测位置，折叠 / 尺寸变化自动重测）；冲突以可折叠「数据问题」条展示，孤儿势力单列「未接入层级」。`orgChart.ts` 为纯函数，不依赖 React / IPC。
+**势力组织架构视图**（2026-11）：势力模块标题栏左侧提供「卡片 / 架构」切换（其它四域不显示，编辑正文时仍保留）。架构视图用 `worldEntity:list(faction)` + `worldEntity:list(worldview)` 取组织节点，并用 `worldEntity:list(character)` 补成员名（`belongs_to` 两端都需要实体行才能认定成员），用 `worldEntity:listRefsByBook(bookId, ['superior', 'subordinate', 'peer', 'belongs_to'])` 取 refs-only 关系（不 JOIN 正文），交给纯函数 `buildOrgChart` 推导：同一逻辑边双向存储归一、方向冲突 / 环 / 多父收口并回报 `conflicts`，`belongs_to` 按两端类型认定成员（反向存储标 `reversed`），未进入任何树的势力归 `orphans`。画布层（`orgChart/OrgChart.tsx` + `useOrgChartTransform` / `useOrgChartLines`）负责拖拽平移、滚轮 / 按钮缩放（0.3–2）、适应画布与 SVG 折线（按 DOM 实测位置，折叠 / 尺寸变化自动重测）；节点卡复用通用程序卡壳 `EntityStyleCard`（单行标题 + 子类彩色胶囊 + 底部成员胶囊，折叠为标题行右侧 22×22 图标按钮，卡片根保留 `data-org-node-id` 供连线测量）；冲突以可折叠「数据问题」条展示，孤儿势力单列「未接入层级」。`orgChart.ts` 为纯函数，不依赖 React / IPC。
 
 ## 10. 已知边界与技术债
 

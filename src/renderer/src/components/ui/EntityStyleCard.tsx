@@ -50,8 +50,10 @@ export interface EntityStyleCardProps {
   compact?: boolean
   /** 追加到根 `<article>` 的类名（域语义钩子）。 */
   className?: string
-  /** 透传到根 `<article>` 的交互 / 无障碍属性。 */
-  cardProps?: Omit<HTMLAttributes<HTMLElement>, 'className' | 'children'>
+  /** 透传到根 `<article>` 的交互 / 无障碍属性（含 `data-*`，供域内测量 / 定位）。 */
+  cardProps?: Omit<HTMLAttributes<HTMLElement>, 'className' | 'children'> & {
+    [key: `data-${string}`]: string | number | undefined
+  }
 }
 
 export function EntityStyleCard({

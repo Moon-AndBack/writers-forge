@@ -118,13 +118,7 @@ export default function OrgChart({ roots, orphans }: OrgChartProps): ReactElemen
         </svg>
         <div className="org-chart__forest">
           {roots.map((node) => (
-            <OrgChartNode
-              key={node.id}
-              node={node}
-              depth={0}
-              collapsed={collapsed}
-              onToggle={toggle}
-            />
+            <OrgChartNode key={node.id} node={node} collapsed={collapsed} onToggle={toggle} />
           ))}
         </div>
         {orphans.length > 0 ? (
@@ -135,13 +129,7 @@ export default function OrgChart({ roots, orphans }: OrgChartProps): ReactElemen
             </div>
             <div className="org-chart__orphans-list">
               {orphans.map((node) => (
-                <OrgChartNode
-                  key={node.id}
-                  node={node}
-                  depth={0}
-                  collapsed={collapsed}
-                  onToggle={toggle}
-                />
+                <OrgChartNode key={node.id} node={node} collapsed={collapsed} onToggle={toggle} />
               ))}
             </div>
           </section>

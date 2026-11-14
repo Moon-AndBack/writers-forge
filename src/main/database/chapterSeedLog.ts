@@ -11,10 +11,20 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v151'
+export const CHAPTER_SEED_VERSION = 'v152'
 
 /**
- * 最近版本变更日志（v151；更早版本见上述历史文件）。
+ * 最近版本变更日志（v152；更早版本见上述历史文件）。
+ *
+ * `v152`（组织架构卡片与切换入口批）：势力模块「卡片 / 架构」切换从中栏顶部移到
+ * 标题栏动作组首位，编辑态仍保留；删除中栏 viewbar 样式。架构节点卡改用通用程序卡
+ * `EntityStyleCard`：去掉深度混色左色条 / 32px 品牌色图标块 / 外描边，子类改为按模块 +
+ * 预设分类上色的彩色胶囊，成员胶囊移到底部 chips，折叠改为标题行右侧 22×22 图标按钮
+ * （保留 `aria-expanded` 与旋转箭头，tooltip 提示直接下级数）。卡片根保留
+ * `data-org-node-id` 供连线测量；禁用通用壳的 `wf-enter-up` 进场位移（否则连线错位），
+ * 光标覆写为 grab / grabbing。`OrgChartNode` 模型补 `presetKey` 供子类胶囊上色；
+ * `EntityStyleCard.cardProps` 支持 `data-*`。教学文案同步（卷四「设定档案」、大纲
+ * 「五域卡片式中栏」）。纯渲染层 + 教学文案改动：无 DB 迁移，升版本只重灌教学书。
  *
  * `v151`（稿纸横线收窄批）：稿纸横线由「章节 / 大纲编辑区 + 右栏只读」收窄为**仅
  * 章节 / 大纲的中栏编辑区**——删除 `.rp-outline .rp-read .ProseMirror > p` 的 `::after`

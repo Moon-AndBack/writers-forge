@@ -132,7 +132,7 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 32 
 
 - 状态栏：本体 36（`styles/statusbar.css:22`），内部控件 24（`styles/statusbar-widgets.css:19,81,233,242,274,297`）。
 - 活动栏：模块按钮 36×36（`styles/shell.css:368-372`）。
-- 标题栏：42（`styles/shell.css:91`）；标题栏内按钮按自身尺寸规则，不参与正文控件等高。
+- 标题栏：42（`styles/shell.css:91`）；标题栏内按钮按自身尺寸规则，不参与正文控件等高。标题栏内分段控件（势力模块「卡片 / 架构」切换）沿用 32px 图标按钮档（`components/segmented.css:20`），与同排图标按钮等高。
 
 新增 chrome 控件必须落在对应域内：不得借用控件 32 档，也不得把正文控件塞进 chrome。
 

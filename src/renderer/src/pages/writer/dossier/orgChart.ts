@@ -24,6 +24,8 @@ export interface OrgEntityRow {
   name: string
   /** 子类展示名（宗门 / 家族…），未分类为空串。 */
   subType: string
+  /** 子类预设键（`chip-p-*` 配色）；自定义 / 未分类为空串。 */
+  presetKey: string
 }
 
 /** 组织节点下的直接成员（角色）。 */
@@ -40,6 +42,8 @@ export interface OrgChartNode {
   entityType: 'faction' | 'worldview'
   name: string
   subType: string
+  /** 子类预设键（`chip-p-*` 配色）；自定义 / 未分类为空串。 */
+  presetKey: string
   /** 暂留：refs-only 通道不含备注，后续接入关系备注后再填。 */
   leader?: string
   /** 直接成员（角色），按关系行 `sort_order, id` 排序。 */
@@ -456,6 +460,7 @@ export function buildOrgChart(
       entityType: info?.entityType === 'worldview' ? 'worldview' : 'faction',
       name: info?.name ?? '',
       subType: info?.subType ?? '',
+      presetKey: info?.presetKey ?? '',
       members: members.get(id) ?? [],
       children: (childEdges.get(id) ?? []).map((edge) => node(edge.childId)),
       extraParentIds: (hierarchy.extra.get(id) ?? []).map((edge) => edge.parentId),

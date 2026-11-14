@@ -9,7 +9,6 @@ import { useModuleLabel } from '../../../shell/activityBarModules'
 import type { DossierModule } from '../../../shell/activityBarModules'
 import { EmptyState } from '../../../components/EmptyState'
 import { LoadErrorState } from '../../../components/LoadErrorState'
-import { Segmented } from '../../../components/ui'
 import { HoverCard } from '../entities/HoverCard'
 import type { HoverAnchor } from '../entities/HoverCard'
 import ConfirmDialog from '../ConfirmDialog'
@@ -59,7 +58,9 @@ export default function DossierView({ bundle }: DossierViewProps) {
   const { t: tCommon } = useTranslation('common')
   const moduleLabel = useModuleLabel(bundle.module)
   const [createOpen, setCreateOpen] = useState(false)
-  // 势力模块中栏视图：卡片网格 / 组织架构（其余四域固定卡片，不渲染切换器）。
+  // 「新建」入口回调保持稳定引用，避免标题栏动作节点每次渲染重新注册。
+  const openCreate = useCallback(() => setCreateOpen(true), [])
+  // 势力模块视图：卡片网格 / 组织架构（其余四域固定卡片，标题栏不渲染切换器）。
   const [viewMode, setViewMode] = useState<'cards' | 'org'>('cards')
   // 编辑弹窗当前打开的行 id（null = 关闭；境界体系无类别选择器，仅改名称 / 别名）。
   const [editId, setEditId] = useState<number | null>(null)
@@ -294,27 +295,17 @@ export default function DossierView({ bundle }: DossierViewProps) {
     nestedHover !== null && rows.some((row) => row.id === nestedHover.sourceRowId)
       ? nestedHover.anchor
       : null
-  // 架构视图仅势力模块可选；切换器只在该模块显示，其它四域保持原卡片视图。
+  // 架构视图仅势力模块可选；切换器在标题栏动作组首位，其它四域不显示。
   const isOrgView = module === 'factions' && viewMode === 'org'
+  // 标题栏视图切换配置：对象 memo 稳定，避免每次渲染重注册标题栏动作节点。
+  const view = useMemo(
+    () => (module === 'factions' ? { mode: viewMode, onChange: setViewMode } : undefined),
+    [module, viewMode]
+  )
 
   return (
     <>
-      <DossierActivityActions module={module} onCreate={() => setCreateOpen(true)} />
-
-      {module === 'factions' ? (
-        <div className="dossier-viewbar">
-          <Segmented
-            size="sm"
-            value={viewMode}
-            onChange={setViewMode}
-            aria-label={t('orgChart.viewLabel')}
-            options={[
-              { value: 'cards', label: t('orgChart.viewCards') },
-              { value: 'org', label: t('orgChart.viewTree') }
-            ]}
-          />
-        </div>
-      ) : null}
+      <DossierActivityActions module={module} onCreate={openCreate} view={view} />
 
       {isOrgView ? (
         <div className="editor-scroll is-org">

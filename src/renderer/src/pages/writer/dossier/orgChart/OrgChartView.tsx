@@ -53,7 +53,8 @@ export default function OrgChartView({ bookId }: OrgChartViewProps): ReactElemen
           id: row.id,
           entityType: row.entityType,
           name: row.name,
-          subType: row.subType
+          subType: row.subType,
+          presetKey: row.presetKey
         }))
         setResult(buildOrgChart(entities, refs))
       } catch {

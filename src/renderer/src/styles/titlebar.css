@@ -19,7 +19,8 @@
 /* ---------- 模块操作按钮组（仅写作页 · 有注册动作的模块） ----------
    位于「返回书架」图标右侧、`.tb-page-actions` 之前，横排渲染：
    章节模块为「新建卷 ｜ 保存 · 撤销 · 重做 ｜ 搜索 ｜ 回收站」，
-   大纲模块为「添加 ｜ 保存 · 撤销 · 重做 ｜ 搜索 ｜ 回收站」。
+   大纲模块为「添加 ｜ 保存 · 撤销 · 重做 ｜ 搜索 ｜ 回收站」，
+   势力模块首位为「卡片 / 架构」视图切换（后接竖分隔线与「新建」/ 工具栏）。
    由各模块视图（经模块级 action 插槽）注册，节点在模块视图内构造，
    故保存禁用态 / 撤销重做可用态 / 搜索 · 回收站激活态等 editor 状态照常获取。
    `min-width: 0` + `overflow: hidden`：窄窗时随 `.tb-spacer` 之后收缩，避免溢出
@@ -40,6 +41,17 @@
 
 .tb-module-actions:empty {
   display: none;
+}
+
+/* 组首视图切换器（势力模块「卡片 / 架构」）：分段控件沿用 32px 控件档，
+   `flex: none` 防止窄窗下被 `.tb-module-actions` 的收缩压扁；
+   标题栏整体可拖拽，控件本体需显式 no-drag（按钮另由 `.titlebar button` 兜底）。 */
+.tb-view-switch {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  padding-right: 4px;
+  -webkit-app-region: no-drag;
 }
 
 /* 分组竖分隔线：横排按钮组内的竖向 1px 线（替代活动栏的横向 `.act-sep`）。 */
