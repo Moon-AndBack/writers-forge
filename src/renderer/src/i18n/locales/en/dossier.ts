@@ -14,9 +14,10 @@ const dossier = {
   emptyDesc: 'Click the plus at the top-left of the title bar to create the first one',
   filter: {
     all: 'All',
-    subtypeAria: 'Filter by subtype',
-    searchPlaceholder: 'Search names or aliases',
-    searchAria: 'Search names or aliases',
+    allSubtypes: 'All categories',
+    subtypeAria: 'Filter by category',
+    searchPlaceholder: 'Search entity names or aliases',
+    searchAria: 'Search entity names or aliases',
     search: 'Search',
     emptyTitle: 'No matching results',
     emptyDesc: 'Try a different keyword or subtype',

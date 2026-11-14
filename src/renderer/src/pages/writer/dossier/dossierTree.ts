@@ -3,7 +3,7 @@
  *
  * 数据层统一走 `window.api.worldEntity`（`entity_type` 映射：worldview / character /
  * faction / power_system / item）。`DossierModule → entity_type` 映射的**真源**已收敛到
- * `shell/activityBarModules`（活动栏筛选面板与页面共用，避免 shell 反向依赖 pages），
+ * `shell/activityBarModules`（活动栏模块清单与五域页面共用，避免 shell 反向依赖 pages），
  * 本文件按原路径转出它并承载 `DossierBundle`，供中栏卡片视图 / 右栏详情 / 新建弹窗
  * **按 module 参数化复用**（§9 通用组件优先，禁止为五域复制平行实现）。
  *
@@ -53,7 +53,7 @@ export {
 } from '../../../../../shared/worldSubtypeFields'
 
 /* 五域域描述（模块清单 / 模块 → 实体类型 / 类型守卫）真源见顶部 import：
-   `shell/activityBarModules`（活动栏浮层与页面共用同一份）。此处扩大导出面，
+   `shell/activityBarModules`（活动栏与五域页面共用同一份）。此处扩大导出面，
    既有 `from './dossierTree'` 引用全部不变。 */
 export { DOSSIER_MODULES, MODULE_ENTITY_TYPE, isDossierModule }
 export type { DossierModule }

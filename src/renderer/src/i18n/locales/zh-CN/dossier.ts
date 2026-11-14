@@ -19,15 +19,17 @@ const dossier = {
   emptyTitle: '还没有{{module}}',
   emptyDesc: '点标题栏左上角的加号新建第一条',
   /**
-   * 活动栏「模块筛选」浮层（五个实体模块图标 hover 触发）：条件按模块分桶、
-   * 浮层收起后仍生效；搜索只模糊匹配名称与别名（不含正文）。
+   * 设定档案筛选（标题栏筛选行：五域非编辑态显示，点进右栏正文后让位给格式工具栏）：
+   * 条件按模块分桶、切模块各自保留；搜索只模糊匹配实体名称与别名（不含正文）。
    */
   filter: {
     /** 列表项：全部。 */
     all: '全部',
-    subtypeAria: '按子类筛选',
-    searchPlaceholder: '搜索名称或别名',
-    searchAria: '搜索名称或别名',
+    /** 分类下拉首项：不过滤分类。 */
+    allSubtypes: '全部分类',
+    subtypeAria: '按分类筛选',
+    searchPlaceholder: '搜索实体名称或别名',
+    searchAria: '搜索实体名称或别名',
     /** 搜索框右侧按钮：提交关键词并切到该模块（aria-label / title）。 */
     search: '搜索',
     emptyTitle: '无匹配结果',

@@ -2,13 +2,13 @@
    活动栏「模块筛选浮层」样式
    ------------------------------------------------------------------
    自 shell.css 拆出（单文件 500 行上限，AGENTS §3）。
-   供 shell/ActivityBarFilterPopover.tsx 使用：五个实体模块图标 hover 触发的
+   供 shell/ActivityBarFilterPopover.tsx 使用：灵感 / 伏笔图标 hover 触发的
    可交互浮层（第一行模块名 + 搜索框 + 圆形按钮，第二行「全部」+ 全部分类），
    视觉与 `.wf-tooltip` 同源，定位由 HoverPopupShell 以 fixed + 视口避让内联写入。
    由 App.tsx 在 shell.css 之后导入。
    ============================================================ */
 
-/* ---------- 活动栏模块筛选浮层（五个实体模块图标 hover 触发） ----------
+/* ---------- 活动栏模块筛选浮层（灵感 / 伏笔图标 hover 触发） ----------
    视觉与 `.wf-tooltip` 同源（--pane 底 + --sh-sm + 单环描边），圆角跟三栏一致
    （`.sidepane` / `.editor-pane` / `.rightpane` 均用 `--r-lg`）；定位由 HoverPopupShell
    以 fixed + 视口避让内联写入，此处只管外观。层级低于 tooltip（990），高于内容与下拉（60）。

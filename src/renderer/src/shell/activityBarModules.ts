@@ -31,10 +31,10 @@ export function useModuleLabel(id: WriterModule): string {
 /**
  * 设定档案模块 id（活动栏中五个实体模块）。
  *
- * 真源收敛在 shell 层：活动栏浮层（`ActivityBarFilterPopover`）需要
- * `MODULE_ENTITY_TYPE` 去拉子类，而它原先定义在 `pages/writer/dossier/dossierTree.ts`——
- * shell 反向 import 会形成分层倒置，故把「域清单 + 模块 → 实体类型 + 守卫」统一放在本文件，
- * 由 `dossierTree.ts` 原路径转出（既有引用不变）。
+ * 真源收敛在 shell 层：模块清单与「模块 → 实体类型」映射由活动栏与设定域页面共用，
+ * 而它原先定义在 `pages/writer/dossier/dossierTree.ts`——shell 反向 import 会形成分层
+ * 倒置，故把「域清单 + 模块 → 实体类型 + 守卫」统一放在本文件，由 `dossierTree.ts`
+ * 原路径转出（既有引用不变）。
  */
 export type DossierModule = 'worldview' | 'characters' | 'factions' | 'power_system' | 'items'
 
@@ -61,12 +61,15 @@ export function isDossierModule(module: WriterModule): module is DossierModule {
   return (DOSSIER_MODULES as readonly WriterModule[]).includes(module)
 }
 
-/** 使用活动栏筛选浮层的模块：实体五域 + 灵感 + 伏笔（分类分别为子类 / 标签 / 派生状态）。 */
-export type FilterableModule = DossierModule | 'inspiration' | 'foreshadow'
+/** 使用活动栏筛选浮层的模块：灵感 + 伏笔（分类分别为标签 / 派生状态）。 */
+export type FilterableModule = 'inspiration' | 'foreshadow'
 
-/** 判定模块是否挂活动栏筛选浮层（hover 打开、搜索 / 分类写条件）。 */
+/**
+ * 判定模块是否挂活动栏筛选浮层（hover 打开、搜索 / 分类写条件）。
+ * 设定五域已改用标题栏筛选行（`DossierFilterRow`），不再挂浮层。
+ */
 export function isFilterableModule(module: WriterModule): module is FilterableModule {
-  return isDossierModule(module) || module === 'inspiration' || module === 'foreshadow'
+  return module === 'inspiration' || module === 'foreshadow'
 }
 
 /** 活动栏模块清单（顺序即渲染顺序）：章节 / 大纲 / 剧情 / 世界观 / 角色 / 势力 /

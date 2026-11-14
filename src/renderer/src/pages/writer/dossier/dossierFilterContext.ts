@@ -1,17 +1,18 @@
 /**
- * 设定档案筛选条件（活动栏模块浮层 ↔ 中栏卡片网格共享）。
+ * 设定档案筛选条件（标题栏筛选行 ↔ 中栏卡片网格共享）。
  *
- * 为什么放在独立 Context：筛选入口在**活动栏**（`shell/activityBar.tsx`），消费方是
- * **中栏**（`pages/writer/dossier/DossierView.tsx`），两者分属 shell 与 pages 两棵子树；
- * Context 挂在外壳层（`App.tsx`）即可跨层共享，无需把状态塞进页面或反向 import。
+ * 为什么放在独立 Context：筛选入口在**标题栏**（`DossierActivityActions` 注册的
+ * `DossierFilterRow`），消费方是**中栏**（`pages/writer/dossier/DossierView.tsx`），
+ * 两者分属 shell 与 pages 两棵子树；Context 挂在外壳层（`App.tsx`）即可跨层共享，
+ * 无需把状态塞进页面或反向 import。
  *
  * 口径：
  * - 条件**按模块分桶**（五域各自独立），切模块不互相覆盖；
- * - 浮层收起不清空条件（与「显隐」解耦），网格继续按既有条件过滤；
+ * - 切模块 / 进入编辑态不清空条件（与「显隐」解耦），网格继续按既有条件过滤；
  * - `bookId` 为路由书 id 的**唯一真源**（由 `DossierFilterProvider` 从 pathname 解析），
- *   供浮层拉取子类选项；页面侧数据仍走各自装配包。
- * - 浮层里的「匹配 N 项」不在浮层重算过滤：中栏（`DossierView`）把 `filterDossierRows`
- *   的入参 / 出参长度作为**只读汇总**上报（`summary`），保证浮层计数与网格同一口径。
+ *   供筛选行拉取分类选项；页面侧数据仍走各自装配包。
+ * - 筛选行的「匹配 N 项」不在入口处重算过滤：中栏（`DossierView`）把 `filterDossierRows`
+ *   的入参 / 出参长度作为**只读汇总**上报（`summary`），保证计数与网格同一口径。
  */
 import { createContext, useContext } from 'react'
 import type { DossierModule } from '../../../shell/activityBarModules'

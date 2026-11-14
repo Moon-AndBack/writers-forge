@@ -236,7 +236,7 @@ export function ActivityBar(): ReactElement {
     }, HIDE_DELAY)
   }, [isFilterEngaged, pinned])
 
-  // ---------- 模块筛选浮层（可筛选模块图标 hover：实体五域 + 灵感） ----------
+  // ---------- 模块筛选浮层（可筛选模块图标 hover：灵感 / 伏笔） ----------
 
   const cancelFilterHide = useCallback((): void => {
     if (filterHideTimer.current !== null) {
@@ -430,7 +430,7 @@ export function ActivityBar(): ReactElement {
         {WRITER_MODULES.map((id) => {
           const icons = MODULE_MORPH_ICONS[id]
           const isActive = active === id
-          // 可筛选模块（实体五域 + 灵感）额外挂「模块筛选」hover 浮层；
+          // 可筛选模块（灵感 / 伏笔）额外挂「模块筛选」hover 浮层；
           // `data-module` 供状态定位 / 样式钩子。
           const filterModule: FilterableModule | null = isFilterableModule(id) ? id : null
           return (

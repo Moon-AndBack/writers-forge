@@ -39,7 +39,7 @@ export interface DossierViewProps {
 
 /**
  * 设定档案中栏视图（五域共用，按 module 参数化）：
- * 标题栏注册「新建」加号（`DossierActivityActions`）+ 卡片网格（单卡见 `DossierCard`）。
+ * 标题栏注册筛选行与「新建」加号（`DossierActivityActions`）+ 卡片网格（单卡见 `DossierCard`）。
  *
  * 五域一致：点卡经 `onSelect` 选中（页面层包装：右栏隐藏时自动展开），详情在**右栏**上下
  * 两张卡片中编辑；中栏不切换编辑器。编辑收敛到卡片铅笔弹窗（`DossierEditDialog`），
@@ -243,7 +243,7 @@ export default function DossierView({ bundle }: DossierViewProps) {
     onRemoveRelation
   } = bundle
 
-  // 中栏筛选：条件来自活动栏模块浮层（`DossierFilterProvider`，按模块分桶、切模块各自保留）。
+  // 中栏筛选：条件来自标题栏筛选行（`DossierFilterProvider`，按模块分桶、切模块各自保留）。
   // `rows` 始终保持全量——选中回退（`useDossierSelection` 取 `currentRows[0]`）依赖全量，
   // 故只把 `visibleRows` 喂给网格渲染。
   const { bookId, filters, setSummary } = useDossierFilters()

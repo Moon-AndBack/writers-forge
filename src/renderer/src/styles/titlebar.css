@@ -205,3 +205,28 @@
     transform: none;
   }
 }
+
+/* ---------- 设定五域标题栏筛选行（非编辑态） ----------
+   位于动作组内、势力「卡片 / 架构」切换之后、「新建」加号之前：分类下拉 + 搜索框，
+   同一行控件统一 32px 档位（Select sm / SearchInput 均取 `--control-h-*`，当前同为 32）。
+   两者 `flex: none`：`.tb-module-actions` 允许收缩，筛选控件不得被压扁（窄窗由外层
+   `overflow: hidden` 裁切，沿用既有降级口径）。宽度为标题栏的固定预算：分类 132 / 搜索 160。 */
+.tb-dossier-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  -webkit-app-region: no-drag;
+}
+
+.tb-dossier-filter__select {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  width: 132px;
+}
+
+.tb-dossier-filter__search {
+  flex: none;
+  width: 160px;
+}
