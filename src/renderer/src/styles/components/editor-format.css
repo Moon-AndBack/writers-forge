@@ -386,9 +386,9 @@
   height: 3px;
   margin-left: -8px;
   border-radius: var(--r-pill);
-  /* 指示条内描边：色块承载任意字色，需固定的「暗向」对比细边；
-     #000 18% 与主题 / 品牌无关（不随明暗翻转），故不取主题令牌。 */
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, #000 18%, transparent);
+  /* 例外：3px 指示条承载任意字色，需内描边定形；--text 18% 随主题翻转，
+     浅色主题下落深边、深色主题下落浅边，四套主题均可辨认。 */
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 18%, transparent);
 }
 
 /* 减动效守卫：`.wf-format-pop.is-placed`（0,2,0）特异性高于本体内单类，

@@ -129,7 +129,6 @@
 .ep-view[data-view='outline'] .doc-body .ProseMirror pre {
   margin: 0 0 1.05em;
   padding: 12px 14px;
-  border: 1px solid var(--line);
   border-radius: var(--r-lg);
   background: var(--soft-solid);
   font-family: var(--mono);
@@ -189,6 +188,7 @@
   margin: 0;
 }
 
+/* 例外：表格单元格网格线属内容结构，非控件默认描边（登记见 docs/ui/design-language.md §9 #24）。 */
 .ep-view[data-view='outline'] .doc-body .ProseMirror th,
 .ep-view[data-view='outline'] .doc-body .ProseMirror td {
   position: relative;

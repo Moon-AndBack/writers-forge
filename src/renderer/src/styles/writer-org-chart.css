@@ -87,6 +87,7 @@
 }
 
 /* ---------- 画布外壳 ---------- */
+/* 例外：画布边界，界定可平移 / 缩放区域（登记见 docs/ui/design-language.md §9 #26）。 */
 .org-chart {
   position: relative;
   flex: 1 1 auto;

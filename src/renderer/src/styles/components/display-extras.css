@@ -21,6 +21,7 @@
   padding: 4px 0;
 }
 
+/* 例外：任意色块需内线才能在浅 / 深底上辨认（登记见 docs/ui/design-language.md §9 #27）。 */
 .wf-swatch__item {
   flex: none;
   width: 26px;

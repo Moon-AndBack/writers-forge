@@ -243,6 +243,7 @@
   height: 40px;
 }
 
+/* 例外：开发态展示框，非产品界面（登记见 docs/ui/design-language.md §9 #29）。 */
 .sg-drawer-frame {
   position: relative;
   height: 280px;

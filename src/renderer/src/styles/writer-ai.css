@@ -375,13 +375,12 @@
 }
 
 /* user：右侧气泡，底取「软底容器上的控件」层（--control-on-soft，与容器
-   --soft-solid 差一档），并配同源 37% 描边——浅色主题下填充差异仅约 1.09:1，
-   边界主要由描边承担，四套主题均清晰可辨；宽度不超过容器 88%。 */
+   --soft-solid 差一档，明度比约 1.16:1），不加描边（§1.2），四套主题均清晰可辨；
+   宽度不超过容器 88%。 */
 .ai-msg--user .ai-msg__bubble {
   max-width: 88%;
   background: var(--control-on-soft);
   color: var(--text);
-  box-shadow: inset 0 0 0 1px var(--control-on-soft-line);
 }
 
 /* assistant：左侧整宽卡面（--pane 内容卡层，与 --soft-solid 容器形成明度差），
@@ -514,7 +513,6 @@
   padding: 8px 10px;
   border-radius: var(--r-lg);
   background: var(--soft-solid);
-  box-shadow: inset 0 0 0 1px var(--line);
   overflow-x: auto;
 }
 
@@ -536,6 +534,7 @@
   overflow-x: auto;
 }
 
+/* 例外：表格单元格网格线属内容结构，非控件默认描边（登记见 docs/ui/design-language.md §9 #23）。 */
 .ai-md-th,
 .ai-md-td {
   padding: 4px 8px;
