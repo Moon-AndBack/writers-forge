@@ -1,0 +1,93 @@
+/* ============================================================
+   主题切换的全屏模糊覆盖层
+   ------------------------------------------------------------------
+   由 `theme/themeReveal.ts` 在切主题时动态创建 / 销毁，动画结束即移除，
+   不是常驻界面层。层级 `--z-theme-reveal`（1105，位于 Toast 1100 之上：
+   这是覆盖整个窗口的瞬时层，动画期间必须压过 Toast 与 Modal）。
+
+   三个子层：
+   1. `__blur`：整窗 backdrop 模糊 + 旧主题纯色 tint（变量由 JS 在建立时
+      固化，避免 commit 后 `data-theme` 变化把旧色一起换掉）。
+   2. `__tint`：目标主题纯色 tint，commit 后从 0 → 1 交叉；颜色变量在
+      commit 时写入，所以它始终代表新主题。
+   3. `__badge`：目标主题大图标 + 品牌柔光晕，居中显示。
+
+   动画全部由 WAAPI 驱动（时长 / 缓动取 `--dur-slow` / `--ease` /
+   `--ease-out`），本文件只提供静态结构与基础态：
+   - 只动 opacity / transform，不逐帧改 blur 半径；
+   - 减少动效时 JS 不创建该层，CSS 再兜底隐藏。
+   ============================================================ */
+
+.wf-theme-reveal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-theme-reveal);
+  overflow: hidden;
+  pointer-events: auto;
+  -webkit-app-region: no-drag;
+  user-select: none;
+}
+
+.wf-theme-reveal__blur,
+.wf-theme-reveal__tint {
+  position: absolute;
+  inset: 0;
+  will-change: opacity;
+}
+
+/* 旧主题模糊层：tint 的 alpha 只遮住一部分，保留模糊后的界面轮廓。
+   `--wf-theme-reveal-tint` 由 themeReveal.ts 在创建时写入 `--desk-solid` 的值。
+   例外：整窗 backdrop 模糊与 55% desk tint 仅用于主题切换遮罩，
+   已登记于 docs/ui/design-language.md 例外表第 30 条，不得挪作常规浮层。 */
+.wf-theme-reveal__blur {
+  background: color-mix(in srgb, var(--wf-theme-reveal-tint, var(--desk-solid)) 55%, transparent);
+  backdrop-filter: blur(12px);
+  opacity: 0;
+}
+
+/* 新主题 tint：commit 后写入 `--wf-theme-reveal-target` 并淡入，与模糊层做交叉。 */
+.wf-theme-reveal__tint {
+  background: color-mix(in srgb, var(--wf-theme-reveal-target, var(--desk-solid)) 55%, transparent);
+  opacity: 0;
+}
+
+/* 图标层：外层铺满视口负责居中与整体淡入，内层承担缩放与柔光，
+   避免 scale 动画动到 translate 居中。 */
+.wf-theme-reveal__badge {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  will-change: opacity;
+}
+
+.wf-theme-reveal__badge-inner {
+  display: grid;
+  place-items: center;
+  width: 240px;
+  height: 240px;
+  color: var(--brand);
+  /* 裸图标 + 品牌柔光晕：18% 品牌色向透明收敛，尺寸随 badge 固定 */
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--brand) 18%, transparent),
+    transparent
+  );
+  transform: scale(0.86);
+  will-change: transform;
+}
+
+/* 大图标尺寸：本次设计指定 104–120px，取中值 112；描边由 JS 设为 1.35。 */
+.wf-theme-reveal__badge-inner svg {
+  display: block;
+  width: 112px;
+  height: 112px;
+}
+
+/* 减少动效：即使 JS 判断失效也不渲染遮罩 */
+@media (prefers-reduced-motion: reduce) {
+  .wf-theme-reveal {
+    display: none;
+  }
+}

@@ -1,178 +1,430 @@
 /**
- * 主题切换的**整屏交叉淡化**（View Transitions API）。
+ * 主题切换的**全屏模糊覆盖层**（不再使用 View Transitions）。
  *
- * 交互按窗口材质分两种：
- * - **不透明模式**（`data-material='none'`）：「覆盖式」淡化——旧快照保持不透明
- *   垫底（`::view-transition-old(root)` 的 UA 淡出已在
- *   `styles/components/motion.css` 关闭），新快照在它之上从 0 → 1 淡入。
- *   因此任何中间帧都是一次不透明混合，不会出现两层同时半透明导致的
- *   「透底泛灰」（亮 / 暗主题明度差极大，真交叉会闪灰）。
- * - **窗口材质模式**（`data-material` 为 `'acrylic'` / `'mica'`）：真交叉 + `plus-lighter`
- *   ——此时 body 透明，两档外壳 alpha 不同：acrylic 为 `.shell` 的 50% 不透明
- *   纯色 scrim（`--desk-solid-alpha`，暗色下压暗），mica 无 scrim；同一主题内 a
- *   恒定。
- *   覆盖式淡化会让两层快照的 alpha 相加（如亚克力 0.50 → 0.75），表现为过渡期间
- *   越来越实、快照撤掉后又跳回通透。故 new 淡入的同时 old 同步淡出，两层以
- *   `mix-blend-mode: plus-lighter` 按 a·(1-t) / a·t 预乘相加，合计恒为 a，
- *   材质参与度全程不变（跨主题切换时 a 可变，属预期；CSS 侧见 `motion.css`）。
+ * 为什么要覆盖层：默认窗口材质为亚克力，`.shell` 只有 50% 不透明，剩余底色来自
+ * 窗口背后的 DWM 材质——那部分不参与任何 DOM 快照。旧方案在 View Transition
+ * 拍摄前就 fire-and-forget 地让主进程切换 `nativeTheme.themeSource`，原生背板
+ * 直接跳变，于是出现「底色先变、三栏后变」。
  *
- * 为何由 JS（WAAPI）而不是 CSS 承担动画：
- * - `document.startViewTransition` 只能由 JS 启动，整窗快照也只有它能拍摄；
- * - 曾经由 CSS `animation` + 180ms 的短时长 + `--ease-out` 驱动，
- *   但这条强前倾曲线在 36ms 时 y≈0.74、61ms 时 y≈0.875，前 3 帧就走完
- *   3/4 的透明度，有效可感知时长仅 50–60ms，肉眼等同瞬切；
- * - WAAPI 还免疫 CSS 的 `!important` 兜底与伪元素上 `var()` 继承问题。
- * 现在时长 / 缓动统一在此读取主题令牌（`--dur-slow` / `--ease`），
- * 曲线改为对称的 `--ease`，让淡化完整跑满 240ms。
+ * 本方案的时序（总时长约 720ms = 240 模糊 + 240 交叉 + 240 淡出）：
  *
- * 边界（硬要求）——任何一条都**同步**调用 `applyTheme`，主题切换永不依赖动画：
- * - 浏览器不支持 `document.startViewTransition` → 直接切换；
- * - 系统开启「减少动态效果」→ 直接切换；
- * - 启动过渡时抛错 → 直接切换；
- * - 过渡被浏览器跳过（`ready` reject）→ `updateCallback` 可能未执行（规范：
- *   `pending-capture` 阶段跳过会直接 reject、回调永不触发），故在 catch 中补调
- *   一次幂等的 `applyTheme`，并以切换序号守卫避免与后续切换竞争。
+ * ```
+ * 建立覆盖层，__blur 淡入（--dur-slow）
+ *   ↘ 同时调用主进程 theme:apply（system 档 await 权威明暗）
+ *   → 两者都完成后，同一帧 commit：
+ *       dataset.theme + flushSync React 状态 + 插入目标主题大图标 + tint 开始交叉
+ *   → 覆盖层淡出（--dur-slow），图标缩放淡出
+ *   → 移除覆盖层，恢复交互
+ * ```
+ *
+ * 关键是**等模糊层完全盖住窗口后才 commit**：原生材质在遮罩后变化，用户看不到
+ * 「底色先变」。显式档的 `theme:apply` 只用于同步原生材质，不用它返回的
+ * `resolvedTheme`（那是 DWM 明暗，sage / honey 下不等于应用主题）。
+ *
+ * 降级（任何一条都直接 resolve + commit，不显示遮罩）：
+ * - `prefers-reduced-motion: reduce`；
+ * - 页面处于隐藏状态；
+ * - 覆盖层创建抛错；
+ * - 动画抛错 / 被异常中断（`resolved` 已拿到时补提交一次，幂等）。
+ *
+ * 快速连切由模块级序号守卫：新请求自增序号，旧请求在任意 await 点返回后发现
+ * 序号过期即静默退出；仍处于可见阶段的覆盖层会被复用——取消旧动画、按最新目标
+ * 重放 tint / 图标，不重新模糊。进入淡出阶段后则新建覆盖层。
  */
+
+import type { IconNode } from 'lucide'
+import { THEME_ICONS } from './themeIcons'
+import type { ResolvedThemeId } from './themes'
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)'
-
-/**
- * 窗口材质（亚克力 / 云母）在根元素上的标记值，与 `styles/material.css` 的选择器一致。
- *
- * 不含 `tabbed`：渲染层 `data-material` 不再写入该值；主进程仍可能在浅色主题下
- * 把 `mica` 解析为 DWM 的 `tabbed`（Mica Alt），那属于主进程 / DWM 侧，与本集合无关。
- */
-const MATERIAL_MARKERS = new Set(['acrylic', 'mica'])
+const SVG_NS = 'http://www.w3.org/2000/svg'
+/** 覆盖层上的旧 / 新主题底色变量，由 CSS 以 color-mix 与透明混合。 */
+const TINT_VAR = '--wf-theme-reveal-tint'
+const TARGET_TINT_VAR = '--wf-theme-reveal-target'
 
 /** 与 `theme.css` 的 `--dur-slow` 对齐；令牌读取失败时的回退值（毫秒）。 */
 const FALLBACK_DURATION = 240
 /** 与 `theme.css` 的 `--ease` 对齐（对称曲线）；令牌读取失败时的回退值。 */
 const FALLBACK_EASING = 'cubic-bezier(0.33, 0, 0.67, 1)'
+/** 与 `theme.css` 的 `--ease-out` 对齐（进场曲线）；令牌读取失败时的回退值。 */
+const FALLBACK_EASING_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
-/**
- * 切换序号：每次 `runThemeReveal` 自增。
- *
- * 仅用于 `transition.ready` 被 reject 时的兜底判断：只有「自己仍是最新一次切换」
- * 才补调 `applyTheme`，避免前一次被跳过时把已被取代的目标主题回写到 DOM。
- */
+type RevealPhase = 'blurring' | 'revealing' | 'fading'
+
+interface RevealContext {
+  root: HTMLDivElement
+  blur: HTMLDivElement
+  tint: HTMLDivElement
+  badge: HTMLDivElement
+  badgeInner: HTMLDivElement
+  animations: Set<Animation>
+  phase: RevealPhase
+  /** 模糊层是否已经完成入场（复用时跳过重新模糊）。 */
+  blurVisible: boolean
+  keyBlock: ((event: KeyboardEvent) => void) | null
+}
+
+export interface ThemeRevealRequest {
+  /** 遮罩内解析目标主题；system 档在此 await 主进程的权威明暗。 */
+  resolve: () => Promise<ResolvedThemeId>
+  /** `resolve` 抛错时的同步回退（一般用当前已知系统明暗解析）。 */
+  fallback: () => ResolvedThemeId
+  /** 同一帧写入 `dataset.theme` 并 flushSync 提交 React 状态。 */
+  commit: (resolved: ResolvedThemeId) => void
+}
+
+/** 每次 `runThemeReveal` / `cancelThemeReveal` 自增，用于丢弃过期异步结果。 */
 let revealSequence = 0
+let activeContext: RevealContext | null = null
 
 function prefersReducedMotion(): boolean {
   return window.matchMedia(REDUCED_MOTION_QUERY).matches
 }
 
 /**
- * 当前是否处于窗口材质模式（亚克力 / 云母）。
+ * 读取本次动画使用的时长 / 缓动。
  *
- * 读 `WindowMaterialProvider` 投影到根元素的 `data-material`：值为 `'acrylic'` /
- * `'mica'` 时 `.shell` 才走材质底、body 才透明（见 `material.css`），
- * 也只有此时需要 `plus-lighter` 真交叉。属性缺失 / `'none'` 一律按不透明模式
- * 处理（保持原覆盖式淡化）。
+ * 读令牌而非写字面量：`theme.css` 约定「动效时长梯度统一取用，禁止再写裸时长」。
+ * 令牌缺失 / 解析失败时回退到与当前令牌一致的常量，保证动画照常可见。
  */
-function hasWindowMaterial(): boolean {
-  return MATERIAL_MARKERS.has(document.documentElement.dataset.material ?? '')
-}
-
-/**
- * 读取本次淡化使用的时长 / 缓动。
- *
- * 读令牌而非写字面量：`theme.css` 约定「动效时长梯度统一取用，禁止再写裸时长」，
- * 读令牌可保持「改令牌即全局生效」；令牌缺失 / 解析失败（如样式尚未加载、
- * 值被写成非法形式）时回退到与当前令牌一致的常量，保证动画照常可见。
- */
-function readRevealMotion(): { duration: number; easing: string } {
+function readRevealMotion(): { duration: number; easing: string; easingOut: string } {
   const styles = getComputedStyle(document.documentElement)
   const duration = Number.parseFloat(styles.getPropertyValue('--dur-slow'))
   const easing = styles.getPropertyValue('--ease').trim()
+  const easingOut = styles.getPropertyValue('--ease-out').trim()
 
   return {
     // 0 / NaN 视为无效：时长为 0 就是瞬切，正是本函数要避免的结果
     duration: Number.isFinite(duration) && duration > 0 ? duration : FALLBACK_DURATION,
-    easing: easing.length > 0 ? easing : FALLBACK_EASING
+    easing: easing.length > 0 ? easing : FALLBACK_EASING,
+    easingOut: easingOut.length > 0 ? easingOut : FALLBACK_EASING_OUT
+  }
+}
+
+function readToken(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
+
+function currentOpacity(element: Element): number {
+  const value = Number.parseFloat(getComputedStyle(element).opacity)
+  return Number.isFinite(value) ? value : 0
+}
+
+function ignore(animation: Animation): Promise<void> {
+  return animation.finished.then(
+    () => undefined,
+    () => undefined
+  )
+}
+
+/**
+ * 播放一段 WAAPI 动画并登记到上下文。
+ *
+ * 完成时 `commitStyles()` 固化末帧再 `cancel()`：后续快速连切取消动画时，
+ * 元素不会跳回 CSS 基础态（例如模糊层从 1 掉回 0）。
+ */
+function play(
+  ctx: RevealContext,
+  element: Element,
+  keyframes: Keyframe[],
+  duration: number,
+  easing: string
+): Animation {
+  const animation = element.animate(keyframes, { duration, easing, fill: 'both' })
+  ctx.animations.add(animation)
+  void animation.finished
+    .then(() => {
+      try {
+        animation.commitStyles()
+      } catch {
+        // commitStyles 在极少数元素 / 浏览器状态下会抛错；末帧视觉已由 fill 保持
+      }
+      animation.cancel()
+      ctx.animations.delete(animation)
+    })
+    .catch(() => {
+      ctx.animations.delete(animation)
+    })
+  return animation
+}
+
+/** 取消并固化上下文中的全部动画（供复用与销毁使用）。 */
+function stopAnimations(ctx: RevealContext): void {
+  for (const animation of [...ctx.animations]) {
+    try {
+      animation.commitStyles()
+    } catch {
+      // 已取消 / 尚未生效的动画没有可提交样式，忽略即可
+    }
+    animation.cancel()
+  }
+  ctx.animations.clear()
+}
+
+/** 用 Lucide `IconNode` 数据构造 SVG（覆盖层不走 React）。 */
+function setBadgeIcon(container: HTMLElement, icon: IconNode): void {
+  const svg = document.createElementNS(SVG_NS, 'svg')
+  svg.setAttribute('viewBox', '0 0 24 24')
+  svg.setAttribute('fill', 'none')
+  svg.setAttribute('stroke', 'currentColor')
+  svg.setAttribute('stroke-width', '1.35')
+  svg.setAttribute('stroke-linecap', 'round')
+  svg.setAttribute('stroke-linejoin', 'round')
+  svg.setAttribute('aria-hidden', 'true')
+
+  for (const [tag, attrs] of icon) {
+    const node = document.createElementNS(SVG_NS, tag)
+    for (const [key, value] of Object.entries(attrs)) {
+      if (value !== undefined) node.setAttribute(key, String(value))
+    }
+    svg.appendChild(node)
+  }
+
+  container.replaceChildren(svg)
+}
+
+function createContext(): RevealContext {
+  const root = document.createElement('div')
+  root.className = 'wf-theme-reveal'
+  root.setAttribute('aria-hidden', 'true')
+  // 旧主题底色在建立瞬间固化：commit 后根上的 data-theme 会变，但模糊层的
+  // 颜色不能跟着 var() 一起跳，否则「旧 → 新」的交叉会少一半。
+  root.style.setProperty(TINT_VAR, readToken('--desk-solid') || 'transparent')
+
+  const blur = document.createElement('div')
+  blur.className = 'wf-theme-reveal__blur'
+  const tint = document.createElement('div')
+  tint.className = 'wf-theme-reveal__tint'
+  const badge = document.createElement('div')
+  badge.className = 'wf-theme-reveal__badge'
+  const badgeInner = document.createElement('div')
+  badgeInner.className = 'wf-theme-reveal__badge-inner'
+  badge.appendChild(badgeInner)
+  root.append(blur, tint, badge)
+  document.body.appendChild(root)
+
+  const ctx: RevealContext = {
+    root,
+    blur,
+    tint,
+    badge,
+    badgeInner,
+    animations: new Set(),
+    phase: 'blurring',
+    blurVisible: false,
+    keyBlock: null
+  }
+
+  // 一次性拦截：动画期间用户按键不应穿透到遮罩后的界面；第一次按键后解除，
+  // 避免键盘被长期吞掉（遮罩本身在 720ms 内移除）。
+  ctx.keyBlock = (event: KeyboardEvent): void => {
+    event.preventDefault()
+    event.stopPropagation()
+    if (ctx.keyBlock) {
+      window.removeEventListener('keydown', ctx.keyBlock, true)
+      ctx.keyBlock = null
+    }
+  }
+  window.addEventListener('keydown', ctx.keyBlock, true)
+
+  return ctx
+}
+
+function destroyContext(): void {
+  const ctx = activeContext
+  if (!ctx) return
+  activeContext = null
+  stopAnimations(ctx)
+  if (ctx.keyBlock) window.removeEventListener('keydown', ctx.keyBlock, true)
+  ctx.root.remove()
+}
+
+/**
+ * 取得可复用的覆盖层。
+ *
+ * 处于 `fading` 阶段的层已接近不可见，复用会看到「淡出中途又被拉回」的跳变，
+ * 因此直接销毁重建（重新模糊）；其余阶段复用并取消旧动画，保留模糊层。
+ */
+function acquireContext(): RevealContext {
+  if (activeContext && activeContext.phase !== 'fading') {
+    const ctx = activeContext
+    stopAnimations(ctx)
+    ctx.phase = 'blurring'
+    return ctx
+  }
+
+  destroyContext()
+  const ctx = createContext()
+  activeContext = ctx
+  return ctx
+}
+
+/** 让模糊层可见；复用且已完成入场时直接返回。 */
+async function ensureBlurVisible(
+  ctx: RevealContext,
+  motion: ReturnType<typeof readRevealMotion>,
+  seq: number
+): Promise<void> {
+  if (ctx.blurVisible) return
+
+  ctx.phase = 'blurring'
+  const from = currentOpacity(ctx.blur)
+  // 复用未完成的入场时按剩余比例缩短，避免快速连切把总时长越拖越长
+  const remaining = Math.max(0, Math.round(motion.duration * (1 - from)))
+  if (remaining === 0) {
+    ctx.blurVisible = true
+    return
+  }
+
+  const animation = play(
+    ctx,
+    ctx.blur,
+    [{ opacity: from }, { opacity: 1 }],
+    remaining,
+    motion.easing
+  )
+  await ignore(animation)
+  if (seq !== revealSequence) return
+  ctx.blurVisible = true
+}
+
+async function resolveTarget(request: ThemeRevealRequest): Promise<ResolvedThemeId> {
+  try {
+    return await request.resolve()
+  } catch {
+    return request.fallback()
+  }
+}
+
+/** 无遮罩降级：解析完成后直接提交（仍受序号守卫）。 */
+async function settleWithoutReveal(request: ThemeRevealRequest, seq: number): Promise<void> {
+  const resolved = await resolveTarget(request)
+  if (seq !== revealSequence) return
+  request.commit(resolved)
+}
+
+async function orchestrate(
+  ctx: RevealContext,
+  request: ThemeRevealRequest,
+  seq: number
+): Promise<void> {
+  const motion = readRevealMotion()
+  let resolved: ResolvedThemeId | null = null
+
+  try {
+    // 模糊淡入与主进程解析并行；两者都完成后才 commit，保证原生材质在
+    // 遮罩完全不透明时变化。resolve 永不 reject（内部已回退）。
+    const resolvedPromise = resolveTarget(request)
+    const [target] = await Promise.all([
+      resolvedPromise.then((value) => {
+        resolved = value
+        return value
+      }),
+      ensureBlurVisible(ctx, motion, seq)
+    ])
+    if (seq !== revealSequence) return
+
+    if (target === document.documentElement.dataset.theme) {
+      // 解析结果与当前生效主题相同（典型：显式 dark → system，且系统正好是深色）：
+      // 不播放空动画，只提交选中态。
+      cancelThemeReveal()
+      request.commit(target)
+      return
+    }
+
+    // 同一帧：dataset + React 状态 + 目标主题 tint + 图标。
+    request.commit(target)
+    ctx.phase = 'revealing'
+    ctx.root.style.setProperty(TARGET_TINT_VAR, readToken('--desk-solid') || 'transparent')
+    setBadgeIcon(ctx.badgeInner, THEME_ICONS[target])
+
+    const tint = play(
+      ctx,
+      ctx.tint,
+      [{ opacity: 0 }, { opacity: 1 }],
+      motion.duration,
+      motion.easing
+    )
+    const badge = play(
+      ctx,
+      ctx.badge,
+      [{ opacity: 0 }, { opacity: 1 }],
+      motion.duration,
+      motion.easingOut
+    )
+    const badgeIn = play(
+      ctx,
+      ctx.badgeInner,
+      [{ transform: 'scale(0.86)' }, { transform: 'scale(1)' }],
+      motion.duration,
+      motion.easingOut
+    )
+    await Promise.all([ignore(tint), ignore(badge), ignore(badgeIn)])
+    if (seq !== revealSequence) return
+
+    // 淡出：整层透明度下降，图标同时轻微放大并淡出。
+    ctx.phase = 'fading'
+    const fade = play(
+      ctx,
+      ctx.root,
+      [{ opacity: 1 }, { opacity: 0 }],
+      motion.duration,
+      motion.easing
+    )
+    const badgeOut = play(
+      ctx,
+      ctx.badgeInner,
+      [{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }],
+      motion.duration,
+      motion.easingOut
+    )
+    await Promise.all([ignore(fade), ignore(badgeOut)])
+    if (seq !== revealSequence) return
+
+    destroyContext()
+  } catch {
+    if (seq !== revealSequence) return
+    // 动画异常：主题必须落地，遮罩必须移除。已解析则提交解析值，否则回退。
+    request.commit(resolved ?? request.fallback())
+    destroyContext()
   }
 }
 
 /**
- * 以整屏交叉淡化执行一次主题切换。
+ * 以全屏模糊覆盖层执行一次主题切换。
  *
- * `applyTheme` 必须在**同步**执行时完成全部 DOM 变更（`dataset.theme` 与
- * React 状态提交），否则 View Transition 会在变更落地前拍下新快照。
+ * `request.resolve` 在遮罩内调用（system 档会 await 主进程），`request.commit`
+ * 必须在**同一同步段**内完成 `dataset.theme` 与 React 状态提交。
  */
-export function runThemeReveal(applyTheme: () => void): void {
-  // 降级 ①：环境不支持 View Transitions；降级 ②：系统要求减少动态效果
-  if (typeof document.startViewTransition !== 'function' || prefersReducedMotion()) {
-    applyTheme()
+export function runThemeReveal(request: ThemeRevealRequest): void {
+  const seq = ++revealSequence
+
+  // 降级 ①：减少动效；降级 ②：页面隐藏（此时原生背板与渲染层都不可见）
+  if (prefersReducedMotion() || document.visibilityState === 'hidden') {
+    destroyContext()
+    void settleWithoutReveal(request, seq)
     return
   }
 
-  const sequence = ++revealSequence
-
+  let ctx: RevealContext
   try {
-    // 令牌提前读取：`getComputedStyle` 会强制一次同步样式计算。若放在
-    // `transition.ready` 的 `.then()` 里，会在「快照已捕获 → WAAPI 动画生效」
-    // 这段关键窗口上额外增加延迟，多送出一帧（新快照起始态的 CSS opacity 已为 0，
-    // 不会闪，但会拖慢淡化起手）。此处读到一次即可，供下面的回调复用。
-    const { duration, easing } = readRevealMotion()
-
-    const transition = document.startViewTransition(() => {
-      // 回调必须同步返回，DOM 变更在回调内完成
-      applyTheme()
-    })
-
-    // 快照透明度由 WAAPI 驱动（CSS 侧只保留 animation: none、new 的起始态与混合模式）
-    transition.ready
-      .then(() => {
-        // `pseudoElement` 尚未进入 lib.dom 的 KeyframeAnimationOptions 类型，
-        // 用交叉类型补上；运行时是合法的 WAAPI 选项。
-        const newOptions: KeyframeAnimationOptions & { pseudoElement: string } = {
-          duration,
-          easing,
-          // `fill: 'both'` —— 因为 CSS 基础 opacity 已是 0，动画必须用 forwards fill
-          // 保持末帧 1，否则动画结束后回落 0 会导致末帧跳变；
-          // backwards fill 也保证（若将来加 delay）延迟期仍是 0。
-          fill: 'both',
-          pseudoElement: '::view-transition-new(root)'
-        }
-        // 两种材质都由 new 从 0 → 1 浮上来
-        document.documentElement.animate([{ opacity: 0 }, { opacity: 1 }], newOptions)
-
-        if (hasWindowMaterial()) {
-          // 窗口材质模式：old 同步淡出。与 new 一起在 `mix-blend-mode: plus-lighter`
-          // 下按 a·(1-t) / a·t 预乘相加，合计恒为当前主题的 a（见 motion.css；
-          // acrylic 0.50，mica 无 scrim）——避免覆盖式叠加把 alpha 抬成
-          // a + a·t → 过渡中越来越实、结束后跳回通透。
-          //
-          // `fill: 'forwards'`：动画结束后 old 必须保持 opacity 0 直到快照被移除。
-          // 缺省 `fill: none` 会让它回落到基础值 1，与 new 相加后 alpha 超过 1
-          //（被钳制），出现一帧整窗变实。
-          const oldOptions: KeyframeAnimationOptions & { pseudoElement: string } = {
-            duration,
-            easing,
-            fill: 'forwards',
-            pseudoElement: '::view-transition-old(root)'
-          }
-          document.documentElement.animate([{ opacity: 1 }, { opacity: 0 }], oldOptions)
-        }
-      })
-      .catch((error: unknown) => {
-        // 过渡被浏览器跳过（窗口隐藏 / 连续切主题等）。
-        // 规范里 `skip the view transition` 在 `pending-capture` / `capturing-old`
-        // 阶段会直接 reject ready 并返回，`updateCallback` **不会执行**，即
-        // `applyTheme` 可能尚未落地；而 new 因 CSS 基础 opacity 为 0 全程不可见，
-        // 不补调就会「主题没切」。「瞬切但不闪」优于「没反应」，故此处补调（幂等）。
-        //
-        // 序号守卫：仅当自己仍是最新一次切换时才补调。连续快速切主题时，前一次被
-        // 后一次跳过，若前一次也回写自己的目标主题，会先跳回旧目标再被后一次覆盖
-        //（旧快照拍到的就是错误画面）；此时后一次的 `applyTheme` 必然落地，无需插手。
-        console.warn('[theme] view transition skipped', error)
-        if (sequence === revealSequence) applyTheme()
-      })
-
-    // `ready` reject 时 `finished` 同样会 reject；此处再兜一层，避免 unhandled rejection
-    void transition.finished.catch(() => {})
+    ctx = acquireContext()
   } catch {
-    // 降级 ③：启动失败时回调通常尚未执行；重复调用 applyTheme 是幂等的
-    //（同一 state / dataset 值），保证主题一定切过去
-    applyTheme()
+    // 降级 ③：覆盖层创建失败（body 尚未就绪 / DOM 异常）
+    void settleWithoutReveal(request, seq)
+    return
   }
+
+  void orchestrate(ctx, request, seq)
+}
+
+/**
+ * 立即取消进行中的覆盖层并移除。
+ *
+ * 用于「解析结果与当前主题相同」的快路径与 ThemeProvider 卸载：快路径不发生
+ * 主题变化，不应留下任何遮罩；同时自增序号使在途解析结果失效。
+ */
+export function cancelThemeReveal(): void {
+  revealSequence += 1
+  destroyContext()
 }

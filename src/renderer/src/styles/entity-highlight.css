@@ -24,7 +24,9 @@ span.entity-highlight {
   padding: 1px 0.16em 1px 0;
   margin: 0 -0.16em 0 -1px;
   cursor: default;
-  transition: background var(--dur-fast) var(--ease);
+  /* 背景由主题令牌（--chip-bg / --chip-base / --pane）驱动，不挂 transition：
+     主题切换由全屏覆盖层统一过渡；hover 只改 box-shadow，没有需要保留的
+     背景交互过渡。 */
 }
 
 /* 统一设定库五类：只绑定模块基色，用 `:where(span.entity-highlight)` 把元素部分
@@ -248,9 +250,5 @@ span.entity-highlight:hover {
   .entity-card,
   .entity-card-more {
     animation: none;
-  }
-
-  span.entity-highlight {
-    transition: none;
   }
 }

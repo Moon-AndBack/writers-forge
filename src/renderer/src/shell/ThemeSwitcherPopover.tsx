@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MorphIcon } from 'morphicons/react'
 import { IconButton, Segmented, Switch } from '../components/ui'
+import { THEME_ICONS } from '../theme/themeIcons'
 import type { ResolvedThemeId, ThemeId } from '../theme/themes'
 import { useTheme } from '../theme/useTheme'
 import { useWindowMaterial } from '../theme/windowMaterial'
 import type { WindowMaterialSetting } from '../theme/windowMaterial'
-import { THEME_MORPH_ICONS } from './morphIcons'
 import '../styles/theme-switcher.css'
 
 /**
@@ -104,7 +104,7 @@ export default function ThemeSwitcherPopover() {
         onClick={() => setOpen((value) => !value)}
       >
         <MorphIcon
-          icon={THEME_MORPH_ICONS[resolvedTheme]}
+          icon={THEME_ICONS[resolvedTheme]}
           size={16}
           strokeWidth={1.9}
           reducedMotion="user"

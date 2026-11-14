@@ -149,8 +149,8 @@ DWM 材质（云母 / 亚克力）的明暗在 Windows 上由系统主题决定�
 - **系统明暗被动变化**：`setupThemeWatchers()` 的 `nativeTheme.on('updated')`（`theme.ts:154-170`）对每个窗口调用 `reapplyWindowMaterialForTheme()`，覆盖「跟随系统」时系统在运行中切换明暗、导致 `mica` 需要在 Mica Alt / 标准 Mica 之间切换的场景。
 - **重新应用的条件与幂等**：仅当前用户选择为 `mica`，且 `resolveDwmMaterial()` 解析出的 DWM 材质与该窗口已记录的实际材质**不同**时才调用 `setBackgroundMaterial()`；相同则直接返回（`windowMaterial.ts:138-145,163`）。因此系统强调色等无关 `updated` 事件不会触发原生材质重绘，主题切换重复下发相同值也不会闪烁。
 - `applyThemeSource()` 仅 Windows 写 `themeSource`；非 Windows 保持系统设置，只返回当前 `shouldUseDarkColors`。赋值前比较当前值，相同则跳过；异常记录 warning 并回退 `'light'`（`theme.ts:132-145`）。
-- **切回 `system` 的时序**：`ThemeProvider` 先 `await window.api.systemTheme.apply('system')`，用返回的 `shouldUseDarkColors` 同批校正 `systemDark` 与 `theme`，再走过渡 / `dataset.theme` 提交流程（`ThemeProvider.tsx:96-117`）。原因：`themeSource` 被强制为 light / dark 期间 `matchMedia` 返回覆盖后的值；若按它预解析，从 sage 切回 `system`（OS 深色）会先播放 sage→light 再硬切 dark（先浅后深）。`requestSeq` 丢弃 IPC 往返期间被新选择取代的过期结果。
-- `system` 档下系统明暗被动变化仍由 `matchMedia` 的 change 订阅驱动，`resolvedTheme` 变化后直接写 `dataset.theme`（无整屏过渡）；WCO 符号色改为依赖 `resolvedTheme`，系统明暗变化时也会重取 `--text-dim`（`useTitleBarOverlay.ts:46,56`）。
+- **切换时序（覆盖层内）**：`ThemeProvider` 先建立全屏模糊覆盖层，再在遮罩内 `await window.api.systemTheme.apply(...)`：显式档只把它用于同步原生材质（不采用返回的 `resolvedTheme`），`system` 档用返回的 `shouldUseDarkColors` 解析后再同帧写入 `data-theme` 与 React 状态（`ThemeProvider.tsx:96-135`）。原因：`themeSource` 被强制为 light / dark 期间 `matchMedia` 返回覆盖后的值；若按它预解析，从 sage 切回 `system`（OS 深色）会先播放 sage→light 再硬切 dark（先浅后深）。覆盖层保证原生材质（DWM 背板）与三栏在同一遮罩后切换，修复「底色先变、三栏后变」；快速连切由 `themeReveal.ts` 的 `revealSequence` 丢弃过期结果。
+- `system` 档下系统明暗被动变化仍由 `matchMedia` 的 change 订阅驱动，`resolvedTheme` 变化后直接写 `dataset.theme`（无覆盖层动画）；WCO 符号色改为依赖 `resolvedTheme`，系统明暗变化时也会重取 `--text-dim`（`useTitleBarOverlay.ts:46,56`）。
 - **实机验证待办**：代码只能保证 `nativeTheme.themeSource`、`shouldUseDarkColors` 与材质重新下发；**DWM 在 `tabbed` ↔ `mica` 之间切换时是否立即重绘无法由代码证明**，需在 Windows 11 实机切换 light / sage / honey / dark 验证。若主题切换瞬间材质有短暂不一致，需记录并反馈。
 
 ## 5. 自绘标题栏与 WCO

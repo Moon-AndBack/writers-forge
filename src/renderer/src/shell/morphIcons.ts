@@ -1,17 +1,5 @@
 import type { IconInput } from 'morphicons/react'
-import {
-  ArrowLeft,
-  CircleQuestionMark,
-  Eye,
-  Leaf,
-  Moon,
-  PanelRightClose,
-  PanelRightOpen,
-  Settings,
-  Sun,
-  X
-} from 'lucide'
-import type { ResolvedThemeId } from '../theme/themes'
+import { ArrowLeft, CircleQuestionMark, PanelRightClose, PanelRightOpen, Settings, X } from 'lucide'
 
 /**
  * 形变图标数据（morphicons + Lucide `IconNode`）。
@@ -25,13 +13,12 @@ import type { ResolvedThemeId } from '../theme/themes'
  * 只需在此登记图标数据。
  */
 
-/** 主题按钮四态（按解析后的实际主题）→ Lucide 图标：亮色太阳 / 暗色月亮 / 浅绿叶 / 浅黄护眼。 */
-export const THEME_MORPH_ICONS: Record<ResolvedThemeId, IconInput> = {
-  light: Sun,
-  dark: Moon,
-  sage: Leaf,
-  honey: Eye
-}
+/**
+ * 主题按钮四态（按解析后的实际主题）→ Lucide 图标：亮色太阳 / 暗色月亮 /
+ * 浅绿叶 / 浅黄护眼。图标数据已迁至 `theme/themeIcons.ts`（主题切换覆盖层
+ * 中心的大图标共用同一份），此处保留原导出名以兼容既有调用。
+ */
+export { THEME_ICONS as THEME_MORPH_ICONS } from '../theme/themeIcons'
 
 /** 右栏开关两态：显示中（箭头朝面板 = 可收起）/ 已收起（箭头离开面板 = 可展开）。 */
 export const RIGHT_PANE_MORPH_ICONS: Record<'shown' | 'hidden', IconInput> = {

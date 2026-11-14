@@ -210,57 +210,64 @@
 5. `useSystemAccent()` 用 `useLayoutEffect` 写 `<html>` 内联样式：`--brand` = 强调色，`--brand-2` = `deriveBrand2(强调色)`（`color.ts:72-77`：深色向白混 32%、亮色向黑混 28%）；非 light/dark 或强调色为空时 `removeProperty` 清除覆盖。
 
 - 覆盖在内联样式上，**`--brand` 的实际值随系统变化**；文档里的 `#5b4de8`、`#8b7ff0` 只能当回退值。订阅常驻、不随主题重建：从 sage / honey 切回 light / dark 会立即用缓存的强调色重新覆盖。
-- 必须用 `useLayoutEffect`：View Transition 拍快照时，内联覆盖要与 `data-theme` 在同一次 commit 落地，否则新快照会先拍到静态品牌色再硬跳。
+- 必须用 `useLayoutEffect`：主题切换覆盖层 commit 时，内联覆盖要与 `data-theme` 在同一次 commit 落地，否则遮罩后的界面会先显示静态品牌色再硬跳。
 - 主题面板缩略图（`theme-switcher.css:152-198`）用**静态** `--brand`，因此 light / dark 缩略图高亮色与运行时可能不同，属预期；`--selection-bg` 由 `--brand` 派生，强调色变化会同步改变选区色。
 
 ---
 
-## 7. 主题切换与 View Transition
+## 7. 主题切换与模糊覆盖层
 
 ### 7.1 主动切换
 
-`ThemeProvider.setTheme()`（`ThemeProvider.tsx:88-126`）：
+`ThemeProvider.setTheme()`（`ThemeProvider.tsx:75-129`）：
 
 ```
 next === theme → 直接返回（不重复过渡）
 
 显式档（light / dark / sage / honey）：
-  后台 fire-and-forget theme:apply(next)（失败静默，不影响渲染层主题）
-  resolved === 当前 dataset.theme → flushSync 只提交状态，不启动过渡
-  否则                            → runThemeReveal(() => {
-                                      dataset.theme = resolved
-                                      flushSync(() => setThemeState(next))
-                                    })
+  本地 resolveTheme(next, systemDark)
+  resolved === 当前 dataset.theme → cancelThemeReveal + flushSync 只提交状态（不启动覆盖层）
+  否则 → runThemeReveal({
+           resolve: await theme:apply(next)（只同步原生材质，不采用其 resolvedTheme）
+           commit:  dataset.theme = resolved + flushSync(state)
+         })
 
 system 档：
-  seq = ++requestSeq
-  await theme:apply('system') → { resolvedTheme, shouldUseDarkColors }
-  过期（seq 已变）→ 丢弃
-  成功 → setSystemDark(shouldUseDarkColors) + 按上面的相同 / 过渡分支提交
-  失败 / null → 回退当前 systemDark，不提交错误档位
+  runThemeReveal({
+    resolve: await theme:apply('system') → 用 shouldUseDarkColors 解析
+    commit:  dataset.theme + flushSync(setSystemDark + theme)
+  })
 ```
 
-- 「dataset 相同只提交状态」分支处理「当前是 `system` 且系统为暗，用户改选 `dark`」：`data-theme` 前后都为 `dark`，两张快照一致，过渡会空转成「没反应」，故只更新选中态。`system` 档不在 IPC 返回前提交选中态：本地 IPC 往返为亚毫秒级，等待权威值可避免「先提交错误解析、后纠正」的额外闪烁路径。持久化 effect（`ThemeProvider.tsx:62-65`）保存用户选择（可为 `system`），`window.api` 缺失时静默跳过。
+- 「dataset 相同只提交状态」分支处理「当前是 `system` 且系统为暗，用户改选 `dark`」：`data-theme` 前后都为 `dark`，播放动画只会空转成「没反应」，故只更新选中态（`cancelThemeReveal` 同时清掉可能仍在途的遮罩）。`system` 档必须在遮罩内 `await` 主进程的 `shouldUseDarkColors`，**不能**用被 `themeSource` 强制过的 `matchMedia` 预解析，否则从 sage 切回 system（OS 深色）会先算出 light 再硬切 dark。持久化 effect（`ThemeProvider.tsx:60-63`）保存用户选择（可为 `system`），`window.api` 缺失时静默跳过。
 
 ### 7.2 被动切换
 
-`resolvedTheme` 变化 → `useEffect` 直接写 `dataset.theme`（`ThemeProvider.tsx:51-57`），**不经** `runThemeReveal`：用户没有主动操作，整屏动画反而突兀。这是有意设计。
+`resolvedTheme` 变化 → `useEffect` 直接写 `dataset.theme`（`ThemeProvider.tsx:49-55`），**不经** `runThemeReveal`：用户没有主动操作，整窗动画反而突兀。这是有意设计。
 
-### 7.3 过渡实现
+### 7.3 覆盖层实现
 
-`runThemeReveal()`（`themeReveal.ts:94-170`）用 `document.startViewTransition` 拍整窗快照，再用 WAAPI 驱动伪元素：
+`runThemeReveal()`（`themeReveal.ts`）不再使用 View Transitions，改为动态创建全屏覆盖层（`components/theme-reveal.css`），总时长约 **720ms**：
 
-- 时长 / 缓动读 `--dur-slow`（240ms）与 `--ease`（对称曲线），读失败回退常量，不写裸时长；改由 JS 而非 CSS 是因为 CSS 曾用强前倾曲线 + 180ms，前 3 帧走完 3/4，肉眼等同瞬切。
-- `motion.css` 只做三件事：`::view-transition-old/new(root)` 一律 `animation: none`；`::view-transition-new(root)` 基础 `opacity: 0`（`ready` 前物理上不可能闪）；窗口材质（亚克力 / 云母）下两层改 `mix-blend-mode: plus-lighter`。
-- 不透明材质：**覆盖式**。旧快照保持不透明垫底，新快照 0 → 1 淡入；真交叉会让亮暗两层同时半透明而整屏泛灰。
-- 窗口材质（亚克力 / 云母）：**真交叉 + `plus-lighter`**，old 1 → 0 与 new 0 → 1 同步，预乘后合计恒为当前主题的外壳 alpha（acrylic 0.50、mica 无 scrim），材质参与度全程不变（跨主题切换时 a 可变，属预期）。old 必须 `fill: 'forwards'`，否则结束回落 opacity 1 会与 new 相加导致一帧变实。
-- 降级（直接 `applyTheme()`，切换永不依赖动画）：不支持 `startViewTransition`、`prefers-reduced-motion: reduce`、启动抛错、`ready` 被跳过（窗口隐藏 / 快速连切）。最后一种在 catch 中补调一次，并用 `revealSequence` 序号守卫，避免旧切换回写已被取代的主题。
+1. **模糊**（`--dur-slow` 240ms）：`__blur` 以 `backdrop-filter: blur(12px)` + 旧主题 `--desk-solid` 55% tint 淡入；tint 值在创建时固化，避免 commit 后 `data-theme` 变化把旧色一起换掉。
+2. **解析**：与模糊并行调用 `theme:apply`（system 档 await 权威明暗）。两者都完成后才 commit，保证原生材质 / DWM 背板在遮罩完全不透明时变化——这是修复「底色先变、三栏后变」的关键。
+3. **交叉**（`--dur-slow` 240ms）：同一同步段写 `dataset.theme` + `flushSync` React 状态；随后读取新主题 `--desk-solid` 写入 `__tint`，tint 从 0 → 1、中心 `__badge` 插入目标主题图标（112px、stroke 1.35、品牌 18% 柔光）并缩放淡入。
+4. **淡出**（`--dur-slow` 240ms）：整层 opacity 1 → 0，图标同时放大淡出，完成后移除 DOM 与 keydown 拦截。
+
+- 只动 `opacity` / `transform`，不逐帧改 blur 半径；时长 / 缓动读 `--dur-slow` / `--ease` / `--ease-out`，读失败回退常量。
+- 覆盖层 `z-index: var(--z-theme-reveal)`（1105），仅在动画期间存在。
+- 快速连切：模块级 `revealSequence` 丢弃过期解析；处于 `blurring` / `revealing` 的覆盖层被复用，取消旧 WAAPI 动画后按最新目标重放 tint / 图标，**不重新模糊**；进入 `fading` 后新建覆盖层。
+- 降级（直接 resolve + commit，不显示遮罩）：`prefers-reduced-motion: reduce`、页面隐藏、覆盖层创建抛错、动画异常；已解析时补提交一次（幂等），保证主题永不因动画失败而不切。
+
+### 7.4 旧方案已移除
+
+`motion.css` 的 `::view-transition-*` 整块与 `themeReveal.ts` 的 `document.startViewTransition` / WAAPI 伪元素编排已删除；`motion.css` 仍保留通用的 `wf-enter-up` / `wf-exit-down` / `wf-enter-fade` / `wf-fade-out` / `wf-pop-out`，未被误删。
 
 ---
 
 ## 8. 样式导入顺序与层叠契约
 
-`styles/index.css`（13-24）的顺序有语义，不得随意调整：
+`styles/index.css`（13-25）的顺序有语义，不得随意调整：
 
 | 顺序 | 文件                                                   | 为什么必须在此位置                                                                                                                                                  |
 | ---- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -269,9 +276,10 @@ system 档：
 | 3    | `entity-highlight-tokens.css` / `chip-pill-tokens.css` | 实体高亮令牌与胶囊模块色系；胶囊默认基色 `--chip-base` 依赖前者，不再隐式依赖写作域加载链                                                                           |
 | 4    | `base.css`                                             | 重置、`body` 字体、`::selection`、滚动条、减动效兜底                                                                                                                |
 | 5    | `components/motion.css`                                | 工具类为单类选择器且当前无挂载点，放业务样式前，任何业务规则都能「后加载者胜」                                                                                      |
-| 6    | `global.css`                                           | 既有布局 / 组件样式                                                                                                                                                 |
-| 7    | `chip-pill.css`                                        | 胶囊基类，就地派生 `--chip-fg`                                                                                                                                      |
-| 8    | `chip-preset-colors.css`                               | **必须最后**：`.chip-p-*` 与 `.chip-m-*` 同为 0,1,0，只有后加载才能覆盖模块基色；其配对文字色也必须压过 `chip-pill.css` 的派生色，否则首帧「实色底 + 低对比字」闪烁 |
+| 6    | `components/theme-reveal.css`                          | 主题切换全屏覆盖层：选择器独立、仅在动画期间挂载，放业务样式前避免被既有规则意外覆盖                                                                                |
+| 7    | `global.css`                                           | 既有布局 / 组件样式                                                                                                                                                 |
+| 8    | `chip-pill.css`                                        | 胶囊基类，就地派生 `--chip-fg`                                                                                                                                      |
+| 9    | `chip-preset-colors.css`                               | **必须最后**：`.chip-p-*` 与 `.chip-m-*` 同为 0,1,0，只有后加载才能覆盖模块基色；其配对文字色也必须压过 `chip-pill.css` 的派生色，否则首帧「实色底 + 低对比字」闪烁 |
 
 `App.tsx:22-23` 另有顺序依赖：`shell.css` 定义 `.shell` 基础底与 `[data-theme='dark'] .shell`（0,2,0），`material.css` 随后导入；`[data-material='acrylic'] .shell` 与 `[data-material='mica'] .shell` 也同为 0,2,0，**只能靠源码顺序胜出**；提前加载会被 dark 色带盖掉。
 
@@ -282,11 +290,11 @@ system 档：
 ## 9. 使用规约
 
 1. **禁止硬编码颜色**。颜色、`box-shadow` 的 rgba、`::selection`、遮罩、渐变一律取令牌。现有例外（dark 色带、书籍封面 / 状态胶囊、主题预览镜像、品牌标、头像白字、滚动条、胶囊预设色板、固定态活动栏磨砂等）逐条登记在 `design-language.md` 的「例外登记表」；新增例外须同时登记并写 `/* 例外：… */` 注释。
-2. **不得给主题令牌挂 `transition`**。`--dur-*` 只服务交互（hover / 展开 / 拖拽 / 显隐）与进出场；仅由 `data-theme` 引起的 `color` / `background` / `box-shadow` 过渡一律删除。主题整体由 View Transition 淡化，CSS 再过渡会出现「一部分渐变、一部分硬跳」。
+2. **不得给主题令牌挂 `transition`**。`--dur-*` 只服务交互（hover / 展开 / 拖拽 / 显隐）与进出场；仅由 `data-theme` 引起的 `color` / `background` / `box-shadow` 过渡一律删除。主题整体由全屏模糊覆盖层过渡，CSS 再过渡会出现「一部分渐变、一部分硬跳」。
 3. **新增令牌必须四套主题齐全**。主题相关令牌在 light / dark / sage / honey 四块**各自显式声明**（尤其 `--control-on-soft*`，注释明确要求不依赖 `:root` 继承）；主题无关才放 `:root`。只加一侧会让某主题悄悄沿用亮色值。
 4. **不得跨主题推导**。dark 的 `--desk-2/3`、`--pane`、阴影、选区透明度与 light 语义不同（§4.6），复制 light 比例再调亮度必然出错。
 5. **不透明优先**：组件填充用 `--*-solid`，否则窗口材质下材质会从组件内部透出。
-6. **界面字号走 `--fs-*`，正文 / 行高 / 缩放走 `--doc-*`**，时长走 `--dur-*`，缓动走 `--ease` / `--ease-out`；层级优先走 `--z-*`（当前仅 970–972 已令牌化，其余待收敛，新代码不得再写裸 `z-index`）。禁止裸 `0.2s`、`ease-in-out`、字面量 `z-index`，以及界面 `font-size` 数值字面量（封面首字 34 / 56 已登记例外）。
+6. **界面字号走 `--fs-*`，正文 / 行高 / 缩放走 `--doc-*`**，时长走 `--dur-*`，缓动走 `--ease` / `--ease-out`；层级优先走 `--z-*`（当前 970–972 与 1105 已令牌化，其余待收敛，新代码不得再写裸 `z-index`）。禁止裸 `0.2s`、`ease-in-out`、字面量 `z-index`，以及界面 `font-size` 数值字面量（封面首字 34 / 56 已登记例外）。
 7. **语义色不改语义**：`--ok` / `--warn` / `--danger` 只表达状态，不当品牌强调；`--brand` 会被系统强调色覆盖，不要当固定色画插画。
 8. **兼容层已删除**：`--bg` / `--fg` 已从四套主题移除，`body` 改用 `--desk-1` / `--text`；同组原 `--accent` / `--border` 已随更早批次清理删除。
 9. 改令牌后核对四套主题的正文 / 次要文字 / 控件描边 / 选区对比度，并在窗口材质（亚克力 / 云母）开、关两种状态下各看一遍；若涉及主题或外观描述，同步教学书种子（`seedGuideBook/`）。

@@ -9,7 +9,8 @@ export interface ThemeContextValue {
   /**
    * 切换主题（同步写入 dataset 与数据库）。
    *
-   * 过渡为整屏交叉淡化，与触发位置无关，故无需坐标 / 元素等来源参数。
+   * 过渡为整窗模糊覆盖层（中心显示目标主题大图标），与触发位置无关，
+   * 故无需坐标 / 元素等来源参数。
    */
   setTheme: (theme: ThemeId) => void
   /** 全部可用主题 */
