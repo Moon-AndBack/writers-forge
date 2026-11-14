@@ -66,11 +66,7 @@ import type {
   OutlineVolumeRow
 } from './outline'
 import type { DiagnosticsReport } from './diagnostics'
-import type {
-  CategoryRow,
-  CreateCustomCategoryInput,
-  DeleteCustomCategoryResult
-} from './categories'
+import type { CategoryRow } from './categories'
 import type { ChipColorRow } from './chipColors'
 import type { CleanWordsApi } from './cleanWords'
 import type { OneDriveApi } from './onedrive'
@@ -155,16 +151,10 @@ export interface Api {
       delete: (bookId: string) => Promise<boolean>
     }
   }
-  /** 分类域：官方分类 + 用户自定义分类的统一两级树 */
+  /** 分类域：分类树只读入口（官方分类 + 旧版自定义分类冻结保留） */
   categories: {
-    /** 读全树（含自定义）；渲染层自行按 `parentId` 组装层级 */
+    /** 读全树（含旧版自定义分类）；渲染层自行按 `parentId` 组装层级 */
     list: () => Promise<CategoryRow[]>
-    /** 创建自定义分类（强制 channel=NULL / is_custom=1）；非法 / 重名 → null */
-    create: (input: CreateCustomCategoryInput) => Promise<CategoryRow | null>
-    /** 重命名自定义分类（仅 is_custom=1）；非法 / 重名 / 非自定义 / 不存在 → null */
-    rename: (id: number, name: string) => Promise<CategoryRow | null>
-    /** 删除自定义分类；被书籍引用时返回结构化失败（含占用书数），文案由渲染层渲染 */
-    delete: (id: number) => Promise<DeleteCustomCategoryResult>
   }
   chapters: {
     listVolumes: (bookId: string) => Promise<VolumeRow[]>

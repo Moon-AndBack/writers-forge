@@ -1,6 +1,6 @@
 /**
  * 设置页文案命名空间（`settings`）：各设置分组（基础偏好 / 外观与主题 /
- * 自定义分类 / 本地备份 / 云备份）文案。消费者统一 `useTranslation('settings')`
+ * 本地备份 / 云备份）文案。消费者统一 `useTranslation('settings')`
  * 后以同 ns 点分路径取用（如 `t('general.title')`）。
  *
  * 命名说明：主题模式组用 `themeMode`（而非 `theme`）以免与独立 `theme` ns 混淆——
@@ -109,27 +109,11 @@ const settings = {
       rename_failed: '重命名备份失败，请重试。'
     }
   },
-  categories: {
-    title: '自定义分类',
-    placeholder: '输入新分类名称',
-    add: '添加',
-    empty: '还没有自定义分类',
-    rename: '重命名',
-    renameAria: '重命名分类「{{name}}」',
-    delete: '删除',
-    deleteAria: '删除分类「{{name}}」',
-    deleteConfirmTitle: '删除分类',
-    deleteConfirmMessage: '确定删除自定义分类「{{name}}」？',
-    deletedToast: '已删除分类「{{name}}」',
-    duplicate: '已存在同名分类（含官方分类）',
-    inUse: '已被 {{count}} 本书使用，无法删除',
-    deleteFailed: '删除失败，请重试'
-  },
   reset: {
     label: '重置为默认',
     confirmTitle: '重置为默认',
     confirmMessage:
-      '将把界面语言、自动保存、默认打开视图、主题模式与稿纸横线五项恢复默认值（语言改为跟随系统）。不会删除书籍、章节、大纲、实体、自定义分类或备份文件，也不会退出 AI 与 OneDrive 登录。默认打开视图在下次启动时生效。',
+      '将把界面语言、自动保存、默认打开视图、主题模式与稿纸横线五项恢复默认值（语言改为跟随系统）。不会删除书籍、章节、大纲、实体或备份文件，也不会退出 AI 与 OneDrive 登录。默认打开视图在下次启动时生效。',
     confirmAction: '重置',
     doneToast: '已重置为默认设置'
   }

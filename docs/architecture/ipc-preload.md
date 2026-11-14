@@ -52,7 +52,7 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 | 4   | `registerAiCompressionIpc`       | `aiCompression.ts` | 2              |
 | 5   | `registerBackupIpc`              | `backup.ts`        | 7              |
 | 6   | `registerBooksIpc`               | `books.ts`         | 8              |
-| 7   | `registerCategoriesIpc`          | `categories.ts`    | 4              |
+| 7   | `registerCategoriesIpc`          | `categories.ts`    | 1              |
 | 8   | `registerChaptersIpc`            | `chapters.ts`      | 25             |
 | 9   | `registerChapterSearchIpc`       | `chapterSearch.ts` | 3              |
 | 10  | `registerChipColorsIpc`          | `chipColors.ts`    | 1              |
@@ -80,16 +80,16 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 - `docLimit.ts`：单篇正文上限 `MAX_DOC_CHARS = 200_000` 与有效字数计算。
 - `worldSubtypeFields.ts`：子类字段白名单与规范化，只被 `worldSubtypes.ts` 调用。
 
-## 3. 188 个 handle 通道总表
+## 3. 185 个 handle 通道总表
 
-实测 `ipcMain.handle` 共 **188** 个（含 `onedrive:backup`、`outline:saveContent`、`worldEntity:list` / `saveText` / `listIncomingRefs` 等跨行书写的 8 个）。按一级前缀（域）分布：
+实测 `ipcMain.handle` 共 **185** 个（含 `onedrive:backup`、`outline:saveContent`、`worldEntity:list` / `saveText` / `listIncomingRefs` 等跨行书写的 8 个）。按一级前缀（域）分布：
 
 | 域             | 文件                                                            | 数量    |
 | -------------- | --------------------------------------------------------------- | ------- |
 | `ai`           | `ai.ts` + `aiCatalog.ts` + `aiComplete.ts` + `aiCompression.ts` | 20      |
 | `backup`       | `backup.ts`                                                     | 8       |
 | `books`        | `books.ts`                                                      | 8       |
-| `categories`   | `categories.ts`                                                 | 4       |
+| `categories`   | `categories.ts`                                                 | 1       |
 | `chapters`     | `chapters.ts` + `chapterSearch.ts`                              | 28      |
 | `chipColors`   | `chipColors.ts`                                                 | 1       |
 | `cleanWords`   | `cleanWords.ts`                                                 | 7       |
@@ -107,7 +107,7 @@ export function registerIpc(diagnosticsReport: DiagnosticsReport): void {
 | `window`       | `window.ts` + `snap.ts`                                         | 7       |
 | `worldEntity`  | `worldEntities.ts` + `worldRefs.ts` + `worldPowers.ts`          | 19      |
 | `worldSubtype` | `worldSubtypes.ts`                                              | 5       |
-| **合计**       | 26 个注册文件                                                   | **188** |
+| **合计**       | 26 个注册文件                                                   | **185** |
 
 ### 3.1 AI / 书稿 / 内容类（84）
 
@@ -125,8 +125,8 @@ ai:messages:list · ai:messages:append
 books:list · books:get · books:create · books:update · books:delete
 books:cover:get · books:cover:set · books:cover:delete
 
-# categories（4）
-categories:list · categories:create · categories:rename · categories:delete
+# categories（1）
+categories:list
 
 # chapters（28）—— chapters.ts 25 + chapterSearch.ts 3
 chapters:listVolumes · chapters:list · chapters:createVolume · chapters:renameVolume
@@ -310,7 +310,7 @@ interface AiError {
 | `app`            | 2      | `onBeforeClose` / `notifyCloseReady`                | `app:*`                                           |
 | `backup`         | 8      | `list` / `create` / `restore` / `rename`            | `backup:*`                                        |
 | `books`          | 9      | `list` / `cover.set` / `statsAll`                   | `books:*`（`statsAll` 复用 `stats:bookStatsAll`） |
-| `categories`     | 4      | `list` / `delete`                                   | `categories:*`                                    |
+| `categories`     | 1      | `list`                                              | `categories:*`                                    |
 | `chapters`       | 28     | `getParagraphs` / `saveParagraphs` / `replaceAll`   | `chapters:*`                                      |
 | `entities`       | 8      | `match` / `matchMany` / `revision`                  | `entities:*`                                      |
 | `worldEntity`    | 19     | `list` / `addRef` / `updatePowerSystem`             | `worldEntity:*`                                   |

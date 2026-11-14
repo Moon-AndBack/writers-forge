@@ -2,10 +2,6 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type { BookRow, CreateBookInput, UpdateBookPatch } from '../main/database/books'
 import type { CategoryRow } from '../main/database/categories'
 import type {
-  CreateCustomCategoryInput,
-  DeleteCustomCategoryResult
-} from '../main/database/categoriesWrite'
-import type {
   ChapterPin,
   ChapterRow,
   ChapterStats,
@@ -132,19 +128,10 @@ const api = {
       delete: (bookId: string): Promise<boolean> => ipcRenderer.invoke('books:cover:delete', bookId)
     }
   },
-  /** 分类域：官方分类 + 用户自定义分类的统一两级树 */
+  /** 分类域：分类树只读入口（官方分类 + 旧版自定义分类冻结保留） */
   categories: {
-    /** 读全树（含自定义）；渲染层自行按 `parentId` 组装层级 */
-    list: (): Promise<CategoryRow[]> => ipcRenderer.invoke('categories:list'),
-    /** 创建自定义分类；非法 / 重名 → null */
-    create: (input: CreateCustomCategoryInput): Promise<CategoryRow | null> =>
-      ipcRenderer.invoke('categories:create', input),
-    /** 重命名自定义分类；非法 / 重名 / 非自定义 / 不存在 → null */
-    rename: (id: number, name: string): Promise<CategoryRow | null> =>
-      ipcRenderer.invoke('categories:rename', id, name),
-    /** 删除自定义分类；被引用时返回结构化失败（含占用书数） */
-    delete: (id: number): Promise<DeleteCustomCategoryResult> =>
-      ipcRenderer.invoke('categories:delete', id)
+    /** 读全树（含旧版自定义分类）；渲染层自行按 `parentId` 组装层级 */
+    list: (): Promise<CategoryRow[]> => ipcRenderer.invoke('categories:list')
   },
   chapters: {
     listVolumes: (bookId: string): Promise<VolumeRow[]> =>

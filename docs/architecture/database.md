@@ -166,7 +166,7 @@ instance.pragma('foreign_keys = ON')
 | -------------- | ------------------ | ------------------------------- | -------------------------------------------------- |
 | 官方分类       | 一级 33 / 二级 145 | `categories:seed:v1`            | 单事务插入两级树，`is_custom = 0`                  |
 | 胶囊配色       | 28 行色对          | 无 settings 键                  | 每次启动 `INSERT OR IGNORE`，不覆盖用户改色        |
-| 教学书         | 1 本 / 5 卷        | `chapterData:v153:migrated`     | 全量重灌卷章、正文、大纲、剧情、实体（§6）         |
+| 教学书         | 1 本 / 5 卷        | `chapterData:v156:migrated`     | 全量重灌卷章、正文、大纲、剧情、实体（§6）         |
 | 子类预设       | 23 条 / 书         | `worldSubtypes:presets:v1`      | 为既有书籍补齐；新建书由 `createBook` 即时写入     |
 | 关系语义码     | 4 个               | 无键                            | 每次启动 `ON CONFLICT(code) DO NOTHING` 补齐新增码 |
 | 内置违禁词     | 1274 行            | `cleanWords:seed:v2`            | 首次 v2 同步；保留用户启停意图与自建词             |
@@ -175,7 +175,8 @@ instance.pragma('foreign_keys = ON')
 
 要点：
 
-- **分类名称是数据常量**（`BOOK_CATEGORIES` 镜像），不进入 i18n 资源；`origin_id` 保留官方 ID 便于对齐。
+- **分类名称来自 `categories.name`**：官方名称为数据常量（`database/categories.ts` 的种子表），不进入 i18n 资源；`origin_id` 保留官方 ID 便于对齐。
+- **自定义分类管理入口已移除**（v156）：设置弹窗不再提供分类管理页，`categories:create` / `rename` / `delete` 已删除，仅保留 `categories:list`；旧版自定义分类行冻结保留、只读展示。
 - **23 条预设子类**：世界观 6 / 物品 6 / 势力 6 / 角色 4 / 境界体系 1，定义在 `worldSubtypes.ts` 的 `PRESET_WORLD_SUBTYPES`；`preset_key` 为 ASCII 路由键，与胶囊配色、专属子表映射共用。
 - **4 个语义码**：`superior` / `subordinate` / `belongs_to` / `peer`，码表真源 `worldSemanticCodes.ts` 的 `HIERARCHY_SEMANTIC_CODES`；**展示名真源为渲染层 i18n**（`dossier` ns 的 `detail.relation.typeName.*` 类型名、`detail.relation.peerLabel.*` 对端身份标签），`src/shared/worldRelationCodes.ts` 的中文名只写进 `world_semantic_codes.note`，供未知 / 自定义码兜底。
 - **无键种子必须真幂等**：胶囊配色与语义码每次启动都会执行，只允许 `INSERT OR IGNORE` / `ON CONFLICT DO NOTHING`，不得覆盖用户数据。
@@ -185,7 +186,7 @@ instance.pragma('foreign_keys = ON')
 教学书是首启唯一书籍，固定 `id = 'guide'`，标题「Writer's Forge · 使用指南」。重灌入口 `src/main/database/chapterSeed.ts` 的 `resetChapterDataOnce()`，守卫键：
 
 ```ts
-const MIGRATION_KEY = 'chapterData:v153:migrated'
+const MIGRATION_KEY = 'chapterData:v156:migrated'
 ```
 
 ### 6.1 重灌范围
@@ -203,7 +204,7 @@ const MIGRATION_KEY = 'chapterData:v153:migrated'
 
 ### 6.2 幂等边界
 
-- 守卫键存在即直接返回；只有「换键」才会让老库重灌。当前键内含 `v141`，历史批次靠递增版本强制刷新教学文案。
+- 守卫键存在即直接返回；只有「换键」才会让老库重灌。当前键内含 `v156`，历史批次靠递增版本强制刷新教学文案。
 - 事务失败整体回滚且不置键，下次启动重试；不会留下「清空一半」的教学书。
 - 用户删除教学书后不会自动重灌——守卫键仍在，这是有意行为，避免删书后反复复活。
 - 重灌会覆盖教学书的时间线 settings（`timeline:list:<bookId>` / `timeline:active:<bookId>`）。
@@ -281,7 +282,7 @@ ON CONFLICT(id) DO NOTHING
 
 `userData` 目录：打包安装态为系统 AppData 下的 `Writer's Forge`，本地开发态为项目根下的 `user_data/`（`src/main/appPaths.ts`）。排查前先确认当前是哪个目录，两者数据完全独立。
 
-本地备份与恢复入口：设置弹窗「数据与备份」分区（`backup:*` IPC）。「立即备份」用在线快照在 `<userData>/backups/` 生成一个备份文件夹（`<时间戳>[-名称]/`），内含 `snapshot.db` 与 `meta.json`（name / createdAt / kind / size）；列表按 `meta.createdAt` 倒序，旧版平铺 `.db` 不显示（文件保留在磁盘）。恢复先校验备份文件夹内的 `snapshot.db`（只读打开 + `quick_check` + 核心表），复制到 staging 并再校验，随后创建恢复前安全副本文件夹（`kind = pre-restore`），关闭连接、清理 WAL / SHM、原子替换并重开验证；成功后主进程在 300ms 后 `app.relaunch()` + `app.exit(0)`。重命名同步改文件夹名与 `meta.name`，目标已存在返回 `conflict`；删除按文件夹移除整个目录。**不要**在应用运行时直接复制 `writers-forge.db`：WAL 模式下可能得到不一致副本，请使用「立即备份」，或先退出应用再复制整个数据目录。整库导出同样通过 `getDb().backup()` 生成 `.db`，不提供 Markdown 导出。
+本地备份与恢复入口：设置弹窗「本地备份」「云备份」两页（`backup:*` IPC）。「立即备份」用在线快照在 `<userData>/backups/` 生成一个备份文件夹（`<时间戳>[-名称]/`），内含 `snapshot.db` 与 `meta.json`（name / createdAt / kind / size）；列表按 `meta.createdAt` 倒序，旧版平铺 `.db` 不显示（文件保留在磁盘）。恢复先校验备份文件夹内的 `snapshot.db`（只读打开 + `quick_check` + 核心表），复制到 staging 并再校验，随后创建恢复前安全副本文件夹（`kind = pre-restore`），关闭连接、清理 WAL / SHM、原子替换并重开验证；成功后主进程在 300ms 后 `app.relaunch()` + `app.exit(0)`。重命名同步改文件夹名与 `meta.name`，目标已存在返回 `conflict`；删除按文件夹移除整个目录。**不要**在应用运行时直接复制 `writers-forge.db`：WAL 模式下可能得到不一致副本，请使用「立即备份」，或先退出应用再复制整个数据目录。整库导出同样通过 `getDb().backup()` 生成 `.db`，不提供 Markdown 导出。
 
 OneDrive 备份入口：设置弹窗「OneDrive 云备份」分区（`onedrive:backup` / `onedrive:listBackups` / `onedrive:restoreBackup` IPC）。备份流程为 `getDb().backup()` 生成一致性快照 → 上传到 OneDrive app folder（approot）根路径；app folder 是应用专属目录，无需再套子目录，Graph 在首次访问 special 命名空间时自动 provision。快照生成在 WAL 模式下是安全的，**不要**用文件复制替代。云端恢复会先下载到系统临时目录、校验后复用本地恢复流程替换数据库，恢复前自动创建 `pre-restore` 安全副本，成功后自动重启。
 

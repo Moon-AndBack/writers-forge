@@ -119,8 +119,8 @@ import '../../styles/components/button.css'
 | `window.css`         | 114  | Window（Modal 面板复用其结构）                                                                                              |
 | `entity-card.css`    | 129  | EntityStyleCard（由 `styles/index.css` 全局引入，组件自身不 import）                                                        |
 
-`styles/components/` 目录共 **27 个 CSS**（含 `category-manager.css`、`editor-format.css` 等业务域样式，
-不由 `components/ui/` 引入），合计约 3,946 行。`Splitter` 的样式在 `styles/writer.css`（由
+`styles/components/` 目录共 **26 个 CSS**（含 `editor-format.css` 等业务域样式，
+不由 `components/ui/` 引入），合计约 3,845 行。`Splitter` 的样式在 `styles/writer.css`（由
 `pages/Writer.tsx:34` 引入），不在 `components/`；在写作页之外复用时需先把样式迁到组件层。
 
 层叠顺序由「谁先 import」决定：`surface.css` 主动 `@import './modal.css'`、`form.css` 主动
@@ -804,11 +804,10 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 
 ```tsx
 <Select
-  id="book-category"
-  value={category}
-  onChange={setCategory}
-  options={BOOK_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
-  placeholder={t('book.categoryPlaceholder')}
+  value={status}
+  onChange={setStatus}
+  options={statusOptions}
+  placeholder={t('common.selectPlaceholder')}
 />
 ```
 

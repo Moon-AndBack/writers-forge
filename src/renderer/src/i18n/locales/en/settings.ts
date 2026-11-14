@@ -111,27 +111,11 @@ const settings = {
       rename_failed: 'Failed to rename the backup. Please retry.'
     }
   },
-  categories: {
-    title: 'Custom categories',
-    placeholder: 'Enter a new category name',
-    add: 'Add',
-    empty: 'No custom categories yet',
-    rename: 'Rename',
-    renameAria: 'Rename category “{{name}}”',
-    delete: 'Delete',
-    deleteAria: 'Delete category “{{name}}”',
-    deleteConfirmTitle: 'Delete Category',
-    deleteConfirmMessage: 'Delete the custom category “{{name}}”?',
-    deletedToast: 'Deleted category “{{name}}”',
-    duplicate: 'A category with the same name already exists (including official ones)',
-    inUse: 'Used by {{count}} book(s), cannot be deleted',
-    deleteFailed: 'Delete failed, please retry'
-  },
   reset: {
     label: 'Reset to defaults',
     confirmTitle: 'Reset to defaults',
     confirmMessage:
-      'This restores five preferences to their defaults: language, auto save, default view, theme mode and paper lines (language follows the system). It will not delete books, chapters, outlines, entities, custom categories or backup files, and will not sign you out of AI or OneDrive. The default view takes effect on the next launch.',
+      'This restores five preferences to their defaults: language, auto save, default view, theme mode and paper lines (language follows the system). It will not delete books, chapters, outlines, entities or backup files, and will not sign you out of AI or OneDrive. The default view takes effect on the next launch.',
     confirmAction: 'Reset',
     doneToast: 'Settings reset to defaults'
   }

@@ -1,5 +1,5 @@
 /**
- * 教学书种子变更日志 · 后期区间（v71 → v113）。
+ * 教学书种子变更日志 · 后期区间（v71 → v117）。
  *
  * 本文件由 `chapterSeedLog.ts` 按版本区间拆出，块内文字逐字搬运、未作改写；
  * 最近版本见 `chapterSeedLog.ts`，前一区间见 `chapterSeedLogHistoryEarly.ts`。
@@ -421,4 +421,61 @@
  * 之后用户自行导航不受影响。教学文案（卷五「界面与设置」的「设置弹窗」章新增「自动保存开与关」
  * 「默认打开视图」两节、卷二「写正文」保存与恢复、大纲「保存与撤销」「设置弹窗与语言」条目）
  * 同步，键提升让老库也能看到新文案。
+ *
+ * `v117`（AI 会话栏重做与自动命名批）：会话去章化收尾——右栏 AI 会话由「按章隔离」彻底改为
+ * **按书共享**，A 章建立的会话可在 B 章继续使用；切章不再中断在途生成，消息也不清空。
+ * 回插受来源章约束：仅「当前章产出」的 assistant 回复可「替换选中 / 插入到光标后」，
+ * 其它章的回复在气泡上标注来源并禁用回插。面板头部会话区由 Modal 列表（`AiSessionMenu`）
+ * 改造为 `AiSessionBar` 单行软底栏：`Select`（显示当前会话名、直接切换）+ `Dropdown`（⋯
+ * 重命名 / 删除）+「新建」按钮，整行 `--soft-solid` 软底、只过渡颜色与阴影、无 transform；
+ * 旧 Modal 会话列表移除。新增 `aiSessionTitle.ts`：本次新建会话的首轮回复正常完成后，
+ * 异步调用 `ai:chat:complete`（maxTokens 32）生成 6–14 字标题，失败回落到首条消息截断；
+ * fire-and-forget，不阻塞定稿，停止 / 报错不触发。写入走新增的 `ai:sessions:renameIfEmpty`
+ * （`UPDATE ... WHERE id = ? AND title = ''`，原子守卫），用户手动改名后不会被覆盖；
+ * `useAiSessions` / `useAiConversation` 增加刷新回调与 `EnsuredSession.created` 标记。
+ * 教学文案同步（卷二「章节页的左右两栏」、卷四「右栏面板」、卷三右栏页签说明、大纲
+ * 「AI 写作助手」条目：会话按书归属、切章不中断、跨章回插限制、会话栏布局与自动命名；
+ * 原「按章保存」「同一章多条会话」「面板头部会话（N）」等表述已不成立）。另修正 i18n 中残留的「占用条」
+ * 措辞（进度条已在 v116 单行化时移除，改为「上下文百分比」）。
+ *
+ * `v116`（AI 面板底部状态区单行化批）：右栏 AI 输入区下方的状态区从最多 6 个块（正常 3~4 行、
+ * 理论最差约 8 行）压成**一行**——`AiComposerStatus` 重写为「Tag（已选 / 全文字数）+ 状态槽 +
+ * Badge（上下文百分比）+ IconButton（刷新模型列表）」；状态槽四态互斥复用（超预算 > 模型错误 >
+ * 整理上下文 > 模型加载提示），长文本单行省略、悬停 / 聚焦看完整内容；百分比去掉进度条，
+ * ≥80% 加 `⚠` 前缀与 aria-label 文本（不单靠颜色传递状态），窗口来源（未知模型按 32K /
+ * 匹配自某目录 id）与校准说明移到悬停提示。`ContextMeter.tsx` 删除（逻辑内联，
+ * 样式一并清理）。教学文案同步（设置「AI 助手」的上下文占用说明与「自定义上下文窗口」、
+ * 大纲「AI 写作助手」「上下文压缩与模型窗口」条目改为「单行状态栏」，原「占用条」「行下标注」
+ * 表述已不成立）。
+ *
+ * `v115`（上下文估算校准 + 可配置批）：右栏 AI 的上下文估算增加「真实 usage 校准」——
+ * `useAiConversation.send` 在 `prepared.messages` 组装完成后记录
+ * `estimateMessages` 估算值到 `ActiveRequest.estimatedPromptTokens`（同时快照
+ * `calibrationKey = provider/model`），`handleDone` 用 `usage.prompt_tokens` 与估算求比值，
+ * 经 `contextBudget.recordCalibration` 存入模块级 Map：比值 clamp 到 `[0.5, 3.0]` 后按
+ * EMA（新 0.3 / 旧 0.7，首次直接取观测）平滑，仅估算与真实都 > 0 时记录；`useContextUsage`
+ * 展示时按模型名取同模型系数均值乘到 `usedTokens`（`ContextUsage.calibrated`），占用条行下
+ * 标注「已按最近一次真实用量校准」。发送决策（80% 压缩 / 超预算拒绝）仍用原始估算，避免
+ * 系数漂移导致阈值抖动。设置页「AI 助手」新增「上下文压缩」区：①「启用自动压缩」开关
+ * （settings KV `ai:compression:enabled`，默认 true；因 `ai:` 前缀对 `settings:*` 全屏蔽，
+ * 新增专用 IPC `ai:compression:get|set`，**不改表结构**）——关闭后 `prepareOutgoingMessages`
+ * 跳过摘要补全、按 50% 目标纯截断（已存摘要仍复用），超预算仍拒绝；②「自定义上下文窗口」
+ * 手填模型 ID + tokens（新增只读通道 `ai:catalog:overrides:list` 列出已保存覆写，写入仍走
+ * `ai:catalog:override`，经 `overrideContextLimit` 失效渲染层窗口缓存），已保存项可逐条删除。
+ * 教学文案同步（设置「AI 助手」项数与「上下文压缩」说明、大纲新增「上下文压缩与模型窗口」条）。
+ *
+ * `v114`（上下文摘要压缩批）：右栏 AI 在发送前按「模型上下文窗口」做预算判定——
+ * `estimateMessages([system, 本轮 user])` 本身超窗口则拒绝发送（不截断携带正文）；
+ * 总占用达到 80% 时自动把较早对话压成一段摘要（无确认弹窗），摘要以 `role = 'system'`
+ * 行写回 `ai_chat_messages`（现有 CHECK 已允许，**不改表结构、不改原文**），行首隐藏标记
+ * `<!--wf-summary covered=N-->` 记录已覆盖的消息条数，重启后复用、不重复摘要；摘要并入
+ * **第一条** system（不新增第二条，兼容只认首条的转接站），并保留 recent 到 50% 目标。
+ * 摘要失败退化为纯截断，不阻断发送；压缩后保证 `[system, ...recent, user]` ≤ 200 条。
+ * 摘要请求走新增的 `ai:chat:complete`（非流式、独立 requestId、60s 超时、不经过
+ * `claimChat`、不推流式事件），入参校验独立为 `readCompleteInput`（400 条上限，单条仍
+ * 10 万字符）；`MAX_MESSAGES = 200` 仍是发送链路防线。渲染层 `useContextUsage` 的窗口
+ * 缓存新增失效入口（目录刷新 / `ai:catalog:override` 后清空），占用条改为只计未压缩历史
+ * + 摘要。UI 新增「正在整理上下文…」、消息流压缩分隔行（「已压缩前 N 轮对话」）与超预算
+ * 拒绝提示（已用 / 窗口 + 建议）。教学文案同步（设置「AI 助手」新增「模型目录」与
+ * 「上下文占用与自动压缩」两节，大纲「AI 写作助手」条目补充压缩说明）。
  */

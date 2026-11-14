@@ -243,7 +243,7 @@ DDL 变更同步清单（缺一即被自检误报）：
 | L0      | `paragraphs`                                                         | `paragraphs.ts`             | `paragraphs.ts`、`wordCount.ts`                                                               |
 | L0      | `outline_items`                                                      | `outlineItems.ts`           | `outline.ts`                                                                                  |
 | L0      | `daily_stats`                                                        | `dailyStats.ts`             | `stats.ts`                                                                                    |
-| L0      | `categories`                                                         | `categories.ts`             | `categories.ts`、`categoriesWrite.ts`                                                         |
+| L0      | `categories`                                                         | `categories.ts`             | `categories.ts`                                                                               |
 | L0      | `images`                                                             | `images.ts`                 | `images.ts`                                                                                   |
 | L0      | `chip_colors`                                                        | `chipColors.ts`             | `chipColors.ts`                                                                               |
 | L0      | `clean_word_list`                                                    | `cleanWords.ts`             | `cleanWords.ts`、`cleanWordSeed/`                                                             |

@@ -134,7 +134,7 @@
 | `--control-on-soft` / `-hover`              | 10% / 14%               | 14% / 19% | 10% / 14%           | 10% / 14%            |
 | `--control-on-soft-line`                    | 37%                     | 22%       | 37%                 | 37%                  |
 
-- 半透明组中**只有 `--soft` 仍有消费点**（`writer-ai.css` 3 处 + `components/category-manager.css` 1 处）；`--soft-hover`、`--soft-press`、`--pill-bg`、`--pill-bg-hover` 早已被 `-solid` 取代、无任何消费点，已于本次清理从四主题块删除，新代码不要使用。light / sage / honey 的 `--soft-solid` **刻意加深到 6%**（左栏分区容器卡口径，全库共享），故 light 的 `--soft-solid` 与 `--soft-hover-solid` 同值，这是有意为之。
+- 半透明组中**只有 `--soft` 仍有消费点**（`writer-ai.css` 3 处）；`--soft-hover`、`--soft-press`、`--pill-bg`、`--pill-bg-hover` 早已被 `-solid` 取代、无任何消费点，已于本次清理从四主题块删除，新代码不要使用。light / sage / honey 的 `--soft-solid` **刻意加深到 6%**（左栏分区容器卡口径，全库共享），故 light 的 `--soft-solid` 与 `--soft-hover-solid` 同值，这是有意为之。
 - 混色分两派：light / dark 用 `var(--text)`（dark 下白字混入 = 提亮）；sage / honey 固定用本主题基色 `rgb(20,60,30)` / `rgb(80,60,10)` 以保住绿调 / 暖黄调，改用 `--text` 会掉色相。
 - **控件 on-soft 的方向相反**：light 下 `--text` 为深色，10% 混入使控件**更深**；dark 下为白色，14% 混入使控件**更亮**。统一取向是「控件底接近卡片底，边界靠 `--control-on-soft-line`」：浅色系约 1.07–1.09:1 + 37% 描边（对控件底 1.9–2.25:1），dark 约 1.34:1 + 22% 白描边。微调只需改这三行比例，且四套主题各自显式定义，不依赖 `:root` 继承。
 

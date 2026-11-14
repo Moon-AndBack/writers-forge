@@ -210,6 +210,6 @@ src/
 - **zh-CN 为真源、en 同步且标注待校**：`zh-CN` 为 key 真源；新增 / 修改 key 时**必须**同步补齐 `en` 译文，`en` 文件头部**必须**保留「**机翻占位 · 待校**」标注。`en` 经 `satisfies ZhCNResources` 与 zh-CN 保持 key 全等——缺 key / 多 key 会在 `npm run typecheck` 报错，**不得**为省事跳译。
 - **语言与持久化**：支持档位固定 `zh-CN` / `en`（`SUPPORTED_LOCALES`）。语言真源为 `settings` 表 `locale` 键；缺省按 `navigator.language` 经 `resolveLocale` 规整、回退 `DEFAULT_LOCALE`（`zh-CN`）。切换语言**必须**经 `LocaleProvider` 三处同步（i18next + `document.documentElement.lang` + `settings.locale` 落库），**不得**在别处另存语言状态。
 - **类型安全以 zh-CN 为准**：`i18n/types.d.ts` 的 `CustomTypeOptions`（`defaultNS: 'common'`、`resources: ZhCNResources`）为 `t()` 提供 key 补全与校验；新增 key 后若类型报错，**应**修资源而非放宽类型。
-- **不译项（保持原文）**：品牌标识「Writer's Forge」、用户 / 演示数据（书稿正文、示例卷章名）、分类枚举 `BOOK_CATEGORIES` 与封面色 `COVER_COLORS[].label`（数据常量，与主进程镜像同步）。以上**不得**拆进 i18n 资源。
+- **不译项（保持原文）**：品牌标识「Writer's Forge」、用户 / 演示数据（书稿正文、示例卷章名）、分类名称（官方种子数据常量 `categories.name`）与封面色 `COVER_COLORS[].label`（数据常量，与主进程镜像同步）。以上**不得**拆进 i18n 资源。
 - **二期边界（本期不纳入 i18n，保持中文原文）**：章 / 卷中文数字编号（「第X章」「卷X」）、相对时间（「刚刚 / N 分钟前 / N 小时前 / N 天前」）、主进程日志与种子数据。以上为已知技术债，**不要**顺手改动，待专门批次统一处理。
 - **`<html lang>` 首帧**：`index.html` 静态首帧写 `lang="zh-CN"`，运行期由 `LocaleProvider` 校正为实际语言；新增页面**不得**自行改写 `document.documentElement.lang`。

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
 /** 设置弹窗的分页标识（顺序即左侧导航顺序）。 */
-export type SettingsPageId = 'general' | 'appearance' | 'ai' | 'categories' | 'data' | 'onedrive'
+export type SettingsPageId = 'general' | 'appearance' | 'ai' | 'data' | 'onedrive'
 
 export interface SettingsNavProps {
   /** 当前页。 */
@@ -29,7 +29,6 @@ export function SettingsNav({ active, onChange }: SettingsNavProps) {
     { id: 'general', label: t('general.title') },
     { id: 'appearance', label: t('appearance.title') },
     { id: 'ai', label: tAi('section.title') },
-    { id: 'categories', label: t('categories.title') },
     { id: 'data', label: t('data.title') },
     { id: 'onedrive', label: tOneDrive('section.title') }
   ]
