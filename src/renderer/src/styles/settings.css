@@ -188,6 +188,14 @@
   color: var(--text-mute);
 }
 
+/* 校验失败行：说明位改为错误文案并取 danger 色。`SettingRow` 只有
+   label / description / children 三槽，无 invalid / error 能力，故由调用方以
+   `settings-row--error` 修饰；仍复用 `.settings-row__desc` 的排版，不另立字号 /
+   间距 / 颜色体系（仅换 `--danger` 令牌）。 */
+.settings-row--error .settings-row__desc {
+  color: var(--danger);
+}
+
 .settings-row__control {
   flex: none;
   display: inline-flex;

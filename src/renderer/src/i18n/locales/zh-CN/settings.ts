@@ -13,6 +13,13 @@ const settings = {
   nav: {
     aria: '设置分区导航'
   },
+  penName: {
+    label: '笔名',
+    description: '用于书籍卡作者署名',
+    placeholder: '未署名',
+    tooLong: '笔名最多 {{max}} 个字',
+    blank: '笔名不能只包含空白'
+  },
   locale: {
     label: '界面语言',
     zhCN: '简体中文',

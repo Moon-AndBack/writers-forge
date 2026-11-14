@@ -12,6 +12,13 @@ const settings = {
   nav: {
     aria: 'Settings sections'
   },
+  penName: {
+    label: 'Pen name',
+    description: 'Shown as the author on book cards',
+    placeholder: 'Anonymous',
+    tooLong: 'Pen name must be no more than {{max}} characters',
+    blank: 'Pen name cannot contain only whitespace'
+  },
   locale: {
     label: 'Language',
     zhCN: '简体中文',

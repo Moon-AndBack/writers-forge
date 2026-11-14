@@ -14,6 +14,8 @@ import {
 } from './bookshelf/BookFormDialog'
 import { useShelfSnap } from './bookshelf/useShelfSnap'
 import { useConfirm } from './writer/chapters/useConfirm'
+import { useSettingsValue } from './settings/useSettingsValue'
+import { PEN_NAME_SETTING_KEY, decodePenName } from './settings/penName'
 import {
   FALLBACK_BOOKS,
   filterBooks,
@@ -80,7 +82,9 @@ export default function Bookshelf() {
   const [loadError, setLoadError] = useState(false)
   const [statsByBook, setStatsByBook] = useState<Record<string, BookStats>>({})
   const [shelfStats, setShelfStats] = useState<ShelfStats>({ words: 0, today: 0, streak: 0 })
-  const [penName, setPenName] = useState('')
+  // 全局笔名（`settings.penName`）：设置页保存后经 `useSettingsValue` 同键广播即时
+  // 刷新卡片作者行，无需等书架重新挂载。空串时卡片回退「未署名」。
+  const penName = useSettingsValue(PEN_NAME_SETTING_KEY, '', decodePenName).value
   // 分类 ID → 名称映射（来自 categories:list），供书籍卡片渲染分类标签。
   const [categoryNames, setCategoryNames] = useState<Map<number, string>>(new Map())
   const [filter, setFilter] = useState<ShelfFilter>('all')
@@ -162,24 +166,6 @@ export default function Bookshelf() {
       active = false
     }
   }, [booksApi, loadStats])
-
-  // 读取全局笔名（`settings.penName`），供书籍卡片作者行展示；顺带拉分类名称映射。
-  useEffect(() => {
-    const settings = window.api?.settings
-    if (!settings) return undefined
-    let active = true
-    settings
-      .get('penName')
-      .then((value) => {
-        if (active) setPenName(value ?? '')
-      })
-      .catch(() => {
-        /* 读取失败静默忽略 */
-      })
-    return () => {
-      active = false
-    }
-  }, [])
 
   // 分类 ID → 名称映射（卡片标签展示用；失败静默，标签区整体不渲染）。
   useEffect(() => {
