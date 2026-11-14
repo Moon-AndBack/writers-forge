@@ -76,6 +76,36 @@ const dossier = {
   relationsDialog: {
     title: '关联关系'
   },
+  /** 势力组织架构视图（势力模块中栏的「卡片 / 架构」切换）。 */
+  orgChart: {
+    viewLabel: '设定视图',
+    viewCards: '卡片',
+    viewTree: '架构',
+    canvasLabel: '势力组织架构画布',
+    zoomLabel: '画布缩放',
+    zoomIn: '放大',
+    zoomOut: '缩小',
+    fit: '适应画布',
+    zoomPercent: '{{percent}}%',
+    memberCount: '{{count}} 人',
+    childrenCount: '{{count}} 个下级',
+    collapse: '收起 {{count}} 个下级',
+    expand: '展开 {{count}} 个下级',
+    reversed: '关系方向与预期相反',
+    emptyTitle: '还没有可展示的层级',
+    emptyDesc: '在势力的「关联关系」中添加「上级 / 下级」后，这里会自动拼出组织架构',
+    orphans: '未接入层级',
+    orphanHint: '没有上级、也没有下级的势力',
+    conflicts: {
+      title: '数据问题（{{count}}）',
+      hint: '以下关系存在冲突，已按可渲染方向处理，不阻断展示；可在「关联关系」中修正。',
+      direction: '方向冲突',
+      cycle: '环',
+      line: '{{kind}}：{{names}}',
+      multiParentLine: '多父：{{child}}（副父 {{parents}}）',
+      refs: '关系 #{{ids}}'
+    }
+  },
   dialog: {
     /** 右栏有未保存改动时切换条目：两态确认（保存并切换 / 不保存）。 */
     unsavedSwitch: {

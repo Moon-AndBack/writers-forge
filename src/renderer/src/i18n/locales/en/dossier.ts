@@ -58,6 +58,36 @@ const dossier = {
   relationsDialog: {
     title: 'Relations'
   },
+  orgChart: {
+    viewLabel: 'View',
+    viewCards: 'Cards',
+    viewTree: 'Chart',
+    canvasLabel: 'Faction organization chart',
+    zoomLabel: 'Canvas zoom',
+    zoomIn: 'Zoom in',
+    zoomOut: 'Zoom out',
+    fit: 'Fit to canvas',
+    zoomPercent: '{{percent}}%',
+    memberCount: '{{count}} members',
+    childrenCount: '{{count}} children',
+    collapse: 'Collapse {{count}} children',
+    expand: 'Expand {{count}} children',
+    reversed: 'Relation direction is reversed',
+    emptyTitle: 'No hierarchy to show yet',
+    emptyDesc:
+      'Add superior / subordinate relations to factions and the organization chart will be built automatically',
+    orphans: 'Not in the hierarchy',
+    orphanHint: 'Factions with no superior and no subordinates',
+    conflicts: {
+      title: 'Data issues ({{count}})',
+      hint: 'The following relations conflict and were resolved in a renderable direction. They do not block the chart; fix them in Relations.',
+      direction: 'Direction conflict',
+      cycle: 'Cycle',
+      line: '{{kind}}: {{names}}',
+      multiParentLine: 'Multiple parents: {{child}} (extra parents {{parents}})',
+      refs: 'Relation #{{ids}}'
+    }
+  },
   dialog: {
     unsavedSwitch: {
       title: 'Unsaved changes',

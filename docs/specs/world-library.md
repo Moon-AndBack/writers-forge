@@ -214,14 +214,14 @@ DDL 由 `worldEntitiesTableDdl('world_entities')` 生成，新库建表与两处
 
 数据层按职责拆分，`worldEntities.ts` 只做再导出（`worldEntityTypes` / `worldEntityMeta` / `worldRefs` / `worldPower*` / `worldEntityQueries` / `worldEntityWrites` / `worldSubtypeFields`）。读：`listWorldEntities(bookId, type?, subtypeId?)`、`getWorldEntity(id)`；写：`createWorldEntity` / `updateWorldEntity` / `deleteWorldEntity`，均包事务，子表行由触发器保证存在。
 
-IPC 共 **19 个** `worldEntity:*` 通道，按用途分四组：
+IPC 共 **20 个** `worldEntity:*` 通道，按用途分四组：
 
-| 组        | 通道                                                                                         | 说明                                                                                    |
-| --------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| 主表 CRUD | `list` / `get` / `create` / `update` / `delete`                                              | `delete` 为软删；`create` 缺分类时自动补境界体系默认分类，其余类型缺分类直接返回 `null` |
-| 附属      | `listAliases` / `setAliases` / `getText` / `saveText` / `listTags` / `setTags`               | 别名 / 标签 / 正文整体替换；正文单字段上限 2 MB 字符                                    |
-| 关系      | `listRefs` / `listIncomingRefs` / `listSemanticCodes` / `addRef` / `updateRef` / `removeRef` | 出边 / 入边 / 字典 / 增改删                                                             |
-| 境界体系  | `listPowerSystems` / `updatePowerSystem`                                                     | 列表只读 + 写「体系类型」                                                               |
+| 组        | 通道                                                                                                            | 说明                                                                                    |
+| --------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| 主表 CRUD | `list` / `get` / `create` / `update` / `delete`                                                                 | `delete` 为软删；`create` 缺分类时自动补境界体系默认分类，其余类型缺分类直接返回 `null` |
+| 附属      | `listAliases` / `setAliases` / `getText` / `saveText` / `listTags` / `setTags`                                  | 别名 / 标签 / 正文整体替换；正文单字段上限 2 MB 字符                                    |
+| 关系      | `listRefs` / `listIncomingRefs` / `listSemanticCodes` / `listRefsByBook` / `addRef` / `updateRef` / `removeRef` | 出边 / 入边 / 字典 / 全书 refs-only 关系 / 增改删                                       |
+| 境界体系  | `listPowerSystems` / `updatePowerSystem`                                                                        | 列表只读 + 写「体系类型」                                                               |
 
 另有独立前缀：`worldSubtype:list|create|update|delete|ensurePresets`（5 个）与 `chipColors:list`（1 个）。入参校验口径统一：非法一律返回 `[]` / `null` / `false`，不向渲染层抛异常；写失败记 error 日志后按通道语义回落。
 
@@ -243,8 +243,11 @@ IPC 共 **19 个** `worldEntity:*` 通道，按用途分四组：
 | `DossierRelationsDialog.tsx` / `RelationList.tsx`                            | 关联关系弹窗：出边 / 入边同表渲染、就地改类型与备注；新增区按「当前模块 × 目标模块」过滤可选语义码                                       |
 | `useDossierWorkspace.ts` / `useDossierBundle.ts` / `useDossierMutations.ts`  | 列表 / 详情 / 别名 / 标签 / 关系装配与写入链串行化（写后重拉缓存失效）                                                                   |
 | `useRelationDraft.ts` / `useRelationTargets.ts` / `useRelationCategories.ts` | 新增关系草稿：跨模块候选、已关联目标排除、反向存储判定、类别下拉数据                                                                     |
+| `orgChart.ts` / `orgChart/`                                                  | 势力组织架构：纯函数推导树（`buildOrgChart`，环 / 方向 / 多父收口）、画布容器、递归节点、拖拽缩放 hook、DOM 实测连线 hook                |
 
 正文高亮与悬停卡：`pages/writer/entities/entityHighlight.ts` 的 `EntityHighlight` 扩展按段落缓存匹配结果（键 = 书 + 词表版本 + 段落文本），装饰类名复用 `entityChipClass(type, presetKey)`；`pages/writer/entities/HoverCard.tsx` 按 `peerId` 走 `worldEntity:get` 取详情并内置 LRU 缓存。
+
+**势力组织架构视图**（2026-11）：势力模块中栏顶部提供「卡片 / 架构」切换（其它四域不显示）。架构视图用 `worldEntity:list(faction)` + `worldEntity:list(worldview)` 取组织节点，并用 `worldEntity:list(character)` 补成员名（`belongs_to` 两端都需要实体行才能认定成员），用 `worldEntity:listRefsByBook(bookId, ['superior', 'subordinate', 'peer', 'belongs_to'])` 取 refs-only 关系（不 JOIN 正文），交给纯函数 `buildOrgChart` 推导：同一逻辑边双向存储归一、方向冲突 / 环 / 多父收口并回报 `conflicts`，`belongs_to` 按两端类型认定成员（反向存储标 `reversed`），未进入任何树的势力归 `orphans`。画布层（`orgChart/OrgChart.tsx` + `useOrgChartTransform` / `useOrgChartLines`）负责拖拽平移、滚轮 / 按钮缩放（0.3–2）、适应画布与 SVG 折线（按 DOM 实测位置，折叠 / 尺寸变化自动重测）；冲突以可折叠「数据问题」条展示，孤儿势力单列「未接入层级」。`orgChart.ts` 为纯函数，不依赖 React / IPC。
 
 ## 10. 已知边界与技术债
 
@@ -257,4 +260,4 @@ IPC 共 **19 个** `worldEntity:*` 通道，按用途分四组：
 - **关系缺少库级唯一约束**：同向重复边只能靠交互层候选过滤规避，脚本 / 批量导入路径需自行去重。
 - **旧语义码已被清空**：`worldRefs:hierarchy:v1` 迁移删除了白名单外的存量关系，读取侧仍保留 `semantic_code IS NULL` 的空码兜底（界面按「自定义关系」只显示对端名）。
 
-最后核对：2026-10-31
+最后核对：2026-11-14

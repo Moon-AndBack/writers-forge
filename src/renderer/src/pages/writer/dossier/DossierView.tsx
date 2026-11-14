@@ -9,6 +9,7 @@ import { useModuleLabel } from '../../../shell/activityBarModules'
 import type { DossierModule } from '../../../shell/activityBarModules'
 import { EmptyState } from '../../../components/EmptyState'
 import { LoadErrorState } from '../../../components/LoadErrorState'
+import { Segmented } from '../../../components/ui'
 import { HoverCard } from '../entities/HoverCard'
 import type { HoverAnchor } from '../entities/HoverCard'
 import ConfirmDialog from '../ConfirmDialog'
@@ -20,6 +21,7 @@ import { useDossierFilters } from './dossierFilterContext'
 import { filterDossierRows } from './dossierFilterMatch'
 import DossierRelationsDialog from './DossierRelationsDialog'
 import type { DossierBundle } from './dossierTree'
+import OrgChartView from './orgChart/OrgChartView'
 
 /** 关系 chip 悬停卡延迟：移入显示、移出消失（避免扫过时频繁弹出），取通用浮层延迟。 */
 const CHIP_HOVER_SHOW_DELAY = POPOVER_SHOW_DELAY
@@ -57,6 +59,8 @@ export default function DossierView({ bundle }: DossierViewProps) {
   const { t: tCommon } = useTranslation('common')
   const moduleLabel = useModuleLabel(bundle.module)
   const [createOpen, setCreateOpen] = useState(false)
+  // 势力模块中栏视图：卡片网格 / 组织架构（其余四域固定卡片，不渲染切换器）。
+  const [viewMode, setViewMode] = useState<'cards' | 'org'>('cards')
   // 编辑弹窗当前打开的行 id（null = 关闭；境界体系无类别选择器，仅改名称 / 别名）。
   const [editId, setEditId] = useState<number | null>(null)
   // 关联关系弹窗当前打开的行 id（null = 关闭；境界体系模块不挂入口）。
@@ -290,54 +294,77 @@ export default function DossierView({ bundle }: DossierViewProps) {
     nestedHover !== null && rows.some((row) => row.id === nestedHover.sourceRowId)
       ? nestedHover.anchor
       : null
+  // 架构视图仅势力模块可选；切换器只在该模块显示，其它四域保持原卡片视图。
+  const isOrgView = module === 'factions' && viewMode === 'org'
 
   return (
     <>
       <DossierActivityActions module={module} onCreate={() => setCreateOpen(true)} />
 
-      <div className="editor-scroll">
-        <div className="editor-inner is-full">
-          {loadError && rows.length === 0 ? (
-            /* 读取失败且无可用数据：与「当前域还没有条目」的空态区分，给出重试入口。 */
-            <LoadErrorState onRetry={() => void reload()} />
-          ) : loading && rows.length === 0 ? (
-            <div className="dossier-detail__empty">{tCommon('loading')}</div>
-          ) : rows.length === 0 ? (
-            <EmptyState
-              title={t('emptyTitle', { module: moduleLabel })}
-              description={t('emptyDesc')}
-            />
-          ) : visibleRows.length === 0 ? (
-            /* 有数据但被筛选条件全部滤掉：与「模块还没有条目」的空态文案区分。 */
-            <EmptyState title={t('filter.emptyTitle')} description={t('filter.emptyDesc')} />
-          ) : (
-            <div
-              className="wf-card-grid dossier-grid"
-              ref={gridRef}
-              aria-label={t('gridAria', { module: moduleLabel })}
-            >
-              {visibleRows.map((row) => (
-                <DossierCard
-                  key={row.id}
-                  row={row}
-                  active={row.id === activeId}
-                  layoutKey={layoutKey}
-                  onSelect={onSelect}
-                  onEdit={setEditId}
-                  onRelations={relationsEnabled ? setRelationsId : undefined}
-                  onDelete={setDeleteId}
-                  onChipEnter={handleChipEnter}
-                  onChipLeave={handleChipLeave}
-                  onMoreItemEnter={handleMoreItemEnter}
-                  onMoreItemLeave={handleMoreItemLeave}
-                  onPopupOpen={closeChipHover}
-                  onPopupControl={handlePopupControl}
-                />
-              ))}
-            </div>
-          )}
+      {module === 'factions' ? (
+        <div className="dossier-viewbar">
+          <Segmented
+            size="sm"
+            value={viewMode}
+            onChange={setViewMode}
+            aria-label={t('orgChart.viewLabel')}
+            options={[
+              { value: 'cards', label: t('orgChart.viewCards') },
+              { value: 'org', label: t('orgChart.viewTree') }
+            ]}
+          />
         </div>
-      </div>
+      ) : null}
+
+      {isOrgView ? (
+        <div className="editor-scroll is-org">
+          <OrgChartView bookId={bundle.bookId} />
+        </div>
+      ) : (
+        <div className="editor-scroll">
+          <div className="editor-inner is-full">
+            {loadError && rows.length === 0 ? (
+              /* 读取失败且无可用数据：与「当前域还没有条目」的空态区分，给出重试入口。 */
+              <LoadErrorState onRetry={() => void reload()} />
+            ) : loading && rows.length === 0 ? (
+              <div className="dossier-detail__empty">{tCommon('loading')}</div>
+            ) : rows.length === 0 ? (
+              <EmptyState
+                title={t('emptyTitle', { module: moduleLabel })}
+                description={t('emptyDesc')}
+              />
+            ) : visibleRows.length === 0 ? (
+              /* 有数据但被筛选条件全部滤掉：与「模块还没有条目」的空态文案区分。 */
+              <EmptyState title={t('filter.emptyTitle')} description={t('filter.emptyDesc')} />
+            ) : (
+              <div
+                className="wf-card-grid dossier-grid"
+                ref={gridRef}
+                aria-label={t('gridAria', { module: moduleLabel })}
+              >
+                {visibleRows.map((row) => (
+                  <DossierCard
+                    key={row.id}
+                    row={row}
+                    active={row.id === activeId}
+                    layoutKey={layoutKey}
+                    onSelect={onSelect}
+                    onEdit={setEditId}
+                    onRelations={relationsEnabled ? setRelationsId : undefined}
+                    onDelete={setDeleteId}
+                    onChipEnter={handleChipEnter}
+                    onChipLeave={handleChipLeave}
+                    onMoreItemEnter={handleMoreItemEnter}
+                    onMoreItemLeave={handleMoreItemLeave}
+                    onPopupOpen={closeChipHover}
+                    onPopupControl={handlePopupControl}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {createOpen ? (
         <DossierCreateDialog

@@ -1,0 +1,404 @@
+/* ============================================================
+   势力组织架构视图（orgChart）
+   ------------------------------------------------------------------
+   画布：拖拽平移 + 滚轮 / 按钮缩放 + 适应画布；节点卡片按层级取
+   --brand 不同混色比例作左侧色条，成员胶囊复用全局 chip-pill。
+   卡片 hover 只做边缘光晕（颜色 / 描边 / 阴影），无位移 / 缩放（§8.8）。
+   浮层缩放控件属 chrome 浮层域（24px），与状态栏同档。
+   ============================================================ */
+
+/* ---------- 中栏视图切换条（仅势力模块） ---------- */
+.dossier-viewbar {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 28px 0;
+}
+
+/* 架构视图占满中栏滚动区：滚动容器改为不滚动的 flex 容器，画布自己平移 / 缩放。 */
+.editor-scroll.is-org {
+  display: flex;
+  overflow: hidden;
+  padding: 8px 0 12px;
+}
+
+.editor-scroll.is-org > .org-chart-view {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.org-chart-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 28px;
+}
+
+.org-chart-view__stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.org-chart-view__stage > .placeholder-view {
+  flex: 1 1 auto;
+}
+
+.org-chart-view__stage > .dossier-detail__empty {
+  padding: 20px 0;
+}
+
+/* ---------- 数据问题提示（可折叠，不阻断渲染） ---------- */
+.org-chart-conflicts {
+  flex: none;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--line));
+  border-radius: var(--r-lg);
+  background: var(--soft-solid);
+  color: var(--text-dim);
+  font-size: var(--fs-body);
+}
+
+.org-chart-conflicts > summary {
+  cursor: pointer;
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.org-chart-conflicts__hint {
+  margin: 8px 0 6px;
+  color: var(--text-mute);
+  font-size: var(--fs-micro);
+}
+
+.org-chart-conflicts__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--fs-micro);
+}
+
+.org-chart-conflicts__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.org-chart-conflicts__refs {
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 画布外壳 ---------- */
+.org-chart {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background-color: var(--pane);
+  background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
+  background-size: 20px 20px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.org-chart.is-panning {
+  cursor: grabbing;
+}
+
+.org-chart__canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max-content;
+  padding: 40px;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* ---------- SVG 连线层（铺在卡片下方） ---------- */
+.org-chart__lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.org-chart__lines path {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- 树 / 节点 ---------- */
+.org-chart__forest {
+  display: flex;
+  align-items: flex-start;
+  gap: 56px;
+}
+
+.org-chart__node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.org-chart__children {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 36px;
+}
+
+/* 卡片：左侧色条按层级取 --brand 不同混色比例（0 最深 → 3+ 最浅）。 */
+.org-chart__card {
+  --org-depth-mix: 100%;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'icon main members'
+    'footer footer footer';
+  align-items: center;
+  gap: 8px 10px;
+  width: 400px;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid color-mix(in srgb, var(--brand) var(--org-depth-mix), var(--pane));
+  border-radius: var(--r-lg);
+  background: var(--soft-solid);
+  box-shadow: var(--sh-xs);
+  transition:
+    box-shadow var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease);
+}
+
+.org-chart__node[data-depth='1'] > .org-chart__card {
+  --org-depth-mix: 70%;
+}
+
+.org-chart__node[data-depth='2'] > .org-chart__card {
+  --org-depth-mix: 50%;
+}
+
+.org-chart__node[data-depth='3'] > .org-chart__card {
+  --org-depth-mix: 35%;
+}
+
+/* 边缘光晕（§8.8）：只改颜色 / 描边 / 阴影，无 transform。 */
+.org-chart__card:hover {
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  border-left-color: color-mix(in srgb, var(--brand) var(--org-depth-mix), var(--pane));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+.org-chart__icon {
+  grid-area: icon;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid color-mix(in srgb, var(--brand) var(--org-depth-mix), transparent);
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  color: color-mix(in srgb, var(--brand) var(--org-depth-mix), var(--text));
+}
+
+.org-chart__main {
+  grid-area: main;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.org-chart__name {
+  color: var(--text);
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.org-chart__meta {
+  color: var(--text-mute);
+  font-size: var(--fs-micro);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.org-chart__members {
+  grid-area: members;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: flex-end;
+  gap: 4px;
+  max-width: 190px;
+}
+
+.org-chart__member {
+  max-width: 100%;
+  padding: 1px 8px;
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.org-chart__member-mark {
+  margin-left: 3px;
+  color: var(--warn);
+  font-size: var(--fs-micro);
+}
+
+.org-chart__footer {
+  grid-area: footer;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.org-chart__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--control-h-md);
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--control-on-soft);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.org-chart__toggle:hover {
+  background: var(--control-on-soft-hover);
+  color: var(--text);
+}
+
+.org-chart__toggle-icon {
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+.org-chart__toggle[aria-expanded='false'] .org-chart__toggle-icon {
+  transform: rotate(-90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .org-chart__toggle-icon {
+    transition: none;
+  }
+}
+
+/* ---------- 孤儿区（主树下方单列） ---------- */
+.org-chart__orphans {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.org-chart__orphans-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.org-chart__orphans-title {
+  color: var(--text);
+  font-size: var(--fs-title);
+  font-weight: 600;
+}
+
+.org-chart__orphans-hint {
+  color: var(--text-mute);
+  font-size: var(--fs-micro);
+}
+
+.org-chart__orphans-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+/* ---------- 缩放控件（右下角，chrome 浮层 24px 档） ---------- */
+.org-chart__zoom {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r-lg);
+  background: var(--pane);
+  box-shadow: var(--sh-sm), var(--panel-ring);
+}
+
+.org-chart__zoom-btn {
+  /* 例外：画布缩放控件 24px（登记见 docs/ui/design-language.md §9 #21）。 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-lg);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.org-chart__zoom-btn:hover {
+  background: var(--soft-hover-solid);
+  color: var(--text);
+}
+
+.org-chart__zoom-btn:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.org-chart__zoom-value {
+  min-width: 40px;
+  color: var(--text-mute);
+  font-size: var(--fs-micro);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
