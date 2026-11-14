@@ -185,7 +185,7 @@ function StartupViewRedirect({
 /**
  * 应用根组件：一体式窗口外壳。
  * .titlebar / .app-viewport / .statusbar 共用 .shell 的统一桌面底色
- * （默认光斑渐变；开启窗口材质（亚克力 / 云母）时切换为四主题纯色 @70%，透出 DWM 材质）；
+ * （默认光斑渐变；开启窗口材质（亚克力 / 云母）时切换为四主题纯色 @50%，透出 DWM 材质）；
  * 页面内容渲染于 .app-viewport。
  * `initialActivityPinned` 由 main.tsx 启动预取（`activityBarPinned`）透传给
  * `ActivityPinnedProvider`，首帧即恢复活动栏固定态、避免闪烁；

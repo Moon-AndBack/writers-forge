@@ -2,14 +2,14 @@
    窗口材质（亚克力 / 云母）—— 桌面底色覆盖
    ------------------------------------------------------------------
    开启时 `.shell` 从「3 层光斑 + 线性渐变」（dark 为斜切色带，见 shell.css）
-   切换为透明底：acrylic 经 `--desk-solid` 保留 70% 不透明度的纯色 scrim；
+   切换为透明底：acrylic 经 `--desk-solid` 保留 50% 不透明度的纯色 scrim；
    mica 不叠任何 scrim，直接透出 DWM 材质（采样桌面壁纸，不模糊）。
    面板 / 侧栏 / 编辑区仍用不透明 --pane，内容保持可读。
    亚克力实时模糊背后内容，两者共用同一套 body 透明规则。
 
    组织方式：
    - 四主题纯色底在 theme.css 提供 `--desk-solid`（light/sage/honey 取 --desk-2，
-     dark 取 #161616）；acrylic 使用 `--desk-solid-alpha`（70%），经 color-mix
+     dark 取 #161616）；acrylic 使用 `--desk-solid-alpha`（50%），经 color-mix
      派生半透明底；mica 的 `.shell` 为 transparent；
    - 根元素标记由 WindowMaterialProvider 写入实际材质名：
      亚克力 `data-material='acrylic'`、云母 `data-material='mica'`、

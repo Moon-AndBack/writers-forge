@@ -21,7 +21,7 @@ const theme = {
     acrylic: '亚克力',
     mica: '云母',
     none: '关闭',
-    supportedDesc: '窗口背景使用所选材质（亚克力实时模糊，云母采样壁纸）',
+    supportedDesc: '亚克力实时模糊、更透；云母采样壁纸着色、偏实色',
     unsupportedDesc: '当前系统不支持（需 Windows 11 22H2+）',
     aria: '窗口材质'
   },

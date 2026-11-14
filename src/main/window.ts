@@ -159,9 +159,9 @@ export function createMainWindow(): BrowserWindow {
     minHeight: DEFAULT_WINDOW_HEIGHT,
     show: false,
     icon: windowIcon,
-    // 开启材质（亚克力 / 云母）时窗口底全透明（透出 DWM 材质）；关闭时不透明，
-    // 取近白中性色 #f3f3f3 避免创建瞬间黑闪。用 backgroundColor 的 alpha 通道
-    // 而非 transparent:true，规避后者在 Windows 上「无法缩放 / 无阴影」等副作用。
+    // 材质开启时设置 backgroundColor: '#00000000'（关闭时 #f3f3f3 避免创建瞬间黑闪）。
+    // Electron 文档说明 #AARRGGBB 的 alpha 仅在 transparent:true 时生效；本应用因 transparent
+    // 在 Windows 上的副作用（缩放 / 阴影 / Snap / 窗口按钮）未开启，材质可见性以实机为准。
     backgroundColor: materialEnabled ? '#00000000' : '#f3f3f3',
     backgroundMaterial: initialMaterial,
     titleBarStyle: 'hidden',

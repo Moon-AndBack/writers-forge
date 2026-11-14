@@ -11,10 +11,20 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v159'
+export const CHAPTER_SEED_VERSION = 'v160'
 
 /**
- * 最近版本变更日志（v159；更早版本见上述历史文件）。
+ * 最近版本变更日志（v160；更早版本见上述历史文件）。
+ *
+ * `v160`（亚克力遮罩减薄 + 材质文案纠偏批）：`--desk-solid-alpha` 由 **70% 降为 50%**，
+ * 亚克力实时模糊的材质参与度由 30% 提升到 50%（mica 不使用该令牌，规则未动，仍直接透出）。
+ * 同步纠正「`backgroundColor` 的 alpha 可直接生效」的失实记载：Electron 文档要求
+ * `transparent: true` 才保证 `#AARRGGBB` 的 alpha 生效，本项目因 transparent 在 Windows 上
+ * 的副作用（缩放 / 阴影 / Snap / 窗口按钮）未开启，材质可见性统一表述为「以实机为准」；
+ * `window.ts` 注释与 `docs/ui/window.md`、`docs/ui/design-tokens.md` 同步。材质说明区分
+ * 亚克力（实时模糊、遮罩较薄、更透）与云母（壁纸着色、偏实色），i18n 中英文与教学书
+ * （卷五「窗口材质」、大纲「主题与排版」）同步。纯样式 / 注释 / 文案改动：无 DB 迁移，
+ * 升版本只重灌教学书。
  *
  * `v159`（云备份服务商配置批）：设置入口统一显示「云备份」，页首新增「云服务商」
  * 选择行，当前唯一已接入选项为 OneDrive。选择值存于普通设置键 `cloudBackupProvider`，

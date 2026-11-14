@@ -23,7 +23,7 @@ const theme = {
     mica: 'Mica',
     none: 'Off',
     supportedDesc:
-      'Use the selected material for the window background (Acrylic blurs live, Mica samples the wallpaper)',
+      'Acrylic blurs live and is more see-through; Mica tints the wallpaper and looks more solid',
     unsupportedDesc: 'Not supported on this system (requires Windows 11 22H2+)',
     aria: 'Window material'
   },

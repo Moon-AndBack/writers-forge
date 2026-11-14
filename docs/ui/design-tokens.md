@@ -76,7 +76,7 @@
 | `--z-popover-nested`   | `972`                                      | 嵌套详情卡                                                         |
 | `--z-row-raised`       | `1`                                        | 行内拖拽抬升（非浮层）                                             |
 | `--desk-spot-1/2/3`    | `1000×640` / `880×620` / `700×500`（px）   | `.shell` 三层 radial 光斑的椭圆尺寸                                |
-| `--desk-solid-alpha`   | `70%`                                      | acrylic 的 `--desk-solid` 保留不透明度（mica 不使用）              |
+| `--desk-solid-alpha`   | `50%`                                      | acrylic 的 `--desk-solid` 保留不透明度（mica 不使用）              |
 | `--selection-bg`       | `brand 22%` + transparent                  | 全局 `::selection` 底色，随当前主题 `--brand` 变化                 |
 
 > CSS 会把 `border-radius` 钳制到 `min(宽, 高) / 2`：≤16px 元素设 8px 后渲染为正圆（16px 复选框 / 分组箭头），18×20 回收站箭头约 89% 半径（近圆），22px Tag / Badge 约 73% 半径。这是两档统一的必然结果，不是刻意设计（详见 [`design-language.md`](./design-language.md) §1.2 / §9 #20）。
@@ -119,7 +119,7 @@
 | `--doc-surface`     | `var(--pane)`        | `var(--pane)` | `#f0f8f0`    | `#faf6e8`    |
 
 - `.shell` 桌面底 = 三层 radial 光斑 + `linear-gradient(150deg, --desk-1, --desk-2 45%, --desk-3)`（`shell.css:30-34`）；dark 由 `[data-theme='dark'] .shell` 覆盖为 4 层不透明色带（`#1c1c2b` / `#161616` / `#19202b`）。**这不是全库唯一例外**：书籍封面 / 状态胶囊固定色（`bookshelf.css:245-271`）、主题预览镜像（`theme-switcher.css:153-199`）、品牌标（`shell.css:142-145`）、头像白字、滚动条、胶囊预设色板、固定态活动栏磨砂等均已登记在 `design-language.md` 的「例外登记表」。
-- `--desk-solid` 在 light / sage / honey 恒等于各自 `--desk-2`，dark 单独定为 `#161616`。窗口底色由主进程按材质写死（acrylic 开 → `#00000000`，关 → `#f3f3f3`），不随主题变化；原 `--win-rgb` 无任何消费，已删除。`--pane` 是左右栏 / 面板 / 编辑区的不透明底（约 150 处，频次最高）。`--doc-surface` 是写作中栏（章节 / 大纲的 `.editor-pane` 整层，含回收站）专用底色：light / dark 与 `--pane` 同值，sage / honey 分别为 `#f0f8f0` / `#faf6e8` 护眼纸色；纸面作用域内的 `--soft-solid` 等 5 个软底令牌在 `writer.css` 按本主题基色重派生。原先作为左右栏底色契约保留的 `--win-surface` 已无消费点，已于本次清理删除。
+- `--desk-solid` 在 light / sage / honey 恒等于各自 `--desk-2`，dark 单独定为 `#161616`。窗口底色由主进程按材质写死（acrylic 开 → `#00000000`，关 → `#f3f3f3`），不随主题变化；Electron 文档说明 `#AARRGGBB` 的 alpha 仅在 `transparent: true` 时生效，本项目未开启（Windows 侧副作用），材质可见性以实机为准。原 `--win-rgb` 无任何消费，已删除。`--pane` 是左右栏 / 面板 / 编辑区的不透明底（约 150 处，频次最高）。`--doc-surface` 是写作中栏（章节 / 大纲的 `.editor-pane` 整层，含回收站）专用底色：light / dark 与 `--pane` 同值，sage / honey 分别为 `#f0f8f0` / `#faf6e8` 护眼纸色；纸面作用域内的 `--soft-solid` 等 5 个软底令牌在 `writer.css` 按本主题基色重派生。原先作为左右栏底色契约保留的 `--win-surface` 已无消费点，已于本次清理删除。
 
 ### 4.3 交互底色与控件底色
 
@@ -187,9 +187,9 @@
 材质（亚克力 / 云母）链路：
 
 1. `WindowMaterialProvider` 在 `<html>` 写 `data-material='acrylic' | 'mica' | 'none'`（实际生效材质）。
-2. 开启时 `.shell` 依材质分别处理：acrylic 通过 `--desk-solid-alpha` 保留 **70%** 不透明度的纯色 scrim；mica 的 `.shell` 为 `transparent`，不叠 scrim，标题栏与状态栏同样透明，直接透出云母。同时 `body` 背景置透明（`material.css:35-37`），否则 `body` 的不透明背景会挡住 DWM 材质。亚克力实时模糊，云母采样壁纸但不模糊。
+2. 开启时 `.shell` 依材质分别处理：acrylic 通过 `--desk-solid-alpha` 保留 **50%** 不透明度的纯色 scrim（遮罩更薄、材质参与度 50%）；mica 的 `.shell` 为 `transparent`，不叠 scrim，标题栏与状态栏同样透明，直接透出云母。同时 `body` 背景置透明（`material.css:35-37`），否则 `body` 的不透明背景会挡住 DWM 材质。亚克力实时模糊、更透，云母采样壁纸着色、偏实色；客户区材质的实际可见性以实机为准（`backgroundColor` 的 alpha 需 `transparent: true` 才保证生效，本项目未开启）。
 3. 面板 / 侧栏 / 编辑区继续用不透明 `--pane`，**只有组件缝隙**透出材质。这正是 `-solid` 组存在的理由：若沿半透明 `--soft`，材质会从每张卡内部透出，文字对比度随壁纸漂移。
-4. `--desk-solid-alpha` 是 acrylic 专用的主题无关 scrim 旋钮，四主题共用，固定为 70%（mica 不使用 scrim）；dark 的 `--desk-solid` 取 `#161616`（与色带中段同值），避免深色下材质偏亮。主进程窗口底：材质开 `#00000000`，关 `#f3f3f3`，避免创建瞬间黑闪（`window.ts:162-166`）。
+4. `--desk-solid-alpha` 是 acrylic 专用的主题无关 scrim 旋钮，四主题共用，固定为 50%（mica 不使用 scrim，规则未动）；dark 的 `--desk-solid` 取 `#161616`（与色带中段同值），避免深色下材质偏亮。主进程窗口底：材质开 `#00000000`，关 `#f3f3f3`，避免创建瞬间黑闪（`window.ts:162-166`）；该 alpha 仅在 `transparent: true` 时保证生效，本项目未开启，材质可见性以实机为准。
 
 选择顺序：**`--soft-solid` 容器上的输入类控件用 `--control-on-soft*`；普通卡片 / 按钮用 `--*-solid`；只有确需透出下层的浮层才用半透明档**。
 
@@ -239,7 +239,7 @@ resolved === 当前 dataset.theme → flushSync 只提交状态，不启动过�
 - 时长 / 缓动读 `--dur-slow`（240ms）与 `--ease`（对称曲线），读失败回退常量，不写裸时长；改由 JS 而非 CSS 是因为 CSS 曾用强前倾曲线 + 180ms，前 3 帧走完 3/4，肉眼等同瞬切。
 - `motion.css` 只做三件事：`::view-transition-old/new(root)` 一律 `animation: none`；`::view-transition-new(root)` 基础 `opacity: 0`（`ready` 前物理上不可能闪）；窗口材质（亚克力 / 云母）下两层改 `mix-blend-mode: plus-lighter`。
 - 不透明材质：**覆盖式**。旧快照保持不透明垫底，新快照 0 → 1 淡入；真交叉会让亮暗两层同时半透明而整屏泛灰。
-- 窗口材质（亚克力 / 云母）：**真交叉 + `plus-lighter`**，old 1 → 0 与 new 0 → 1 同步，预乘后合计恒为 0.70，材质透出率全程 30% 不变。old 必须 `fill: 'forwards'`，否则结束回落 opacity 1 会与 new 相加导致一帧变实。
+- 窗口材质（亚克力 / 云母）：**真交叉 + `plus-lighter`**，old 1 → 0 与 new 0 → 1 同步，预乘后合计恒为 0.50，材质参与度全程 50% 不变。old 必须 `fill: 'forwards'`，否则结束回落 opacity 1 会与 new 相加导致一帧变实。
 - 降级（直接 `applyTheme()`，切换永不依赖动画）：不支持 `startViewTransition`、`prefers-reduced-motion: reduce`、启动抛错、`ready` 被跳过（窗口隐藏 / 快速连切）。最后一种在 catch 中补调一次，并用 `revealSequence` 序号守卫，避免旧切换回写已被取代的主题。
 
 ---

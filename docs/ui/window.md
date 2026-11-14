@@ -14,18 +14,18 @@
 
 主窗口由 `createMainWindow()` 创建，`BrowserWindow` 选项集中在 `src/main/window.ts:74-99`。
 
-| 参数                     | 取值                                                                 | 说明                                                                              | 出处                                      |
-| ------------------------ | -------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ----------------------------------------- |
-| `width` / `height`       | 持久化值，缺省 902 × 764                                             | 外框尺寸，单位 DIP                                                                | `window.ts:75-76`、`windowState.ts:22-23` |
-| `minWidth` / `minHeight` | 902 × 764                                                            | 与默认尺寸相同，窗口不可再缩小                                                    | `window.ts:77-78`                         |
-| `backgroundColor`        | 材质生效 `#00000000`；否则 `#f3f3f3`                                 | 透明用 alpha 通道实现，**不用** `transparent: true`                               | `window.ts:165`                           |
-| `backgroundMaterial`     | `resolveMaterial()` 结果                                             | `acrylic` / `mica` / `none`                                                       | `window.ts:144,166`                       |
-| `icon`                   | 开发态 `build/icon.png`；打包态 `resources/icon.png`                 | 路径由 `app.isPackaged` 分支决定；窗口图标只用 256（Windows 图标尺寸上限，无 4K） | `window.ts:147-151,159`                   |
-| `titleBarStyle`          | `'hidden'`                                                           | 隐藏系统标题栏，渲染层自绘                                                        | `window.ts:86`                            |
-| `titleBarOverlay`        | `color: '#00000000'`、`symbolColor: '#5c5c5c'`、`height: 42`         | 仅保留右上角系统按钮（WCO）                                                       | `window.ts:87-91`                         |
-| `show`                   | `false`                                                              | 等 `ready-to-show` 再 `show()`，避免白屏闪烁                                      | `window.ts:79,110-113`                    |
-| `autoHideMenuBar`        | `true`                                                               | 隐藏菜单栏                                                                        | `window.ts:92`                            |
-| `webPreferences`         | `contextIsolation: true`、`sandbox: false`、`nodeIntegration: false` | preload 为 `../preload/index.js`                                                  | `window.ts:93-98`                         |
+| 参数                     | 取值                                                                 | 说明                                                                                     | 出处                                      |
+| ------------------------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `width` / `height`       | 持久化值，缺省 902 × 764                                             | 外框尺寸，单位 DIP                                                                       | `window.ts:75-76`、`windowState.ts:22-23` |
+| `minWidth` / `minHeight` | 902 × 764                                                            | 与默认尺寸相同，窗口不可再缩小                                                           | `window.ts:77-78`                         |
+| `backgroundColor`        | 材质生效 `#00000000`；否则 `#f3f3f3`                                 | `#AARRGGBB` 的 alpha 仅在 `transparent: true` 时生效；本项目未开启，材质可见性以实机为准 | `window.ts:165`                           |
+| `backgroundMaterial`     | `resolveMaterial()` 结果                                             | `acrylic` / `mica` / `none`                                                              | `window.ts:144,166`                       |
+| `icon`                   | 开发态 `build/icon.png`；打包态 `resources/icon.png`                 | 路径由 `app.isPackaged` 分支决定；窗口图标只用 256（Windows 图标尺寸上限，无 4K）        | `window.ts:147-151,159`                   |
+| `titleBarStyle`          | `'hidden'`                                                           | 隐藏系统标题栏，渲染层自绘                                                               | `window.ts:86`                            |
+| `titleBarOverlay`        | `color: '#00000000'`、`symbolColor: '#5c5c5c'`、`height: 42`         | 仅保留右上角系统按钮（WCO）                                                              | `window.ts:87-91`                         |
+| `show`                   | `false`                                                              | 等 `ready-to-show` 再 `show()`，避免白屏闪烁                                             | `window.ts:79,110-113`                    |
+| `autoHideMenuBar`        | `true`                                                               | 隐藏菜单栏                                                                               | `window.ts:92`                            |
+| `webPreferences`         | `contextIsolation: true`、`sandbox: false`、`nodeIntegration: false` | preload 为 `../preload/index.js`                                                         | `window.ts:93-98`                         |
 
 其他行为：
 
@@ -115,7 +115,7 @@
 - `WindowMaterialProvider` 计算 `material = setting !== 'none' && supported ? setting : 'none'`，`enabled = material !== 'none'`（`WindowMaterialProvider.tsx:52-53`）。
 - 状态写入根元素 `data-material`：写**实际材质名** `acrylic` / `mica` / `none`（`WindowMaterialProvider.tsx:55-57`）。
 - `styles/material.css` 依 `data-material` 生效：
-  - `[data-material='acrylic'] .shell` 用 `--desk-solid-alpha`（70%）混合纯色底；`[data-material='mica'] .shell` 为 `transparent`，不叠 scrim（`material.css:26-33`）。标题栏与状态栏在云母下同样透明，直接透出云母，不另设底色。
+  - `[data-material='acrylic'] .shell` 用 `--desk-solid-alpha`（50%）混合纯色底；`[data-material='mica'] .shell` 为 `transparent`，不叠 scrim（`material.css:26-33`）。标题栏与状态栏在云母下同样透明，直接透出云母，不另设底色。
   - `:is([data-material='acrylic'], [data-material='mica']) body` 置透明，否则 body 底会挡住 DWM 材质（`material.css:37-39`）。
 - 切换时三件事同步：调主进程、写 `data-material`、经 `settings:set` 持久化（`WindowMaterialProvider.tsx:59-72`）。
 - 主进程返回的实际值与请求不一致时（如系统不支持），Provider 回退本地状态（`WindowMaterialProvider.tsx:64-68`）。
@@ -215,7 +215,7 @@ preload 对应 `window.api.windowSnap`（`src/preload/index.ts:352-361`）。配
 ## 9. 常见误区
 
 - **`mica` 是合法材质**。合法值为 `acrylic` / `mica` / `none`；`acrylic` 实时模糊背后内容，`mica` 采样桌面壁纸（不模糊），两者门槛同为 Windows 11 22H2+（`windowMaterial.ts:14,49-52,65-69`）。
-- **不要写 `transparent: true`**。窗口透明通过 `backgroundColor: '#00000000'` 的 alpha 通道实现，`transparent: true` 会在 Windows 上带来无法缩放、无阴影等副作用（`window.ts:162-166`）。
+- **不要写 `transparent: true`**。材质开启时设置 `backgroundColor: '#00000000'`；但 Electron 文档说明 `#AARRGGBB` 的 alpha 仅在 `transparent: true` 时生效，本项目因它在 Windows 上的副作用（无法缩放、无阴影、Snap / 窗口按钮异常）未开启，因此材质在客户区的实际可见性以实机为准，不依赖 alpha 生效（`window.ts:162-166`）。
 - **材质生效时禁止给背景再叠加 `backdrop-filter`**。DWM 已在系统层完成材质处理，渲染层再模糊会二次处理、破坏透明链路并增加掉帧；材质态只允许改底色透明度（见 `material.css:26-34`）。
 - **`material.ts` 已改名 `windowMaterial.ts`**（主进程与渲染层各一份），旧路径与旧文档引用均已失效。
 - **不存在 `window:material:*` 通道**。实际通道是 `window:setMaterial`、`window:materialSupported`、`window:titlebar:set-overlay`（`src/main/ipc/window.ts:41,62,77`）。

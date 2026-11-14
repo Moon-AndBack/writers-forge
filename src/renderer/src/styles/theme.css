@@ -81,8 +81,9 @@
   --desk-spot-2: 880px 620px;
   --desk-spot-3: 700px 500px;
 
-  /* acrylic 的主题无关 scrim 不透明度；与各主题 --desk-solid 经 color-mix 派生半透明底 */
-  --desk-solid-alpha: 70%;
+  /* acrylic 的主题无关 scrim 不透明度（50%）：与各主题 --desk-solid 经 color-mix 派生半透明底，
+     材质参与度 50%。值越大越实、亚克力越弱；mica 不使用本令牌。 */
+  --desk-solid-alpha: 50%;
 
   /* 文本选区底色（::selection，见 base.css）：由品牌色派生，四主题自动跟随。
      data-theme 与 :root 同挂在 <html> 上，故此处 var(--brand) 解析到当前主题的
