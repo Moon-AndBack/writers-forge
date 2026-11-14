@@ -74,7 +74,8 @@ const bookshelf = {
     editAria: '编辑《{{title}}》',
     deleteAria: '删除《{{title}}》',
     progressAria: '{{title}} 写作进度',
-    chapterCount: '{{count}} 章'
+    chapterCount: '{{count}} 章',
+    coverCharFallback: '书'
   },
   form: {
     titleCreate: '新建书籍',

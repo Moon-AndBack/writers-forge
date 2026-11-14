@@ -69,7 +69,8 @@ const bookshelf = {
     editAria: 'Edit {{title}}',
     deleteAria: 'Delete {{title}}',
     progressAria: '{{title}} writing progress',
-    chapterCount: '{{count}} chapters'
+    chapterCount: '{{count}} chapters',
+    coverCharFallback: 'B'
   },
   form: {
     titleCreate: 'New Book',
