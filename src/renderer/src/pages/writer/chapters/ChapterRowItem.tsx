@@ -16,6 +16,8 @@ export interface ChapterRowItemProps {
   dragging: boolean
   /** 是否被让位行压在原槽位（沉底隐藏，避免与半透明被拖行的文字叠加）。 */
   underlap: boolean
+  /** 重挂载批次：跳过本行进场动画（避免卷展开时整列重播上浮）。 */
+  noEnter?: boolean
   /** 拖拽纵向位移（px）：让位行 = ±一行；0 = 不位移。 */
   shiftY: number
   /** 行元素引用回调（拖拽命中判定用；卸载传 null）。 */
@@ -45,6 +47,7 @@ export default function ChapterRowItem({
   active,
   dragging,
   underlap,
+  noEnter = false,
   shiftY,
   registerRow,
   dragHandle,
@@ -66,7 +69,8 @@ export default function ChapterRowItem({
       stateClasses={[
         chapter.status === 'draft' ? 'is-draft' : '',
         chapter.kind === 'special' ? 'is-special' : '',
-        underlap ? 'is-drag-underlap' : ''
+        underlap ? 'is-drag-underlap' : '',
+        noEnter ? 'no-enter' : ''
       ]}
       style={shiftY !== 0 ? { transform: `translateY(${shiftY}px)` } : undefined}
       registerRow={registerRow}

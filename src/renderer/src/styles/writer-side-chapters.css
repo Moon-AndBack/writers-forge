@@ -45,11 +45,17 @@
    fill-mode 取 backwards 的硬性理由：`.chapter.is-dragging` 用 opacity: 0.68 表达
    拖拽态，若取 both，动画结束后仍持续供给 opacity: 1，会把拖拽半透明效果压掉。
    backwards 在动画区间结束后不再介入，状态类照常生效。
-   触发时机：章行即使所在卷折叠也常驻 DOM（`.chapters` 用 grid-template-rows 0fr
-   收起），故不会在展开 / 收起卷时重播；实际可见的进场是「面板挂载一次」与
-   「新建章后该行挂载」。拖拽落点线 `.chapter-drop-line` 不参与进场，避免每次拖拽重放。 */
+   触发时机：面板首次进入，以及新建章后该行挂载。卷收起后章行会卸载（见
+   `useChapterFold`），再次展开属于重挂载：该批行带 `.no-enter` 跳过进场，避免每次
+   展开整列重播上浮；重挂载后新建的章行不带该类，仍正常进场。
+   拖拽落点线 `.chapter-drop-line` 不参与进场，避免每次拖拽重放。 */
 .chapter {
   animation: wf-enter-up var(--dur-slow) var(--ease-out) backwards;
+}
+
+/* 卷展开重挂载批次：只跳过本批已挂载行的进场动画（首次进入 / 新建章不受影响）。 */
+.chapter.no-enter {
+  animation: none;
 }
 
 .chapter:hover {

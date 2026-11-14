@@ -12,6 +12,11 @@ export interface ChapterListProps {
   activeChapterId: number | null
   /** 拖拽上下文（由 ChaptersPanel 持有）：当前拖拽 id / 占位缝 / 事件处理器。 */
   drag: UseChapterDragResult
+  /**
+   * 该列表是否因卷收起后重开而挂载：为 true 时仅对本实例挂载时已存在的章行跳过
+   * `wf-enter-up` 进场动画，之后新建的章行仍正常进场。
+   */
+  suppressEnter?: boolean
   /** 选中章节。 */
   onSelect: (id: number) => void
   /** 删除章（含确认）。 */
@@ -30,10 +35,15 @@ export default function ChapterList({
   chapters,
   activeChapterId,
   drag,
+  suppressEnter = false,
   onSelect,
   onDelete,
   onTogglePin
 }: ChapterListProps) {
+  // 重挂载批次快照：仅抑制本实例挂载时已存在的章行；之后新建的章行不在集合内，仍播放进场。
+  const [noEnterIds] = useState<ReadonlySet<number> | null>(() =>
+    suppressEnter ? new Set(chapters.map((chapter) => chapter.id)) : null
+  )
   // 段行 DOM 引用（key = 章节 id），供拖拽命中判定取行矩形。
   const [rowRefs] = useState(() => new Map<number, HTMLElement>())
   // 列表容器引用（读行间距 / 作为落点线尾部锚点）。
@@ -137,6 +147,7 @@ export default function ChapterList({
           active={chapter.id === activeChapterId}
           dragging={chapter.id === drag.draggingId}
           underlap={chapter.id === underlapId}
+          noEnter={noEnterIds?.has(chapter.id) ?? false}
           shiftY={shiftById.get(chapter.id) ?? 0}
           registerRow={registerRow}
           dragHandle={{

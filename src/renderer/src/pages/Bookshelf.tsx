@@ -119,12 +119,14 @@ export default function Bookshelf() {
     const statsApi = window.api?.stats
     if (!statsApi) return
     try {
-      const [total, today, streak, byBook] = await Promise.all([
-        statsApi.totalWords(),
+      const [today, streak, byBook] = await Promise.all([
         statsApi.todayWords(),
         statsApi.streakDays(),
         statsApi.bookStatsAll()
       ])
+      // 累计字数由同一次批量统计汇总，避免 `totalWords` 再触发一次全库扫描（口径不变）。
+      let total = 0
+      for (const stats of Object.values(byBook)) total += stats.words
       setShelfStats({ words: total, today, streak })
       setStatsByBook(byBook)
     } catch {

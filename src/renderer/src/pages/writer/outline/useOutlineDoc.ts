@@ -5,7 +5,6 @@ import { createLogger } from '@renderer/lib/log'
 import { sanitizeOutlineContent } from '@renderer/components/editor/imageNode'
 import { useContentSwap, type ContentSwapPhase } from '@renderer/components/editor/useContentSwap'
 import { useAutoSaveEnabled } from '../useAutoSaveEnabled'
-import { countCharacters } from '../chapters/docParagraphs'
 
 /** 大纲正文链路日志（转发至主进程落盘）。 */
 const log = createLogger('outline')
@@ -27,8 +26,8 @@ const log = createLogger('outline')
  * 载体缺失（如卷纲行缺失）为 null。
  *
  * 与章节域 `useChapterDoc` 的取舍：章节正文按「每段一行」存 `paragraphs` 表；大纲正文整条
- * 存 `content_json`（支持 heading / 列表 / 表格块级结构），故此处**不再复用**段落映射工具，
- * 仅复用与领域无关的 `countCharacters`（有效字数口径）。
+ * 存 `content_json`（支持 heading / 列表 / 表格块级结构），故此处**不再复用**段落映射工具。
+ * 字数展示与章节域同源，走 `docWordLimit.docCharCount` 的编辑器块级缓存，本链路不做逐键统计。
  */
 
 /** 保存防抖毫秒数（与章节正文一致）。 */
@@ -50,8 +49,6 @@ export interface UseOutlineDocOptions {
 export interface UseOutlineDocResult {
   /** 加载 / 保存状态指示（脚注展示）。 */
   status: OutlineDocStatus
-  /** 当前正文有效字数（排除标点 / 符号 / 空白，`docParagraphs.countCharacters` 口径）。 */
-  charCount: number
   /** 是否存在尚未落盘的改动。 */
   dirty: boolean
   /** 最近一次成功落盘时间（ISO 字符串），供编辑头「最后编辑」相对时间展示。 */
@@ -82,13 +79,12 @@ function parseContentJson(contentJson: string | null): Content {
 /**
  * 大纲条目正文加载与防抖保存（整条 `content_json`）。
  *
- * 返回 `status` / `charCount` / `dirty` / `onUpdate` / `flush` / `swapPhase`（正文更换后的
+ * 返回 `status` / `dirty` / `onUpdate` / `flush` / `swapPhase`（正文更换后的
  * 淡入相位，见 `useContentSwap`），并在切换 `contentId` 与卸载时 flush 挂起的保存。
  */
 export function useOutlineDoc({ contentId, editor }: UseOutlineDocOptions): UseOutlineDocResult {
   const autoSaveEnabled = useAutoSaveEnabled()
   const [status, setStatus] = useState<OutlineDocStatus>('loading')
-  const [charCount, setCharCount] = useState(0)
   // 是否有未落盘变更（与 dirtyRef 同步的展示态）
   const [dirty, setDirty] = useState(false)
   // 最近一次成功落盘时间（ISO），供编辑头「最后编辑」展示
@@ -173,10 +169,9 @@ export function useOutlineDoc({ contentId, editor }: UseOutlineDocOptions): UseO
       void Promise.resolve().then(() => {
         if (cancelled || !editor.isInitialized) return
         editor.commands.setContent(EMPTY_DOC, { emitUpdate: false })
-        setCharCount(0)
         setDirty(false)
         setStatus('ready')
-        // 排在同批 setState 之后：flushSync 一次性提交（相位 + 字数 / 状态），仅一次渲染。
+        // 排在同批 setState 之后：flushSync 一次性提交（相位 + 状态），仅一次渲染。
         markContentSwapped()
       })
       return () => {
@@ -195,7 +190,6 @@ export function useOutlineDoc({ contentId, editor }: UseOutlineDocOptions): UseO
         const text = payload?.text ?? ''
         editor.commands.setContent(parseContentJson(contentJson), { emitUpdate: false })
         lastSavedRef.current = JSON.stringify({ contentJson, text })
-        setCharCount(countCharacters([text]))
         setStatus('ready')
         // 切换条目内容提交：翻转相位 → 正文区淡入（见 useContentSwap；排在同批 setState 之后）。
         markContentSwapped()
@@ -215,7 +209,6 @@ export function useOutlineDoc({ contentId, editor }: UseOutlineDocOptions): UseO
   const onUpdate = useCallback((): void => {
     dirtyRef.current = true
     setDirty(true)
-    if (editor) setCharCount(countCharacters([editor.state.doc.textContent]))
     if (saveTimerRef.current !== null) {
       window.clearTimeout(saveTimerRef.current)
       saveTimerRef.current = null
@@ -225,7 +218,7 @@ export function useOutlineDoc({ contentId, editor }: UseOutlineDocOptions): UseO
       saveTimerRef.current = null
       void saveNow()
     }, SAVE_DEBOUNCE_MS)
-  }, [editor, saveNow, autoSaveEnabled])
+  }, [saveNow, autoSaveEnabled])
 
   // 运行中关闭自动保存：清掉已排队的防抖任务（改动仍保留 dirty，等手动 / 安全网 flush）。
   useEffect(() => {
@@ -245,5 +238,5 @@ export function useOutlineDoc({ contentId, editor }: UseOutlineDocOptions): UseO
     }
   }, [saveNow])
 
-  return { status, charCount, dirty, lastSavedAt, onUpdate, flush, swapPhase }
+  return { status, dirty, lastSavedAt, onUpdate, flush, swapPhase }
 }

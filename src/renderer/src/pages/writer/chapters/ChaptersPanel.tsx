@@ -16,6 +16,7 @@ import {
 import ChapterList from './ChapterList'
 import SpecialChapterDialog from './SpecialChapterDialog'
 import { useChapterDrag } from './useChapterDrag'
+import { useChapterFold } from './useChapterFold'
 import { useChapterLabels } from './useChapterLabels'
 import { useConfirm } from './useConfirm'
 import {
@@ -88,6 +89,8 @@ export default function ChaptersPanel({
   const labels = useChapterLabels()
   // 卷展开态（白名单）：默认全部收起，仅展开当前编辑章所属卷。
   const { isOpen, toggle: toggleVolume, open: openVolume, seedOnce } = useTreeExpansion(bookId)
+  // 卷收起过渡结束后卸载章行；重挂载批次抑制进场动画（见 useChapterFold）。
+  const fold = useChapterFold(isOpen, toggleVolume)
   // 内联重命名态：正在改名的卷 id + 草稿名。
   const [renamingId, setRenamingId] = useState<number | null>(null)
   const [draftName, setDraftName] = useState('')
@@ -101,21 +104,25 @@ export default function ChaptersPanel({
   // 删除卷确认前的跨域影响预检（章节数 / 大纲条目数；失败回退静态文案）。
   const { inspect: inspectVolumeDeleteImpact } = useVolumeDeleteImpact()
 
-  const groups = groupChapters(volumes, chapters)
-  // 可见分组：系统「未分卷」卷仅在其下有章时出卡（空卡隐藏）；其余卷恒出卡。
-  // 空态按可见分组判定，避免「存在空未分卷卷」让空态失效。
-  const visibleGroups = groups.filter(
-    (group) => !group.volume.isUnfiled || group.chapters.length > 0
-  )
-  // 三卡分组（仅 filter，不重排）：上卡自定义卷（`custom`，排除系统未分卷）/
-  // 下卡正文卷（`normal`）/ 底卡系统未分卷（`isUnfiled`）。
-  const specialGroups = visibleGroups.filter(
-    (group) => group.volume.kind === 'custom' && !group.volume.isUnfiled
-  )
-  const normalGroups = visibleGroups.filter(
-    (group) => group.volume.kind === 'normal' && !group.volume.isUnfiled
-  )
-  const unfiledGroups = visibleGroups.filter((group) => group.volume.isUnfiled)
+  // 分组与三卡筛选只随卷 / 章数据变化重算（与 OutlinePanel 的 tree memo 同口径）。
+  const { visibleGroups, specialGroups, normalGroups, unfiledGroups } = useMemo(() => {
+    const groups = groupChapters(volumes, chapters)
+    // 可见分组：系统「未分卷」卷仅在其下有章时出卡（空卡隐藏）；其余卷恒出卡。
+    // 空态按可见分组判定，避免「存在空未分卷卷」让空态失效。
+    const visible = groups.filter((group) => !group.volume.isUnfiled || group.chapters.length > 0)
+    // 三卡分组（仅 filter，不重排）：上卡自定义卷（`custom`，排除系统未分卷）/
+    // 下卡正文卷（`normal`）/ 底卡系统未分卷（`isUnfiled`）。
+    return {
+      visibleGroups: visible,
+      specialGroups: visible.filter(
+        (group) => group.volume.kind === 'custom' && !group.volume.isUnfiled
+      ),
+      normalGroups: visible.filter(
+        (group) => group.volume.kind === 'normal' && !group.volume.isUnfiled
+      ),
+      unfiledGroups: visible.filter((group) => group.volume.isUnfiled)
+    }
+  }, [volumes, chapters])
   // 松手落卷立即展开目标卷：快速拖入收起卷时避免章移动后「消失」；
   // 悬停 450ms 自动展开（见下方 effect）只是提前预览。
   const handleDropChapter = useCallback(
@@ -285,13 +292,13 @@ export default function ChaptersPanel({
             // click（detail===0）不 blur，保留键盘可达性。
             if (event.detail > 0) event.currentTarget.blur()
             if (renaming) return
-            toggleVolume(group.key)
+            fold.toggle(group.key)
           }}
           onKeyDown={(event) => {
             if (renaming) return
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault()
-              toggleVolume(group.key)
+              fold.toggle(group.key)
             }
           }}
         >
@@ -391,16 +398,19 @@ export default function ChaptersPanel({
           )}
         </div>
 
-        <div className="chapters">
+        <div className="chapters" onTransitionEnd={(event) => fold.onFoldEnd(group.key, event)}>
           <div className="chapters-inner">
-            <ChapterList
-              chapters={group.chapters}
-              activeChapterId={activeChapterId}
-              drag={drag}
-              onSelect={onSelectChapter}
-              onDelete={requestDeleteChapter}
-              onTogglePin={onSetChapterPin}
-            />
+            {fold.isMounted(group.key) ? (
+              <ChapterList
+                chapters={group.chapters}
+                activeChapterId={activeChapterId}
+                drag={drag}
+                suppressEnter={fold.suppressEnter(group.key)}
+                onSelect={onSelectChapter}
+                onDelete={requestDeleteChapter}
+                onTogglePin={onSetChapterPin}
+              />
+            ) : null}
           </div>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { createLogger } from '@renderer/lib/log'
 import { useContentSwap } from '../../../components/editor/useContentSwap'
 import { FIRST_APPEARANCES_INVALIDATE_EVENT } from '../dossier/useFirstAppearances'
 import { useAutoSaveEnabled } from '../useAutoSaveEnabled'
-import { countCharacters, docToParagraphs, paragraphsToDocJSON } from './docParagraphs'
+import { docToParagraphs, paragraphsToDocJSON } from './docParagraphs'
 import type { DocParagraph } from './docParagraphs'
 
 /** 章节文档链路日志（转发至主进程落盘）。 */
@@ -20,15 +20,13 @@ const log = createLogger('useChapterDoc')
  *     不排定时器，由保存按钮 / 切章 / 切模块 / 关窗 flush 落库。
  *
  * `chapterId` 来源：章节树行 `ChapterRow.id`（正文直接归属章节，`documents` 表已删除）。
- * 字数口径复用 `docParagraphs.countCharacters`（排除标点 / 符号 / 空白），与主进程
- * `countEffectiveChars` 及 `docWordLimit` 拦截口径同源。
+ * 字数展示走 `docWordLimit.docCharCount` 的编辑器块级缓存（与输入拦截同源），本链路不再
+ * 逐键全量统计。
  */
 
 export interface ChapterDocState {
   /** 加载 / 保存状态指示（状态栏展示）。 */
   status: 'loading' | 'ready' | 'saving' | 'error'
-  /** 当前正文有效字数（从 doc 实时统计，排除标点 / 符号 / 空白）。 */
-  charCount: number
   /** 是否存在尚未落盘的改动（状态栏「未保存」显示用，不参与保存机制）。 */
   dirty: boolean
   /** 最近一次成功落盘时间（ISO 字符串），供编辑头「最后编辑」相对时间展示。 */
@@ -47,14 +45,13 @@ interface UseChapterDocOptions {
 /**
  * 章节正文加载与防抖保存。
  *
- * 返回 `status`（loading/ready/saving/error）、`charCount`、`dirty`、`lastSavedAt`、
+ * 返回 `status`（loading/ready/saving/error）、`dirty`、`lastSavedAt`、
  * `swapPhase`（正文更换后的淡入相位，见 `useContentSwap`），
  * 并在卸载 / 切章时 flush 挂起的保存。`flush` 供外部（保存按钮 / 快捷键）调用。
  */
 export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
   const autoSaveEnabled = useAutoSaveEnabled()
   const [status, setStatus] = useState<ChapterDocState['status']>('loading')
-  const [charCount, setCharCount] = useState(0)
   // 是否有未落盘变更（与 dirtyRef 同步的展示态，供状态栏消费）
   const [dirty, setDirty] = useState(false)
   // 最近一次成功落盘时间（ISO），供编辑头展示
@@ -148,7 +145,6 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
       lastSavedRef.current = JSON.stringify(paragraphs)
       dirtyRef.current = false
       setDirty(false)
-      setCharCount(countCharacters(paragraphs.map((item) => item.text)))
       setStatus('ready')
     } catch (error) {
       log.warn('段落重载失败', error)
@@ -176,10 +172,9 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
           { type: 'doc', content: [{ type: 'paragraph' }] },
           { emitUpdate: false }
         )
-        setCharCount(0)
         setDirty(false)
         setStatus('ready')
-        // 排在同批 setState 之后：flushSync 一次性提交（相位 + 字数 / 状态），仅一次渲染。
+        // 排在同批 setState 之后：flushSync 一次性提交（相位 + 状态），仅一次渲染。
         markContentSwapped()
       })
       return () => {
@@ -205,7 +200,6 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
           { emitUpdate: false }
         )
         lastSavedRef.current = JSON.stringify(paragraphs)
-        setCharCount(countCharacters(paragraphs.map((item) => item.text)))
         setStatus('ready')
         // 切章内容提交：翻转相位 → 正文区淡入（见 useContentSwap；排在同批 setState 之后）。
         markContentSwapped()
@@ -226,7 +220,6 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
   const onUpdate = useCallback((): void => {
     dirtyRef.current = true
     setDirty(true)
-    if (editor) setCharCount(countCharacters(docToParagraphs(editor).map((item) => item.text)))
     if (saveTimerRef.current !== null) {
       window.clearTimeout(saveTimerRef.current)
       saveTimerRef.current = null
@@ -236,7 +229,7 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
       saveTimerRef.current = null
       void saveNow()
     }, SAVE_DEBOUNCE_MS)
-  }, [editor, saveNow, autoSaveEnabled])
+  }, [saveNow, autoSaveEnabled])
 
   // 运行中关闭自动保存：清掉已排队的防抖任务（改动仍保留 dirty，等手动 / 安全网 flush）。
   useEffect(() => {
@@ -256,5 +249,5 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
     }
   }, [saveNow])
 
-  return { status, charCount, dirty, lastSavedAt, onUpdate, flush, reload, swapPhase }
+  return { status, dirty, lastSavedAt, onUpdate, flush, reload, swapPhase }
 }
