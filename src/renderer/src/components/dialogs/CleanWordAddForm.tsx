@@ -1,8 +1,9 @@
+import { useId } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Input, Select } from '../ui'
 import type { SelectOption } from '../ui'
 import type { CleanWordCategory } from '../../../../preload/types/cleanWords'
-import { MAX_WORD_CHARS } from './cleanWordsMeta'
+import { MAX_WORD_CHARS, parseCleanWordInput } from './cleanWordsMeta'
 
 export interface CleanWordAddFormProps {
   /** 待添加词条（受控）。 */
@@ -19,14 +20,14 @@ export interface CleanWordAddFormProps {
 }
 
 /**
- * 违禁词单条添加行（弹窗第 3 行）：类别 + 内容 + 添加。
+ * 违禁词添加行（弹窗第 3 行）：类别 + 内容 + 添加。
  *
- * 校验口径与正文右键「加入违禁词库」一致（`SelectionContextMenu.beginAddWord`）：
- * trim 非空、不含换行、2–`MAX_WORD_CHARS` 字。不合法时按钮禁用，并在行下给出行内提示
- * ——IPC 对任一条非法入参会整批返回 `null`，且单字词不会被正文标注，前置拦截可避免
- * 「加了却看不到效果」。
+ * 内容支持中文逗号（，）或英文逗号（,）分隔批量添加；解析与校验集中在
+ * `parseCleanWordInput` —— trim、丢弃空段、保序去重、不含换行、2–`MAX_WORD_CHARS` 字。
+ * 任一词条非法时按钮禁用，并在行下给出行内提示：IPC 对任一条非法入参会整批
+ * 返回 `null`，且单字词不会被正文标注，前置拦截可避免「加了却看不到效果」。
  *
- * 三件控件均为 sm 档（30px），由组件统一尺寸保证同行等高（见 `.cw-add__row`）。
+ * 三件控件均为 sm 档（32px），由组件统一尺寸保证同行等高（见 `.cw-add__row`）。
  */
 export function CleanWordAddForm({
   value,
@@ -38,19 +39,27 @@ export function CleanWordAddForm({
   onSubmit
 }: CleanWordAddFormProps) {
   const { t } = useTranslation('chapters')
-  const trimmed = value.trim()
-  const multiline = /[\r\n]/.test(value)
-  const tooShort = trimmed.length === 1
-  const tooLong = trimmed.length > MAX_WORD_CHARS
-  const invalid = trimmed === '' || multiline || tooShort || tooLong
+  const descId = useId()
+  const hintId = useId()
+  const { words, issue } = parseCleanWordInput(value)
+  const invalid = words.length === 0 || issue !== null
 
-  const hint = multiline
-    ? t('cleanWords.addWordMultiline')
-    : tooLong
-      ? t('cleanWords.addWordTooLong', { max: MAX_WORD_CHARS })
-      : tooShort
-        ? t('cleanWords.addWordTooShort')
-        : null
+  let hint: string | null = null
+  if (issue !== null) {
+    if (issue.kind === 'multiline') {
+      hint = t('cleanWords.addWordMultiline')
+    } else if (issue.kind === 'tooShort') {
+      hint =
+        words.length <= 1
+          ? t('cleanWords.addWordTooShort')
+          : t('cleanWords.addTokenTooShort', { index: issue.index })
+    } else {
+      hint =
+        words.length <= 1
+          ? t('cleanWords.addWordTooLong', { max: MAX_WORD_CHARS })
+          : t('cleanWords.addTokenTooLong', { index: issue.index, max: MAX_WORD_CHARS })
+    }
+  }
 
   return (
     <form
@@ -77,6 +86,7 @@ export function CleanWordAddForm({
           className="cw-add__input"
           value={value}
           aria-label={t('cleanWords.addWordAria')}
+          aria-describedby={hint !== null ? `${descId} ${hintId}` : descId}
           placeholder={t('cleanWords.addWordPlaceholder')}
           autoComplete="off"
           spellCheck={false}
@@ -86,7 +96,14 @@ export function CleanWordAddForm({
           {t('cleanWords.addConfirm')}
         </Button>
       </div>
-      {hint !== null ? <p className="cw-add__hint">{hint}</p> : null}
+      <p id={descId} className="cw-add__desc">
+        {t('cleanWords.addWordDesc')}
+      </p>
+      {hint !== null ? (
+        <p id={hintId} className="cw-add__hint">
+          {hint}
+        </p>
+      ) : null}
     </form>
   )
 }

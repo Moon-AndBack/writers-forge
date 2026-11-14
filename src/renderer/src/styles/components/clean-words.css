@@ -110,6 +110,13 @@
   min-width: 120px;
 }
 
+.cw-add__desc {
+  margin: 0;
+  font-size: var(--fs-micro);
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
 .cw-add__hint {
   margin: 0;
   font-size: var(--fs-micro);

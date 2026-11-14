@@ -11,13 +11,13 @@ import type {
 // 词库改动后令检测词表缓存失效。缓存与失效广播在共享层
 // （`components/editor/cleanWordCache.ts`），页面层扫描插件订阅后重扫。
 import { resetActiveCleanWords } from '../editor/cleanWordCache'
-import { addCleanWord } from './cleanWordActions'
+import { addCleanWord, addCleanWords } from './cleanWordActions'
 import {
   CATEGORIES,
   CATEGORY_LABEL_KEYS,
-  MAX_WORD_CHARS,
   PAGE_SIZE,
-  isCategory
+  isCategory,
+  parseCleanWordInput
 } from './cleanWordsMeta'
 import type { CategoryFilter, SourceFilter } from './cleanWordsMeta'
 
@@ -295,29 +295,50 @@ export function useCleanWordsLibrary(open: boolean): CleanWordsLibrary {
   }, [])
 
   /**
-   * 单条添加：前置校验口径与右键菜单一致（trim 非空 / 无换行 / 2–100 字）。
-   * `addCleanWord` 成功时内部已 `resetActiveCleanWords()`（正文即时重扫），失败未写库故不失效；
-   * 成功（inserted / updated）后 `refresh()` 重取全量，列表与「内置 / 我的」计数一并更新。
+   * 添加词条：内容经 `parseCleanWordInput` 按中英文逗号拆分为多条。
+   * 任一词条非法 / 全为空段 → 直接返回；单条沿用 `addCleanWord` 的四态与文案，
+   * 多条走 `addCleanWords` 并按 inserted / updated 组合提示（不声称更新类别）。
+   * 成功后清空输入并 `refresh()`，列表与「内置 / 我的」计数一并更新。
    */
   const handleAdd = useCallback(async (): Promise<void> => {
-    const word = addText.trim()
-    if (word === '' || /[\r\n]/.test(addText) || word.length < 2 || word.length > MAX_WORD_CHARS) {
-      return
-    }
+    const { words, issue } = parseCleanWordInput(addText)
+    if (words.length === 0 || issue !== null) return
+
     setAdding(true)
     try {
-      const outcome = await addCleanWord(word, addCategory)
-      if (outcome === 'failed') {
+      if (words.length === 1) {
+        const word = words[0]
+        const outcome = await addCleanWord(word, addCategory)
+        if (outcome === 'failed') {
+          showToast(t('cleanWords.addFailed'))
+          return
+        }
+        if (outcome === 'exists') {
+          showToast(t('cleanWords.addExists', { word }))
+          return
+        }
+        showToast(
+          t(outcome === 'inserted' ? 'cleanWords.addDone' : 'cleanWords.addUpdated', { word })
+        )
+        setAddText('')
+        await refresh()
+        return
+      }
+
+      const result = await addCleanWords(words.map((word) => ({ word, category: addCategory })))
+      if (result === null || (result.inserted === 0 && result.updated === 0)) {
         showToast(t('cleanWords.addFailed'))
         return
       }
-      if (outcome === 'exists') {
-        showToast(t('cleanWords.addExists', { word }))
-        return
+      if (result.updated === 0) {
+        showToast(t('cleanWords.addManyDone', { inserted: result.inserted }))
+      } else if (result.inserted === 0) {
+        showToast(t('cleanWords.addManyExists', { updated: result.updated }))
+      } else {
+        showToast(
+          t('cleanWords.addManyMixed', { inserted: result.inserted, updated: result.updated })
+        )
       }
-      showToast(
-        t(outcome === 'inserted' ? 'cleanWords.addDone' : 'cleanWords.addUpdated', { word })
-      )
       setAddText('')
       await refresh()
     } finally {
