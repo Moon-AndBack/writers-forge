@@ -186,10 +186,8 @@ export function BookCard({
         {coverUrl ? (
           <img className="book-cover__img" src={coverUrl} alt="" />
         ) : (
-          <span className="book-cover__char" aria-hidden="true">
-            {book.coverChar?.trim() ||
-              Array.from(book.title.trim())[0] ||
-              t('card.coverCharFallback')}
+          <span className="book-cover__title" aria-hidden="true">
+            {book.title.trim() || t('card.coverCharFallback')}
           </span>
         )}
         <Badge className="book-status" tone={STATUS_TONE[book.status]}>

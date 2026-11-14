@@ -200,11 +200,19 @@
   color: #fff;
 }
 
-.book-cover__char {
+.book-cover__title {
+  width: 100%;
+  padding: 0 14px;
   font-family: var(--serif);
-  font-size: 56px;
-  font-weight: 700;
-  line-height: 1;
+  font-size: var(--fs-display);
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   user-select: none;
 }
