@@ -80,17 +80,17 @@
 
 窗口材质**有四种**（`src/main/windowMaterial.ts:14`）：
 
-| 值        | DWM 映射                 | 含义                                                            |
-| --------- | ------------------------ | --------------------------------------------------------------- |
-| `acrylic` | `DWMSBT_TRANSIENTWINDOW` | 亚克力：窗口底全透明，透出 DWM 实时模糊的背后内容               |
-| `mica`    | `DWMSBT_MAINWINDOW`      | 云母：窗口底全透明，透出采样桌面壁纸的 DWM 材质（不模糊）       |
-| `tabbed`  | `DWMSBT_TABBEDWINDOW`    | 云母（增强 / Mica Alt）：同普通云母，着色更强，仍不透明、不模糊 |
-| `none`    | `DWMSBT_NONE`            | 关闭：不透明，回退渲染层光斑渐变                                |
+| 值        | DWM 映射                 | 含义                                                                                  |
+| --------- | ------------------------ | ------------------------------------------------------------------------------------- |
+| `acrylic` | `DWMSBT_TRANSIENTWINDOW` | 亚克力：窗口底全透明，透出 DWM 实时模糊的背后内容                                     |
+| `mica`    | `DWMSBT_MAINWINDOW`      | 云母：窗口底全透明，透出采样桌面壁纸的 DWM 材质（不模糊）                             |
+| `tabbed`  | `DWMSBT_TABBEDWINDOW`    | 云母（增强 / Mica Alt）：同普通云母，着色更强；暗色下叠 8% 白提亮层，仍不透明、不模糊 |
+| `none`    | `DWMSBT_NONE`            | 关闭：不透明，回退渲染层光斑渐变                                                      |
 
 - 默认值：`acrylic`（`windowMaterial.ts:24`；渲染层默认一致，`theme/windowMaterial.ts:17`）。
 - settings 键：`windowMaterial`（`windowMaterial.ts:17`、`theme/windowMaterial.ts:10`）。
 - 四档均为合法值，**不做旧值迁移**，其余非法值返回 `null`（`windowMaterial.ts:49-52`、`theme/windowMaterial.ts:25-29`）。
-- `tabbed` 即 Mica Alt：**仍不透明、不显示背后窗口，也不模糊背后内容**，只能让桌面壁纸的着色更明显；与普通云母的实际差异需在 Windows 11 实机对比。
+- `tabbed` 即 Mica Alt：**仍不透明、不显示背后窗口，也不模糊背后内容**，只能让桌面壁纸的着色更明显；暗色下渲染层会叠 `--mica-alt-scrim-alpha`（8%）提亮层以减轻偏黑（只是提亮输出，不会更透明），浅色不叠。与普通云母的实际差异需在 Windows 11 实机对比。
 
 ### 4.2 系统门槛
 
@@ -118,8 +118,8 @@
 - `WindowMaterialProvider` 计算 `material = setting !== 'none' && supported ? setting : 'none'`，`enabled = material !== 'none'`（`WindowMaterialProvider.tsx:52-53`）。
 - 状态写入根元素 `data-material`：写**实际材质名** `acrylic` / `mica` / `tabbed` / `none`（`WindowMaterialProvider.tsx:55-57`）。
 - `styles/material.css` 依 `data-material` 生效：
-  - `[data-material='acrylic'] .shell` 用 `--desk-solid-alpha`（50%）混合纯色底；`:is([data-material='mica'], [data-material='tabbed']) .shell` 为 `transparent`，不叠 scrim（`material.css:28-36`）。标题栏与状态栏在云母 / 云母增强下同样透明，直接透出材质，不另设底色。
-  - `:is([data-material='acrylic'], [data-material='mica'], [data-material='tabbed']) body` 置透明，否则 body 底会挡住 DWM 材质（`material.css:40-42`）。
+  - `[data-material='acrylic'] .shell` 用 `--desk-solid-alpha`（50%）混合纯色底；`:is([data-material='mica'], [data-material='tabbed']) .shell` 为 `transparent`，不叠 scrim（`material.css:28-38`）。标题栏与状态栏在云母 / 云母增强下同样透明，不另设底色；其中云母增强在暗色下再由 `[data-theme='dark'][data-material='tabbed'] .shell` 叠 `--mica-alt-scrim-alpha`（8%）的 `--text` 提亮层（`material.css:40-48`，`background` 简写同时复位 dark 的四层色带；浅色不叠）。
+  - `:is([data-material='acrylic'], [data-material='mica'], [data-material='tabbed']) body` 置透明，否则 body 底会挡住 DWM 材质（`material.css:52-54`）。
 - 切换时三件事同步：调主进程、写 `data-material`、经 `settings:set` 持久化（`WindowMaterialProvider.tsx:59-72`）。
 - 主进程返回的实际值与请求不一致时（如系统不支持），Provider 回退本地状态（`WindowMaterialProvider.tsx:64-68`）。
 - 窗口材质入口：标题栏主题面板与「设置 → 外观与主题」页均提供四档选择，两处共享 `WindowMaterialProvider`，状态天然同步。
@@ -237,9 +237,9 @@ preload 对应 `window.api.windowSnap`（`src/preload/index.ts:352-361`）。配
 
 ## 9. 常见误区
 
-- **`mica` 与 `tabbed` 是合法材质**。合法值为 `acrylic` / `mica` / `tabbed` / `none`；`acrylic` 实时模糊背后内容，`mica` 采样桌面壁纸（不模糊），`tabbed`（Mica Alt）同样采样壁纸且仍不透明、不模糊，只是着色更强；三种材质门槛同为 Windows 11 22H2+（`windowMaterial.ts:14,49-52,65-69`）。
+- **`mica` 与 `tabbed` 是合法材质**。合法值为 `acrylic` / `mica` / `tabbed` / `none`；`acrylic` 实时模糊背后内容，`mica` 采样桌面壁纸（不模糊），`tabbed`（Mica Alt）同样采样壁纸且仍不透明、不模糊，只是着色更强；其暗色额外叠 8% 白提亮层（`background` 颜色 alpha，不增加透明度）；三种材质门槛同为 Windows 11 22H2+（`windowMaterial.ts:14,49-52,65-69`）。
 - **不要写 `transparent: true`**。材质开启时设置 `backgroundColor: '#00000000'`；但 Electron 文档说明 `#AARRGGBB` 的 alpha 仅在 `transparent: true` 时生效，本项目因它在 Windows 上的副作用（无法缩放、无阴影、Snap / 窗口按钮异常）未开启，因此材质在客户区的实际可见性以实机为准，不依赖 alpha 生效（`window.ts:162-166`）。
-- **材质生效时禁止给背景再叠加 `backdrop-filter`**。DWM 已在系统层完成材质处理，渲染层再模糊会二次处理、破坏透明链路并增加掉帧；材质态只允许改底色透明度（见 `material.css:28-42`）。
+- **材质生效时禁止给背景再叠加 `backdrop-filter`**。DWM 已在系统层完成材质处理，渲染层再模糊会二次处理、破坏透明链路并增加掉帧；材质态只允许改 `background` 颜色 / 透明度（含 tabbed 暗色的 8% 提亮层，它只是背景色 alpha，不是 `backdrop-filter`），见 `material.css:28-54`。
 - **`material.ts` 已改名 `windowMaterial.ts`**（主进程与渲染层各一份），旧路径与旧文档引用均已失效。
 - **不存在 `window:material:*` 通道**。实际通道是 `window:setMaterial`、`window:materialSupported`、`window:titlebar:set-overlay`（`src/main/ipc/window.ts:41,62,77`）。
 - **渲染层标记是 `data-material`**，不是 `data-window-material`，也不是 `data-theme` 的附属值；四档分别写实际材质名 `acrylic` / `mica` / `tabbed` / `none`（`WindowMaterialProvider.tsx:55-57`）。

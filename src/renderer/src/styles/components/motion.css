@@ -83,10 +83,12 @@
    - new：在其上从 0 → 1 淡入，新主题渐渐浮上来。
 
    ② 窗口材质（亚克力 / 云母）模式：**真交叉 + plus-lighter 叠加**。
-   此时 `.shell` 只有 50% 不透明（--desk-solid-alpha）、body 透明，覆盖式叠加会
-   把两层快照的 alpha 相加（0.50 → 0.75），表现为过渡中越来越实、快照撤掉后
-   又跳回通透。改为 old / new 各自按 a·(1-t) / a·t 预乘相加后，合计恒为
-   a = 0.50，材质参与度全程 50% 不变。
+   此时 body 透明，三档外壳 alpha 不同：acrylic 为 50% 不透明纯色 scrim
+   （--desk-solid-alpha，暗色下压暗），mica 无 scrim，tabbed 仅暗色叠
+   --mica-alt-scrim-alpha（8%）提亮层、浅色无；同一主题内 a 恒定。覆盖式叠加
+   会把两层快照的 alpha 相加（如亚克力 0.50 → 0.75），表现为过渡中越来越实、
+   快照撤掉后又跳回通透。改为 old / new 各自按 a·(1-t) / a·t 预乘相加后，
+   合计恒为 a，材质参与度全程不变（跨主题切换时 a 可变，属预期的渐变）。
    注意：old 必须**也**淡出（见 `themeReveal.ts` 的 hasWindowMaterial 分支）；若只有 new
    淡入，plus-lighter 下 alpha 会变成 a + a·t（更实、且被钳制到 1）。
    `::view-transition-image-pair(root)` 自带 isolation，两层只彼此叠加，

@@ -11,10 +11,17 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v161'
+export const CHAPTER_SEED_VERSION = 'v162'
 
 /**
- * 最近版本变更日志（v161；更早版本见上述历史文件）。
+ * 最近版本变更日志（v162；更早版本见上述历史文件）。
+ *
+ * `v162`（云母增强暗色提亮批）：暗色 + 云母（增强）下 `.shell` 新增
+ * `--mica-alt-scrim-alpha`（8%）提亮层，用 `--text` 的半透明叠加减轻 Mica Alt
+ * 的暗色偏黑；浅色主题与普通云母不变。`material.css`、`theme.css`、
+ * `themeReveal.ts` / `motion.css` 注释、`docs/ui/window.md` 与
+ * `docs/ui/design-tokens.md` 同步；教学书卷五「窗口材质」与大纲「主题与排版」
+ * 补「暗色下轻微提亮」。纯样式 / 注释 / 文案改动：无 DB 迁移，升版本只重灌教学书。
  *
  * `v161`（云母增强材质档批）：窗口材质由「亚克力 / 云母 / 关闭」三档扩展为
  * 「亚克力 / 云母 / 云母（增强）/ 关闭」四档，新增取值 `tabbed`（Electron

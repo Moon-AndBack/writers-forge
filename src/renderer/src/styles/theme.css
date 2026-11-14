@@ -85,6 +85,12 @@
      材质参与度 50%。值越大越实、亚克力越弱；mica 不使用本令牌。 */
   --desk-solid-alpha: 50%;
 
+  /* 云母（增强）暗色提亮层：仅 [data-theme='dark'][data-material='tabbed'] 消费。
+     叠的是 --text 的半透明层：值越大越浅，壁纸着色越淡；0% 可关闭提亮。
+     与 acrylic 的 --desk-solid-alpha 方向相反（后者是压暗 / 纯色 scrim），勿混用；
+     勿沿用已删除的 --desk-solid-alpha-mica（历史为压暗用途）。 */
+  --mica-alt-scrim-alpha: 8%;
+
   /* 文本选区底色（::selection，见 base.css）：由品牌色派生，四主题自动跟随。
      data-theme 与 :root 同挂在 <html> 上，故此处 var(--brand) 解析到当前主题的
      --brand 值（深色 / 浅黄另有覆写，见各 [data-theme='...'] 块）。

@@ -8,12 +8,13 @@
  *   因此任何中间帧都是一次不透明混合，不会出现两层同时半透明导致的
  *   「透底泛灰」（亮 / 暗主题明度差极大，真交叉会闪灰）。
  * - **窗口材质模式**（`data-material` 为 `'acrylic'` / `'mica'` / `'tabbed'`）：真交叉 + `plus-lighter`
- *   ——此时 acrylic 的窗口底是 `.shell` 的 50% 不透明底（`--desk-solid-alpha`）配 body 透明，
- *   mica / tabbed 则外壳全透明；
- *   覆盖式淡化会让两层快照的 alpha 相加（0.50 → 0.75），表现为过渡期间越来越实、
- *   快照撤掉后又跳回通透。故 new 淡入的同时 old 同步淡出，两层以
- *   `mix-blend-mode: plus-lighter` 按 a·(1-t) / a·t 预乘相加，合计恒为 a = 0.50，
- *   材质参与度全程不变（CSS 侧见 `motion.css` 的窗口材质规则）。
+ *   ——此时 body 透明，三档外壳 alpha 不同：acrylic 为 `.shell` 的 50% 不透明
+ *   纯色 scrim（`--desk-solid-alpha`，暗色下压暗），mica 无 scrim，tabbed 仅暗色
+ *   叠 `--mica-alt-scrim-alpha` 提亮层（浅色无）；同一主题内 a 恒定。
+ *   覆盖式淡化会让两层快照的 alpha 相加（如亚克力 0.50 → 0.75），表现为过渡期间
+ *   越来越实、快照撤掉后又跳回通透。故 new 淡入的同时 old 同步淡出，两层以
+ *   `mix-blend-mode: plus-lighter` 按 a·(1-t) / a·t 预乘相加，合计恒为 a，
+ *   材质参与度全程不变（跨主题切换时 a 可变，属预期；CSS 侧见 `motion.css`）。
  *
  * 为何由 JS（WAAPI）而不是 CSS 承担动画：
  * - `document.startViewTransition` 只能由 JS 启动，整窗快照也只有它能拍摄；
@@ -132,8 +133,9 @@ export function runThemeReveal(applyTheme: () => void): void {
 
         if (hasWindowMaterial()) {
           // 窗口材质模式：old 同步淡出。与 new 一起在 `mix-blend-mode: plus-lighter`
-          // 下按 a·(1-t) / a·t 预乘相加，合计恒为 a = 0.50（见 motion.css），
-          // 避免覆盖式叠加把 alpha 抬到 0.75 → 过渡中越来越实、结束后跳回通透。
+          // 下按 a·(1-t) / a·t 预乘相加，合计恒为当前主题的 a（见 motion.css；
+          // acrylic 0.50，tabbed 暗色 0.08）——避免覆盖式叠加把 alpha 抬成
+          // a + a·t → 过渡中越来越实、结束后跳回通透。
           //
           // `fill: 'forwards'`：动画结束后 old 必须保持 opacity 0 直到快照被移除。
           // 缺省 `fill: none` 会让它回落到基础值 1，与 new 相加后 alpha 超过 1
