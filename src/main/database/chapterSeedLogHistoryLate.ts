@@ -2,7 +2,7 @@
  * 教学书种子变更日志 · 后期区间（v71 → v117）。
  *
  * 本文件由 `chapterSeedLog.ts` 按版本区间拆出，块内文字逐字搬运、未作改写；
- * 最近版本见 `chapterSeedLog.ts`，前一区间见 `chapterSeedLogHistoryEarly.ts`。
+ * 后续区间见 `chapterSeedLogHistoryMid.ts`，前一区间见 `chapterSeedLogHistoryEarly.ts`。
  */
 
 /**
