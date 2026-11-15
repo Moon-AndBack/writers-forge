@@ -164,3 +164,54 @@
   --control-on-soft-hover: color-mix(in srgb, var(--text) 18%, transparent);
   --text-mute: var(--text-dim);
 }
+
+/* ============================================================
+   chrome 控件（标题栏 / 状态栏）—— 材质态薄雾底
+   ------------------------------------------------------------------
+   标题栏与状态栏不在三栏面板作用域内（不重派生 --soft-*），改前用的是
+   --pill-bg-solid / --soft-*-solid 等**不透明**填充：材质态下整条 chrome
+   仍是实色块，把 DWM 材质完全挡住。
+
+   基色必须用 --text 而非 --pane：
+   - color-mix(--pane 45%, transparent) 在浅色主题 + 浅色云母上合成 #f7f7f7，
+     与背景差 < 1.02，hover 等于没有；
+   - --text 在浅色主题是深色、深色主题是亮色，混 transparent 后永远朝背景
+     反方向走，四主题自动适配。
+   描边环同由 --text 8% 派生：薄雾底只有 5%，单靠底色差在云母上分辨元素偏弱，
+   1px 环给出稳定边界；非材质态该值为 none（不产生阴影层）。
+
+   作用域：只有显式消费 --chrome-* 的标题栏 / 状态栏控件受影响。弹窗 / 浮层 /
+   Select / Tooltip / 状态栏弹层（.st-popup）不消费本组令牌 → 保持不透明，
+   不会出现「整窗灾难性透明」。
+   特异性：:root:is([data-material=…]) = (0,2,0)，高于 theme.css 的 :root
+   (0,1,0)，不依赖导入顺序。
+   ============================================================ */
+:root:is([data-material='acrylic'], [data-material='mica']) {
+  --chrome-fill: color-mix(in srgb, var(--text) 5%, transparent);
+  --chrome-fill-hover: color-mix(in srgb, var(--text) 8%, transparent);
+  --chrome-fill-strong: color-mix(in srgb, var(--text) 11%, transparent);
+  --chrome-hover: color-mix(in srgb, var(--text) 7%, transparent);
+  --chrome-active: color-mix(in srgb, var(--brand) 20%, transparent);
+  --chrome-active-soft: color-mix(in srgb, var(--brand) 14%, transparent);
+  --chrome-ring: 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+/* 标题栏段控（共享组件 Segmented 的标题栏实例）—— 仅材质态覆写，
+   登记见 docs/ui/design-language.md §9 #31。
+   作用域三重收窄：① 仅 acrylic / mica；② 仅标题栏 `.tb-view-switch` 实例；
+   ③ 只改轨道底 / 描边环与滑块底。弹窗（新建卷 .wf-seg--fill）、书架工具条等
+   其它使用方完全不受影响。非材质态**没有**这两条规则，轨道仍是 --soft-solid、
+   滑块仍是 --seg-thumb-bg → 零变化。
+   特异性 (0,3,0)：:root + .tb-view-switch + .wf-seg / .wf-seg__thumb，
+   高于 segmented.css 的 (0,1,0)。 */
+:root:is([data-material='acrylic'], [data-material='mica']) .tb-view-switch .wf-seg {
+  background: var(--chrome-fill);
+  box-shadow: var(--chrome-ring);
+}
+
+:root:is([data-material='acrylic'], [data-material='mica']) .tb-view-switch .wf-seg__thumb {
+  background: var(--chrome-active);
+  /* 半透明滑块上再压 --sh-xs 会形成「玻璃下垫黑影」，与三栏面板同一口径改描边环
+     （默认态 --chrome-ring 为 none，此处仅在材质态生效）。 */
+  box-shadow: var(--chrome-ring);
+}

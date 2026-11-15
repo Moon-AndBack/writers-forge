@@ -2,10 +2,15 @@
    状态栏小部件（PinButton / TypographyControls / ZoomControls）
    ------------------------------------------------------------------
    1:1 对齐 template/index.html 的 .st-side-btn / .st-pill-* /
-   .st-popup* / .st-zoom*（原型 CSS L710–771），但遵循本项目
-   「组件填充不透明」约定：底色一律取 --pill-bg-solid /
-   --soft-*-solid / --pane 等不透明色，不使用 rgba 半透明底。
-   激活浅底改用 color-mix(brand 12%, var(--pane))（不透明，
+   .st-popup* / .st-zoom*（原型 CSS L710–771），并遵循本项目
+   「组件填充默认不透明」约定：胶囊 / 外壳 / 图钉的底色统一取
+   chrome 令牌族（--chrome-*），其**默认值**逐项等于改前的
+   --pill-bg-solid / --pill-bg-hover-solid / --soft-press-solid /
+   --soft-hover-solid / 品牌 12–18% 混 --pane → 非材质态零变化；
+   材质态由 material.css 换成 --text 派生薄雾 + 1px 描边环，
+   让状态栏也透出窗口材质（本文件不再出现 --pill-bg-* 直接消费）。
+   状态栏弹层（.st-popup）**不**消费 --chrome-*，始终保持不透明。
+   激活浅底为 --chrome-active-soft（品牌 12% 混 --pane，不透明，
    与 .act-btn.is-active 同范式），四主题自动适配。
    仅使用 theme.css 令牌。
    ============================================================ */
@@ -20,19 +25,21 @@
   flex: none;
   border-radius: var(--r-lg);
   color: var(--text-dim);
-  background: var(--pill-bg-solid);
+  background: var(--chrome-fill);
+  /* 默认 none（无描边层）；材质态展开为 1px 文字色环，薄雾底才有稳定边界。 */
+  box-shadow: var(--chrome-ring);
   transition:
     background var(--dur-fast) var(--ease),
     color var(--dur-fast);
 }
 
 .st-side-btn:hover:not(:disabled) {
-  background: var(--pill-bg-hover-solid);
+  background: var(--chrome-fill-hover);
   color: var(--text);
 }
 
 .st-side-btn:active:not(:disabled) {
-  background: var(--soft-press-solid);
+  background: var(--chrome-fill-strong);
 }
 
 .st-side-btn svg {
@@ -56,14 +63,18 @@
   display: block;
 }
 
-/* ★ 激活态：品牌色浅底（不透明）+ 品牌色前景（参照 .act-btn.is-active 范式） */
+/* ★ 激活态：品牌色浅底 + 品牌色前景（参照 .act-btn.is-active 范式）。
+   底色取 --chrome-active-soft：默认 = 品牌 12% 混 --pane，与改前逐字一致；
+   材质态由 material.css 换成品牌 14% 透明薄雾。
+   hover 不另立规则：本选择器 (0,2,0) 与 `.st-side-btn:hover:not(:disabled)` 同档，
+   且源码在后 → 固定态 hover 本就保持该底色（改前行为一致，不额外加 hover 令牌）。 */
 .st-side-btn[data-state='pinned'] {
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  background: var(--chrome-active-soft);
   color: var(--brand);
 }
 
 .st-side-btn[data-state='pinned']:active {
-  background: var(--soft-press-solid);
+  background: var(--chrome-fill-strong);
 }
 
 /* ---------- 排版胶囊（.st-pill-*，原型 L736–745） ---------- */
@@ -85,7 +96,8 @@
   font-size: var(--fs-micro);
   font-weight: 600;
   color: var(--text-dim);
-  background: var(--pill-bg-solid);
+  background: var(--chrome-fill);
+  box-shadow: var(--chrome-ring);
   transition:
     background var(--dur-fast) var(--ease),
     color var(--dur-fast);
@@ -93,12 +105,12 @@
 }
 
 .st-pill-btn:hover:not(:disabled) {
-  background: var(--pill-bg-hover-solid);
+  background: var(--chrome-fill-hover);
   color: var(--text);
 }
 
 .st-pill-btn.is-open {
-  background: var(--pill-bg-hover-solid);
+  background: var(--chrome-fill-hover);
   color: var(--text);
 }
 
@@ -233,7 +245,8 @@
   height: 24px;
   padding: 0 2px;
   border-radius: var(--r-lg);
-  background: var(--pill-bg-solid);
+  background: var(--chrome-fill);
+  box-shadow: var(--chrome-ring);
 }
 
 .st-zoom-btn {
@@ -256,7 +269,7 @@
 }
 
 .st-zoom-btn:hover:not(:disabled) {
-  background: var(--soft-hover-solid);
+  background: var(--chrome-hover);
   color: var(--text);
 }
 
@@ -286,9 +299,9 @@
    状态栏通用元信息胶囊：写作模块与页面级插槽（书架页等）共用。
    起源于章节序号（编辑头「N/M」位置口径移入状态栏：位于图钉按钮右侧，
    left 插槽首项，.st-leading 之后）。底色与状态栏按钮（.st-side-btn /
-   .st-pill-btn）一致取 --pill-bg-solid 胶囊底；纯展示项：cursor: default、
-   无 hover / active 交互（不注册任何 pointer 事件，仅静态着色），四主题经
-   令牌自适应。 */
+   .st-pill-btn）一致取 --chrome-fill（默认 = --pill-bg-solid，材质态为薄雾底，
+   与同排胶囊同色）；纯展示项：cursor: default、无 hover / active 交互
+   （不注册任何 pointer 事件，仅静态着色），四主题经令牌自适应。 */
 .st-meta {
   display: inline-flex;
   align-items: center;
@@ -300,7 +313,8 @@
   font-size: var(--fs-micro);
   font-weight: 600;
   color: var(--text-dim);
-  background: var(--pill-bg-solid);
+  background: var(--chrome-fill);
+  box-shadow: var(--chrome-ring);
   white-space: nowrap;
   user-select: none;
   cursor: default;

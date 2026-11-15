@@ -18,9 +18,11 @@
   -webkit-app-region: no-drag;
 }
 
-/* 展开态图标按钮：叠加在 .wf-iconbtn 基座之上的高亮 */
+/* 展开态图标按钮：叠加在 .wf-iconbtn 基座之上的高亮。
+   底色取 --chrome-fill-strong（默认 = --soft-press-solid，与改前一致；
+   材质态为文字色 11% 薄雾）。 */
 .tb-theme-icon.is-active {
-  background: var(--soft-press-solid);
+  background: var(--chrome-fill-strong);
   color: var(--text);
 }
 

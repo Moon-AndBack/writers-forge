@@ -54,6 +54,16 @@
   -webkit-app-region: no-drag;
 }
 
+/* 标题栏段控（势力模块「卡片 / 架构」）的 chrome 底不在本文件：
+   材质态覆写（轨道 --chrome-fill + 描边环、滑块 --chrome-active）在
+   material.css 的「标题栏段控」块，作用域限定 `.tb-view-switch`，弹窗 /
+   书架工具条等其它 Segmented 使用方不受影响（例外登记见
+   docs/ui/design-language.md §9 #31）。
+   门控在材质态而非在此直换令牌的原因：轨道现状 --soft-solid 与 --chrome-fill
+   的默认值 --pill-bg-solid 在 light / dark 上各差 1–2%，滑块现状
+   --seg-thumb-bg 19% 亦非 --chrome-active 的 18% —— 直接换会破坏「非材质态
+   零变化」。 */
+
 /* 分组竖分隔线：横排按钮组内的竖向 1px 线（替代活动栏的横向 `.act-sep`）。 */
 .tb-sep {
   flex: none;
@@ -75,11 +85,12 @@
 
 /* 章节操作按钮：沿用 IconButton ghost 基座（md 档圆形，同 .tb-back / .tb-tool），
    布局与图标尺寸引用 `.wf-iconbtn` 默认值，不额外覆盖；此处仅补激活态。
-   激活态底色为**不透明全底**（品牌色 18% 混入 --pane，口径同 .act-btn.is-active）；
-   不用 transparent——标题栏背景透明，半透明底会透出 .shell 桌面渐变而观感发花。 */
+   激活态底色取 `--chrome-active`：非材质态 = 品牌色 18% 混入 --pane 的**不透明全底**
+   （口径同 .act-btn.is-active，与改前逐字一致）；材质态由 material.css 覆写为
+   品牌色 20% 透明薄雾，透出窗口材质而不铺实标题栏。 */
 .tb-action.is-active {
   color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 18%, var(--pane));
+  background: var(--chrome-active);
 }
 
 /* ---------- 右侧常驻工具组：设置 · 主题 · 帮助 ----------
@@ -96,11 +107,12 @@
 
 /* ---------- 右栏面板开关按钮（.tb-right-tools 内，设置与主题之间） ----------
    基座沿用 IconButton ghost（md 档圆形，同 .tb-tool）；激活态仿 .tb-action.is-active：
-   品牌色字 + 品牌色 18% 混入 --pane 的**不透明全底**。激活语义：右栏实际显示中
+   品牌色字 + `--chrome-active` 底（非材质态 = 品牌色 18% 混入 --pane 的不透明全底，
+   材质态 = 品牌色 20% 透明薄雾）。激活语义：右栏实际显示中
    （与搜索 / 回收站等 is-active 语义一致）。仅颜色 / 底色变化，hover 无 transform。 */
 .tb-pane-toggle.is-active {
   color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 18%, var(--pane));
+  background: var(--chrome-active);
 }
 
 /* ---------- 主题触发按钮：由「图标 + 文字标签」改为纯图标 ----------
@@ -118,10 +130,12 @@
 /* ---------- 标题栏图标按钮交互底色与按压反馈 ----------
    标题栏内全部图标按钮（模块操作组的新增 / 保存 / 撤销 / 重做 / 搜索 /
    回收站 `.tb-action`、返回 `.tb-back`、设置 / 右栏开关 / 主题 / 帮助
-   `.tb-tool` / `.tb-theme-icon`）的 hover / active / focus-visible 一律使用
-   不透明纯色底（`--soft-hover-solid` / `--soft-press-solid`），并以
+   `.tb-tool` / `.tb-theme-icon`）的 hover / active / focus-visible 一律取
+   chrome 令牌（`--chrome-hover` / `--chrome-fill-strong`），并以
    `background-image: none` 屏蔽任何渐变来源；激活态（`.is-active`）沿用
-   品牌色混入 `--pane` 的不透明底（见上），hover 时显式恢复该底色。
+   `--chrome-active`（品牌色底，见上），hover 时显式恢复该底色。
+   令牌默认值 = 改前的不透明底，故非材质态外观零变化；材质态由 material.css
+   把同一组令牌换成 --text / 品牌派生薄雾（标题栏本身透明，薄雾让 DWM 材质透出）。
    动效边界：**hover 不做任何位移 / 缩放**（§8 约束的是卡片 hover 弹起，不是
    按钮按压）；仅 `:active` 按下时做 0.96 轻缩，作为即时按压反馈。 */
 .titlebar .tb-action,
@@ -140,7 +154,7 @@
 .titlebar .tb-back:hover:not(:disabled),
 .titlebar .tb-tool:hover:not(:disabled):not(.is-active),
 .titlebar .tb-theme-icon:hover:not(:disabled) {
-  background: var(--soft-hover-solid);
+  background: var(--chrome-hover);
   background-image: none;
 }
 
@@ -148,7 +162,7 @@
 .titlebar .tb-back:active:not(:disabled),
 .titlebar .tb-tool:active:not(:disabled),
 .titlebar .tb-theme-icon:active:not(:disabled) {
-  background: var(--soft-press-solid);
+  background: var(--chrome-fill-strong);
   background-image: none;
 }
 
@@ -165,7 +179,7 @@
 .titlebar .tb-back:focus-visible,
 .titlebar .tb-tool:focus-visible,
 .titlebar .tb-theme-icon:focus-visible {
-  background: var(--soft-hover-solid);
+  background: var(--chrome-hover);
   background-image: none;
 }
 
@@ -173,7 +187,7 @@
 .titlebar .tb-action.is-active:hover:not(:disabled),
 .titlebar .tb-pane-toggle.is-active:hover:not(:disabled),
 .titlebar .tb-theme-icon.is-active:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--brand) 18%, var(--pane));
+  background: var(--chrome-active);
   background-image: none;
 }
 
@@ -184,7 +198,7 @@
 
 .titlebar .tb-action.is-active:active:not(:disabled),
 .titlebar .tb-pane-toggle.is-active:active:not(:disabled) {
-  background: var(--soft-press-solid);
+  background: var(--chrome-fill-strong);
   background-image: none;
 }
 

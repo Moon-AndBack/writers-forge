@@ -117,6 +117,25 @@
      默认 22%：浅底（--pane 近白）上呈极淡品牌色晕染，观感对齐系统原生选区，
      且不设 color、正文文字保持原色时仍有充足对比。 */
   --selection-bg: color-mix(in srgb, var(--brand) 22%, transparent);
+
+  /* chrome 控件令牌族：标题栏（.tb-action / .tb-pane-toggle / .tb-theme-icon /
+     .tb-view-switch 段控）与状态栏（.st-side-btn / .st-pill-btn / .st-zoom /
+     .st-meta）专用。**材质态 chrome 控件专用；关闭材质时回退不透明值。**
+     默认值逐项等同改前的不透明底（--pill-bg-solid / --pill-bg-hover-solid /
+     --soft-hover-solid / --soft-press-solid / 品牌 18% 混 --pane / 品牌 12% 混
+     --pane），故 data-material='none' 外观零变化。
+     材质态由 material.css 改由 --text 派生薄雾（浅色压暗、深色提亮，永远朝背景
+     反方向走）；不用 --pane 派生，是因为浅色主题 + 浅色云母上 pane 派生色与
+     背景差 < 1.02，hover 等于没有。
+     --chrome-ring 默认 none：消费方无条件写 `box-shadow: var(--chrome-ring)`
+     即得「无描边」，材质态才展开为 1px 文字色环。 */
+  --chrome-fill: var(--pill-bg-solid);
+  --chrome-fill-hover: var(--pill-bg-hover-solid);
+  --chrome-fill-strong: var(--soft-press-solid);
+  --chrome-hover: var(--soft-hover-solid);
+  --chrome-active: color-mix(in srgb, var(--brand) 18%, var(--pane));
+  --chrome-active-soft: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  --chrome-ring: none;
 }
 
 /* ---------- 亮色（默认） ---------- */
