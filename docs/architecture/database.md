@@ -125,7 +125,7 @@ instance.pragma('foreign_keys = ON')
 | 域                                    | 守卫键                               | 实现文件                            | 作用                                                                                   |
 | ------------------------------------- | ------------------------------------ | ----------------------------------- | -------------------------------------------------------------------------------------- |
 | 书籍                                  | `books:dropAuthorTargetWords:v1`     | `booksDropColumns.ts`               | 删除 `books.author` / `books.targetWords` 两列                                         |
-| 教学书（跨章节 / 大纲 / 剧情 / 实体） | `chapterData:v153:migrated`          | `chapterSeed.ts`                    | 教学书全量重灌（详见 §6）                                                              |
+| 教学书（跨章节 / 大纲 / 剧情 / 实体） | `chapterData:v170:migrated`          | `chapterSeed.ts`                    | 教学书全量重灌（详见 §6）                                                              |
 | 剧情                                  | `plot:dropCharacters:v1`             | `plotMigrations.ts`                 | 删除 `plot_scenes.characters`                                                          |
 | 剧情                                  | `plot:descriptionRich:v1`            | `plotMigrations.ts`                 | 纯文本 `description` 包成富文本写入 `description_json`                                 |
 | 剧情                                  | `plot:lineTimeline:v1`               | `plotMigrations.ts`                 | `timeline_id` / `default_origin` 空值收敛                                              |
@@ -162,16 +162,17 @@ instance.pragma('foreign_keys = ON')
 
 种子分「一次性」与「每次启动幂等补齐」两类：
 
-| 种子           | 规模               | 守卫                            | 行为                                               |
-| -------------- | ------------------ | ------------------------------- | -------------------------------------------------- |
-| 官方分类       | 一级 33 / 二级 145 | `categories:seed:v1`            | 单事务插入两级树，`is_custom = 0`                  |
-| 胶囊配色       | 28 行色对          | 无 settings 键                  | 每次启动 `INSERT OR IGNORE`，不覆盖用户改色        |
-| 教学书         | 1 本 / 5 卷        | `chapterData:v156:migrated`     | 全量重灌卷章、正文、大纲、剧情、实体（§6）         |
-| 子类预设       | 23 条 / 书         | `worldSubtypes:presets:v1`      | 为既有书籍补齐；新建书由 `createBook` 即时写入     |
-| 关系语义码     | 4 个               | 无键                            | 每次启动 `ON CONFLICT(code) DO NOTHING` 补齐新增码 |
-| 内置违禁词     | 1274 行            | `cleanWords:seed:v2`            | 首次 v2 同步；保留用户启停意图与自建词             |
-| 教学书演示实体 | 5 类若干           | `worldEntities:seeded:<bookId>` | 按书播种；重灌时先删标记再重播                     |
-| 样例书籍       | 0                  | 无                              | `seedBooksIfEmpty()` 为空实现，样例书已下线        |
+| 种子              | 规模               | 守卫                            | 行为                                               |
+| ----------------- | ------------------ | ------------------------------- | -------------------------------------------------- |
+| 官方分类          | 一级 33 / 二级 145 | `categories:seed:v1`            | 单事务插入两级树，`is_custom = 0`                  |
+| 胶囊配色          | 28 行色对          | 无 settings 键                  | 每次启动 `INSERT OR IGNORE`，不覆盖用户改色        |
+| 教学书            | 1 本 / 10 卷       | `chapterData:v170:migrated`     | 全量重灌卷章、正文、大纲、剧情、实体（§6）         |
+| 子类预设          | 23 条 / 书         | `worldSubtypes:presets:v1`      | 为既有书籍补齐；新建书由 `createBook` 即时写入     |
+| 关系语义码        | 4 个               | 无键                            | 每次启动 `ON CONFLICT(code) DO NOTHING` 补齐新增码 |
+| 内置违禁词        | 1274 行            | `cleanWords:seed:v2`            | 首次 v2 同步；保留用户启停意图与自建词             |
+| 教学书演示实体    | 5 类若干           | `worldEntities:seeded:<bookId>` | 按书播种；重灌时先删标记再重播                     |
+| 教学书伏笔 / 灵感 | 4 条 / 3 条        | `guideThreads:seeded:<bookId>`  | 按书播种；老库启动时补种，重灌时先删标记再重播     |
+| 样例书籍          | 0                  | 无                              | `seedBooksIfEmpty()` 为空实现，样例书已下线        |
 
 要点：
 
@@ -186,25 +187,26 @@ instance.pragma('foreign_keys = ON')
 教学书是首启唯一书籍，固定 `id = 'guide'`，标题「Writer's Forge · 使用指南」。重灌入口 `src/main/database/chapterSeed.ts` 的 `resetChapterDataOnce()`，守卫键：
 
 ```ts
-const MIGRATION_KEY = 'chapterData:v156:migrated'
+const MIGRATION_KEY = 'chapterData:v170:migrated'
 ```
 
 ### 6.1 重灌范围
 
 同一事务内依次执行：
 
-1. `clearChapterDomain(GUIDE_BOOK.id)`：按书删除 `paragraphs` → `chapters` → `outline_items` → `volumes`，最后删 `plot_lines`（其下场景由外键级联）；
+1. `clearChapterDomain(GUIDE_BOOK.id)`：按书删除 `paragraphs` → `chapters` → `outline_items` → `volumes`，随后删 `plot_lines`（其下场景由外键级联）与 `foreshadows` / `inspirations`（未锚定伏笔与全部灵感不会被级联带走）；
 2. `clearWorldEntitySeedMarker`：删除 `worldEntities:seeded:guide`，允许演示实体重播；
 3. `seedGuideBook()`：写书行 + 卷章 + 正文段落 + 大纲（含置顶独立条目）+ 2 条剧情线；
 4. `seedDemoWorldEntities(GUIDE_BOOK.id)`：清空教学书设定库实体后按新文案重播；
 5. `relinkGuidePlotSceneEntities`：实体 id 已变化，按名称回填场景关联；
-6. 写入 `MIGRATION_KEY = '1'`。
+6. `clearGuideThreadSeedMarker` + `seedGuideThreads(GUIDE_BOOK.id)`：重播 4 条伏笔与 3 条灵感示范数据（锚点按「卷名 + 章名 + 关键字」解析，解析不到则留空该槽位并告警）；
+7. 写入 `MIGRATION_KEY = '1'`。
 
-范围严格按 `bookId` 隔离：用户自建书籍的正文、卷章、大纲、剧情与设定数据不受影响。
+范围严格按 `bookId` 隔离：用户自建书籍的正文、卷章、大纲、剧情、设定、伏笔与灵感数据不受影响。
 
 ### 6.2 幂等边界
 
-- 守卫键存在即直接返回；只有「换键」才会让老库重灌。当前键内含 `v156`，历史批次靠递增版本强制刷新教学文案。
+- 守卫键存在即直接返回；只有「换键」才会让老库重灌。当前键内含 `v170`，历史批次靠递增版本强制刷新教学文案。
 - 事务失败整体回滚且不置键，下次启动重试；不会留下「清空一半」的教学书。
 - 用户删除教学书后不会自动重灌——守卫键仍在，这是有意行为，避免删书后反复复活。
 - 重灌会覆盖教学书的时间线 settings（`timeline:list:<bookId>` / `timeline:active:<bookId>`）。

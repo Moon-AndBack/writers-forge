@@ -5,6 +5,7 @@
  * - `seedGuideBook/volumes.ts`：章节域载体（正文卷 + 章 + 正文块）+ 书籍元信息；
  * - `seedGuideBook/outline.ts`：大纲域载体（分组 + 条目 + 独立条目，正文整条内联）。
  * - `seedGuideBook/plot.ts`：剧情域载体（2 剧情线 × 各 3 场景；场景 `entityKeys` 声明关联的示范设定）。
+ * - `seedGuideBook/threads.ts`：伏笔 / 灵感示范数据（锚点以「位置 + 关键字」声明，播种时解析）。
  *
  * 本文件仅做 re-export，保持既有导入路径（`./seedGuideBook`）与导出面稳定。
  *
@@ -20,3 +21,10 @@ export { GUIDE_OUTLINE, GUIDE_OUTLINE_STANDALONE } from './seedGuideBook/outline
 export type { SeedOutlineEntry, SeedOutlineGroup } from './seedGuideBook/outline'
 export { GUIDE_PLOT_LINES } from './seedGuideBook/plot'
 export type { SeedPlotLine, SeedPlotScene } from './seedGuideBook/plot'
+export { GUIDE_FORESHADOWS, GUIDE_INSPIRATIONS } from './seedGuideBook/threads'
+export type {
+  SeedForeshadowBodyAnchor,
+  SeedForeshadowOutlineAnchor,
+  SeedGuideForeshadow,
+  SeedGuideInspiration
+} from './seedGuideBook/threads'

@@ -5,6 +5,7 @@ import { logger } from '../logger'
 import { seedBooksIfEmpty } from './books'
 import { seedCategoriesOnce } from './categories'
 import { resetChapterDataOnce } from './chapterSeed'
+import { seedGuideThreads } from './guideThreadSeed'
 import { ensureChipColors } from './chipColors'
 import {
   migratePlotSceneDescriptionBlocks,
@@ -271,6 +272,10 @@ export function getDb(): Database.Database {
     // 保留本调用以覆盖「重灌键已置位但 demo 标记缺失」的异常库（自愈）。
     // 统一设定库是**唯一** demo 数据源（旧实体域 / 旧四域播种已删除）。
     seedDemoWorldEntities(GUIDE_BOOK.id)
+    // 教学书伏笔 / 灵感示范数据（幂等、按书标记 `guideThreads:seeded:<bookId>`）：覆盖
+    // 「重灌键已置位但伏笔 / 灵感标记缺失」的老库（重灌路径已在同一事务内播种，此处为空操作，
+    // 故不需要升 `CHAPTER_SEED_VERSION`）。
+    seedGuideThreads(GUIDE_BOOK.id)
     // 子类分类表预设回填（幂等、守卫键、失败回滚）：为既有书籍补齐 23 条预设子类。
     // 新建书籍由 `createBook` 即时写入，不依赖本步骤。
     seedWorldSubtypePresetsOnce(instance)

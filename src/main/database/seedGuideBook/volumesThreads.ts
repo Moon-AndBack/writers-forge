@@ -21,6 +21,9 @@ export const VOLUME_THREADS: SeedVolume = {
         seedParagraph(
           '这一章先建立地图：伏笔模块在哪、中栏卡片上每块信息是什么、四种状态为什么不能手动选。'
         ),
+        seedParagraph(
+          '本书自带几条示范伏笔，覆盖埋设中 / 已回收 / 建设中 / 已废弃四种状态，可随时删除。'
+        ),
         seedRichParagraph([{ text: '一个独立的写作模块', bold: true }]),
         seedParagraph(
           '伏笔与章节写作、大纲、剧情并列，是单独的写作模块，不占用章节正文。它只有两栏：中栏是卡片网格，右栏是选中伏笔的编辑区；没有左栏，中栏与右栏直连。从活动栏的伏笔图标进入，标题栏会挂一个「新建伏笔」动作。'
@@ -215,6 +218,7 @@ export const VOLUME_THREADS: SeedVolume = {
         seedParagraph(
           '这一章讲灵感模块：它比伏笔轻得多——没有锚点、没有状态，只有标题、正文和标签。'
         ),
+        seedParagraph('本书自带几条示范灵感，可随时删除。'),
         seedRichParagraph([{ text: '卡片与即时新建', bold: true }]),
         seedParagraph(
           '灵感是独立模块，从活动栏的灵感图标进入。中栏是卡片网格，每张卡只有标题、删除按钮、正文摘要（最多 3 行）和标签胶囊。'

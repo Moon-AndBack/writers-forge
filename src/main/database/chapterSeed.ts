@@ -18,6 +18,7 @@ import { getSetting, setSetting } from './settings'
 import { saveParagraphs } from './paragraphs'
 import { markChapterContentChanged } from './chapterContentVersion'
 import { CHAPTER_SEED_VERSION } from './chapterSeedLog'
+import { clearGuideThreadSeedMarker, seedGuideThreads } from './guideThreadSeed'
 import { logger } from '../logger'
 
 /** 章节种子域日志 scope。 */
@@ -33,14 +34,17 @@ const log = logger.scope('chapterSeed')
  * - 卷纲：`createVolume` 建卷时**同事务**自动建卷纲行（`scope='volume'`），教学书无需另建；
  * - 大纲：分组 = 功能分区（`createOutlineGroup` → `volumes.kind='group'` 行）、
  *   条目 = 功能要点（`createOutlineItem` 挂分组 id），另有一条置顶独立条目；
- *   条目正文**整条内联**进 `outline_items.content_json`（经 `saveOutlineContent`）。
+ *   条目正文**整条内联**进 `outline_items.content_json`（经 `saveOutlineContent`）；
+ * - 伏笔 / 灵感：`seedGuideBook/threads.ts` 的示范数据，由 `guideThreadSeed.ts` 按
+ *   「卷名 + 章名 + 关键字」解析锚点后播种（4 条伏笔覆盖四种派生状态 + 3 条灵感）。
  *
  * **幂等**：以 `settings` 键 `MIGRATION_KEY` 常量标记，只执行一次；
  * 绝不每次启动清库，也不会因用户之后删空章节而再次填充
  * （更换重灌键可强制老库重灌）。
  *
  * 重灌范围（第 8 批收敛）：仅重建**教学书**（`GUIDE_BOOK.id`）的数据——章节域 / 大纲域 /
- * 示范剧情线 / 演示设定实体；用户自建书籍的正文、卷章、大纲、剧情与设定数据都不受影响。
+ * 示范剧情线 / 演示设定实体 / 伏笔与灵感示范；用户自建书籍的正文、卷章、大纲、剧情、
+ * 设定、伏笔与灵感都不受影响。
  *
  * 版本与变更日志见 `chapterSeedLog.ts`：`CHAPTER_SEED_VERSION` 为当前版本，
  * 该文件记录逐版教学文案与结构变化。
@@ -133,16 +137,18 @@ function seedGuidePlot(bookId: string): void {
 }
 
 /**
- * 清空**教学书**的章节域 + 大纲域 + 示范剧情线（教学书重灌前的擦除步骤）。
+ * 清空**教学书**的章节域 + 大纲域 + 示范剧情线 + 伏笔 / 灵感（教学书重灌前的擦除步骤）。
  *
  * 范围（按 `bookId` 隔离，只动教学书）：
  * - 章节域：`paragraphs` / `chapters`；
  * - 大纲域：`outline_items` / `volumes`（章节与大纲共用卷池）；
- * - 剧情域：`plot_lines`（其下 `plot_scenes` 与场景关联随外键级联物理删除）。
+ * - 剧情域：`plot_lines`（其下 `plot_scenes` 与场景关联随外键级联物理删除）；
+ * - 伏笔 / 灵感：`foreshadows` / `inspirations`——已锚定的伏笔虽随章节 / 条目外键级联，
+ *   但未锚定伏笔与全部灵感没有父行可依，必须按书显式清空，否则重灌后残留旧示范行。
  *
  * 顺序**自底向上**（先子后父，不依赖外键级联）：
- * `paragraphs → chapters → outline_items → volumes`，最后清剧情线。
- * 用户自建书籍的正文 / 卷章 / 大纲 / 剧情**不受影响**。
+ * `paragraphs → chapters → outline_items → volumes`，随后清剧情线、伏笔与灵感。
+ * 用户自建书籍的正文 / 卷章 / 大纲 / 剧情 / 伏笔 / 灵感**不受影响**。
  * 设定数据（统一设定库）不在此函数内清理：演示实体随教学书重灌由
  * `resetChapterDataOnce` 在清完本章节域后清标记并重播（见该函数）。
  */
@@ -156,6 +162,9 @@ function clearChapterDomain(db: ReturnType<typeof getDb>, bookId: string): void 
   db.prepare('DELETE FROM volumes WHERE book_id = ?').run(bookId)
   // 示范剧情线一并清空：重灌时若不删会追加出重复的剧情线与场景。
   db.prepare('DELETE FROM plot_lines WHERE book_id = ?').run(bookId)
+  // 伏笔与灵感：未锚定伏笔 / 全部灵感不会被外键级联带走，必须按书显式清空。
+  db.prepare('DELETE FROM foreshadows WHERE book_id = ?').run(bookId)
+  db.prepare('DELETE FROM inspirations WHERE book_id = ?').run(bookId)
 }
 
 /** 灌入教学书：书籍行（幂等：按 id 存在即跳过）+ 卷章 + 大纲 + 剧情。 */
@@ -199,14 +208,17 @@ function seedGuideBook(): void {
  * 调用点：`database/index.ts` 的 `getDb()`，在建表与 `seedBooksIfEmpty` 之后。
  *
  * 时序（同一事务，任一步失败整体回滚、守卫键不置位 → 下次启动自动重试）：
- * 1. `clearChapterDomain`：清教学书章节域 / 大纲域 / 剧情线；
+ * 1. `clearChapterDomain`：清教学书章节域 / 大纲域 / 剧情线 / 伏笔 / 灵感；
  * 2. `clearWorldEntitySeedMarker`：删 `worldEntities:seeded:guide`，让演示实体允许重播；
  * 3. `seedGuideBook`：书行（幂等）+ 卷章 + 大纲 + 剧情线；
  * 4. `seedDemoWorldEntities`：物理清空教学书统一设定库实体（子表 / 别名 / 标签 /
  *    自定义键值 / 关系随外键级联）后按新文案重播；
- * 5. `relinkGuidePlotSceneEntities`：实体 id 已变，按名称兜底回填剧情场景关联。
+ * 5. `relinkGuidePlotSceneEntities`：实体 id 已变，按名称兜底回填剧情场景关联；
+ * 6. `clearGuideThreadSeedMarker` + `seedGuideThreads`：删伏笔 / 灵感播种标记后重播
+ *    示范数据（锚点按「卷名 + 章名 + 关键字」解析，解析不到则留空并告警）；
+ * 7. 写入 `MIGRATION_KEY = '1'`。
  *
- * 第 4、5 步只作用于 `GUIDE_BOOK.id`，用户自建书籍的设定数据不受影响。
+ * 第 4–6 步只作用于 `GUIDE_BOOK.id`，用户自建书籍的设定 / 伏笔 / 灵感数据不受影响。
  */
 export function resetChapterDataOnce(): void {
   if (getSetting(MIGRATION_KEY) === '1') return
@@ -215,7 +227,7 @@ export function resetChapterDataOnce(): void {
 
   try {
     db.transaction(() => {
-      // 擦除教学书的章节域 / 大纲域 / 示范剧情线（教学书为唯一内容真源，清后重灌）。
+      // 擦除教学书的章节域 / 大纲域 / 示范剧情线 / 伏笔 / 灵感（教学书为唯一内容真源，清后重灌）。
       clearChapterDomain(db, GUIDE_BOOK.id)
       // 演示实体随教学书一并重灌：删按书播种标记，使 `seedDemoWorldEntities` 不再跳过。
       clearWorldEntitySeedMarker(GUIDE_BOOK.id)
@@ -225,6 +237,9 @@ export function resetChapterDataOnce(): void {
       seedDemoWorldEntities(GUIDE_BOOK.id)
       // 实体 id 已随重建变化：按名称兜底回填一次（`setPlotSceneEntities` 先删后插，幂等）。
       relinkGuidePlotSceneEntities(GUIDE_BOOK.id)
+      // 伏笔 / 灵感：删按书标记后由 `seedGuideThreads` 先物理清空再重播（幂等）。
+      clearGuideThreadSeedMarker(GUIDE_BOOK.id)
+      seedGuideThreads(GUIDE_BOOK.id)
       setSetting(MIGRATION_KEY, '1')
     })()
   } catch (error) {
