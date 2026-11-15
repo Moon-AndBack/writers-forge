@@ -38,10 +38,13 @@
 }
 
 /* ---------- 底部单行状态栏 ----------
-   从左到右：字数（Tag）· 状态信息（错误 / 超预算 / 整理中 / 模型提示，四者互斥，
-   共用状态槽）· 上下文百分比（Badge）· 模型列表刷新按钮（IconButton）。
-   状态信息占满剩余宽度，过长单行省略，完整内容走自绘 Tooltip；百分比 ≥80% 除换色
-   外另加 ⚠ 前缀（不只靠颜色，a11y）。只用颜色 / 描边，无 transform（AGENTS §8）。 */
+   从左到右：字数（Tag）· 状态信息（Tag，错误 / 超预算 / 整理中 / 模型提示，
+   四者互斥）· 上下文百分比（Badge）· 模型列表刷新按钮（22 高胶囊）。
+   三颗胶囊同规格：22 高 / --r-lg / 0 10px 内衬；状态胶囊的底色随语义走 Tag
+   色调类（danger / brand / neutral），此处不写任何颜色。状态信息过长时按
+   可用宽度单行省略（省略由 .wf-tag__label 提供），完整内容走自绘 Tooltip；
+   百分比 ≥80% 除换色外另加 ⚠ 前缀（不只靠颜色，a11y）。
+   只用颜色 / 描边 / 底色，无 transform（AGENTS §8）。 */
 .ai-composer-status {
   flex: none;
   display: flex;
@@ -56,26 +59,23 @@
   flex: none;
 }
 
-/* 状态槽：错误 / 超预算 / 整理中 / 模型提示互斥共用；占满剩余宽度并单行省略。 */
+/* 状态槽：错误 / 超预算 / 整理中 / 模型提示互斥共用。
+   本层只承担 Tooltip 锚点 + role / tabIndex / 焦点环（Tag 未 forwardRef，锚点
+   留在这一层）；视觉全部由内部 Tag 提供。随内容收缩，不撑满整行。 */
 .ai-composer-status__message {
-  flex: 1 1 0;
+  display: inline-flex;
+  flex: 0 1 auto;
   min-width: 0;
-  overflow: hidden;
-  font-size: var(--fs-micro);
-  line-height: 1.5;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
-.ai-composer-status__message[data-tone='danger'] {
-  color: var(--danger);
+/* Tag 作为 flex item 默认 min-width: auto（nowrap 的全文宽度）→ 归零才能收缩，
+   否则 .wf-tag__label 的 text-overflow: ellipsis 永远不触发。 */
+.ai-composer-status__message-tag {
+  min-width: 0;
 }
 
-.ai-composer-status__message[data-tone='mute'] {
-  color: var(--text-mute);
-}
-
-/* 可聚焦（供键盘查看 Tooltip）：焦点环与 IconButton 同口径。 */
+/* 可聚焦（供键盘查看 Tooltip）：焦点环贴胶囊外缘，与 IconButton 同口径。 */
 .ai-composer-status__message:focus-visible {
   border-radius: var(--r-lg);
   outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
@@ -87,7 +87,7 @@
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
   margin-left: auto;
 }
 
@@ -96,6 +96,29 @@
   flex: none;
   display: inline-flex;
   font-variant-numeric: tabular-nums;
+}
+
+/* 刷新：22 高胶囊，与左右两颗 Tag 同规格（22 / --r-lg / 0 10px）；
+   例外：可点击控件下沉到 22（--row-act），与 .row-act / 编辑头元信息胶囊同源，
+   登记见 docs/ui/design-language.md §9 #38，作用域仅 .ai-composer-status。
+   双类（0,2,0）稳定压过 .wf-iconbtn / .wf-iconbtn--sm 的 32px，不依赖层叠顺序。
+   底色沿用 IconButton solid（--soft-solid / hover --soft-hover-solid），与 neutral
+   Tag 同材质；材质态随 .rightpane 的软底同域重派生，无需另处理。
+   热区：视觉 22 高，伪元素上下各外扩 1px 补到 24（WCAG 2.5.8 基准）；行内 gap 6
+   足够，不侵入相邻胶囊。 */
+.wf-iconbtn.ai-composer-status__refresh {
+  position: relative;
+  width: auto;
+  min-width: var(--row-act);
+  height: var(--row-act);
+  padding: 0 10px;
+  border-radius: var(--r-lg);
+}
+
+.wf-iconbtn.ai-composer-status__refresh::after {
+  content: '';
+  position: absolute;
+  inset: -1px 0;
 }
 
 /* ---------- 会话栏（面板头部） ----------

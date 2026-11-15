@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Badge, IconButton, Tag, useTooltip } from '../../../../components/ui'
+import { Badge, IconButton, Tag, useTooltip, type TagTone } from '../../../../components/ui'
 import type { AiError } from '../../../../../../preload/types/ai'
 import type { AiContextNotice } from './chatRuntime'
 import { AI_ERROR_TEXT_KEYS } from './aiErrorText'
@@ -21,10 +21,11 @@ function resolveTone(ratio: number): UsageTone {
  * 单行状态槽的文案与语义。
  *
  * 错误 / 超预算 / 整理中 / 模型提示四者**互斥**共用这一格，优先级见组件内注释。
+ * 色调直接取 Tag 的语义档（危险 / 品牌 / 中性），底色由 `.wf-tag--*` 承担。
  */
 interface StatusMessage {
   text: string
-  tone: 'danger' | 'mute'
+  tone: Extract<TagTone, 'danger' | 'brand' | 'neutral'>
   role: 'alert' | 'status'
   /** 悬停 / 聚焦时的完整说明（null = 文案本身已完整，不必再浮层）。 */
   tooltip: string | null
@@ -70,15 +71,17 @@ export interface AiComposerStatusProps {
 /**
  * AI 输入区下方的**单行**状态栏（原多行块已压缩为一行）。
  *
- * 从左到右：字数（Tag）· 状态信息（错误 / 超预算 / 整理中 / 模型提示，互斥）·
- * 上下文百分比（Badge）· 模型列表刷新按钮（IconButton）。
+ * 从左到右：字数（Tag）· 状态信息（Tag，错误 / 超预算 / 整理中 / 模型提示，互斥）·
+ * 上下文百分比（Badge）· 模型列表刷新按钮（22 高胶囊）。
  *
  * 设计口径：
+ * - 三颗胶囊同规格（22 高 / `--r-lg` / `0 10px` 内衬）；状态胶囊底色随语义变化
+ *   （危险 / 品牌 / 中性），直接取 Tag 色调类，不另写颜色；
  * - 状态信息过长时单行省略，完整内容走自绘 Tooltip（`useTooltip`）；键盘可聚焦查看；
  * - 百分比只显示数字，悬停给出「已用 / 上限 + 来源 / 校准」完整说明；
  * - ≥80% 除换色外另加 `⚠` 前缀，不单靠颜色传递信息（a11y）；
- * - 刷新按钮常驻（ghost 小图标），不再只在错误时出现；
- * - 视觉只用颜色 / 描边，无 transform（AGENTS §8）。
+ * - 刷新按钮常驻（22 高胶囊，热区外扩到 24），不再只在错误时出现；
+ * - 视觉只用颜色 / 描边 / 底色，无 transform（AGENTS §8）。
  *
  * 从 `AiPanel` 抽出（单文件 500 行硬约束，AGENTS §3）；props 口径保持不变。
  */
@@ -119,12 +122,12 @@ export function AiComposerStatus({
   } else if (compressing) {
     message = {
       text: t('panel.context.compressing'),
-      tone: 'mute',
+      tone: 'brand',
       role: 'status',
       tooltip: null
     }
   } else if (modelHint !== null) {
-    message = { text: modelHint, tone: 'mute', role: 'status', tooltip: null }
+    message = { text: modelHint, tone: 'neutral', role: 'status', tooltip: null }
   }
 
   /* ---------- 上下文百分比 ---------- */
@@ -181,15 +184,18 @@ export function AiComposerStatus({
       {message !== null ? (
         <>
           {messageTooltip}
+          {/* 锚点留在这一层：Tag 未 forwardRef，role / tabIndex / 焦点环也一并保留原样；
+              视觉（22 高胶囊 + 语义底色）全部由内部 Tag 提供。 */}
           <span
             ref={messageAnchor}
             {...messageAnchorProps}
             className="ai-composer-status__message"
-            data-tone={message.tone}
             role={message.role}
             tabIndex={message.tooltip !== null ? 0 : undefined}
           >
-            {message.text}
+            <Tag tone={message.tone} className="ai-composer-status__message-tag">
+              {message.text}
+            </Tag>
           </span>
         </>
       ) : null}
@@ -208,7 +214,8 @@ export function AiComposerStatus({
         ) : null}
         <IconButton
           size="sm"
-          variant="ghost"
+          variant="solid"
+          className="ai-composer-status__refresh"
           label={t('panel.model.refreshAria')}
           tooltipPlacement="top"
           disabled={errorLoading}
