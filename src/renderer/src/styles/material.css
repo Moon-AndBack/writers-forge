@@ -301,6 +301,39 @@
 }
 
 /* ============================================================
+   右栏中性胶囊 —— 材质态薄雾底
+   ------------------------------------------------------------------
+   `.chip-pill` 的兜底底是「`--chip-base` 按 `--chip-mix` 混 `--pane`」，
+   而 `--pane` 在材质态**从不被重派生**（四主题都是不透明实色）——直接消费
+   它的胶囊会在半透明面板上留下实色贴片。中性胶囊（灵感标签输入 chip 与各卡
+   的「+N」溢出胶囊）只挂 `.chip-pill--neutral`、不挂 `.chip-m-*` / `.chip-p-*`，
+   没有 `--chip-bg` 实色注入，故按同比例改混 `transparent`，与 `.book-tag`
+   （material-bookshelf.css）同一口径；`--chip-mix` 原样保留，域内收窄
+   （如 `.dossier-card__chip--more` 的 8%）不会被抹平。
+   例外：模块色 / 预设色胶囊（#10）的 `--chip-bg` 是数据注入实色，不在此列。
+   ============================================================ */
+
+/* 例外 #39：材质态右栏中性胶囊改混 transparent（详见 design-language.md §9）。 */
+:root:is([data-material='acrylic'], [data-material='mica']) .rightpane .chip-pill--neutral {
+  background: color-mix(in srgb, var(--text) var(--chip-mix), transparent);
+}
+
+/* 例外 #39：透明 chip 内的关闭点同域改半透明，避免留一颗实色圆点；
+   hover 仍是 danger 实色（form-extras.css），不在覆写范围。 */
+:root:is([data-material='acrylic'], [data-material='mica'])
+  .rightpane
+  .wf-chipinput__chip-close:not(:hover) {
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+}
+
+/* 例外 #39：建议标签 hover 原为品牌 10% 混 `--pane`，同域改混 transparent。 */
+:root:is([data-material='acrylic'], [data-material='mica'])
+  .rightpane
+  .wf-chipinput__suggestion:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+
+/* ============================================================
    chrome 控件（标题栏 / 状态栏）—— 材质态薄雾底
    ------------------------------------------------------------------
    标题栏与状态栏不在三栏面板作用域内（不重派生 --soft-*），改前用的是
