@@ -1,12 +1,13 @@
 /**
- * 伏笔描述字段（右栏表单 / 新建弹窗**共用**，§9）：全量富文本薄壳 + 域内装配。
+ * 伏笔描述字段（**右栏专用**，§9）：全量富文本薄壳 + 域内装配。
+ * 新建弹窗改用 `EntityShortRichTextField`（多行短文本 + 实体高亮），不再走本组件。
  *
- * 为什么不再走 `ShortRichTextField`：那层壳用 `SHORT_TEXT_EXTENSIONS`（短文本口径，
+ * 为什么右栏不走 `ShortRichTextField`：那层壳用 `SHORT_TEXT_EXTENSIONS`（短文本口径，
  * 连加粗都没有，更没有标题 / 列表 / 表格），与已富文本化的章节 / 剧情 / 设定库正文
- * 不同源。**弹窗与右栏必须同一套扩展**——否则在弹窗里打开已有内容再保存，schema
- * 之外的节点（标题 / 列表 / 表格）会被抹平。故与 `InspirationBodyField` /
- * `DossierBodyEditor` 同一手法：直接装配 `RICH_TEXT_EXTENSIONS` + `useRichTextBodyEditor`，
- * 状态与副作用留在通用 hook，本组件只做「域内装配 + 界面」。
+ * 不同源；右栏会打开任意已有描述（含标题 / 列表 / 表格），用短底座保存会把这些节点
+ * 抹平。故与 `InspirationBodyField` / `DossierBodyEditor` 同一手法：直接装配
+ * `RICH_TEXT_EXTENSIONS` + `useRichTextBodyEditor`，状态与副作用留在通用 hook，
+ * 本组件只做「域内装配 + 界面」。
  *
  * 装配内容：
  * - 扩展：**全量** `RICH_TEXT_EXTENSIONS`（标题 / 列表 / 引用 / 代码块 / 分隔线 / 链接 /
@@ -19,8 +20,9 @@
  * - 实体悬停卡：容器事件委托（`useEntityHover`）+ `HoverCard`，`Modal` 内不启用
  *   （弹窗层 `z-index` 高于悬停卡，卡片会被遮罩挡住）。
  *
- * ⚠️ 弹窗内的同款字段**不注册**共享槽位：弹窗与右栏实例同时存活时，后挂载者会覆盖
- * 注册；弹窗关闭时再注册 `null`，右栏实例就此失联（工具栏拿不到 editor、命令全置灰）。
+ * ⚠️ 若将来给新建弹窗加「编辑已有」模式，**必须换回本组件**：短底座
+ * （`SHORT_TEXT_EXTENSIONS`）不含 heading / list / table 等块级节点，用它打开已有
+ * 富文本再保存会把这些节点抹平，只剩短字段能表达的段落与行内标记。
  */
 import { useMemo } from 'react'
 import type { CSSProperties } from 'react'
@@ -46,7 +48,7 @@ export interface ForeshadowDescriptionFieldProps {
   placeholder: string
   /** 无障碍标签（富文本区不是原生 labelable 控件，故不走 `htmlFor`）。 */
   ariaLabel?: string
-  /** 撑满父容器剩余高度（右栏）；弹窗默认按短字段高度上限。 */
+  /** 撑满父容器剩余高度（右栏）。 */
   fill?: boolean
   /**
    * 是否启用实体悬停卡（默认 `false`）。
@@ -66,7 +68,7 @@ export default function ForeshadowDescriptionField({
   fill = false,
   hoverCard = false
 }: ForeshadowDescriptionFieldProps) {
-  // 编辑器共享：`fill`（右栏主编辑区）才登记实例 / 上报聚焦态，弹窗字段不参与（见文件头）。
+  // 编辑器共享：`fill`（右栏主编辑区）才登记实例 / 上报聚焦态。
   const { registerEditor, reportEditing } = useRichTextEditor('foreshadow')
 
   // ⚠️ `getBookId` 闭包必须捕获当前 `bookId`（不得提到模块级常量）；数组经

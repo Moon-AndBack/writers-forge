@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { ForeshadowAnchor } from '../../../../../main/database/foreshadows'
 import { Button, FormField, Input, Modal, Textarea } from '../../../components/ui'
-import ForeshadowDescriptionField from './ForeshadowDescriptionField'
+import EntityShortRichTextField from '../entities/EntityShortRichTextField'
 import '../../../styles/components/foreshadow-create-dialog.css'
 
 export interface ForeshadowCreateDialogProps {
@@ -36,8 +36,8 @@ export interface ForeshadowCreateDialogProps {
  * 位于伏笔域（`pages/writer/foreshadow`）：描述字段需要实体高亮 / 悬停（页面层实体域），
  * 放在 `components/dialogs` 会让共享层反向依赖页面层。
  *
- * - 字段顺序：名称（必填，用户输入）/ 关联（只读）/ 选中文字（只读）/ 描述（可选富文本，
- *   仅实体自动高亮）；
+ * - 字段顺序：名称（必填，用户输入）/ 关联（只读）/ 选中文字（只读）/ 描述（可选**多行短文本**，
+ *   仅实体高亮，不搭载块级富文本与正文排版；完整富文本在右栏编辑）；
  *   不写状态（落库默认 `planted`，展示状态由锚点派生，本批只做埋设入口）；
  * - 锚点可为 `chapter` / `outline` / `none`：未锚定（标题栏新建）时「关联」显示「未关联」、
  *   「选中文字」为空，创建后不落任何埋点槽位，可由正文 / 大纲右键「关联伏笔」补挂；
@@ -58,7 +58,7 @@ export default function ForeshadowCreateDialog({
 }: ForeshadowCreateDialogProps) {
   const { t } = useTranslation('foreshadow')
   const [title, setTitle] = useState(defaultTitle)
-  // 富文本描述真源（JSON；`null` = 空描述，主进程据此派生纯文本摘要列）。
+  // 描述真源（短富文本 JSON；`null` = 空描述，主进程据此派生纯文本摘要列）。
   const [descriptionJson, setDescriptionJson] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -78,7 +78,7 @@ export default function ForeshadowCreateDialog({
     try {
       const row = await window.api.foreshadow.create(bookId, {
         title: trimmedTitle,
-        // 富文本真源；主进程据 JSON 派生 `description` 纯文本摘要（两列同写）。
+        // 描述真源；主进程据 JSON 派生 `description` 纯文本摘要（两列同写）。
         descriptionJson,
         // 不传 `status`：数据层缺省即 `'planted'`（未废弃），状态一律由锚点派生。
         // 属性名即槽位：章节锚点 → 正文埋点（`anchor`），大纲锚点 → 大纲埋点（`anchor2`）；
@@ -167,11 +167,15 @@ export default function ForeshadowCreateDialog({
           />
         </FormField>
         <FormField label={t('field.description')}>
-          {/* 弹窗内不启用实体悬停卡：Modal 的 z-index（1000）高于悬停卡
-              `--z-hover-card`（970），卡片会被遮罩挡住；高亮仍照常生效。 */}
-          <ForeshadowDescriptionField
+          {/* 弹窗用短字段（12px，底座 `SHORT_TEXT_EXTENSIONS`）：与同尺寸的「新建时间线」
+              弹窗一致，不引入 `.doc-body` 长文排版。弹窗内不挂实体悬停卡：Modal 的
+              z-index（1000）高于悬停卡 `--z-hover-card`（970），卡片会被遮罩挡住；
+              高亮仍照常生效。初始为空文档，`matchOnCreate` 无需补整篇匹配。 */}
+          <EntityShortRichTextField
             bookId={bookId}
             initialJson={null}
+            hoverCard={false}
+            matchOnCreate={false}
             placeholder={t('field.descriptionPlaceholder')}
             ariaLabel={t('field.description')}
             onChange={(value) => setDescriptionJson(value.json)}

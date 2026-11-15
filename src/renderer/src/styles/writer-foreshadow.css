@@ -178,8 +178,8 @@
   min-height: 0;
 }
 
-/* 描述富文本容器：块内唯一伸缩字段，撑满控件容器剩余高度，内容超高时自身滚动；
-   新建弹窗（无 `--fill`）退化为短字段——高度上限内自滚，避免长文把 360px 弹窗撑爆。 */
+/* 描述富文本容器（右栏专用）：块内唯一伸缩字段，撑满控件容器剩余高度，内容超高时自身滚动。
+   新建弹窗不走本组件，改用 `EntityShortRichTextField`（短字段，排版见 short-rich-field.css）。 */
 .foreshadow-desc-field {
   display: flex;
   flex: 1 1 auto;
@@ -189,7 +189,7 @@
 }
 
 /* 版心与长文排版：显式声明字号 / 行高 / 字距 / 字族（同全局 `.doc-body` 口径），
-   保证右栏窄卡与弹窗内都跟随状态栏排版设置（`--doc-zoom`）等比缩放。 */
+   保证右栏窄卡跟随状态栏排版设置（`--doc-zoom`）等比缩放。 */
 .foreshadow-desc-field .doc-body {
   display: flex;
   flex: 1 0 auto;
@@ -210,7 +210,7 @@
 /* ---------- `on-soft` 软底卡适配（右栏编辑卡为 --soft-solid） ----------
    `.doc-body p` 默认左右各 -8px 出血 + 8px 横向内衬，卡内负 margin 会贴到内缘、
    hover 底又与卡片同族：故负 margin 与横向内衬归零（顶层段落仍保 2em 首行缩进），
-   段落 hover / focus 底改用卡内控件层令牌（弹窗字段自带底色，只作用于 `on-soft`）。 */
+   段落 hover / focus 底改用卡内控件层令牌（只作用于 `on-soft`）。 */
 .foreshadow-desc-field .doc-body .ProseMirror p {
   margin-left: 0;
   margin-right: 0;
@@ -233,30 +233,6 @@
 .foreshadow-desc-field .doc-body .ProseMirror th p,
 .foreshadow-desc-field .doc-body .ProseMirror td p {
   text-indent: 0;
-}
-
-/* 弹窗短字段变体（无 `--fill`）：补可辨边界与聚焦反馈，高度上限内自滚（同通用短文本字段：82–220px）。 */
-.foreshadow-desc-field:not(.foreshadow-desc-field--fill) {
-  min-height: 82px;
-  max-height: 220px;
-  padding: 10px 12px;
-  background: var(--soft-solid);
-  border: 1px solid transparent;
-  border-radius: var(--r-lg);
-  transition:
-    background var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease);
-}
-
-.foreshadow-desc-field:not(.foreshadow-desc-field--fill):hover {
-  background: var(--soft-hover-solid);
-}
-
-.foreshadow-desc-field:not(.foreshadow-desc-field--fill):focus-within {
-  background: var(--pane);
-  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
-  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
 }
 
 /* 空描述占位（同章节 / 剧情口径：`::before` 绝对定位，文案经 `--editor-placeholder`
