@@ -44,7 +44,6 @@ export function InspirationReadonlyDetail({
 
       {row.tags.length === 0 ? null : (
         <div className="inspiration-readonly__section">
-          <div className="inspiration-readonly__label">{t('field.tags')}</div>
           <div
             className="inspiration-readonly__tags wf-readonly-block"
             role="group"
@@ -60,7 +59,6 @@ export function InspirationReadonlyDetail({
       )}
 
       <div className="inspiration-readonly__section inspiration-readonly__section--content">
-        <div className="inspiration-readonly__label">{t('field.content')}</div>
         <ReadonlyRichText
           json={contentJson}
           emptyText={t('field.contentEmpty')}

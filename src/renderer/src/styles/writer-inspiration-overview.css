@@ -98,14 +98,6 @@
   flex: 1 1 auto;
 }
 
-/* 段落小标题：与伏笔只读详情 / 锚点块标题同口径（10px / 700 / 弱化色）。 */
-.inspiration-readonly__label {
-  font-size: var(--fs-micro);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--text-mute);
-}
-
 /* 正文容器现挂 `.doc-body` 渲染块级富文本：换行由块结构承担，此处的 `pre-wrap`
    （纯文本时代口径）已被 `writer-inspiration.css` 的 `.doc-body` 规则改回 `normal`；
    余下的 `overflow-wrap` 只保证长词 / 长链接不撑破右栏。 */
