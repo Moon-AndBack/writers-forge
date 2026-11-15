@@ -20,7 +20,17 @@ const entities = {
   firstAppearance: '首次登场',
   /** 实体尚未在章节正文中出现（弱化色）。 */
   firstAppearanceNone: '尚未登场',
-  notFound: '未找到该实体'
+  notFound: '未找到该实体',
+  /** 章节 / 大纲右栏「实体」页签（只读总览）。 */
+  overview: {
+    empty: '这本书还没有任何设定条目'
+  },
+  /** 右栏「实体」页签的只读详情（列表 → 详情两级视图的第二级）。 */
+  detail: {
+    back: '返回',
+    category: '类别',
+    bodyEmpty: '暂无正文'
+  }
 }
 
 export default entities

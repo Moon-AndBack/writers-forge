@@ -1,0 +1,193 @@
+/* ============================================================
+   章节 / 大纲模块右栏「实体」页签：全书五域实体只读总览 + 只读详情
+   ------------------------------------------------------------------
+   列表卡（`.rp-card--list`）内按**五个设定域**分组：组容器沿用回收站视图
+   既有的 `.trash-group` 块级语义，组标题取模块名（10px / 700 / 弱化色），
+   组间间距由本面板专属 `.entities-overview-group` 覆盖（不改共享 `.trash-group`）。
+   卡片复用中栏设定档案卡 `DossierCard` 的 `compact` 变体（AGENTS §9：
+   不复制平行卡片），只做右栏覆盖：常态不投影、不描边，hover / 键盘焦点使用
+   通用边缘光晕（纯阴影，无 transform，AGENTS §8.8）。
+   详情壳（根容器 / 滚动区 / 软底字段块 / 返回栏）由共享 `ReadonlyDetailShell`
+   提供，见 writer-right-panels.css；本文件只保留实体内容的域内排版。
+   ============================================================ */
+
+/* ---------- 分组 ---------- */
+/* 组间距：原 `.trash-group` 的 18px 底距按「组标题 + 列表」设计，这里收到 14px
+   ——略大于网格自身的 12px `gap`，使组内卡片与组间形成 12 / 14 的可辨认层级；
+   两个类连写把特异性提到 (0,2,0)，压过后加载的 `.trash-group` 同特异性规则；
+   末组归零，避免滚动到底部多出一段空白。 */
+.trash-group.entities-overview-group {
+  margin-bottom: 14px;
+}
+
+.trash-group.entities-overview-group:last-child {
+  margin-bottom: 0;
+}
+
+/* 组标题：模块名（世界观 / 角色 / 势力 / 境界体系 / 物品功法），与详情段落小标题同口径。 */
+.entities-overview-group__title {
+  margin: 0 0 8px;
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+}
+
+/* ---------- 网格 ---------- */
+/* 轨道上限放开为 `1fr`（最窄右栏下单列吃满容器），`auto-fill` 保留空轨道，
+   使各域单卡仍是标准列宽，而不是被拉成整行宽（同伏笔 / 灵感总览口径）。 */
+.wf-card-grid.entities-overview-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+}
+
+/* 总览卡底色改 `--pane`：列表卡已由 `pane-region` 提供 `--soft-solid` 软底，
+   卡若沿用中栏 `--soft-solid` 会与容器同色，故改 `--pane` 让卡成为软底之上的
+   内容层。常态不投影、不加描边，边界由明度差 + 网格间距承担。 */
+.entities-overview-grid > .dossier-card {
+  background: var(--pane);
+  box-shadow: none;
+}
+
+/* 卡片可点进只读详情：hover / 键盘焦点恢复通用 `.wf-card--halo` 的同一套边缘
+   光晕（品牌色描边环 + 外发光，纯阴影，无 transform）。0,3,0 显式回写，
+   避免被上方 0,2,0 的 `box-shadow: none` 压住。 */
+.entities-overview-grid > .dossier-card:hover {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+.entities-overview-grid > .dossier-card:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
+}
+
+/* 紧凑变体：右栏窄栏下收窄内衬 / 字号，正文摘要由 4 行降为 2 行——
+   总览是浏览态，4 行会把右栏卡抬得比中栏卡更高。壳的紧凑钩子是
+   `wf-entity-card--compact`；`.dossier-card` 前缀把特异性提到 (0,2,0)，
+   压过壳的 `.wf-entity-card` (0,1,0)。 */
+.dossier-card.wf-entity-card--compact {
+  gap: 6px;
+  padding: 11px 12px;
+  /* 右栏卡不需要中栏的 120px 最小高（`.wf-card--halo`），内容少时保持紧凑。 */
+  min-height: 0;
+}
+
+.dossier-card.wf-entity-card--compact .wf-entity-card__title {
+  font-size: var(--fs-body);
+}
+
+/* 摘要两行：`.dossier-card__desc` 的 4 行裁剪（0,1,0）由本规则（0,3,0）覆盖，
+   行高同步收到 1.55，裁切高度按两行重算。 */
+.dossier-card.wf-entity-card--compact .dossier-card__desc {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  max-height: calc(2 * 1.55em);
+  font-size: var(--fs-micro);
+  line-height: 1.55;
+}
+
+/* ---------- 只读详情（内容排版；壳见 writer-right-panels.css） ---------- */
+/* 标题行：名称 + 类型胶囊（胶囊配色由全局胶囊层按模块 / 预设子类提供）。 */
+.wf-entity-detail__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wf-entity-detail__title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-title);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.wf-entity-detail__type {
+  flex: none;
+  padding: 1px 8px;
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* 字段段：类别 / 别名 / 关系 / 正文共用的纵向小段。 */
+.wf-entity-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* 正文段吃掉剩余高度；内容超高时由壳的滚动区统一滚动。 */
+.wf-entity-detail__section--body {
+  flex: 1 1 auto;
+}
+
+/* 段落小标题：与灵感 / 伏笔只读详情同口径（10px / 700 / 弱化色）。 */
+.wf-entity-detail__label {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+}
+
+/* 胶囊行：平铺 + 换行（详情空间足够，不做卡片的单行收口）。 */
+.wf-entity-detail__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* 品阶 / 档位：两列（标签 | 值）紧凑网格，仅物品且非空时渲染。 */
+.wf-entity-detail__meta {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 12px;
+  align-items: baseline;
+}
+
+.wf-entity-detail__meta-label {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  color: var(--text-mute);
+}
+
+.wf-entity-detail__meta-value {
+  min-width: 0;
+  font-size: var(--fs-body);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* 富文本正文：宽度随字段块，长词 / 长链接不撑破右栏。 */
+.wf-entity-detail__body {
+  min-width: 0;
+}
+
+/* 读取失败回退列表行纯文本：保留换行与空白。 */
+.wf-entity-detail__platext {
+  font-size: var(--fs-body);
+  line-height: 1.7;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* 富文本读取中：弱化色，避免把「加载中」看成空正文。 */
+.wf-entity-detail__placeholder {
+  font-size: var(--fs-body);
+  line-height: 1.7;
+  color: var(--text-mute);
+}

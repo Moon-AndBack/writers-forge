@@ -2,7 +2,7 @@ import { seedBulletList, seedHeading, seedOutlineDoc, seedParagraph } from '../s
 import type { SeedOutlineGroup } from './outline'
 
 /**
- * 教学书大纲域 · 快速上手 + 章节与大纲（9 条）。
+ * 教学书大纲域 · 快速上手 + 章节与大纲（10 条）。
  *
  * 大纲条目是功能速查：只讲规则与边界，流程细节见同书章节正文。
  * 维护约定见 `./outline.ts` 与 AGENTS §7.5。
@@ -132,6 +132,21 @@ export const OUTLINE_QUICK_GROUPS: readonly SeedOutlineGroup[] = [
             '卷纲不是某一章的细纲，也不是卷内所有条目的合集；它独立于每个条目。',
             '卷纲与条目共用同一套富文本编辑器，保存方式与 20 万字上限也一致。',
             '给单章做规划，请在该卷下新建条目，不要把细纲塞进卷纲。'
+          ])
+        ])
+      },
+      {
+        title: '右栏页签：章节六项 / 大纲四项',
+        doc: seedOutlineDoc([
+          seedHeading('要点'),
+          seedParagraph(
+            '章节与大纲共用同一套右栏页签，只切换可见子集；页签顺序的唯一真源是 rightPaneTabSets。'
+          ),
+          seedBulletList([
+            '章节：大纲、剧情、伏笔、灵感、实体、AI，默认停在「大纲」。',
+            '大纲：剧情、伏笔、灵感、实体，没有「大纲」与「AI」，实体排在最后。',
+            '设置里关掉 AI 助手后，章节页签只剩五项（AI 整块卸载），其余模块不受影响。',
+            '剧情、伏笔、灵感、实体四页都只读：点卡片进右栏详情，改内容回对应模块。'
           ])
         ])
       }

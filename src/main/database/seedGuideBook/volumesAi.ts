@@ -26,7 +26,7 @@ export const VOLUME_AI: SeedVolume = {
           '标题栏右侧的齿轮按钮打开设置，切到「AI 助手」页。第一行是「启用 AI 助手」，默认开启：打开后章节右栏多出 AI 页签，写作时随手可用。'
         ),
         seedParagraph(
-          '关掉之后只影响章节右栏的 AI 页签——页签消失，右栏剩四个；配置、密钥与全部会话都原样保留，重新打开即恢复。'
+          '关掉之后只影响章节右栏的 AI 页签——页签消失，右栏剩五个；配置、密钥与全部会话都原样保留，重新打开即恢复。'
         ),
         seedRichParagraph([{ text: '服务商与 Base URL', bold: true }]),
         seedBulletList([
@@ -355,7 +355,7 @@ export const VOLUME_AI: SeedVolume = {
         ),
         seedRichParagraph([{ text: '关闭 AI 助手之后', bold: true }]),
         seedBulletList([
-          '章节右栏的 AI 页签消失，剩四个页签',
+          '章节右栏的 AI 页签消失，剩五个页签',
           '配置、密钥、全部会话与消息都保留，重新打开即恢复',
           '关闭时若正在生成，请求会中止，已生成的部分仍会保存'
         ]),

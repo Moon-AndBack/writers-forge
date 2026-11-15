@@ -20,7 +20,8 @@ const writer = {
     plot: '剧情',
     ai: 'AI',
     foreshadow: '伏笔',
-    inspiration: '灵感'
+    inspiration: '灵感',
+    entities: '实体'
   },
   rightOutline: {
     outlineLabel: '大纲',

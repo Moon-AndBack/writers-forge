@@ -11,6 +11,7 @@ const TAB_LABEL_KEYS = {
   plot: 'rightTabs.plot',
   foreshadow: 'rightTabs.foreshadow',
   inspiration: 'rightTabs.inspiration',
+  entities: 'rightTabs.entities',
   ai: 'rightTabs.ai'
 } as const satisfies Record<RightPaneTab, string>
 
@@ -19,20 +20,22 @@ export interface RightPaneTabsProps {
   value: RightPaneTab
   /** 页签切换回调。 */
   onChange: (value: RightPaneTab) => void
-  /** 要渲染的页签子集与顺序；缺省 = 章节模块全量五项（向后兼容）。 */
+  /** 要渲染的页签子集与顺序；缺省 = 章节模块全量六项（向后兼容）。 */
   tabs?: readonly RightPaneTab[]
 }
 
 /**
- * 右栏页签条（章节模块五项 / 大纲模块三项）：复用通用 `Segmented`（§9 不另造分段控件）。
+ * 右栏页签条（章节模块六项 / 大纲模块四项）：复用通用 `Segmented`（§9 不另造分段控件）。
  *
  * 渲染项由 `tabs` 决定（缺省 `CHAPTER_RIGHT_PANE_TABS`），文案仍走 `rightTabs.*`：
- * - 章节模块：大纲 / 剧情 / 伏笔 / 灵感 / AI，挂载 `OutlineRightPanel` / `PlotFilterPanel` /
- *   `ForeshadowOverviewPanel` / `InspirationOverviewPanel` / `AiPanel`；
- * - 大纲模块：剧情 / 伏笔 / 灵感（不含大纲与 AI），与章节页共用同一套面板实例。
+ * - 章节模块：大纲 / 剧情 / 伏笔 / 灵感 / 实体 / AI，挂载 `OutlineRightPanel` /
+ *   `PlotFilterPanel` / `ForeshadowOverviewPanel` / `InspirationOverviewPanel` /
+ *   `EntitiesOverviewPanel` / `AiPanel`；
+ * - 大纲模块：剧情 / 伏笔 / 灵感 / 实体（不含大纲与 AI），与章节页共用同一套面板实例。
  *
  * 「剧情」页签挂载双下拉筛选 + 只读时间轴卡片；「伏笔」页签挂载全书伏笔只读总览（按派生状态
- * 分组，不选中 / 不跳转）；「灵感」页签挂载全书灵感只读平铺总览（点卡片在右栏内展开只读详情）。
+ * 分组，不选中 / 不跳转）；「灵感」页签挂载全书灵感只读平铺总览（点卡片在右栏内展开只读详情）；
+ * 「实体」页签挂载全书五域实体只读总览（按设定域分组，点卡片展开富文本只读详情）。
  * 外观与书架工具条的分段控件同款——外层只留栏级间距，不叠卡片底 / 描边，尺寸档同为默认 `md`。
  */
 export function RightPaneTabs({

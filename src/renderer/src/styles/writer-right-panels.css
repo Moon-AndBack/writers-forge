@@ -24,6 +24,15 @@
   width: 100%;
 }
 
+/* 章节六页签 / 大纲四页签：英文长文案（Foreshadowing / Inspiration）在右栏最小宽
+   （`RIGHT_MIN` = 450px，内容宽约 434px）下会撑出轨道。页签项横向内衬由组件的 14
+   收到 8，仍由 `flex: 1` 均分，剩余宽度充裕时观感不变；高度档 32 与共享
+   `Segmented` 其它实例均不受影响（仅右栏页签条实例，AGENTS §9）。 */
+.rp-tabs__seg .wf-seg__item {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
 /* ---------- 页签面板 ---------- */
 .rp-tabpanel {
   flex: 1;
@@ -277,4 +286,55 @@
 
 .rp-plot-hover__empty {
   color: var(--text-mute);
+}
+
+/* ============================================================
+   右栏只读总览 · 详情壳（灵感 / 实体两个页签共用）
+   ------------------------------------------------------------------
+   结构由共享 `ReadonlyDetailShell` 输出：纵向 flex（滚动区 + 底部返回栏），
+   字段统一落在 `__fields` 软底块内（`.on-soft` 供内部控件换
+   `--control-on-soft` 底）。规则自 `writer-inspiration-overview.css` 上提，
+   行为不变；实体详情沿用同一壳。切换条目时随选中行重建 → 进场动画即重播
+   （纯上浮，非 hover 态）。
+   ============================================================ */
+.wf-readonly-detail {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 8px;
+  animation: wf-enter-up var(--dur-slow) var(--ease) backwards;
+}
+
+.wf-readonly-detail__scroll {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 2px 8px;
+  overflow-y: auto;
+}
+
+/* 单一软底块承载全部字段（与各域编辑态的字段块同观感）。 */
+.wf-readonly-detail__fields {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: var(--soft-solid);
+  border-radius: var(--r-lg);
+}
+
+/* 底部返回栏：与伏笔只读详情 / 各保存条同一套容器（--soft-solid 软底 +
+   --r-lg 圆角 + 10 / 12 内衬）；按钮挂共享类 `.wf-btn--on-soft`。 */
+.wf-readonly-detail__bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--soft-solid);
+  border-radius: var(--r-lg);
 }

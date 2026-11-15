@@ -251,6 +251,8 @@ IPC 共 **20 个** `worldEntity:*` 通道，按用途分四组：
 
 **势力组织架构视图**（2026-11）：势力模块标题栏左侧提供「卡片 / 架构」切换（其它四域不显示，编辑正文时仍保留）。架构视图用 `worldEntity:list(faction)` + `worldEntity:list(worldview)` 取组织节点，并用 `worldEntity:list(character)` 补成员名（`belongs_to` 两端都需要实体行才能认定成员），用 `worldEntity:listRefsByBook(bookId, ['superior', 'subordinate', 'peer', 'belongs_to'])` 取 refs-only 关系（不 JOIN 正文），交给纯函数 `buildOrgChart` 推导：同一逻辑边双向存储归一、方向冲突 / 环 / 多父收口并回报 `conflicts`，`belongs_to` 按两端类型认定成员（反向存储标 `reversed`），未进入任何树的势力归 `orphans`。画布层（`orgChart/OrgChart.tsx` + `useOrgChartTransform` / `useOrgChartLines`）负责拖拽平移、滚轮 / 按钮缩放（0.3–2）、适应画布与 SVG 折线（按 DOM 实测位置，折叠 / 尺寸变化自动重测）；节点卡复用通用程序卡壳 `EntityStyleCard`（单行标题 + 子类彩色胶囊 + 底部成员胶囊，折叠为标题行右侧 22×22 图标按钮，卡片根保留 `data-org-node-id` 供连线测量）；冲突以可折叠「数据问题」条展示，孤儿势力单列「未接入层级」。`orgChart.ts` 为纯函数，不依赖 React / IPC。
 
+**右栏实体总览**（2026-11）：章节与大纲模块右栏新增「实体」页签（页签顺序的唯一真源为 `pages/writer/right/rightPaneTabSets.ts`）。数据只发一次 `worldEntity:list(bookId)`（不传 `entityType`），前端 `groupBookEntities` 按 `DOSSIER_MODULES` → `MODULE_ENTITY_TYPE` 的顺序分桶、丢弃空组、组内保持后端顺序，组标题取 `module` ns 的模块名；卡片复用中栏 `DossierCard`（新增 `compact` 透传给 `EntityStyleCard`），不传编辑 / 关系 / 删除入口，只保留「点卡进详情」的按钮语义。详情只读（无 Input / 保存条 / 删除），选中时补一次 `worldEntity:get` 取 `bodyJson` 交 `EntityReadonlyRichText`（`hoverCard=false`，整个面板共用一个 `HoverCard`），并按 `useFirstAppearances` 显示首次登场。列表壳 / 详情壳 / 选中态上提为共享件（`ReadonlyOverviewList` / `ReadonlyDetailShell` / `useReadonlyOverviewSelection`），伏笔与灵感页签同步复用；灵感总览的三态顺序随之修正为 loading → error → empty → content。
+
 ## 10. 已知边界与技术债
 
 - **旧 `entities` 三表仍在**：`entities` / `entity_aliases` / `entity_relations`（`schema/entities.ts`）与 `world_*` 体系并存，属历史遗留。`entities:list|get|create|update|delete` 仍服务旧表，新功能不得再写入；仅 `entities:match` / `entities:revision` 已切到统一设定库。后续清理批次统一下线旧表与旧通道。

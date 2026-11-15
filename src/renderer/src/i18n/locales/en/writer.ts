@@ -14,7 +14,8 @@ const writer = {
     plot: 'Plot',
     ai: 'AI',
     foreshadow: 'Foreshadowing',
-    inspiration: 'Inspiration'
+    inspiration: 'Inspiration',
+    entities: 'Entities'
   },
   rightOutline: {
     outlineLabel: 'Outline',

@@ -220,6 +220,7 @@
   :is(
     .foreshadow-overview-grid > .foreshadow-item,
     .inspiration-overview-grid > .inspiration-card,
+    .entities-overview-grid > .dossier-card,
     .rp-plot-timeline .plot-scene-card.wf-entity-card,
     .ai-msg--assistant .ai-msg__bubble,
     .foreshadow-anchor-card__quote
@@ -251,6 +252,7 @@
   :is(
     .foreshadow-overview-grid > .foreshadow-item:hover,
     .inspiration-overview-grid > .inspiration-card:hover,
+    .entities-overview-grid > .dossier-card:hover,
     .rp-plot-timeline .plot-scene-card.wf-entity-card:hover
   ) {
   box-shadow:
@@ -265,6 +267,7 @@
   :is(
     .foreshadow-overview-grid > .foreshadow-item:focus-visible,
     .inspiration-overview-grid > .inspiration-card:focus-visible,
+    .entities-overview-grid > .dossier-card:focus-visible,
     .rp-plot-timeline .plot-scene-card.wf-entity-card:focus-visible
   ) {
   outline: none;

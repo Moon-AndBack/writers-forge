@@ -17,6 +17,7 @@ import type { OutlineItemRow } from './outline/outlineTree'
 import PlotEditor from './plot/PlotEditor'
 import type { PlotLineRow, PlotSceneRow, UpdatePlotScenePatch } from './plot/plotTree'
 import { AiPanel } from './right/AiPanel'
+import { EntitiesOverviewPanel } from './right/EntitiesOverviewPanel'
 import { ForeshadowOverviewPanel } from './right/ForeshadowOverviewPanel'
 import { InspirationOverviewPanel } from './right/InspirationOverviewPanel'
 import { OutlineRightPanel } from './right/OutlineRightPanel'
@@ -41,13 +42,13 @@ const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { curr
  *
  * - **章节模块 / 大纲模块**：两模块共用**同一套**右栏页签容器与面板实例（只切换页签子集，
  *   不重复挂载面板）。
- *   - 章节模块：五页签「大纲 / 剧情 / 伏笔 / 灵感 / AI」（页签条 + 大纲面板 + 剧情面板 +
- *     伏笔总览面板 + 灵感总览面板 + AI 面板）；页签状态 `chapterTab`，默认「大纲」。
- *     设置里关闭「启用 AI 助手」（键 `aiAssistantEnabled`）时页签集剔除「AI」，
- *     页签条变四项、面板卸载（在途请求随卸载中止）。
- *   - 大纲模块：三页签「剧情 / 伏笔 / 灵感」（与章节页同款，不含「大纲」与「AI」）；
+ *   - 章节模块：六页签「大纲 / 剧情 / 伏笔 / 灵感 / 实体 / AI」（页签条 + 大纲面板 +
+ *     剧情面板 + 伏笔总览面板 + 灵感总览面板 + 实体总览面板 + AI 面板）；页签状态
+ *     `chapterTab`，默认「大纲」。设置里关闭「启用 AI 助手」（键 `aiAssistantEnabled`）
+ *     时页签集剔除「AI」，页签条变五项、面板卸载（在途请求随卸载中止）。
+ *   - 大纲模块：四页签「剧情 / 伏笔 / 灵感 / 实体」（与章节页同款，不含「大纲」与「AI」）；
  *     页签状态 `outlineTab`，默认「剧情」。
- *   五个面板**始终挂载**，只用 `hidden` 切换显隐，列表滚动位置不因页签切换丢失；大纲模块下
+ *   六个面板**始终挂载**，只用 `hidden` 切换显隐，列表滚动位置不因页签切换丢失；大纲模块下
  *   「大纲」页签不在可见集内，`OutlineRightPanel` 常驻但恒隐藏。剧情页签走 `PlotFilterPanel`
  *   （时间线 + 剧情线双下拉筛选 + 只读时间轴卡片 + 悬停正文浮窗），两模块同款面板。
  *   AI 页签挂载 `AiPanel`（模型 / 功能下拉 + 快捷结果 / 对话两种模式，结果可回插正文），
@@ -57,6 +58,8 @@ const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { curr
  *   同样惰性加载，且切离这两个模块时不拉数据。
  *   灵感页签挂载 `InspirationOverviewPanel`（全书灵感平铺的只读卡片总览，点卡片在右栏内
  *   展开只读详情），同样惰性加载，且切离这两个模块时不拉数据。
+ *   实体页签挂载 `EntitiesOverviewPanel`（全书五域实体按设定域分组的只读卡片总览，点卡片在
+ *   右栏内展开富文本只读详情），同样惰性加载，且切离这两个模块时不拉数据。
  * - **剧情模块**：右栏为节点正文富文本编辑器（`PlotEditor`：正文 + 底部保存条；
  *   未保存切换由 `ConfirmDialog` 两态确认）。
  * - **伏笔模块**：右栏为详情表单（名称 / 描述 / 状态 + 只读锚点 + 底部保存条；
@@ -235,8 +238,8 @@ export function RightPane({
       aria-hidden={hidden || undefined}
     >
       {/* 章节 / 大纲模块：共用同一套页签容器与面板实例（只切页签子集，不重复挂载面板）。
-          章节五页签「大纲 | 剧情 | 伏笔 | 灵感 | AI」、大纲三页签「剧情 | 伏笔 | 灵感」；
-          五面板常驻，切页签不卸载。 */}
+          章节六页签「大纲 | 剧情 | 伏笔 | 灵感 | 实体 | AI」、大纲四页签
+          「剧情 | 伏笔 | 灵感 | 实体」；六面板常驻，切页签不卸载。 */}
       <div
         className={`rp-view${isChapterView || isOutlineView ? ' is-active' : ''}`}
         data-view={isOutlineView ? 'outline' : 'chapters'}
@@ -283,6 +286,16 @@ export function RightPane({
           <InspirationOverviewPanel
             bookId={bookId ?? ''}
             active={(isChapterView || isOutlineView) && activeTab === 'inspiration'}
+          />
+        </div>
+        {/* 实体页签：全书五域实体按设定域分组的只读卡片总览，点卡片在右栏内展开富文本只读详情
+            （两模块同款）。`active` 仅在「章节或大纲模块 + 实体页签可见」时为真（惰性加载，
+            切离即停拉）；面板常驻，切页签不丢滚动位置。数据由面板自行拉取（`useBookEntities`
+            一次拉全五域），不启用 `useDossierBundle`——后者按当前活动模块门控，在章节模块下为空。 */}
+        <div className="rp-tabpanel" hidden={activeTab !== 'entities'}>
+          <EntitiesOverviewPanel
+            bookId={bookId ?? ''}
+            active={(isChapterView || isOutlineView) && activeTab === 'entities'}
           />
         </div>
         {/* AI 页签：模型 / 功能下拉 + 快捷结果或对话列表，结果可回插正文。

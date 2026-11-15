@@ -41,6 +41,8 @@ export interface DossierCardProps {
    * 由父级观察 `.dossier-grid` 得出后统一传入，变化即触发关系行容量重测。
    */
   layoutKey: number
+  /** 紧凑变体（右栏窄栏总览）：透传 `EntityStyleCard` 的 `compact`，只落类名钩子。 */
+  compact?: boolean
   onSelect: (id: number) => void
   /** 编辑入口（缺省 = 不渲染编辑按钮）。 */
   onEdit?: (id: number) => void
@@ -71,6 +73,7 @@ export function DossierCard({
   bookId,
   active,
   layoutKey,
+  compact,
   onSelect,
   onEdit,
   onRelations,
@@ -142,6 +145,7 @@ export function DossierCard({
     <EntityStyleCard
       className="dossier-card"
       active={active}
+      compact={compact}
       cardProps={{
         role: 'button',
         tabIndex: 0,

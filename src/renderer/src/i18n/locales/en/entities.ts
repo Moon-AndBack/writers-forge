@@ -18,7 +18,15 @@ const entities = {
   relations: 'Relations',
   firstAppearance: 'First appearance',
   firstAppearanceNone: 'Not yet appeared',
-  notFound: 'Entity not found'
+  notFound: 'Entity not found',
+  overview: {
+    empty: 'No settings entries in this book yet'
+  },
+  detail: {
+    back: 'Back',
+    category: 'Category',
+    bodyEmpty: 'No body text yet'
+  }
 } satisfies ZhCNResources['entities']
 
 export default entities
