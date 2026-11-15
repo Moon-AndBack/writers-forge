@@ -50,48 +50,48 @@
 
 `:root`（`theme.css:9-139`）中取值与主题无关的令牌：
 
-| 变量                     | 值 / 含义                                  | 用途                                                                                     |
-| ------------------------ | ------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `--page-width`           | `620px`                                    | 正文栏最大宽度                                                                           |
-| `--doc-font`             | 系统默认字体栈                             | 文档正文，与 `typographyContext.ts` 的 `DEFAULT_DOC_FONT` 逐字一致                       |
-| `--doc-line`             | `2`                                        | 正文行高倍数                                                                             |
-| `--doc-zoom`             | `1`                                        | 正文缩放，`calc(18px * var(--doc-zoom))`                                                 |
-| `--doc-letter`           | `0.01em`                                   | 正文字距                                                                                 |
-| `--fs-micro`             | `10px`                                     | 微字（Badge / 徽标 / 关闭图标 / 元信息提示）                                             |
-| `--fs-body`              | `12px`                                     | 界面基准（输入 / 按钮 / 紧凑正文）                                                       |
-| `--fs-title`             | `14px`                                     | 卡片 / 详情 / 弹窗标题                                                                   |
-| `--fs-display`           | `20px`                                     | 展示档：欢迎标题 / 视口占位                                                              |
-| `--fs-display-lg`        | `26px`                                     | 展示档：文档标题                                                                         |
-| `--r-lg`                 | `8px`                                      | 界面统一圆角（面板 / 卡片 / 浮层 / 控件 / 列表行 / Tag / Badge）                         |
-| `--r-pill`               | `999px`                                    | 胶囊 / chip / 开关轨道 / 进度条 / 滚动条全圆                                             |
-| `--control-h-sm/md/lg`   | `32px`                                     | 控件高度单档；三值同名仅为兼容旧引用                                                     |
-| `--font`                 | Segoe UI Variable / 微软雅黑 / PingFang 栈 | 界面字体（挂在 `body`）                                                                  |
-| `--serif`                | 宋体 / Source Han Serif / Georgia 栈       | 衬线字体（书封、摘录）                                                                   |
-| `--mono`                 | Cascadia Mono / Consolas 栈                | 等宽字体（代码、字数）                                                                   |
-| `--ease`                 | `cubic-bezier(0.33, 0, 0.67, 1)`           | 对称缓动，交互与主题淡化共用                                                             |
-| `--ease-out`             | `cubic-bezier(0.22, 1, 0.36, 1)`           | 进场专用（快出慢入）                                                                     |
-| `--dur-fast`             | `120ms`                                    | 状态反馈（hover / 颜色 / 背景）                                                          |
-| `--dur-slow`             | `240ms`                                    | 位移 / 尺寸变化 / 展开收起 / 进场                                                        |
-| `--dur-theme-reveal`     | `400ms`                                    | 主题切换覆盖层三阶段（模糊 / 不透明遮罩 / tint 交叉），合计 1.0s                         |
-| `--dur-theme-badge-in`   | `300ms`                                    | 主题切换图标入场（仅覆盖层图标消费）                                                     |
-| `--dur-theme-badge-hold` | `700ms`                                    | 主题切换图标完全可见停留（仅覆盖层图标消费）                                             |
-| `--dur-theme-badge-out`  | `250ms`                                    | 主题切换图标淡出（仅覆盖层图标消费）                                                     |
-| `--z-hover-card`         | `970`                                      | 悬停卡浮层                                                                               |
-| `--z-popover`            | `971`                                      | 「+N」等浮窗                                                                             |
-| `--z-popover-nested`     | `972`                                      | 嵌套详情卡                                                                               |
-| `--z-theme-reveal`       | `1105`                                     | 主题切换全屏覆盖层（仅动画期间存在，结束即移除）                                         |
-| `--z-row-raised`         | `1`                                        | 行内拖拽抬升（非浮层）                                                                   |
-| `--desk-spot-1/2/3`      | `1000×640` / `880×620` / `700×500`（px）   | `.shell` 三层 radial 光斑的椭圆尺寸                                                      |
-| `--desk-solid-alpha`     | `25%`                                      | acrylic 的 `--desk-solid` 保留不透明度（mica 不使用）；与 75% 面板相乘 ≈ 18.75% 壁纸贡献 |
-| `--pane-surface-alpha`   | `75%`                                      | 材质态面板底不透明度（`--surface-pane`）；仅三栏 / 悬浮活动栏，浮层与 none 不用          |
-| `--chrome-fill`          | `var(--pill-bg-solid)`                     | 标题栏 / 状态栏控件底；材质态覆写为 `--text` 5% 薄雾                                     |
-| `--chrome-fill-hover`    | `var(--pill-bg-hover-solid)`               | chrome 控件 hover；材质态 `--text` 8%                                                    |
-| `--chrome-fill-strong`   | `var(--soft-press-solid)`                  | chrome 控件按下 / 强底；材质态 `--text` 11%                                              |
-| `--chrome-hover`         | `var(--soft-hover-solid)`                  | chrome 轻量 hover；材质态 `--text` 7%                                                    |
-| `--chrome-active`        | `brand 18%` 混 `--pane`                    | 段控滑块 / 激活底；材质态 `brand 20%` 混 `transparent`                                   |
-| `--chrome-active-soft`   | `brand 12%` 混 `--pane`                    | 状态栏激活浅底；材质态 `brand 14%` 混 `transparent`                                      |
-| `--chrome-ring`          | `none`                                     | chrome 描边环；材质态展开为 `1px --text 8%`，none 下不产生阴影层                         |
-| `--selection-bg`         | `brand 22%` + transparent                  | 全局 `::selection` 底色，随当前主题 `--brand` 变化                                       |
+| 变量                     | 值 / 含义                                  | 用途                                                                                    |
+| ------------------------ | ------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `--page-width`           | `620px`                                    | 正文栏最大宽度                                                                          |
+| `--doc-font`             | 系统默认字体栈                             | 文档正文，与 `typographyContext.ts` 的 `DEFAULT_DOC_FONT` 逐字一致                      |
+| `--doc-line`             | `2`                                        | 正文行高倍数                                                                            |
+| `--doc-zoom`             | `1`                                        | 正文缩放，`calc(18px * var(--doc-zoom))`                                                |
+| `--doc-letter`           | `0.01em`                                   | 正文字距                                                                                |
+| `--fs-micro`             | `10px`                                     | 微字（Badge / 徽标 / 关闭图标 / 元信息提示）                                            |
+| `--fs-body`              | `12px`                                     | 界面基准（输入 / 按钮 / 紧凑正文）                                                      |
+| `--fs-title`             | `14px`                                     | 卡片 / 详情 / 弹窗标题                                                                  |
+| `--fs-display`           | `20px`                                     | 展示档：欢迎标题 / 视口占位                                                             |
+| `--fs-display-lg`        | `26px`                                     | 展示档：文档标题                                                                        |
+| `--r-lg`                 | `8px`                                      | 界面统一圆角（面板 / 卡片 / 浮层 / 控件 / 列表行 / Tag / Badge）                        |
+| `--r-pill`               | `999px`                                    | 胶囊 / chip / 开关轨道 / 进度条 / 滚动条全圆                                            |
+| `--control-h-sm/md/lg`   | `32px`                                     | 控件高度单档；三值同名仅为兼容旧引用                                                    |
+| `--font`                 | Segoe UI Variable / 微软雅黑 / PingFang 栈 | 界面字体（挂在 `body`）                                                                 |
+| `--serif`                | 宋体 / Source Han Serif / Georgia 栈       | 衬线字体（书封、摘录）                                                                  |
+| `--mono`                 | Cascadia Mono / Consolas 栈                | 等宽字体（代码、字数）                                                                  |
+| `--ease`                 | `cubic-bezier(0.33, 0, 0.67, 1)`           | 对称缓动，交互与主题淡化共用                                                            |
+| `--ease-out`             | `cubic-bezier(0.22, 1, 0.36, 1)`           | 进场专用（快出慢入）                                                                    |
+| `--dur-fast`             | `120ms`                                    | 状态反馈（hover / 颜色 / 背景）                                                         |
+| `--dur-slow`             | `240ms`                                    | 位移 / 尺寸变化 / 展开收起 / 进场                                                       |
+| `--dur-theme-reveal`     | `400ms`                                    | 主题切换覆盖层三阶段（模糊 / 不透明遮罩 / tint 交叉），合计 1.0s                        |
+| `--dur-theme-badge-in`   | `300ms`                                    | 主题切换图标入场（仅覆盖层图标消费）                                                    |
+| `--dur-theme-badge-hold` | `700ms`                                    | 主题切换图标完全可见停留（仅覆盖层图标消费）                                            |
+| `--dur-theme-badge-out`  | `250ms`                                    | 主题切换图标淡出（仅覆盖层图标消费）                                                    |
+| `--z-hover-card`         | `970`                                      | 悬停卡浮层                                                                              |
+| `--z-popover`            | `971`                                      | 「+N」等浮窗                                                                            |
+| `--z-popover-nested`     | `972`                                      | 嵌套详情卡                                                                              |
+| `--z-theme-reveal`       | `1105`                                     | 主题切换全屏覆盖层（仅动画期间存在，结束即移除）                                        |
+| `--z-row-raised`         | `1`                                        | 行内拖拽抬升（非浮层）                                                                  |
+| `--desk-spot-1/2/3`      | `1000×640` / `880×620` / `700×500`（px）   | `.shell` 三层 radial 光斑的椭圆尺寸                                                     |
+| `--desk-solid-alpha`     | `25%`                                      | acrylic 的 `--desk-solid` 保留不透明度（mica 不使用）；与 58% 面板相乘 ≈ 31.5% 壁纸贡献 |
+| `--pane-surface-alpha`   | `58%`                                      | 材质态面板底不透明度（`--surface-pane`）；仅三栏 / 悬浮活动栏，浮层与 none 不用         |
+| `--chrome-fill`          | `var(--pill-bg-solid)`                     | 标题栏 / 状态栏控件底；材质态覆写为 `--text` 5% 薄雾                                    |
+| `--chrome-fill-hover`    | `var(--pill-bg-hover-solid)`               | chrome 控件 hover；材质态 `--text` 8%                                                   |
+| `--chrome-fill-strong`   | `var(--soft-press-solid)`                  | chrome 控件按下 / 强底；材质态 `--text` 11%                                             |
+| `--chrome-hover`         | `var(--soft-hover-solid)`                  | chrome 轻量 hover；材质态 `--text` 7%                                                   |
+| `--chrome-active`        | `brand 18%` 混 `--pane`                    | 段控滑块 / 激活底；材质态 `brand 20%` 混 `transparent`                                  |
+| `--chrome-active-soft`   | `brand 12%` 混 `--pane`                    | 状态栏激活浅底；材质态 `brand 14%` 混 `transparent`                                     |
+| `--chrome-ring`          | `none`                                     | chrome 描边环；材质态展开为 `1px --text 8%`，none 下不产生阴影层                        |
+| `--selection-bg`         | `brand 22%` + transparent                  | 全局 `::selection` 底色，随当前主题 `--brand` 变化                                      |
 
 > CSS 会把 `border-radius` 钳制到 `min(宽, 高) / 2`：≤16px 元素设 8px 后渲染为正圆（16px 复选框 / 分组箭头），18×20 回收站箭头约 89% 半径（近圆），22px Tag / Badge 约 73% 半径。这是两档统一的必然结果，不是刻意设计（详见 [`design-language.md`](./design-language.md) §1.2 / §9 #20）。
 
@@ -202,20 +202,21 @@
 | `--soft-hover-solid`                        | 上述元素 hover               | 标题栏按钮、书卡、状态栏                                                                        |
 | `--soft-press-solid`                        | 按下态                       | 标题栏按钮                                                                                      |
 | `--pill-bg-solid` / `--pill-bg-hover-solid` | 胶囊底 / hover               | `statusbar-widgets.css`                                                                         |
-| `--surface-pane`                            | 材质态面板底（`--pane` 75%） | `material.css:75`；`.sidepane` / `.rightpane` / light·dark `.editor-pane` / 悬浮 `.activitybar` |
-| `--surface-panel-shadow`                    | 材质态面板阴影（仅描边环）   | `material.css:78`；同上                                                                         |
+| `--surface-pane`                            | 材质态面板底（`--pane` 58%） | `material.css:75`；`.sidepane` / `.rightpane` / light·dark `.editor-pane` / 悬浮 `.activitybar` |
+| `--surface-pane-card`                       | 材质态栏内卡片底（82%）      | `material.css:79`；右栏原先不透明的卡片 / 只读内容块（复合后约 92.4%）                          |
+| `--surface-panel-shadow`                    | 材质态面板阴影（仅描边环）   | `material.css:82`；同上                                                                         |
 
 材质（亚克力 / 云母）链路：
 
 1. `WindowMaterialProvider` 在 `<html>` 写 `data-material='acrylic' | 'mica' | 'none'`（实际生效材质；**不写 `tabbed`**）。
 2. 开启时 `.shell` 依材质分别处理：acrylic 通过 `--desk-solid-alpha` 保留 **25%** 不透明度的纯色 scrim（壁纸经实时模糊 + 25% scrim，贡献约 75%）；mica 的 `.shell` 为 `transparent`，不叠 scrim，标题栏与状态栏同样透明，直接透出云母；同时 `body` 背景置透明（`material.css:42-44`），否则 `body` 的不透明背景会挡住 DWM 材质。亚克力实时模糊、更透，云母采样壁纸着色、偏实色；客户区材质的实际可见性以实机为准（`backgroundColor` 的 alpha 需 `transparent: true` 才保证生效，本项目未开启）。
-3. 材质态面板底不再固定不透明 `--pane`：左右栏 / 悬浮活动栏与 light / dark 中栏用 `--surface-pane`（`--pane` 按 `--pane-surface-alpha` **75%** 混 `transparent`），sage / honey 中栏 `.editor-pane` 保留不透明 `--doc-surface` 纸面。面板内的 L2 / L3 软底（`--soft-solid` / `--soft-hover-solid` / `--soft-press-solid` / `--control-on-soft*`）必须在**同一作用域**改由 `--text` 混 `transparent` 重派生（比例逐项对齐原主题：light 6/6/9/13/18、dark 5/8/11/14/19），否则 75% 透明面板会在卡片内部重新铺实。面板阴影同时降为 `--panel-ring`，避免半透明面板下叠出黑影。浮层（Modal / Select / Tooltip / 状态栏弹层）与固定态活动栏不参与，仍用不透明填充（后者见例外 #11）。
+3. 材质态面板底不再固定不透明 `--pane`：左右栏 / 悬浮活动栏与 light / dark 中栏用 `--surface-pane`（`--pane` 按 `--pane-surface-alpha` **58%** 混 `transparent`），sage / honey 中栏 `.editor-pane` 保留不透明 `--doc-surface` 纸面。面板内的 L2 / L3 软底（`--soft-solid` / `--soft-hover-solid` / `--soft-press-solid` / `--control-on-soft*`）必须在**同一作用域**改由 `--text` 混 `transparent` 重派生（比例逐项对齐原主题：light 6/6/9/13/18、dark 5/8/11/14/19），否则 58% 透明面板会在卡片内部重新铺实。右栏原先不透明的内容卡 / 只读块（`--pane`）改用 `--surface-pane-card`（82%，复合后约 92.4%），避免透明栏里出现实色贴片，同时保持「卡 > 栏」。面板阴影同时降为 `--panel-ring`，避免半透明面板下叠出黑影。浮层（Modal / Select / Tooltip / 状态栏弹层）与固定态活动栏不参与，仍用不透明填充（后者见例外 #11）。
 4. `--desk-solid-alpha` 是 acrylic 专用的主题无关 scrim 旋钮，四主题共用，固定为 **25%**（mica 不使用该令牌）。dark 的 `--desk-solid` 取 `#161616`（与色带中段同值），避免深色下材质偏亮。主进程窗口底：材质开 `#00000000`，关 `#f3f3f3`，避免创建瞬间黑闪（`window.ts:169-174`）；该 alpha 仅在 `transparent: true` 时保证生效，本项目未开启，材质可见性以实机为准。
 5. 标题栏 / 状态栏不落三栏作用域，控件改用 `--chrome-*` 七令牌：默认值逐项等同改前的不透明底（`--pill-bg-solid` / `--pill-bg-hover-solid` / `--soft-press-solid` / `--soft-hover-solid` / brand 18% / brand 12% / none），材质态由 `material.css` 覆写为 `--text` 5 / 8 / 11 / 7% 薄雾、brand 20% / 14% 与 `1px --text 8%` 描边环。薄雾必须用 `--text` 反向派生，不用 `--pane`（浅色云母上明度差 < 1.02，hover 等于没有）。
 6. **云母的 DWM 档位由主进程按应用明暗决定**：浅色（light / sage / honey）下发 `tabbed`（Mica Alt，着色更强），深色下发标准 `mica`；渲染层始终只标记 `mica`。原先的暗色 8% 白提亮层 `--mica-alt-scrim-alpha` 已删除，暗色恢复系统默认渲染。
-7. **壁纸贡献估算（面板区域）**：亚克力 ≈ (1 − 25%) × (1 − 75%) ≈ **18.75%**；云母无 scrim，≈ **25%**。这是面板区域的近似值；栏缝仍按 scrim / 材质原值透出，chrome 薄雾只覆盖控件自身（5–11%），实际观感以实机为准。
+7. **壁纸贡献估算（面板区域）**：亚克力 ≈ (1 − 25%) × (1 − 58%) ≈ **31.5%**；云母无 scrim，≈ **42%**。栏内卡片以 82% `--pane` 叠在面板上，复合不透明度约 92.4%，壁纸仅以约 5%（亚克力）/ 7%（云母）透出。以上为面板区域的近似值；栏缝仍按 scrim / 材质原值透出，chrome 薄雾只覆盖控件自身（5–11%），实际观感以实机为准。
 
-选择顺序：默认（材质关闭）组件填充用 `--*-solid`，`--soft-solid` 容器上的输入类控件用 `--control-on-soft*`；材质态只有左右栏 / 悬浮活动栏 / light·dark 中栏用 `--surface-pane`、标题栏 / 状态栏控件用 `--chrome-*`，并且软底必须同域重派生；浮层、sage / honey 中栏纸面与 `.tb-brand-mark` 始终不透明。
+选择顺序：默认（材质关闭）组件填充用 `--*-solid`，`--soft-solid` 容器上的输入类控件用 `--control-on-soft*`；材质态只有左右栏 / 悬浮活动栏 / light·dark 中栏用 `--surface-pane`、右栏原先不透明的卡片用 `--surface-pane-card`（82%）、标题栏 / 状态栏控件用 `--chrome-*`，并且软底必须同域重派生；浮层、sage / honey 中栏纸面与 `.tb-brand-mark` 始终不透明。
 
 ---
 
