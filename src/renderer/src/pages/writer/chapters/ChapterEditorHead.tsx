@@ -74,7 +74,8 @@ export default function ChapterEditorHead({
               失焦 / Enter 提交落库，Escape 还原；不做按键逐次写库。 */}
           <DocTitleRow chapterId={chapterId} name={name} />
           {/* 「复制全文」保留在标题行右侧，尺寸 / 圆角 / 字号复用元信息胶囊类
-              （`.doc-meta__pill`）；材质由 `.editor-head-copy` 覆写为软底可点击样式。 */}
+              （`.doc-meta__pill`，基础 32 档）；它不在 `.doc-meta` 内，不受元信息行
+              22 档（`--row-act`）覆写影响。材质由 `.editor-head-copy` 覆写为软底可点击样式。 */}
           <IconButton
             className="editor-head-copy doc-meta__pill"
             size="sm"

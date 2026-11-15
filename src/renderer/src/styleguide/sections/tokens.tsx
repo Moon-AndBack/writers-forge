@@ -69,14 +69,31 @@ const EASINGS = [
   { token: '--ease-out', className: 'sg-motion sg-motion--ease-out' }
 ] as const
 
-const HEIGHTS = [
-  { label: '控件统一档', value: 32, token: '--control-h-md' },
-  { label: '状态栏控件', value: 24, token: 'chrome · statusbar' },
-  { label: '活动栏按钮', value: 36, token: 'chrome · activitybar' },
-  { label: '标题栏', value: 42, token: 'chrome · titlebar' },
-  { label: '行操作按钮', value: 22, token: 'row-act' },
-  { label: 'Tag 高度', value: 22, token: 'wf-tag' }
-] as const
+/** 高度表项：kind 区分真令牌 / 裸类名 / chrome 尺寸域说明，避免把后两者读成 CSS 变量。 */
+type HeightKind = 'token' | 'class' | 'chrome'
+
+interface HeightItem {
+  label: string
+  value: number
+  kind: HeightKind
+  /** 令牌名（含 `--`）、类名（不含 `.`）或 chrome 尺寸域名。 */
+  name: string
+}
+
+const HEIGHTS: readonly HeightItem[] = [
+  { label: '控件统一档', value: 32, kind: 'token', name: '--control-h-md' },
+  { label: '状态栏控件', value: 24, kind: 'chrome', name: 'statusbar' },
+  { label: '活动栏按钮', value: 36, kind: 'chrome', name: 'activitybar' },
+  { label: '标题栏', value: 42, kind: 'chrome', name: 'titlebar' },
+  { label: '行操作按钮 / 元信息胶囊', value: 22, kind: 'token', name: '--row-act' },
+  { label: 'Tag 高度', value: 22, kind: 'class', name: 'wf-tag' }
+]
+
+/** 按 kind 渲染来源：令牌带 `--`、类名带 `.`、chrome 用说明前缀。 */
+function heightSource(item: HeightItem): string {
+  if (item.kind === 'token') return item.name
+  return item.kind === 'class' ? `.${item.name}` : `chrome · ${item.name}`
+}
 
 function TokenSwatch({ token }: { token: string }) {
   return (
@@ -179,15 +196,15 @@ export function TokensSection() {
 
       <Demo
         name="控件高度 · 32 / 24 / 36 / 42 / 22 / 22"
-        note="控件统一 32；状态栏 24 / 活动栏 36 / 标题栏 42 属 chrome 独立域；行操作 22、Tag 22 为域内定值。"
+        note="控件统一 32；状态栏 24 / 活动栏 36 / 标题栏 42 属 chrome 独立域；行操作按钮与元信息胶囊共用 --row-act（22）；Tag 22 来自类名 .wf-tag，不是令牌。"
         classes="height"
       >
         <div className="sg-height-list">
           {HEIGHTS.map((item) => (
-            <div key={item.token} className="sg-height-row">
+            <div key={item.name} className="sg-height-row">
               <span className="sg-height-bar" style={{ height: `${item.value}px` }} />
               <code className="sg-code">
-                {item.value}px · {item.token}
+                {item.value}px · {heightSource(item)}
               </code>
               <span className="sg-label">{item.label}</span>
             </div>

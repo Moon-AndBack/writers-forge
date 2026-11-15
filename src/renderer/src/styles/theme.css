@@ -36,6 +36,7 @@
   --control-h-sm: 32px;
   --control-h-md: 32px;
   --control-h-lg: 32px;
+  --row-act: 22px; /* 行操作按钮与元信息胶囊共用的域内定值；不属于控件 32 档（AGENTS §8.4 例外） */
   --font:
     'Segoe UI Variable Display', 'Segoe UI', 'Microsoft YaHei UI', 'Microsoft YaHei', 'PingFang SC',
     -apple-system, BlinkMacSystemFont, sans-serif;

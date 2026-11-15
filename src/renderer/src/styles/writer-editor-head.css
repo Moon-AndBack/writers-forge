@@ -146,7 +146,8 @@
 }
 
 /* 「复制全文」胶囊：可见文字（左）+ 图标（右），保留在标题行右侧。
-   尺寸 / 圆角 / 字号复用 `.doc-meta__pill`（32 高 / --r-lg / 12 内衬 / --fs-body），
+   尺寸 / 圆角 / 字号复用 `.doc-meta__pill`（32 高 / --r-lg / 12 内衬 / --fs-body）；
+   它不在 `.doc-meta` 内，不受元信息行 22 档（--row-act）覆写影响，仍为 32 档。
    此处只补「可点击」材质与布局，并显式写回 display / padding-inline / border-radius，
    压过 `.wf-iconbtn` 的圆形单图标默认值（不依赖样式表加载顺序）。
    不换行、不参与收缩（标题侧 .doc-title-row 已 flex: 1 + min-width: 0，
@@ -183,10 +184,11 @@
   flex: none;
 }
 
-/* 头部元信息行（.editor-head > .editor-inner > .doc-meta）：仅收紧下外边距，
-   使标题块与正文滚动区衔接更紧凑；不改其 padding / 其它方向尺寸 / 颜色。
-   作用域限定 .editor-head，避免影响大纲 / 世界观等复用 .doc-meta 的视图。 */
+/* 头部元信息行（.editor-head > .editor-inner > .doc-meta）：上 / 下外边距各 10，
+   与标题行形成视觉分隔（此前无上边距，靠标题行盒留白）；不改 padding / 其它方向
+   尺寸 / 颜色。章节与大纲共用 `.editor-head`，两处编辑头同步生效。 */
 .editor-head .doc-meta {
+  margin-top: 10px;
   margin-bottom: 10px;
 }
 
@@ -204,10 +206,12 @@
   color: var(--text-mute);
 }
 
-/* ---------- 元信息胶囊（最后编辑 / 状态 / 复制全文 统一规格） ----------
-   三项统一为「32 高（--control-h-md）+ 8 圆角（--r-lg）」：左右内衬 12、
-   字号 --fs-body、内距 6、单行不换行。这是**控件档**（§3.3 的 32 档），
-   与 22px 展示胶囊（Badge / Tag，§9 #17）不是同一档，不得互相套用。
+/* ---------- 元信息胶囊（最后编辑 / 状态 / 复制全文 基础规格） ----------
+   基础规格为「32 高（--control-h-md）+ 8 圆角（--r-lg）」：左右内衬 12、
+   字号 --fs-body、内距 6、单行不换行。编辑头元信息行内的「最后编辑」「状态」
+   由下方 `.doc-meta .doc-meta__pill` 覆写为 22（--row-act，§9 #35）；标题行的
+   「复制全文」不在 `.doc-meta` 内，仍为 32 档。22 档行操作与 22px 展示胶囊
+   （Badge / Tag，§9 #17，不可点）不是同一类，不得互相套用。
    材质按可点性分级：只读项 = 1px --line 描边且无 hover；可切换项 = 语义色
    16% 混 --doc-surface（hover 24%）；可点击项 = --soft-solid 软底
    （hover --soft-hover-solid + 文字提亮，见 `.editor-head-copy`）。
@@ -222,6 +226,13 @@
   border-radius: var(--r-lg);
   font-size: var(--fs-body);
   white-space: nowrap;
+}
+
+/* 元信息行内胶囊下沉到行操作档（22，--row-act）：仅「最后编辑」「状态」两项。
+   标题行的「复制全文」虽也挂 `.doc-meta__pill`，但它不在 `.doc-meta` 内，
+   不受本规则命中，保持 32 档。三项不再等高是已确认的取舍（§9 #35）。 */
+.doc-meta .doc-meta__pill {
+  height: var(--row-act);
 }
 
 /* 只读项（最后编辑）：描边材质，不挂 transition（无 hover 态）。
