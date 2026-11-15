@@ -89,8 +89,13 @@ export interface ChatMessageProps {
    * （非 assistant / 流式 / 错误 / 中断 / 空正文 / 跨章）。
    */
   applyActions: ApplyActions | null
-  /** 消息来自其它章（跨章会话）：assistant 气泡上加一条轻量来源提示。 */
-  fromOtherChapter?: boolean
+  /**
+   * 跨章来源位置串：`undefined` = 非跨章（不渲染提示）；
+   * `null` = 来源章已删除（显示「已删除的章节」，不可跳转）。
+   */
+  otherChapterPlace?: string | null
+  /** 点击跨章来源提示跳转到来源章；缺省时提示为不可点击文本。 */
+  onOpenChapter?: (chapterId: number) => void
   onApplyReplace: (message: AiConversationMessage) => void
   onApplyInsert: (message: AiConversationMessage) => void
 }
@@ -109,7 +114,8 @@ export interface ChatMessageProps {
 export function ChatMessage({
   message,
   applyActions,
-  fromOtherChapter = false,
+  otherChapterPlace,
+  onOpenChapter,
   onApplyReplace,
   onApplyInsert
 }: ChatMessageProps) {
@@ -122,7 +128,8 @@ export function ChatMessage({
   const chipLabel =
     isUser && message.action !== undefined ? t(ACTION_LABEL_KEYS[message.action]) : null
   // 来源章提示只挂在 assistant 气泡上：它才是「能不能回插」的对象，user 消息加标记只是噪音。
-  const showForeign = fromOtherChapter && !isUser && hasContent
+  const foreignChapterId =
+    !isUser && hasContent && otherChapterPlace !== undefined ? (message.chapterId ?? null) : null
 
   return (
     <article className={`ai-msg ai-msg--${isUser ? 'user' : 'assistant'}`}>
@@ -164,8 +171,26 @@ export function ChatMessage({
         ) : null}
         {/* 结构化中断标记：来自库内 `status`，与正文无关（正文不含任何中断说明）。 */}
         {interrupted ? <p className="ai-msg__interrupted">{t('message.interrupted')}</p> : null}
-        {/* 来源章提示：跨章会话里其它章的回复不能回插本章正文，给一条轻量说明。 */}
-        {showForeign ? <p className="ai-msg__foreign">{t('message.otherChapter')}</p> : null}
+        {/* 来源章提示：跨章回复标出具体位置并可跳转；来源章已删除时只保留说明。 */}
+        {foreignChapterId !== null ? (
+          otherChapterPlace != null && onOpenChapter !== undefined ? (
+            <button
+              type="button"
+              className="ai-msg__foreign ai-msg__foreign--link"
+              aria-label={t('message.openChapterAria', { place: otherChapterPlace })}
+              title={t('message.openChapterAria', { place: otherChapterPlace })}
+              onClick={() => onOpenChapter(foreignChapterId)}
+            >
+              {t('message.otherChapter', { place: otherChapterPlace })}
+            </button>
+          ) : (
+            <p className="ai-msg__foreign">
+              {t('message.otherChapter', {
+                place: otherChapterPlace ?? t('message.deletedChapter')
+              })}
+            </p>
+          )
+        ) : null}
       </div>
       {applyActions !== null && !isUser ? (
         <div className="ai-msg__actions">

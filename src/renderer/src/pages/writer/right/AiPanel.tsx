@@ -37,6 +37,13 @@ export interface AiPanelProps {
   chapterId: number | null
   /** 当前章的「卷名 · 章名」（携带全文时气泡用它替代正文；缺失时退回功能名）。 */
   chapterPath?: string
+  /**
+   * 全书章 id → 位置串（「卷X 卷名 · 第X章 章名」），用于跨章回复的来源提示；
+   * 由 `RightPane` 经 `formatChapterPlace` 记忆化生成（不向本面板传整棵章节树）。
+   */
+  chapterPlaces: ReadonlyMap<number, string>
+  /** 点击跨章回复的来源提示：跳到来源章（模块切换与选中由页面层处理）。 */
+  onOpenChapter: (chapterId: number) => void
   /** 页签是否可见（用于惰性加载）。 */
   active: boolean
 }
@@ -71,7 +78,14 @@ export interface AiPanelProps {
  * 快照，不重新读，保证「发起请求时选中的那段」就是被替换 / 插入参照的那段；
  * 快照仅内存，不落库。
  */
-export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps) {
+export function AiPanel({
+  bookId,
+  chapterId,
+  chapterPath,
+  chapterPlaces,
+  onOpenChapter,
+  active
+}: AiPanelProps) {
   const { t } = useTranslation('ai')
   const { t: tCommon } = useTranslation('common')
   const { show: showToast, node: toastNode } = useToast()
@@ -363,7 +377,12 @@ export function AiPanel({ bookId, chapterId, chapterPath, active }: AiPanelProps
                   chapterId,
                   fallbackActionFor(messages, index)
                 )}
-                fromOtherChapter={message.chapterId != null && message.chapterId !== chapterId}
+                otherChapterPlace={
+                  message.chapterId != null && message.chapterId !== chapterId
+                    ? (chapterPlaces.get(message.chapterId) ?? null)
+                    : undefined
+                }
+                onOpenChapter={onOpenChapter}
                 onApplyReplace={handleApplyReplace}
                 onApplyInsert={handleApplyInsert}
               />

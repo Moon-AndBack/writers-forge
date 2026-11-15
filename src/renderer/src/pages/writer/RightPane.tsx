@@ -5,6 +5,7 @@ import { useToast } from '../../components/ui'
 import type { WriterModule } from '../../shell/activityBar'
 import type { ChapterRow, VolumeRow } from './chapters/chapterTree'
 import { useChapterLabels } from './chapters/useChapterLabels'
+import { formatChapterPlace } from '../../../../shared/place'
 import ConfirmDialog from './ConfirmDialog'
 import DossierDetail from './dossier/DossierDetail'
 import type { DossierBundle } from './dossier/dossierTree'
@@ -72,6 +73,7 @@ export function RightPane({
   hidden = false,
   bookId,
   chapterId = null,
+  onOpenChapter,
   chapters,
   volumes,
   outlineVolumes,
@@ -108,6 +110,8 @@ export function RightPane({
   bookId?: string
   /** 当前选中章节 id（AI 面板按章加载会话；null = 未选中章节）。 */
   chapterId?: number | null
+  /** 从 AI 跨章回复的来源提示跳转到来源章（模块切换与选中由页面层处理）。 */
+  onOpenChapter: (chapterId: number) => void
   /** 未删除章（伏笔右栏解析章节锚点目标）。 */
   chapters: readonly ChapterRow[]
   /** 章节页可见卷（伏笔右栏补全「卷 · 章」完整位置）。 */
@@ -182,16 +186,28 @@ export function RightPane({
   const [outlineTab, setOutlineTab] = useState<RightPaneTab>('plot')
 
   // AI 气泡的「卷名 · 章名」：与正文编辑头 / 伏笔关联串同源（见 EditorPane 的拼法）。
-  const { volumeLabel, chapterLabel } = useChapterLabels()
+  const chapterLabels = useChapterLabels()
   const aiChapterPath = useMemo(() => {
     if (chapterId === null) return undefined
     const chapter = chapters.find((row) => row.id === chapterId)
     if (chapter === undefined) return undefined
     const volume = volumes.find((row) => row.id === chapter.volumeId)
     return volume !== undefined
-      ? `${volumeLabel(volume)} · ${chapterLabel(chapter)}`
-      : chapterLabel(chapter)
-  }, [chapterId, chapters, volumes, volumeLabel, chapterLabel])
+      ? `${chapterLabels.volumeLabel(volume)} · ${chapterLabels.chapterLabel(chapter)}`
+      : chapterLabels.chapterLabel(chapter)
+  }, [chapterId, chapters, volumes, chapterLabels])
+
+  // 跨章 AI 回复的来源位置：只传「章 id → 位置串」映射，面板不持有整棵章节树。
+  // 依赖只在章节 / 卷 / 语言变化时更新（`useChapterLabels` 返回按语言记忆化的稳定对象）。
+  const aiChapterPlaces = useMemo(() => {
+    const volumeById = new Map(volumes.map((volume) => [volume.id, volume]))
+    const places = new Map<number, string>()
+    for (const chapter of chapters) {
+      const volume = volumeById.get(chapter.volumeId) ?? null
+      places.set(chapter.id, formatChapterPlace(volume, chapter, chapterLabels))
+    }
+    return places
+  }, [chapters, volumes, chapterLabels])
 
   const isChapterView = module === 'chapters'
   const isOutlineView = module === 'outline'
@@ -280,6 +296,8 @@ export function RightPane({
               bookId={bookId ?? ''}
               chapterId={chapterId}
               chapterPath={aiChapterPath}
+              chapterPlaces={aiChapterPlaces}
+              onOpenChapter={onOpenChapter}
               active={isChapterView && activeTab === 'ai'}
             />
           </div>

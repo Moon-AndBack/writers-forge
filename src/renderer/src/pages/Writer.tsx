@@ -293,6 +293,16 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
   })
   useRegisterUnsavedSwitchGuard(switchGuard.handleSwitch)
 
+  const { handleSwitch: handleModuleSwitch } = switchGuard
+  // AI 跨章来源提示跳转：回到章节模块（同模块为 no-op，其它模块走同一守卫）后选中来源章。
+  const handleOpenChapter = useCallback(
+    (id: number): void => {
+      handleModuleSwitch('chapters')
+      handleSelectChapter(id)
+    },
+    [handleModuleSwitch, handleSelectChapter]
+  )
+
   // 写作页全局快捷键（Ctrl+S 保存当前模块 / Ctrl+F 搜索 · 仅章节 · 大纲 / Ctrl+1..9 切模块）。
   // 应用菜单已移除，菜单加速键不可用，快捷键在此注册；Esc 不接管，仍由弹窗 / 搜索浮窗自理。
   useWriterShortcuts({
@@ -425,6 +435,7 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
               hidden={rightPaneHidden}
               bookId={bookId}
               chapterId={activeChapterId}
+              onOpenChapter={handleOpenChapter}
               chapters={chapters}
               volumes={volumes}
               plotLine={plot.activeLine}

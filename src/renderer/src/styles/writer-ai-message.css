@@ -169,6 +169,30 @@
   color: var(--text-dim);
 }
 
+/* 可点击的跨章来源：沿用气泡内链接（`.ai-md-a`）的品牌色 + 下划线语言，只重置按钮外壳；
+   不做位移 / 动画（§8）。 */
+.ai-msg__foreign--link {
+  display: inline-block;
+  padding: 0 0 0 6px;
+  border: 0;
+  border-left: 2px solid var(--line);
+  font-family: inherit;
+  text-align: left;
+  color: var(--brand);
+  text-decoration: underline;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ai-msg__foreign--link:hover {
+  border-left-color: var(--brand);
+}
+
+.ai-msg__foreign--link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: 1px;
+}
+
 .ai-msg__actions {
   display: flex;
   flex-wrap: wrap;
