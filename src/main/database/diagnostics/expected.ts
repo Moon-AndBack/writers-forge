@@ -190,10 +190,20 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
       'deleted_at'
     ]
   },
-  // 灵感域（碎片速记 + JSON 标签数组）：见 `schema/inspirations.ts`
+  // 灵感域（碎片速记 + JSON 标签数组 + 富文本正文）：见 `schema/inspirations.ts`
   {
     name: 'inspirations',
-    columns: ['id', 'book_id', 'title', 'content', 'tags', 'created_at', 'updated_at', 'deleted_at']
+    columns: [
+      'id',
+      'book_id',
+      'title',
+      'content',
+      'content_json',
+      'tags',
+      'created_at',
+      'updated_at',
+      'deleted_at'
+    ]
   },
   {
     name: 'entities',

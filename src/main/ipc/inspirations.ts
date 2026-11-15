@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { logger } from '../logger'
+import { isValidRichTextJson } from '../database/richText'
 import {
   MAX_INSPIRATION_TAGS,
   MAX_INSPIRATION_TAG_CHARS,
@@ -44,6 +45,27 @@ const MAX_TITLE_CHARS = 200
  */
 const MAX_CONTENT_CHARS = 50_000
 
+/**
+ * 正文富文本 JSON 串长度上限（字符数）：对齐 `ipc/foreshadows.ts` 的
+ * `DESCRIPTION_JSON_MAX_CHARS = 200_000`（≈ 单篇正文上限 `MAX_DOC_CHARS` 的 JSON 体量，
+ * 块级 Tiptap JSON 约为纯文本的 2–3 倍）。
+ *
+ * 与伏笔描述「超长丢弃该字段」不同：灵感正文是**唯一真源**，丢弃字段等于静默丢内容，
+ * 故超限 / 畸形**整包拒绝**（调用方回 null，保留库中原有正文）。
+ */
+const CONTENT_JSON_MAX_CHARS = 200_000
+
+/**
+ * 消毒富文本正文入参：`undefined`（未提供）/ `null`（清空）原样返回；字符串须为**合法
+ * JSON** 且不超长，否则返回 `undefined` —— 由调用方**整包拒绝**（不静默丢字段）。
+ * 空串按 `isValidRichTextJson` 规则视为合法（= 清空）。
+ */
+function sanitizeContentJson(value: unknown): string | null | undefined {
+  if (value === undefined || value === null) return value
+  if (typeof value !== 'string' || value.length > CONTENT_JSON_MAX_CHARS) return undefined
+  return isValidRichTextJson(value) ? value : undefined
+}
+
 /** 消毒标签数组：必须是字符串数组且条数不超上限；非字符串项 / 超长数组 → undefined（整包拒绝）。 */
 function sanitizeTags(value: unknown): string[] | undefined {
   if (!Array.isArray(value) || value.length > MAX_INSPIRATION_TAGS) return undefined
@@ -63,12 +85,16 @@ function sanitizeCreatePayload(value: unknown): InspirationCreatePayload | undef
   if (record.content !== undefined && typeof record.content !== 'string') return undefined
   const content = typeof record.content === 'string' ? record.content : undefined
   if (content !== undefined && content.length > MAX_CONTENT_CHARS) return undefined
+  // 富文本正文：畸形 / 超长**整包拒绝**（正文是唯一真源，不接受静默丢字段）。
+  const contentJson = sanitizeContentJson(record.contentJson)
+  if (record.contentJson !== undefined && contentJson === undefined) return undefined
   const tags = record.tags === undefined ? undefined : sanitizeTags(record.tags)
   if (record.tags !== undefined && tags === undefined) return undefined
 
   const payload: InspirationCreatePayload = {}
   if (typeof record.title === 'string') payload.title = record.title.slice(0, MAX_TITLE_CHARS)
   if (content !== undefined) payload.content = content
+  if (contentJson !== undefined) payload.contentJson = contentJson
   if (tags !== undefined) payload.tags = tags
   return payload
 }
@@ -89,6 +115,10 @@ function sanitizeUpdatePatch(value: unknown): InspirationUpdatePatch | undefined
     }
     patch.content = record.content
   }
+  // 富文本正文：畸形 / 超长整包拒绝（正文是唯一真源，不静默丢字段）。
+  const contentJson = sanitizeContentJson(record.contentJson)
+  if (record.contentJson !== undefined && contentJson === undefined) return undefined
+  if (contentJson !== undefined) patch.contentJson = contentJson
   if (record.tags !== undefined) {
     const tags = sanitizeTags(record.tags)
     if (tags === undefined) return undefined
@@ -105,14 +135,14 @@ function sanitizeUpdatePatch(value: unknown): InspirationUpdatePatch | undefined
  *   （`updated_at DESC, id DESC`；`tag` 非空时只返回带该标签的条目，
  *    非法 / 超长标签回空数组）
  * - inspiration:tags   (bookId: string)               → string[]（去重标签，供筛选）
- * - inspiration:create (bookId: string, payload?: { title?, content?, tags? })
+ * - inspiration:create (bookId: string, payload?: { title?, content?, contentJson?, tags? })
  *                                                     → InspirationRow | null
- * - inspiration:update (id: number, patch?: { title?, content?, tags? })
+ * - inspiration:update (id: number, patch?: { title?, content?, contentJson?, tags? })
  *                                                     → InspirationRow | null
  * - inspiration:delete (id: number)                  → boolean（永久删除）
  *
  * 标签约束：最多 20 个、单个最长 40 字符（去空白 / 去重 / 截断在数据层统一执行）；
- * 标题超长截断到 200 字符，正文超 5 万字符整包拒绝。
+ * 标题超长截断到 200 字符，纯文本正文超 5 万字符 / 富文本 JSON 超 20 万字符整包拒绝。
  */
 export function registerInspirationsIpc(): void {
   ipcMain.handle('inspiration:list', (_event, bookId: unknown, tag: unknown) => {

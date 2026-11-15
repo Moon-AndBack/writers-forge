@@ -6,10 +6,12 @@ import type Database from 'better-sqlite3'
  * 设计要点：
  * - **按书隔离**：`book_id` 外键 `books(id) ON DELETE CASCADE`（`books.id` 为 TEXT，
  *   与其余域表一致）；
- * - **纯文本正文**：`content` 即真源（多行纯文本）。灵感是「一句话 / 一段碎片」的
- *   速记场景，不需要富文本编辑、实体高亮或派生摘要列；不上 `content_json` 双列可
- *   避免空功能背上 JSON 解析 / 迁移成本。将来确需富文本时，再按 `plot_scenes` 的
- *   `description` + `description_json` 双列范式增量补列即可；
+ * - **正文双列**：`content_json` 是**富文本真源**（整条块级 Tiptap JSON，
+ *   `NULL` = 尚未富文本化 / 空正文）；`content` 退化为**派生纯文本摘要**（卡片摘要 /
+ *   搜索 / AI 上下文读它，块级之间以 `\n` 分隔）。与 `plot_scenes` / `foreshadows`
+ *   的 `description` + `description_json` 同范式。两列由写入口径恒同步
+ *   （由 JSON 派生摘要）；老库的纯文本正文由 `inspirationsContentRichMigration.ts`
+ *   一次性回填 `content_json`，`content` 不改写；
  * - **标签存 JSON 数组字符串**（`tags TEXT NOT NULL DEFAULT '[]'`）而非关联表：
  *   灵感属个人碎片，单书量级在几十到几百条、单条标签 1–5 个；标签只用于「按标签
  *   筛选」，不需要全局标签去重 / 重命名传播 / 计数统计。JSON 单列写入原子、无 join、
@@ -30,6 +32,10 @@ export function createInspirationsSchema(db: Database.Database): void {
       book_id TEXT NOT NULL,
       title TEXT NOT NULL DEFAULT '',
       content TEXT NOT NULL DEFAULT '',
+      -- 富文本真源（整条块级 Tiptap JSON）；content 保留为派生纯文本摘要
+      -- （卡片摘要 / 搜索 / AI 上下文），两列同写：新数据由 JSON 派生摘要，
+      -- 老数据由一次性迁移回填本列（见 inspirationsContentRichMigration.ts）。
+      content_json TEXT,
       -- JSON 数组字符串；CHECK 兜底拒绝坏 JSON（读侧仍做防御，兼容手改库 / 历史脏数据）。
       tags TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(tags)),
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -40,10 +46,27 @@ export function createInspirationsSchema(db: Database.Database): void {
     )
   `)
 
+  // 幂等补列：老库 `inspirations` 补富文本列 `content_json`（纯增量 `ADD COLUMN`，保留既有行）。
+  // `content` 为派生纯文本摘要，本列为整条块级 Tiptap JSON，NULL = 尚未富文本化
+  // （读侧由 `content` 兜底），回填见 `inspirationsContentRichMigration.ts`。
+  ensureColumn(db, 'inspirations', 'content_json', 'TEXT')
+
   // 索引：按书取列表（含标签筛选）/ 按最近编辑排序。
   // `deleted_at` 列保留仅作历史兼容（业务不再写入），索引沿用旧定义以兼容老库。
   db.exec('CREATE INDEX IF NOT EXISTS idx_inspirations_book ON inspirations(book_id, deleted_at)')
   db.exec(
     'CREATE INDEX IF NOT EXISTS idx_inspirations_updated ON inspirations(book_id, updated_at)'
   )
+}
+
+/** 检测表是否已有某列，缺失才 `ADD COLUMN`（幂等补列，不破坏既有数据；对齐 `schema/plot.ts`）。 */
+function ensureColumn(
+  db: Database.Database,
+  table: string,
+  column: string,
+  definition: string
+): void {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>
+  if (columns.some((item) => item.name === column)) return
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
 }

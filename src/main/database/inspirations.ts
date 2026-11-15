@@ -1,10 +1,14 @@
 import { getDb } from './index'
+import { derivePlainText, normalizeRichTextJson } from './richText'
 
 /**
  * 灵感域：数据访问实现（字段设计见 `schema/inspirations.ts`）。
  *
  * 关键约定：
- * - **正文为纯文本**：`content` 即真源，不做富文本双列 / 派生摘要；
+ * - **正文双列**：`content_json` 为富文本真源（整条块级 Tiptap JSON，NULL = 空正文 /
+ *   尚未富文本化），`content` 为**派生纯文本摘要**（卡片摘要 / 搜索 / AI 上下文读它）；
+ *   写侧两列恒同步：由 JSON 派生摘要，只给纯文本的旧调用方沿用旧路径（`content_json`
+ *   置 NULL，避免摘要与真源分叉）；
  * - **标签存 JSON 数组字符串**：读侧统一经 {@link decodeTags} 反序列化，坏 JSON /
  *   非数组 / 非字符串项一律丢弃并回退空数组（防御历史脏数据与手改库）；
  *   写侧经 {@link normalizeInspirationTags} 去空白、去重、截断超长标签并限制数量；
@@ -30,6 +34,8 @@ export interface InspirationRow {
   bookId: string
   title: string
   content: string
+  /** 富文本真源（整条块级 Tiptap JSON）；`NULL` = 空正文 / 尚未富文本化。 */
+  contentJson: string | null
   tags: string[]
   createdAt: string
   updatedAt: string
@@ -42,13 +48,14 @@ interface InspirationDbRow extends Omit<InspirationRow, 'tags'> {
 
 /** 列投影（AS 别名对齐 `InspirationRow`）。 */
 export const INSPIRATION_COLUMNS =
-  'id, book_id AS bookId, title, content, tags, ' +
+  'id, book_id AS bookId, title, content, content_json AS contentJson, tags, ' +
   'created_at AS createdAt, updated_at AS updatedAt'
 
 /** 创建灵感入参：全部可选（支持「先建空条目再补内容」的速记流程）。 */
 export interface InspirationCreatePayload {
   title?: string
   content?: string
+  contentJson?: string | null
   tags?: string[]
 }
 
@@ -56,6 +63,7 @@ export interface InspirationCreatePayload {
 export interface InspirationUpdatePatch {
   title?: string
   content?: string
+  contentJson?: string | null
   tags?: string[]
 }
 
@@ -166,11 +174,21 @@ export function createInspiration(
   payload: InspirationCreatePayload = {}
 ): InspirationRow {
   const title = typeof payload.title === 'string' ? payload.title.trim() : ''
-  const content = typeof payload.content === 'string' ? payload.content : ''
+  // 正文双列：`content_json` 为富文本真源、`content` 为派生纯文本摘要。仅在调用方显式
+  // 提供 JSON 时同步派生（JSON 优先，同传的纯文本被忽略）；只给纯文本（旧接口 / 教学种子）
+  // 时保持旧行为：`content_json` 留 NULL，读侧以纯文本兜底。
+  let contentJson: string | null = null
+  let content = typeof payload.content === 'string' ? payload.content : ''
+  if (payload.contentJson !== undefined) {
+    contentJson = normalizeRichTextJson(payload.contentJson)
+    content = contentJson === null ? '' : derivePlainText(contentJson)
+  }
   const tags = normalizeInspirationTags(payload.tags)
   const result = getDb()
-    .prepare('INSERT INTO inspirations (book_id, title, content, tags) VALUES (?, ?, ?, ?)')
-    .run(bookId, title, content, JSON.stringify(tags))
+    .prepare(
+      'INSERT INTO inspirations (book_id, title, content, content_json, tags) VALUES (?, ?, ?, ?, ?)'
+    )
+    .run(bookId, title, content, contentJson, JSON.stringify(tags))
   return selectInspiration(Number(result.lastInsertRowid))
 }
 
@@ -190,8 +208,15 @@ export function updateInspiration(
       sets.push('title = ?')
       values.push(patch.title.trim())
     }
-    if (patch.content !== undefined) {
-      sets.push('content = ?')
+    if (patch.contentJson !== undefined) {
+      // 富文本路径：两列恒同步（JSON 为真源，摘要由 JSON 派生，块级以 `\n` 分隔）。
+      const contentJson = normalizeRichTextJson(patch.contentJson)
+      sets.push('content_json = ?', 'content = ?')
+      values.push(contentJson, contentJson === null ? '' : derivePlainText(contentJson))
+    } else if (patch.content !== undefined) {
+      // 纯文本路径（旧接口）：只写摘要列，旧富文本真源置 NULL——`content` 已被整体替换，
+      // 保留旧 JSON 会让摘要与真源分叉（本批渲染层仍只发纯文本）。
+      sets.push('content = ?', 'content_json = NULL')
       values.push(patch.content)
     }
     if (patch.tags !== undefined) {
