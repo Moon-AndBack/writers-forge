@@ -1,9 +1,8 @@
 /* ============================================================
    章节 / 大纲模块右栏「实体」页签：全书五域实体只读总览 + 只读详情
    ------------------------------------------------------------------
-   列表卡（`.rp-card--list`）内按**五个设定域**分组：组容器沿用回收站视图
-   既有的 `.trash-group` 块级语义，组标题取模块名（10px / 700 / 弱化色），
-   组间间距由本面板专属 `.entities-overview-group` 覆盖（不改共享 `.trash-group`）。
+   列表卡（`.rp-card--list`）内**平铺**：所有实体共用一张卡片网格，不按设定域
+   分组，顺序由 `sortBookEntityRows` 按名称决定（中文拼音序）。
    卡片复用中栏设定档案卡 `DossierCard` 的 `compact` 变体（AGENTS §9：
    不复制平行卡片），只做右栏覆盖：常态不投影、不描边，hover / 键盘焦点使用
    通用边缘光晕（纯阴影，无 transform，AGENTS §8.8）。
@@ -11,31 +10,9 @@
    提供，见 writer-right-panels.css；本文件只保留实体内容的域内排版。
    ============================================================ */
 
-/* ---------- 分组 ---------- */
-/* 组间距：原 `.trash-group` 的 18px 底距按「组标题 + 列表」设计，这里收到 14px
-   ——略大于网格自身的 12px `gap`，使组内卡片与组间形成 12 / 14 的可辨认层级；
-   两个类连写把特异性提到 (0,2,0)，压过后加载的 `.trash-group` 同特异性规则；
-   末组归零，避免滚动到底部多出一段空白。 */
-.trash-group.entities-overview-group {
-  margin-bottom: 14px;
-}
-
-.trash-group.entities-overview-group:last-child {
-  margin-bottom: 0;
-}
-
-/* 组标题：模块名（世界观 / 角色 / 势力 / 境界体系 / 物品功法），与详情段落小标题同口径。 */
-.entities-overview-group__title {
-  margin: 0 0 8px;
-  font-size: var(--fs-micro);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--text-mute);
-}
-
 /* ---------- 网格 ---------- */
 /* 轨道上限放开为 `1fr`（最窄右栏下单列吃满容器），`auto-fill` 保留空轨道，
-   使各域单卡仍是标准列宽，而不是被拉成整行宽（同伏笔 / 灵感总览口径）。 */
+   使单卡仍是标准列宽，而不是被拉成整行宽（同伏笔 / 灵感总览口径）。 */
 .wf-card-grid.entities-overview-grid {
   grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
 }

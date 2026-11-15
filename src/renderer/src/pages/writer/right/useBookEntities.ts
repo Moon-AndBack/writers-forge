@@ -4,10 +4,10 @@
  * 口径：
  * - **数据源**：`worldEntity.list(bookId)`（不传 `entityType`），后端顺序 `entity_type, id`；
  *   列表行已含 `entityType` / `subType` / `presetKey` / `name` / `aliases` / `body`（纯文本）/
- *   `relations`（出入边摘要）/ `grade` / `rank`，故卡片与分组**不需要逐条再发 `get`**，
+ *   `relations`（出入边摘要）/ `grade` / `rank`，故卡片**不需要逐条再发 `get`**，
  *   只有进详情取富文本 `bodyJson` 时才补一次；
- * - **分组**：`groupBookEntities` 按 `DOSSIER_MODULES` → `MODULE_ENTITY_TYPE` 的顺序分桶，
- *   丢弃空组，组内保持后端顺序（模块名作组标题由面板取 `module` ns）；
+ * - **排序**：`sortBookEntityRows` 按名称 `localeCompare('zh-CN')` 升序（中文即拼音序），
+ *   同名按 `id` 升序保证稳定；面板在**过滤之后**调用，平铺网格按此顺序渲染；
  * - **惰性**：只在 `active` 为真时发起请求；`active` 变假只失效在途请求，**不清空**已加载行
  *   （切回页签先显示上次结果，随后静默刷新）；
  * - **竞态 / 换书 / 失败**：同 `useBookInspirations`——每轮请求带自增 `seq`，乱序响应丢弃；
@@ -19,38 +19,14 @@
  *   模块与子类两个下拉（子类只列当前模块，选项只显示纯名称）；`filterBookEntityRows`
  *   按模块 / 子类 / 关键词（名称 / 别名 / 子类）取交集，均不额外发 IPC。
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { DOSSIER_MODULES, MODULE_ENTITY_TYPE } from '../../../shell/activityBarModules'
 import type { DossierModule } from '../../../shell/activityBarModules'
 import type { DossierRow } from '../dossier/dossierTree'
 
-/** 一个设定域分组（模块 id + 该域实体行）。 */
-export interface BookEntityGroup {
-  /** 设定域模块 id（组标题取 `module` ns 的模块名）。 */
-  module: DossierModule
-  /** 该域实体行（后端顺序）。 */
-  rows: DossierRow[]
-}
-
-/**
- * 按五个设定域分组：顺序固定为 `DOSSIER_MODULES`（世界观 / 角色 / 势力 / 境界体系 /
- * 物品功法），空组丢弃，组内保持入参顺序。
- */
-export function groupBookEntities(rows: readonly DossierRow[]): BookEntityGroup[] {
-  const groups: BookEntityGroup[] = []
-  for (const module of DOSSIER_MODULES) {
-    const entityType = MODULE_ENTITY_TYPE[module]
-    const bucket = rows.filter((row) => row.entityType === entityType)
-    if (bucket.length > 0) groups.push({ module, rows: bucket })
-  }
-  return groups
-}
-
 export interface BookEntities {
   /** 全书实体行（换书瞬间为空数组）。 */
   rows: DossierRow[]
-  /** 按五域分组后的行（空组已丢弃）。 */
-  groups: BookEntityGroup[]
   /** 行数（三态判定用）。 */
   total: number
   /** 是否有在途请求（列表非空时不闪加载态）。 */
@@ -139,6 +115,18 @@ export function filterBookEntityRows(
   })
 }
 
+/**
+ * 按名称排序（平铺网格的展示顺序）：`localeCompare('zh-CN')` 让中文按拼音、英文按字母，
+ * 与数字混排也走本地化规则；同名时按 `id` 升序，保证顺序稳定（名称并不唯一）。
+ * 返回新数组，不改入参。
+ */
+export function sortBookEntityRows(rows: readonly DossierRow[]): DossierRow[] {
+  return [...rows].sort((a, b) => {
+    const byName = a.name.localeCompare(b.name, 'zh-CN')
+    return byName !== 0 ? byName : a.id - b.id
+  })
+}
+
 interface BookEntitiesState {
   bookId: string
   rows: DossierRow[]
@@ -148,7 +136,7 @@ interface BookEntitiesState {
 /** 无数据时的恒等空数组（换书瞬间复用，引用稳定）。 */
 const EMPTY_ROWS: DossierRow[] = []
 
-/** 拉全书实体（按五域分组）。`bookId` 为空或页签未激活时不发请求。 */
+/** 拉全书实体。`bookId` 为空或页签未激活时不发请求。 */
 export function useBookEntities(bookId: string, active: boolean): BookEntities {
   const [state, setState] = useState<BookEntitiesState>({
     bookId: '',
@@ -197,10 +185,8 @@ export function useBookEntities(bookId: string, active: boolean): BookEntities {
 
   const sameBook = state.bookId === bookId
   const rows = sameBook ? state.rows : EMPTY_ROWS
-  const groups = useMemo(() => groupBookEntities(rows), [rows])
   return {
     rows,
-    groups,
     total: rows.length,
     loading,
     loadError: sameBook && state.loadError,
