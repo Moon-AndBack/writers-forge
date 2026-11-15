@@ -102,12 +102,12 @@
    `:not(chapters):not(outline)` 排除，中栏会回退到 writer.css 的不透明 --pane。
    sage / honey 的章节 / 大纲两个分支都不命中，保留 --doc-surface 与 .editor-pane
    原阴影（--sh-sm + --panel-ring），不被 --surface-panel-shadow 覆盖。
-   特异性：分支 1 (0,5,0)、分支 2 (0,4,0)，均高于 writer.css 的 (0,1,0) / (0,2,0)。 */
+   data-theme 与 data-material 同挂 <html>，分支 2 必须把 [data-theme] 并到 :root
+   上（写成后代选择器永不命中）；特异性 (0,5,0) / (0,4,0) 高于 writer.css 的 (0,1,0)。 */
 :root:is([data-material='acrylic'], [data-material='mica'])
   .editor-pane:not([data-module='chapters']):not([data-module='outline']),
-:root:is([data-material='acrylic'], [data-material='mica'])
-  :is([data-theme='light'], [data-theme='dark'])
-  .editor-pane {
+:root[data-theme='light']:is([data-material='acrylic'], [data-material='mica']) .editor-pane,
+:root[data-theme='dark']:is([data-material='acrylic'], [data-material='mica']) .editor-pane {
   background: var(--surface-pane);
   box-shadow: var(--surface-panel-shadow);
 }
