@@ -2,6 +2,7 @@
  * 伏笔中栏视图：标题栏「新建」动作 + 伏笔列表（单卡见 `ForeshadowItem`）。
  *
  * - 空态文案取 `foreshadow` ns 的 `emptyTitle` / `emptyDesc`（提示正文右键创建）；
+ * - 标题栏动作：加号（新建）+ 筛选行（状态 + 搜索，见 `ForeshadowActivityActions`）；
  * - 手动新建走标题栏加号（未锚定伏笔，复用 `ForeshadowCreateDialog`）；
  * - 选中 / 详情编辑在右栏（`ForeshadowPanel`），中栏只做列表；
  * - 删除入口只在卡片上（二次确认在本视图持有 `deleteId`），右栏详情不再重复提供。
@@ -94,7 +95,7 @@ export default function ForeshadowView({
 
   return (
     <>
-      <ForeshadowActivityActions onCreate={handleCreate} />
+      <ForeshadowActivityActions bookId={bundle.bookId} onCreate={handleCreate} />
 
       <div className="editor-scroll">
         <div className="editor-inner is-full">

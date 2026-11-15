@@ -2,7 +2,7 @@
  * 灵感中栏视图：标题栏「新建」动作 + 灵感卡片网格。
  *
  * - 卡片结构见 `InspirationCard`（通用壳 `EntityStyleCard`，与伏笔 / 设定档案同款）；
- * - 筛选 / 搜索入口在活动栏模块浮层（`ActivityBarFilterPopover` + `InspirationFilterProvider`），
+ * - 筛选 / 搜索入口在标题栏筛选行（`InspirationFilterRow` + `InspirationFilterProvider`），
  *   中栏只读条件并消费已过滤的行；不再保留顶部下拉筛选条；
  * - 选中 / 详情编辑在右栏（`InspirationPanel`），中栏只做列表；
  * - 删除入口在卡片上（二次确认在本视图持有 `deleteId`）。

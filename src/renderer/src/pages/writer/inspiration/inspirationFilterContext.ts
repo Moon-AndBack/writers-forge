@@ -1,15 +1,15 @@
 /**
- * 灵感筛选条件（活动栏模块浮层 ↔ 中栏卡片网格共享）。
+ * 灵感筛选条件（标题栏筛选行 ↔ 中栏卡片网格共享）。
  *
- * 与设定档案 `dossierFilterContext` 同范式：入口在活动栏（`shell/activityBar.tsx`），
+ * 与设定档案 `dossierFilterContext` 同范式：入口在标题栏筛选行（`InspirationFilterRow`），
  * 消费方在中栏（`pages/writer/inspiration/InspirationView.tsx`）与装配 hook，两者
- * 分属 shell 与 pages 两棵子树，故把条件挂在外壳层（`App.tsx`）共享。
+ * 共用 Provider（挂在 `App.tsx`）的条件。
  *
  * 口径：
  * - **分类 = 标签**：`tag` 为精确匹配的标签，`null` 表示全部；
  * - `query` 为关键词，匹配标题 / 内容 / 标签（见 `filterInspirationMatch.ts`）；
  * - 条件按书打标（由 `InspirationFilterProvider` 维护），换书后旧条件自然失效；
- * - 浮层收起不清空条件，网格继续按既有条件过滤。
+ * - 条件在模块切换后仍保留，网格继续按既有条件过滤。
  */
 import { createContext, useContext } from 'react'
 

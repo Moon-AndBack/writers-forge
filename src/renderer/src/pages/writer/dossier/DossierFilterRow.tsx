@@ -6,20 +6,21 @@
  * 由 `DossierActivityActions` 按富文本聚焦态切换——聚焦编辑时整行让位给
  * `RichTextToolbar`，离开正文后换回本行（没有单独「退出编辑」按钮）。
  *
- * 筛选条件真源仍是 `dossierFilterContext`（按模块分桶、按书打标），本组件只换入口：
+ * 展示骨架与输入行为在通用行 `components/TitleBarFilterRow`（与伏笔 / 灵感共用）；
+ * 本文件只负责注入本域的数据：
  * - 分类：选项来自 `useDossierSubtypes`（本书分类表），首项「全部分类」；境界体系
- *   （`MODULE_HAS_SUBTYPE = false`）不渲染下拉，只保留搜索。分类在编辑弹窗里被删除后，
+ *   （`MODULE_HAS_SUBTYPE = false`）不传 `select`，只保留搜索。分类在编辑弹窗里被删除后，
  *   当前值不在选项中即回落 `FILTER_ALL`（只在成功拉取后校验，避免瞬时空列表误清）。
- * - 搜索：名称 + 别名（`filterDossierRows` 口径），草稿 / 防抖 / IME 见
- *   `useFilterQueryDraft`；切模块时本组件随 `DossierView` 重挂载，各模块关键词互不影响。
+ * - 搜索：名称 + 别名（`filterDossierRows` 口径）；切模块时本组件随 `DossierView`
+ *   重挂载，各模块关键词互不影响。
  *
  * 下拉打开前调用 `subtypes.reload()`：标题栏常驻，分类表可能在编辑弹窗中已变更；
  * 刷新失败保留旧选项，不打断筛选。
  */
 import { useCallback, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { SearchInput, Select } from '../../../components/ui'
-import { useFilterQueryDraft } from '../../../components/useFilterQueryDraft'
+import TitleBarFilterRow from '../../../components/TitleBarFilterRow'
+import type { TitleBarFilterSelect } from '../../../components/TitleBarFilterRow'
 import { FILTER_ALL, useDossierFilters } from './dossierFilterContext'
 import { MODULE_ENTITY_TYPE, MODULE_HAS_SUBTYPE } from './dossierTree'
 import type { DossierModule } from './dossierTree'
@@ -29,9 +30,6 @@ export interface DossierFilterRowProps {
   /** 当前设定域（决定分类来源与筛选桶）。 */
   module: DossierModule
 }
-
-/** 会打开分类下拉的按键（Enter / Space / 方向键由 Select 触发器处理）。 */
-const OPEN_KEYS = new Set(['Enter', ' ', 'ArrowDown', 'ArrowUp'])
 
 export default function DossierFilterRow({ module }: DossierFilterRowProps) {
   const { t } = useTranslation('dossier')
@@ -62,46 +60,26 @@ export default function DossierFilterRow({ module }: DossierFilterRowProps) {
     },
     [module, setFilter]
   )
-  const draft = useFilterQueryDraft(entry.query, commitQuery)
 
-  /** 下拉打开前刷新分类选项（pointerdown / 键盘打开都会先经过这里）。 */
-  const reloadSubtypes = (): void => {
-    subtypes.reload()
-  }
+  const select: TitleBarFilterSelect | undefined = hasSubtype
+    ? {
+        value: entry.subtype,
+        options,
+        ariaLabel: t('filter.subtypeAria'),
+        onChange: (next) => setFilter(module, { subtype: next }),
+        /** 下拉打开前刷新分类选项（pointerdown / 键盘打开都会先经过这里）。 */
+        onOpen: () => {
+          subtypes.reload()
+        }
+      }
+    : undefined
 
   return (
-    <div className="tb-dossier-filter">
-      {hasSubtype ? (
-        <span
-          className="tb-dossier-filter__select"
-          onPointerDown={reloadSubtypes}
-          onKeyDown={(event) => {
-            if (OPEN_KEYS.has(event.key)) reloadSubtypes()
-          }}
-        >
-          <Select
-            size="sm"
-            value={entry.subtype}
-            options={options}
-            ariaLabel={t('filter.subtypeAria')}
-            onChange={(next) => setFilter(module, { subtype: next })}
-          />
-        </span>
-      ) : null}
-      <SearchInput
-        className="tb-dossier-filter__search"
-        value={draft.value}
-        placeholder={t('filter.searchPlaceholder')}
-        aria-label={t('filter.searchAria')}
-        autoComplete="off"
-        spellCheck={false}
-        onChange={draft.onChange}
-        onCompositionStart={draft.onCompositionStart}
-        onCompositionEnd={draft.onCompositionEnd}
-        onKeyDown={draft.onKeyDown}
-        onBlur={draft.onBlur}
-        onClear={draft.onClear}
-      />
-    </div>
+    <TitleBarFilterRow
+      select={select}
+      query={entry.query}
+      onQueryCommit={commitQuery}
+      search={{ placeholder: t('filter.searchPlaceholder'), ariaLabel: t('filter.searchAria') }}
+    />
   )
 }

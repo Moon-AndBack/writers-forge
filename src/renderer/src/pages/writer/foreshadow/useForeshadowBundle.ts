@@ -44,7 +44,7 @@ export function useForeshadowBundle(
     reload
   } = useForeshadowWorkspace(enabled, bookId)
 
-  // 条件真源在渲染层共享 store（活动栏浮层写入）；这里只读并本地派生可见行。
+  // 条件真源在渲染层共享 store（标题栏筛选行写入）；这里只读并本地派生可见行。
   // 全量 `rows` 仍供选中派生 / 写操作使用，筛选不改变右栏选中项。
   const { filters: foreshadowFilters, clearAll: clearForeshadowFilters } =
     useForeshadowFilters(bookId)

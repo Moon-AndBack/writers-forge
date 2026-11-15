@@ -35,7 +35,6 @@ import ZoomControls from './shell/statusBarWidgets/ZoomControls'
 import { TypographyProvider } from './shell/statusBarWidgets/TypographyProvider'
 import { useTitleBarOverlay } from './theme/useTitleBarOverlay'
 import './styles/shell.css'
-import './styles/shell-activity-filter.css'
 import './styles/material.css'
 
 /**
@@ -229,14 +228,14 @@ export default function App({
                       桥必须位于 Provider 内层才能取到 flush 处理器。 */}
                   <BeforeCloseFlushProvider>
                     <BeforeCloseFlushBridge />
-                    {/* 模块切换未保存守卫：活动栏图标 / 筛选浮层的「切换模块」经
+                    {/* 模块切换未保存守卫：活动栏图标的「切换模块」经
                         `useRequestSwitch` 交由页面注册的守卫裁决（当前仅设定档案右栏有脏草稿
                         时弹两态确认）；无注册者时降级为直接 setActive。 */}
                     <UnsavedSwitchGuardProvider>
-                      {/* 设定档案筛选条件：入口在活动栏、消费在中栏，Provider 挂在两者共同祖先
+                      {/* 设定档案筛选条件：入口在标题栏筛选行、消费在中栏，Provider 挂在两者共同祖先
                         （口径同 TypographyProvider）；bookId 由 pathname 解析，唯一真源。 */}
                       <DossierFilterProvider>
-                        {/* 灵感筛选条件与已用标签：与设定档案同一范式，入口活动栏浮层、消费中栏网格。 */}
+                        {/* 灵感筛选条件与已用标签：与设定档案同一范式，入口标题栏筛选行、消费中栏网格。 */}
                         <InspirationFilterProvider>
                           <ActivityActionsProvider>
                             <div className="shell">

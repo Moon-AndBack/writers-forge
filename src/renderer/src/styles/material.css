@@ -361,18 +361,18 @@
    由同一作用域把 `--text-mute` 提升为 `--text-dim` 保证（按主题基色估算，
    浅色约 6:1、深色约 8:1，均高于 AA）；若实机仍嫌淡，再把默认档改为
    `--chrome-fill-strong`（11%），不要直接加深文字。
-   作用域仅 `.titlebar .tb-dossier-filter`：非材质态没有这些规则，两个控件
+   作用域仅 `.titlebar .tb-filter-row`：非材质态没有这些规则，两个控件
    仍用组件默认 `--soft-solid` / `--soft-hover-solid` / 聚焦 `--pane`，零变化。
    特异性：基础 (0,5,0)、hover / 聚焦 (0,7,0)，高于 form-extras / form-select
    的 (0,1,0)–(0,3,0)；Select 面板 portal 到 body，不受 `--text-mute` 提升影响。
    ============================================================ */
-:root:is([data-material='acrylic'], [data-material='mica']) .titlebar .tb-dossier-filter {
+:root:is([data-material='acrylic'], [data-material='mica']) .titlebar .tb-filter-row {
   --text-mute: var(--text-dim);
 }
 
 :root:is([data-material='acrylic'], [data-material='mica'])
   .titlebar
-  .tb-dossier-filter
+  .tb-filter-row
   :is(.wf-search, .wf-select__trigger) {
   background: var(--chrome-fill);
   box-shadow: var(--chrome-ring);
@@ -380,14 +380,14 @@
 
 :root:is([data-material='acrylic'], [data-material='mica'])
   .titlebar
-  .tb-dossier-filter
+  .tb-filter-row
   :is(.wf-search:hover:not(.is-disabled), .wf-select__trigger:hover:not(:disabled)) {
   background: var(--chrome-fill-hover);
 }
 
 :root:is([data-material='acrylic'], [data-material='mica'])
   .titlebar
-  .tb-dossier-filter
+  .tb-filter-row
   :is(
     .wf-search:focus-within,
     .wf-select__trigger:focus-visible,

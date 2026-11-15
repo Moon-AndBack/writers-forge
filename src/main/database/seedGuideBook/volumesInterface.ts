@@ -61,7 +61,7 @@ export const VOLUME_INTERFACE: SeedVolume = {
       title: '活动栏',
       paragraphs: [
         seedParagraph(
-          '这一章讲左侧那条活动栏：它管模块切换，有悬浮与固定两种状态，图标上还藏着一个筛选浮层。'
+          '这一章讲左侧那条活动栏：它管模块切换，有悬浮与固定两种状态；筛选入口不在活动栏，而在标题栏。'
         ),
         seedRichParagraph([{ text: '11 个模块与数字快捷键', bold: true }]),
         seedParagraph(
@@ -85,16 +85,16 @@ export const VOLUME_INTERFACE: SeedVolume = {
         seedParagraph(
           '当前模块有未保存的草稿时，切模块会先弹确认，两个选项：保存并切换 / 放弃并切换。选前者先落库再跳，选后者丢弃草稿直接跳。'
         ),
-        seedRichParagraph([{ text: '伏笔与灵感的筛选浮层', bold: true }]),
+        seedRichParagraph([{ text: '伏笔与灵感的筛选行', bold: true }]),
         seedParagraph(
-          '在伏笔与灵感的图标上悬停会弹出筛选浮层：伏笔是状态 4 档加搜索框，灵感是标签加搜索框。点其中一项，条件会写入该模块的筛选并直接切过去。'
+          '伏笔与灵感的筛选在标题栏：切到这两个模块后，加号右侧出现筛选行。伏笔是状态 4 档加搜索框，灵感是标签加搜索框。'
         ),
         seedRichParagraph([{ text: '注意', bold: true }]),
         seedBulletList([
           'Ctrl+数字只覆盖前 9 个模块，伏笔与灵感没有快捷键',
           '悬浮态的展开与收起都有延迟，鼠标快速划过不会误开',
           'Esc 收起只针对悬浮态，固定态要自己点开关切回去',
-          '筛选浮层点选等于一次带条件的跳转：写条件并切模块同时发生'
+          '筛选行只在当前模块内写入条件，不会替你切换模块'
         ])
       ]
     },

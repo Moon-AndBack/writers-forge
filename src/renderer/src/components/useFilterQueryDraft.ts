@@ -1,13 +1,17 @@
 /**
- * 筛选关键词草稿（标题栏设定筛选行 / 活动栏筛选浮层共用）。
+ * 筛选关键词草稿（标题栏筛选行：设定档案 / 伏笔 / 灵感共用）。
  *
  * 为什么要草稿：搜索框每次按键都写筛选 Context，会触发 Provider → 中栏网格全量重渲染，
  * 故本地受控 + 停止输入 `FILTER_QUERY_DEBOUNCE` 后再提交；组合输入（IME）期间挂起，
  * `compositionend` 后再按防抖提交，避免把拼音阶段当成关键词。
  *
  * 提交时机：防抖窗口结束 / 失焦 / Enter / 清空 / 卸载。卸载也会 flush，保证最后一次
- * 输入不随组件卸载（切换模块、浮层收起）丢失；提交函数经 ref 调用，本实例固定写入
+ * 输入不随组件卸载（切换模块）丢失；提交函数经 ref 调用，本实例固定写入
  * 挂载时所属模块，不会串到别的模块。
+ *
+ * 外部采纳：新建成功后域内会清空筛选（含关键词），标题栏常驻后若仍显示旧草稿，
+ * 会出现「输入框有词、网格已清空」的不一致——故外部值变化且与已提交值不同时，
+ * 采纳外部值并取消挂起的防抖（见下方 effect）。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
@@ -35,8 +39,8 @@ export interface FilterQueryDraft {
 }
 
 /**
- * @param initialValue 挂载时筛选条件中的关键词（之后不再跟随外部变化：
- *   组件按模块重挂载时自然重新初始化）。
+ * @param initialValue 筛选条件中的关键词（真源）。挂载时取初值，之后仅在外部值
+ *   与已提交值不同（如新建后清空筛选）时采纳外部值。
  * @param commit 写入筛选条件（相同值会被跳过，减少无谓重渲染）。
  */
 export function useFilterQueryDraft(
@@ -70,6 +74,21 @@ export function useFilterQueryDraft(
     }
   }, [])
 
+  /**
+   * 外部采纳：域内在新建成功后清空筛选（`ForeshadowView` / `useInspirationBundle`），
+   * 标题栏常驻后输入框若不跟随，会继续显示旧词而网格已清空。
+   * 只在外部值与已提交值不同时采纳——本实例提交后外部回写的同值不会打断正在进行的输入；
+   * 采纳时取消挂起的防抖，避免随后用旧草稿覆盖外部条件。
+   */
+  useEffect(() => {
+    if (initialValue === committedRef.current) return
+    committedRef.current = initialValue
+    pendingRef.current = false
+    valueRef.current = initialValue
+    setValue(initialValue)
+    cancelDebounce()
+  }, [cancelDebounce, initialValue])
+
   /** 写入筛选条件：与已提交值相同则跳过。 */
   const commitNow = useCallback((next: string): void => {
     if (next === committedRef.current) return
@@ -98,7 +117,7 @@ export function useFilterQueryDraft(
     }, FILTER_QUERY_DEBOUNCE)
   }, [cancelDebounce, commitNow])
 
-  // 卸载（切换模块 / 浮层收起）时先 flush 再清理，防抖窗口内的最后一次输入不丢。
+  // 卸载（切换模块）时先 flush 再清理，防抖窗口内的最后一次输入不丢。
   useEffect(() => flush, [flush])
 
   const onChange = (event: ChangeEvent<HTMLInputElement>): void => {

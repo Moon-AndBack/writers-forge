@@ -299,7 +299,7 @@ export function SelectionContextMenu({
     showToast
   })
   /**
-   * 伏笔筛选条件（外部 store 单例，活动栏浮层写入）：右键新建成功后须清空，
+   * 伏笔筛选条件（外部 store 单例，标题栏筛选行写入）：右键新建成功后须清空，
    * 否则新建的「建设中」伏笔在当前状态筛选（如只看「已回收」）下不可见。
    * 与标题栏「新建」同口径（见 `ForeshadowView` 的 `handleCreated`）。
    */

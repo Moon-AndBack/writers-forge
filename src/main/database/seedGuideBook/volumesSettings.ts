@@ -218,7 +218,6 @@ export const VOLUME_SETTINGS: SeedVolume = {
         seedRichParagraph([{ text: '悬停浮层与右键菜单', bold: true }]),
         seedBulletList([
           '悬停约 260ms 后显示，移出约 120ms 后隐藏',
-          '可交互的筛选浮层可用 Esc 收起，点浮层外部也会关闭',
           '右键菜单只在可编辑正文里出现，只读区域不弹',
           '右键菜单在 Esc、点外部、滚动、窗口尺寸变化、窗口失焦时都会关闭'
         ]),

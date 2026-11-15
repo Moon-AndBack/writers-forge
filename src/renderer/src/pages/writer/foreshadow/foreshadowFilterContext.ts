@@ -1,11 +1,10 @@
 /**
- * 伏笔筛选条件（活动栏模块浮层 ↔ 中栏卡片网格共享）。
+ * 伏笔筛选条件（标题栏筛选行 ↔ 中栏卡片网格共享）。
  *
- * 与灵感 / 设定档案同范式：入口在活动栏（`shell/ActivityBarFilterPopover`），
- * 消费方在中栏（`pages/writer/foreshadow/ForeshadowView`）与装配 hook，两者分属
- * shell 与 pages 两棵子树。**本模块刻意使用模块级外部 store 而非 React Context**：
- * `App.tsx` 不在本批可改文件范围内，无法把 Provider 挂到活动栏与写作页的共同祖先；
- * 外部 store 提供与 `useInspirationFilters` 一致的读取 / 写入 API，且只存在于渲染层单例。
+ * 与灵感 / 设定档案同范式：入口在标题栏筛选行（`ForeshadowFilterRow`，由
+ * `ForeshadowActivityActions` 注册），消费方在中栏（`pages/writer/foreshadow/ForeshadowView`）
+ * 与装配 hook。本模块沿用模块级外部 store 而非 React Context：读取 / 写入统一经
+ * `useForeshadowFilters`，调用方不感知实现，也无需为单一域在 App 层新增 Provider。
  *
  * 口径：
  * - **分类 = 派生展示状态**（`deriveForeshadowStatus`）：`status` 为精确匹配状态，
@@ -13,7 +12,7 @@
  * - `query` 为关键词，匹配名称 / 描述 / 回收备注 / 三处原文摘抄
  *   （见 `foreshadowFilterMatch.ts`）；
  * - 条件按书打标：换书后旧条件自然失效（store 只保留最近一次写入的书）；
- * - 浮层收起不清空条件，网格继续按既有条件过滤。
+ * - 条件在模块切换后仍保留，网格继续按既有条件过滤。
  */
 import { useCallback, useSyncExternalStore } from 'react'
 import type { ForeshadowDisplayStatus } from '../../../../../shared/foreshadowStatus'

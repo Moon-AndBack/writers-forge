@@ -4,7 +4,7 @@
  * 筛选口径与设定档案五域一致：
  * - 列表**一次拉全书**（`inspiration.list(bookId)`，不带标签），筛选 / 搜索在渲染层
  *   用纯函数 `filterInspirationRows` 本地派生；
- * - 条件真源在外壳层 `InspirationFilterProvider`（活动栏浮层写入），本 hook 只读；
+ * - 条件真源在外壳层 `InspirationFilterProvider`（标题栏筛选行写入），本 hook 只读；
  * - 列表态按 `bookId` 打标，派生时标记不一致即视为加载中，换书不闪旧数据；
  * - **选中为派生值且按全量 `allRows` 计算**：筛选 / 搜索不改变选中项（对齐实体五域）；
  * - 右栏只改本地草稿，点保存才落库；切条目有脏则挂起两态确认（`guardSwitch` /
@@ -204,7 +204,7 @@ export function useInspirationBundle(
             ? { ...prev, rows: prev.rows.map((row) => (row.id === id ? updated : row)) }
             : prev
         )
-        // 标签集合可能变化：同步活动栏浮层的分类选项（异步，不阻塞保存返回）。
+        // 标签集合可能变化：同步标题栏筛选行的分类选项（异步，不阻塞保存返回）。
         void refreshTags()
         return true
       } catch (error) {

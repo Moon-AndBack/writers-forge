@@ -44,11 +44,11 @@ const CORE_LOADERS: Record<Locale, () => Promise<{ default: LocalePackage }>> = 
  * 语言 → 写作域语言包动态加载器：与 core **分开的模块**，故单独成 chunk，
  * 只有进入写作页（或写作页内切换语言）时才会被请求。
  *
- * 注意 `dossier` 归入本包的前提是「活动栏只在写作页渲染」：使用 `dossier` 的
- * `ActivityBarFilterPopover` 挂在活动栏内，而活动栏是否渲染由 `useActivityBar().visible`
- * 决定——只有 `pages/Writer.tsx` 通过 `useRegisterActivityBar(true)` 注册，书架 / 欢迎页
- * 不注册。若将来活动栏出现在书架等非写作页，必须把 `dossier` 迁回 core 包（或在该页
- * 单独 `ensureWriterNamespaces`），否则会出现缺 key。
+ * 注意 `dossier` 归入本包的前提是「只在写作页使用」：设定档案的标题栏筛选行
+ * （`DossierFilterRow`）由 `DossierActivityActions` 注册进标题栏模块动作插槽，
+ * 而该插槽只渲染写作页模块的动作（`pages/Writer.tsx` 经活动栏注册可见性），
+ * 书架 / 欢迎页不会挂载。若将来这些 ns 出现在非写作页，必须把 `dossier` 迁回 core 包
+ * （或在该页单独 `ensureWriterNamespaces`），否则会出现缺 key。
  */
 const WRITER_LOADERS: Record<Locale, () => Promise<{ default: WriterPackage }>> = {
   'zh-CN': () => import('./locales/zh-CN/writerResources'),

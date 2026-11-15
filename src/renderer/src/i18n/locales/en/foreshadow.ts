@@ -15,7 +15,6 @@ const foreshadow = {
     all: 'All',
     searchPlaceholder: 'Search foreshadowing',
     searchAria: 'Search foreshadowing',
-    search: 'Search',
     statusAria: 'Filter foreshadowing by status'
   },
   listItem: {

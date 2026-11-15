@@ -9,14 +9,12 @@ const inspiration = {
   emptyTitle: 'No inspiration yet',
   emptyDesc: 'Click “+” in the title bar to create one and jot down fragments and ideas',
   emptyFilteredTitle: 'No inspiration matches the current filter',
-  emptyFilteredDesc:
-    'Change the tag in the activity bar filter popover, or clear the search keyword',
+  emptyFilteredDesc: 'Change the tag in the title bar filter row, or clear the search keyword',
   filter: {
     all: 'All',
     tagAria: 'Filter by tag',
     searchPlaceholder: 'Search titles, content or tags',
-    searchAria: 'Search titles, content or tags',
-    search: 'Search'
+    searchAria: 'Search titles, content or tags'
   },
   field: {
     untitled: 'Untitled inspiration',
