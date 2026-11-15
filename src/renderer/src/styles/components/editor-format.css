@@ -145,8 +145,7 @@
   cursor: pointer;
   transition:
     background var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease);
+    color var(--dur-fast) var(--ease);
 }
 
 .wf-format-pop__btn:hover:not(:disabled) {
@@ -157,12 +156,12 @@
 .wf-format-pop__btn.is-active {
   color: var(--brand);
   font-weight: 600;
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
-  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane));
 }
 
 .wf-format-pop__btn.is-active:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--brand) 20%, var(--pane));
+  /* hover 比选中再深 6pp，保持原有加深意图。 */
+  background: color-mix(in srgb, var(--brand) calc(var(--select-tint) + 6%), var(--pane));
 }
 
 .wf-format-pop__btn.is-danger:hover:not(:disabled) {

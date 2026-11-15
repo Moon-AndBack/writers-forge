@@ -40,7 +40,7 @@
   background: color-mix(in srgb, var(--brand) 12%, var(--pane));
 }
 
-/* 色点：非选中中性弱化，选中品牌色（无缩放，仅颜色 / 阴影过渡）。 */
+/* 色点：非选中中性弱化，选中品牌色（无缩放，仅颜色 / 不透明度过渡）。 */
 .plot-line-dot {
   width: 8px;
   height: 8px;
@@ -50,14 +50,12 @@
   opacity: 0.55;
   transition:
     background var(--dur-fast) var(--ease),
-    opacity var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease);
+    opacity var(--dur-fast) var(--ease);
 }
 
 .plot-line.is-active .plot-line-dot {
   background: var(--brand);
   opacity: 1;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 12%, transparent);
 }
 
 .plot-line-name {

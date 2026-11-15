@@ -245,16 +245,14 @@
 }
 
 /* 切换按钮：未激活 = Button 默认 secondary（软底，与同行两个下拉同一视觉层，
-   不抢右侧主操作的视觉）；激活（aria-pressed="true"）= 品牌浅底 + 品牌字 +
-   内描边环，口径同 `.wf-format-pop__btn.is-active` / `.wf-seg__item.is-active`。
-   只改颜色 / 描边 / 阴影，不加 transform（§8）；也不改字重——切换时字重
-   变化会让按钮宽度抖动、引起控件行重排。 */
+   不抢右侧主操作的视觉）；激活（aria-pressed="true"）= 品牌浅底 + 品牌字，
+   口径同 `.wf-format-pop__btn.is-active`。选中只靠底色 + 文字色（§8.5），
+   不加描边 / 光环 / 字重——字重变化会让按钮宽度抖动、引起控件行重排。 */
 .ai-panel__carry .wf-btn[aria-pressed='true'],
 .ai-panel__carry .wf-btn[aria-pressed='true']:hover:not(:disabled),
 .ai-panel__carry .wf-btn[aria-pressed='true']:active:not(:disabled) {
   color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent);
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane));
 }
 
 /* 发送 / 停止靠右，换行后仍贴行尾。 */

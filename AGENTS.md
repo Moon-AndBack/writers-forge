@@ -147,9 +147,10 @@ src/
 ### 8.5 列表行与选中态
 
 - **MUST** 树 / 导航行内衬 9×10、数据行 8×10、行内 gap 10、圆角 `--r-lg`；同类行不得另立内衬。
-- **MUST** 选中态统一公式：`background: color-mix(in srgb, var(--brand) 12%, var(--pane))`（行位于 `--soft-solid` 卡内时混 `--soft-solid`）；主名 `color: var(--brand)` + `font-weight: 600`；状态点转 `--brand`。
+- **MUST** 选中态统一公式：`background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane))`（行位于 `--soft-solid` 卡内时混 `--soft-solid`；比例由 `theme.css` 四主题定义，light / dark / sage 18%、honey 24%）；主名 `color: var(--brand)` + `font-weight: 600`；状态点转 `--brand`。
 - **MUST** 选中行 hover 回落 `--soft-hover-solid`（卡内用 `--control-on-soft`），不得在品牌底上叠加第二层品牌色。
 - **MUST** 禁止整行加粗、左侧色条、下划线等第二套选中语言；禁止只换文字色不换底（或反之）的不完整选中态。
+- **MUST** 选中态不得以描边 / 光环作为选中标识；区分只能靠底色、文字色、字重与图标（卡片类暂保留的三处见 `docs/ui/design-language.md` §9，待下一批收敛）。
 - **MUST** 行操作按钮 22×22，绝对定位右缘，`visibility` + `opacity` 在 `:hover` / `:focus-within` 浮现；主名用 `margin-right` 让位（现有 48 / 52 / 72 / 95），不得用 `padding` 让位。
 - **MUST** 行 hover 仅过渡背景色，时长用 `--dur-fast`。
 

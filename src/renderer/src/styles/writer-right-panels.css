@@ -152,16 +152,12 @@
   gap: 4px;
 }
 
-/* 圆点按右栏列宽收小（仍保留空心环 / 选中实心 + 光晕，无位移）。 */
+/* 圆点按右栏列宽收小（常态 3px 光环保留；选中只切实心填充，不再加档）。 */
 .rp-plot-timeline .plot-dot {
   width: 13px;
   height: 13px;
   border-width: 3px;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--line-color, var(--brand)) 12%, transparent);
-}
-
-.rp-plot-timeline .plot-row.is-active .plot-dot {
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--line-color, var(--brand)) 20%, transparent);
 }
 
 /* 卡片吃满内容列（覆盖中栏 clamp 宽），底改 `--pane`、不加描边，

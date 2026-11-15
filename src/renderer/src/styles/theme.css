@@ -204,6 +204,12 @@
      品牌文字承载。honey 24% / dark 18%，见各主题块。 */
   --seg-thumb-bg: color-mix(in srgb, var(--brand) 19%, var(--pane));
 
+  /* 选中态品牌底色比例（AGENTS §8.5）：选中只靠底色 + 品牌字 + 600 字重，
+     不再用描边 / 光环。18% 略低于分段滑块的 19%——选中项有文字信号，滑块
+     只有一个移动底板。dark / sage 同为 18%，honey 24%（品牌色与纸面明度
+     最接近，见 honey 块）。 */
+  --select-tint: 18%;
+
   /* 文本 */
   --text: #1a1a1a;
   --text-dim: #5c5c5c;
@@ -278,6 +284,7 @@
   /* 分段控件选中底板：dark 的 --pane 与软底差更小，18% 时对轨道明度比约
      1.13:1（17% 仅约 1.09），保留品牌蓝调差异以维持选中可辨。 */
   --seg-thumb-bg: color-mix(in srgb, var(--brand) 18%, var(--pane));
+  --select-tint: 18%;
 
   --text: #ffffff;
   --text-dim: #c8c8c8;
@@ -349,6 +356,7 @@
 
   /* 分段控件选中底板：19%（对轨道明度比约 1.10:1），绿调品牌色相参与区分。 */
   --seg-thumb-bg: color-mix(in srgb, var(--brand) 19%, var(--pane));
+  --select-tint: 18%;
 
   --text: #1a2a1e;
   --text-dim: #4e6254;
@@ -411,6 +419,9 @@
   /* 分段控件选中底板：honey 的品牌色与纸面明度最接近，提到 24% 才够
      （对轨道明度比约 1.13:1；19% 仅约 1.08）。 */
   --seg-thumb-bg: color-mix(in srgb, var(--brand) 24%, var(--pane));
+
+  /* 选中底色比例：honey 品牌色与纸面明度最接近，24% 才够（同 --seg-thumb-bg）。 */
+  --select-tint: 24%;
 
   --text: #2b2415;
   --text-dim: #6a5c3c;

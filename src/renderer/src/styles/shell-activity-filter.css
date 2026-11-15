@@ -170,7 +170,6 @@
   cursor: pointer;
   transition:
     background var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease),
     color var(--dur-fast) var(--ease);
 }
 
@@ -178,16 +177,16 @@
   background: var(--soft-press-solid);
 }
 
-/* 选中态用品牌色三重标记（淡底 + 描边 + 文字色）与未选中拉开层级；
-   描边同样走 inset，hover 只加深底色、不改几何。 */
+/* 选中态用品牌色双重标记（淡底 + 文字色）与未选中拉开层级，不用描边 / 光环
+   （§8.5）；hover 只加深底色、不改几何。 */
 .act-filter__item.is-active {
   color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent);
+  background: color-mix(in srgb, var(--brand) var(--select-tint), transparent);
 }
 
 .act-filter__item.is-active:hover {
-  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  /* hover 比选中再深 6pp，保持原有加深意图。 */
+  background: color-mix(in srgb, var(--brand) calc(var(--select-tint) + 6%), transparent);
 }
 
 /* 键盘焦点环：与搜索按钮同口径（品牌色 60% + 1px 外扩），选中 / 未选中均可辨。 */

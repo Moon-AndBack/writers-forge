@@ -157,9 +157,9 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 32 
 ### 4.2 选中态公式
 
 ```css
-/* 基准：行位于 --pane 上 */
+/* 基准：行位于 --pane 上（--select-tint：light / dark / sage 18%，honey 24%） */
 .row.is-active {
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane));
 }
 .row.is-active .row-name {
   color: var(--brand);
@@ -172,7 +172,7 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 32 
 
 /* 行位于 --soft-solid 卡内：混合目标换成卡片底色 */
 .card .row.is-active {
-  background: color-mix(in srgb, var(--brand) 12%, var(--soft-solid));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--soft-solid));
 }
 
 /* 选中行 hover 回落中性底，避免品牌底叠加成第三种颜色 */
@@ -183,6 +183,9 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 32 
   background: var(--control-on-soft);
 }
 ```
+
+- **MUST** 选中只能靠底色 + 品牌文字 / 600 字重 + 图标表达，**不得**以描边、内描边环、外发光等「环」语言作为选中标识；环只保留给 hover 光晕与 `:focus-visible` 焦点环。
+- `--select-tint` 定义在 `theme.css` 四主题块（light / dark / sage 18%、honey 24%）。honey 品牌色与纸面明度最接近，需更高混入比例；AI 携带按钮、格式工具条按钮、活动栏筛选 chip 三处非行选中态同口径消费。
 
 已验证位置：`writer-side-chapters.css:57-83`、`writer-outline.css:46-65,124-136`、`writer-trash.css:193-223`。
 
@@ -220,6 +223,7 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 32 
 - **MUST NOT** 左侧色条、下划线、边框高亮等第二套选中语言。
 - **MUST NOT** 只换文字色不换底，或只换底不换主名色。
 - **MUST NOT** 在选中品牌底上再叠一层品牌 hover；必须回落 `--soft-hover-solid` / `--control-on-soft`。
+- **MUST NOT** 以描边 / 内描边环 / 外发光作为选中标识（同 §4.2；卡片类暂保留三处见 §9 表后备注）。
 
 ### 4.5 焦点环
 
@@ -433,6 +437,14 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 | 32  | 材质态左右栏 / 悬浮活动栏半透明    | `styles/material.css`、`styles/theme.css`                                                                                                                                                                            | `--surface-pane` = `--pane` 58%（`--pane-surface-alpha`）；面板上的浮卡用 `--surface-pane-float` = `--text` 10% 薄雾 + 1px 文字 8% 环（复合约 64.5%）；只读正文块与书架卡用 `--surface-pane-card`（58%）；面板内 5 个软底按 `--text` 同域重派生；面板阴影降为 `--panel-ring` | 让材质真正参与界面，而非只从栏缝透出；软底不重派生会把 58% 面板重新铺成实色，卡片若与面板同取 58% 同色叠加会复合成 83.4% 实色贴片                      | 仅 `.sidepane` / `.rightpane` / 悬浮 `.activitybar` 与 **非章节 / 大纲**的 `.editor-pane`（四主题）；**sage / honey 的章节 / 大纲中栏不在例外范围内**；固定态活动栏（#11）与所有浮层不适用                                                                |
 | 33  | 标题栏分段 / 筛选控件 28px 档      | `styles/titlebar.css`（`.titlebar .tb-view-switch .wf-seg`、`.titlebar .tb-dossier-filter .wf-search` / `.wf-select__trigger`）                                                                                      | 三类控件外层高 28px；Segmented item 随容器 `height: 100%`，thumb 由实测 item 高与 2px 内衬推导为 24px、上下各内缩 2px；搜索框 / 下拉垂直内衬 0，12px / 1.4 行高与 15px 图标 / 18px 清除按钮均在 28px 内                                                                      | 42px 标题栏内 32px 控件偏挤，28px 上下各留 7px 更贴合；同一筛选行的分类下拉与搜索必须等高（§8.4）                                                      | 仅 `.titlebar` 作用域内的 `.tb-view-switch` 分段控件与 `.tb-dossier-filter` 筛选行控件；书架工具条 / 弹窗 / 主题面板 / 右栏页签等其它实例仍为 32px                                                                                                        |
 | 34  | 材质态书架页透明                   | `styles/material.css`（书架页段）、`styles/bookshelf.css` 注释                                                                                                                                                       | 书籍卡 `--surface-pane-card`（`--pane` 58%；亚克力下叠 25% scrim 复合约 68.5%，云母下壁纸贡献 42%）；选中卡 `--brand` 5% 混卡底（约 60.1%）；工具条段控 / 搜索 / 排序改用 `--chrome-fill` + `--chrome-ring`（hover 8%、聚焦 / 展开 11%）；页面内软底按主题同域重派生         | 书架页不在三栏面板作用域内，卡片与工具条原为不透明实色，材质只从卡片缝隙透出，书籍卡信息区成了实色贴片；卡片必须比页面底更实，避免满屏卡片「透成一团」 | 仅材质态（acrylic / mica）的 `.bookshelf-view`：书籍卡、工具条控件与页面内软底；封面画作（`.book-cover`）、状态胶囊（`.book-status`）与封面操作按钮（`.book-actions`）保持不透明；`none` 回退原不透明值；面板上的浮卡不用 `--surface-pane-card`（见 #32） |
+
+**本批暂保留（下一批处理）**：选中态已统一改为「底色 + 文字色 / 字重」（§4.2），以下三处的环本身即主选中信号，本轮不动，待补足第二信号后删除：
+
+| 位置   | 选择器                              | 现状                                                         |
+| ------ | ----------------------------------- | ------------------------------------------------------------ |
+| 实体卡 | `components/surface.css:83-89`      | `.wf-card--halo.is-active`：2px 品牌环 + 外发光              |
+| 书籍卡 | `styles/bookshelf.css:192-197`      | `.book-card.is-selected`：2px 压暗品牌环 + 外发光（例外 #8） |
+| 主题卡 | `styles/theme-switcher.css:138-142` | `.ts-option.is-selected`：品牌色 border + inset 环           |
 
 ---
 

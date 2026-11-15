@@ -102,7 +102,8 @@
 }
 
 /* 节点圆点：按选中线配置色（`--line-color` 行内透传，未透传回退品牌色）；
-   非选中空心环，选中实心 + 外发光（仅颜色 / 阴影过渡，无位移 / 缩放）。 */
+   非选中空心环，选中实心填充（仅颜色 / 阴影过渡，无位移 / 缩放；选中只切
+   填充，不再叠加额外的选中光晕）。 */
 .plot-dot {
   width: 15px;
   height: 15px;
@@ -114,14 +115,12 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--line-color, var(--brand)) 12%, transparent);
   transition:
     background 0.2s var(--ease),
-    border-color 0.2s var(--ease),
-    box-shadow 0.2s var(--ease);
+    border-color 0.2s var(--ease);
 }
 
 .plot-row.is-active .plot-dot {
   background: var(--line-color, var(--brand));
   border-color: var(--line-color, var(--brand));
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--line-color, var(--brand)) 20%, transparent);
 }
 
 /* 场景卡：结构 / 内衬 / 圆角 / 柔和底 / 常态阴影 / 进场动画 / hover 与选中光晕
