@@ -183,6 +183,15 @@
 .on-soft .wf-textarea[aria-readonly='true'] {
   background: var(--control-on-soft);
 }
+/* SearchInput 外壳同为 --soft-solid：落在 `.on-soft` 卡片内（如右栏实体页签筛选卡）
+   会与容器同色、看不出边界，默认态改用 --control-on-soft。`:not(:focus-within)`
+   让聚焦时仍回落到基类的 --pane + 品牌环；hover 不覆盖聚焦态。 */
+.on-soft .wf-search:not(:focus-within) {
+  background: var(--control-on-soft);
+}
+.on-soft .wf-search:hover:not(.is-disabled):not(:focus-within) {
+  background: var(--control-on-soft-hover);
+}
 
 /* ============================================================
    Checkbox / Radio（共用外壳）

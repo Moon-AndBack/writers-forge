@@ -131,7 +131,7 @@ src/
 
 - **MUST** 字号统一为 5 档语义令牌，取自 `theme.css` 的 `--fs-*`：`--fs-micro` 10（Badge / 徽标 / 关闭图标 / 元信息提示）、`--fs-body` 12（界面基准：输入 / 按钮 / 紧凑正文）、`--fs-title` 14（卡片 / 详情 / 弹窗标题）。展示档 `--fs-display` 20 / `--fs-display-lg` 26 仅限已登记位置；正文用 `calc(18px * var(--doc-zoom))`。
 - **MUST** 界面 CSS 不得再写 `font-size` 数值字面量，只能引用 `--fs-*` 令牌。封面装饰首字 34 / 56 为已登记例外（按卡片比例，不属界面字阶）。新字号需求先复用 5 档，确需新增时同步更新 `design-language.md` 与 `theme.css`。
-- **MUST** 正文容器（编辑器 / 右栏大纲 / 回收站详情）使用 `--doc-font` + `calc(18px * var(--doc-zoom))` + `--doc-line` + `--doc-letter`；右栏只读通用底座用 `--doc-font` + `--fs-body` / 1.75（不跟随正文缩放）。
+- **MUST** 正文容器（编辑器 / 右栏大纲 / 实体右栏详情正文 / 回收站详情）使用 `--doc-font` + `calc(18px * var(--doc-zoom))` + `--doc-line` + `--doc-letter`；右栏只读通用底座用 `--doc-font` + `--fs-body` / 1.75（不跟随正文缩放）。
 - **MUST** 文本层级：`--text` 主文本；`--text-dim` 次级 / 只读正文；`--text-mute` 元信息 / 占位 / 禁用提示。不得用 `opacity` 代替 `--text-mute`。
 - **SHOULD** 字重只用 400 / 500 / 600 / 700：400 正文；500 控件标签 / 分段项；600 卡片标题 / 选中行主名 / 小节标签；700 页面标题 / 大数字 / 强调。
 

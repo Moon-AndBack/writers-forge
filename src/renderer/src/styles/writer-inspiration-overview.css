@@ -63,8 +63,8 @@
 .inspiration-card.wf-entity-card--compact .inspiration-card__desc {
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  font-size: var(--fs-micro);
-  line-height: 1.55;
+  font-size: var(--fs-body);
+  line-height: 1.6;
 }
 
 /* ---------- 只读详情（内容排版；壳见 writer-right-panels.css） ---------- */

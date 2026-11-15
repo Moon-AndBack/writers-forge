@@ -22,6 +22,13 @@ const entities = {
   overview: {
     empty: 'No settings entries in this book yet'
   },
+  filter: {
+    searchPlaceholder: 'Search name, alias, or category',
+    searchAria: 'Search entities',
+    categoryAll: 'All categories',
+    categoryAria: 'Filter by category',
+    noMatch: 'No matching entities'
+  },
   detail: {
     back: 'Back',
     category: 'Category',

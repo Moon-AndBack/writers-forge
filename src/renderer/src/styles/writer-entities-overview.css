@@ -84,13 +84,33 @@
 }
 
 /* 摘要两行：`.dossier-card__desc` 的 4 行裁剪（0,1,0）由本规则（0,3,0）覆盖，
-   行高同步收到 1.55，裁切高度按两行重算。 */
+   字号回到紧凑正文档 `--fs-body`（12px，10px 只属徽标 / 元信息），行高 1.6，
+   裁切高度按两行重算。 */
 .dossier-card.wf-entity-card--compact .dossier-card__desc {
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  max-height: calc(2 * 1.55em);
-  font-size: var(--fs-micro);
-  line-height: 1.55;
+  max-height: calc(2 * 1.6em);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+}
+
+/* ---------- 筛选卡（分类下拉 + 搜索） ---------- */
+/* 与剧情页签的筛选卡同款：独立一张软底卡，两个控件同处一行且等高（32px）。
+   搜索略宽，窄栏下长占位文案不早早截断；控件底色 / 聚焦环由 `.on-soft` 提供
+   （见 components/form.css）。 */
+.rp-entity-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rp-entity-filters > .wf-select {
+  flex: 1 1 0;
+  width: auto;
+}
+
+.rp-entity-filters > .wf-search {
+  flex: 1.3 1 0;
 }
 
 /* ---------- 只读详情（内容排版；壳见 writer-right-panels.css） ---------- */
@@ -176,10 +196,26 @@
   min-width: 0;
 }
 
-/* 读取失败回退列表行纯文本：保留换行与空白。 */
+/* 实体正文跟随程序正文排版：字号随状态栏缩放，行高 / 字距 / 字族同正文；
+   首行缩进只作用于文档顶层段落（列表 / 引用 / 表格内 p 由基础规则保持 0）。 */
+.rp-read.wf-entity-detail__body .ProseMirror {
+  font-family: var(--doc-font);
+  font-size: calc(18px * var(--doc-zoom));
+  line-height: var(--doc-line);
+  letter-spacing: var(--doc-letter);
+}
+
+.rp-read.wf-entity-detail__body .ProseMirror > p {
+  text-indent: 2em;
+}
+
+/* 读取失败回退列表行纯文本：保留换行与空白；字族 / 字号 / 行高同步正文，
+   避免失败态比正常正文小一号（纯文本不套首行缩进）。 */
 .wf-entity-detail__platext {
-  font-size: var(--fs-body);
-  line-height: 1.7;
+  font-family: var(--doc-font);
+  font-size: calc(18px * var(--doc-zoom));
+  line-height: var(--doc-line);
+  letter-spacing: var(--doc-letter);
   color: var(--text-dim);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
