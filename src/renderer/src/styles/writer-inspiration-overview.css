@@ -106,7 +106,9 @@
   color: var(--text-mute);
 }
 
-/* 纯文本正文：保留换行与首尾空白，长词 / 长链接不撑破右栏。 */
+/* 正文容器现挂 `.doc-body` 渲染块级富文本：换行由块结构承担，此处的 `pre-wrap`
+   （纯文本时代口径）已被 `writer-inspiration.css` 的 `.doc-body` 规则改回 `normal`；
+   余下的 `overflow-wrap` 只保证长词 / 长链接不撑破右栏。 */
 .inspiration-readonly__content {
   flex: 1 1 auto;
   min-height: 0;
