@@ -73,10 +73,12 @@
 /* ---------- 表面令牌 ---------- */
 :root:is([data-material='acrylic'], [data-material='mica']) {
   --surface-pane: color-mix(in srgb, var(--pane) var(--pane-surface-alpha), transparent);
-  /* 仅用于左右栏内原不透明卡：`--pane` 82% 叠在 58% 面板上，复合不透明度
-     1 − (1 − 58%) × (1 − 82%) ≈ 92.4%，严格高于 58% 面板，保证「卡 > 栏」
-     层级不被反转；浮层 / 弹窗 / 书架不消费本令牌。 */
-  --surface-pane-card: color-mix(in srgb, var(--pane) 82%, transparent);
+  /* 仅用于左右栏内原不透明卡：卡片自身取与面板相同的 58%，叠在 58% 面板上
+     复合不透明度 1 − (1 − 58%)² ≈ 82.4%，仍严格高于 58% 面板，保证「卡 > 栏」
+     层级不被反转；相比 82%（复合 92.4%）让壁纸贡献从约 5–7% 提升到约 13–18%，
+     卡片不再显实。**令牌自身不得低于面板档 58%**，否则卡与栏的层次差会被压没；
+     浮层 / 弹窗 / 书架不消费本令牌。 */
+  --surface-pane-card: color-mix(in srgb, var(--pane) 58%, transparent);
   /* 半透明面板上再压 --sh-sm 会形成「玻璃下垫黑影」，降为描边环；
      与固定态活动栏（shell.css:357-359）同一口径。 */
   --surface-panel-shadow: var(--panel-ring);
@@ -177,11 +179,13 @@
    ------------------------------------------------------------------
    面板降至 58% 后，栏内仍用不透明 `--pane` 的卡片会成为「透明栏里的实色贴片」。
    这些元素在非材质态需要不透明底来与 `--soft-solid` 分层（卡 > 栏），材质态
-   改用 `--surface-pane-card`（82%），复合不透明度约 92.4%，仍严格高于 58%
-   面板，层次不被反转；壁纸仅以约 7%（云母）/ 5%（亚克力）的比例透出。
+   改用 `--surface-pane-card`（与面板同取 `--pane` 58%）；叠在 58% 面板上复合
+    不透明度约 82.4%，仍严格高于 58% 面板，层次不被反转。
+   相比 82% 档（复合约 92.4%），壁纸以约 13%（亚克力）/ 18%（云母）的比例透出，
+    卡片不再显实。
 
-   只读正文块（代码块 / 行内代码 / 表头 / 缺图占位）保留可辨识边界：82% 卡底
-   与周围软底的明度差约为改前的 82%，并叠加等宽字体 / 表格网格线 / 虚线边框，
+   只读正文块（代码块 / 行内代码 / 表头 / 缺图占位）保留可辨识边界：58% 卡底
+   与周围软底的明度差约为改前的 58%，并叠加等宽字体 / 表格网格线 / 虚线边框，
    代码块不会与正文混淆。
 
    仅 `.rightpane`：左栏（`.sidepane`）静置态没有 `--pane` 卡；浮层 / 弹窗 /
@@ -252,4 +256,52 @@
   /* 半透明滑块上再压 --sh-xs 会形成「玻璃下垫黑影」，与三栏面板同一口径改描边环
      （默认态 --chrome-ring 为 none，此处仅在材质态生效）。 */
   box-shadow: var(--chrome-ring);
+}
+
+/* ============================================================
+   设定五域标题栏筛选行 —— 材质态 chrome 薄雾底
+   ------------------------------------------------------------------
+   分类下拉与搜索框是输入类控件，不能沿用按钮的透明底（按钮无输入文本）。
+   默认取 `--chrome-fill`（`--text` 5%）+ 1px `--chrome-ring` 描边环；
+   hover 升到 8%，聚焦 / 下拉展开升到 11% 并保留组件原有的品牌焦点环。
+   5% 只负责把控件从透明标题栏里「托」出来，输入 / placeholder 的可读性
+   由同一作用域把 `--text-mute` 提升为 `--text-dim` 保证（按主题基色估算，
+   浅色约 6:1、深色约 8:1，均高于 AA）；若实机仍嫌淡，再把默认档改为
+   `--chrome-fill-strong`（11%），不要直接加深文字。
+   作用域仅 `.titlebar .tb-dossier-filter`：非材质态没有这些规则，两个控件
+   仍用组件默认 `--soft-solid` / `--soft-hover-solid` / 聚焦 `--pane`，零变化。
+   特异性：基础 (0,5,0)、hover / 聚焦 (0,7,0)，高于 form-extras / form-select
+   的 (0,1,0)–(0,3,0)；Select 面板 portal 到 body，不受 `--text-mute` 提升影响。
+   ============================================================ */
+:root:is([data-material='acrylic'], [data-material='mica']) .titlebar .tb-dossier-filter {
+  --text-mute: var(--text-dim);
+}
+
+:root:is([data-material='acrylic'], [data-material='mica'])
+  .titlebar
+  .tb-dossier-filter
+  :is(.wf-search, .wf-select__trigger) {
+  background: var(--chrome-fill);
+  box-shadow: var(--chrome-ring);
+}
+
+:root:is([data-material='acrylic'], [data-material='mica'])
+  .titlebar
+  .tb-dossier-filter
+  :is(.wf-search:hover:not(.is-disabled), .wf-select__trigger:hover:not(:disabled)) {
+  background: var(--chrome-fill-hover);
+}
+
+:root:is([data-material='acrylic'], [data-material='mica'])
+  .titlebar
+  .tb-dossier-filter
+  :is(
+    .wf-search:focus-within,
+    .wf-select__trigger:focus-visible,
+    .wf-select.is-open .wf-select__trigger
+  ) {
+  background: var(--chrome-fill-strong);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
+    0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
 }

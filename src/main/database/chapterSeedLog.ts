@@ -12,10 +12,19 @@
  */
 
 /** 当前种子契约版本：`chapterSeed.ts` 的 `MIGRATION_KEY` 由此拼出（升版本 = 老库强制重灌）。 */
-export const CHAPTER_SEED_VERSION = 'v168'
+export const CHAPTER_SEED_VERSION = 'v169'
 
 /**
- * 最近版本变更日志（v168；更早版本见上述历史文件）。
+ * 最近版本变更日志（v169；更早版本见上述历史文件）。
+ *
+ * `v169`（右栏卡片再透明 + 标题栏筛选薄雾批）：`--surface-pane-card` 由 `--pane` 82%
+ * 降至与面板同档的 58%——叠在 58% 面板上复合约 82.4%，仍严格高于面板，壁纸贡献由
+ * 约 5–7% 提升到约 13–18%，章节 / 大纲右栏分组卡片不再显实；令牌自身不得低于面板档。
+ * 设定五域标题栏分类下拉与搜索框在材质态改用 `--chrome-fill`（`--text` 5%）+ 1px
+ * `--chrome-ring`，hover 8%、聚焦 / 下拉展开 11%，并把该行 `--text-mute` 提升为
+ * `--text-dim` 保证 placeholder 可读；非编辑态动作顺序改为「视图切换（若有）｜
+ * 新建加号 ｜ 竖线 ｜ 分类 + 搜索」，编辑态富文本工具栏不变。教学书与文档同步。
+ * 纯样式 / 文案改动：无 DB 迁移，升版本只重灌教学书。
  *
  * `v168`（材质态透明化批）：`--desk-solid-alpha` 50% → 35%，新增 `--pane-surface-alpha`
  * （85%）与 `--surface-pane`：材质态左右栏 / 悬浮活动栏与 light / dark 中栏半透明，

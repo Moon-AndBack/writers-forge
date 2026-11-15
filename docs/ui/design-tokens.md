@@ -168,7 +168,7 @@
 
 - **`--brand` / `--brand-2` 的静态值只是回退**：light / dark 下会被系统强调色内联覆盖（§6），sage / honey 始终使用静态值。
 - light 的 `--caret` 由品牌色向正文色暗化，避免浅底上过亮；其余三套直接取 `--brand`。
-- **`--text-mute-weak` 是材质态回退色**：默认与 `--text-mute` 同值；材质态面板作用域把 `--text-mute` 提升到 `--text-dim` 观感后，禁用 / 只读输入框改用它，保持「不可用」弱于可用元信息（`material.css:119-133`）。
+- **`--text-mute-weak` 是材质态回退色**：默认与 `--text-mute` 同值；材质态面板作用域把 `--text-mute` 提升到 `--text-dim` 观感后，禁用 / 只读输入框改用它，保持「不可用」弱于可用元信息（`material.css:118-130`）。
 - **兼容层已删除**：`--bg` / `--fg` 原为历史令牌，仅 `global.css` 的 `body` 使用；`body` 已改用 `--desk-1` / `--text`，四套主题中的定义已移除。同组的 `--accent` / `--border` 已在更早批次删除。
 
 ### 4.5 阴影、遮罩与选区
@@ -203,20 +203,20 @@
 | `--soft-press-solid`                        | 按下态                       | 标题栏按钮                                                                                      |
 | `--pill-bg-solid` / `--pill-bg-hover-solid` | 胶囊底 / hover               | `statusbar-widgets.css`                                                                         |
 | `--surface-pane`                            | 材质态面板底（`--pane` 58%） | `material.css:75`；`.sidepane` / `.rightpane` / light·dark `.editor-pane` / 悬浮 `.activitybar` |
-| `--surface-pane-card`                       | 材质态栏内卡片底（82%）      | `material.css:79`；右栏原先不透明的卡片 / 只读内容块（复合后约 92.4%）                          |
-| `--surface-panel-shadow`                    | 材质态面板阴影（仅描边环）   | `material.css:82`；同上                                                                         |
+| `--surface-pane-card`                       | 材质态栏内卡片底（58%）      | `material.css:81`；右栏原先不透明的卡片 / 只读内容块（复合后约 82.4%，严格高于面板 58%）        |
+| `--surface-panel-shadow`                    | 材质态面板阴影（仅描边环）   | `material.css:84`；同上                                                                         |
 
 材质（亚克力 / 云母）链路：
 
 1. `WindowMaterialProvider` 在 `<html>` 写 `data-material='acrylic' | 'mica' | 'none'`（实际生效材质；**不写 `tabbed`**）。
 2. 开启时 `.shell` 依材质分别处理：acrylic 通过 `--desk-solid-alpha` 保留 **25%** 不透明度的纯色 scrim（壁纸经实时模糊 + 25% scrim，贡献约 75%）；mica 的 `.shell` 为 `transparent`，不叠 scrim，标题栏与状态栏同样透明，直接透出云母；同时 `body` 背景置透明（`material.css:42-44`），否则 `body` 的不透明背景会挡住 DWM 材质。亚克力实时模糊、更透，云母采样壁纸着色、偏实色；客户区材质的实际可见性以实机为准（`backgroundColor` 的 alpha 需 `transparent: true` 才保证生效，本项目未开启）。
-3. 材质态面板底不再固定不透明 `--pane`：左右栏 / 悬浮活动栏与 light / dark 中栏用 `--surface-pane`（`--pane` 按 `--pane-surface-alpha` **58%** 混 `transparent`），sage / honey 中栏 `.editor-pane` 保留不透明 `--doc-surface` 纸面。面板内的 L2 / L3 软底（`--soft-solid` / `--soft-hover-solid` / `--soft-press-solid` / `--control-on-soft*`）必须在**同一作用域**改由 `--text` 混 `transparent` 重派生（比例逐项对齐原主题：light 6/6/9/13/18、dark 5/8/11/14/19），否则 58% 透明面板会在卡片内部重新铺实。右栏原先不透明的内容卡 / 只读块（`--pane`）改用 `--surface-pane-card`（82%，复合后约 92.4%），避免透明栏里出现实色贴片，同时保持「卡 > 栏」。面板阴影同时降为 `--panel-ring`，避免半透明面板下叠出黑影。浮层（Modal / Select / Tooltip / 状态栏弹层）与固定态活动栏不参与，仍用不透明填充（后者见例外 #11）。
+3. 材质态面板底不再固定不透明 `--pane`：左右栏 / 悬浮活动栏与 light / dark 中栏用 `--surface-pane`（`--pane` 按 `--pane-surface-alpha` **58%** 混 `transparent`），sage / honey 中栏 `.editor-pane` 保留不透明 `--doc-surface` 纸面。面板内的 L2 / L3 软底（`--soft-solid` / `--soft-hover-solid` / `--soft-press-solid` / `--control-on-soft*`）必须在**同一作用域**改由 `--text` 混 `transparent` 重派生（比例逐项对齐原主题：light 6/6/9/13/18、dark 5/8/11/14/19），否则 58% 透明面板会在卡片内部重新铺实。右栏原先不透明的内容卡 / 只读块（`--pane`）改用 `--surface-pane-card`（与面板同取 `--pane` 58%，复合后约 82.4%，严格高于面板 58%），避免透明栏里出现实色贴片，同时保持「卡 > 栏」。面板阴影同时降为 `--panel-ring`，避免半透明面板下叠出黑影。浮层（Modal / Select / Tooltip / 状态栏弹层）与固定态活动栏不参与，仍用不透明填充（后者见例外 #11）。
 4. `--desk-solid-alpha` 是 acrylic 专用的主题无关 scrim 旋钮，四主题共用，固定为 **25%**（mica 不使用该令牌）。dark 的 `--desk-solid` 取 `#161616`（与色带中段同值），避免深色下材质偏亮。主进程窗口底：材质开 `#00000000`，关 `#f3f3f3`，避免创建瞬间黑闪（`window.ts:169-174`）；该 alpha 仅在 `transparent: true` 时保证生效，本项目未开启，材质可见性以实机为准。
 5. 标题栏 / 状态栏不落三栏作用域，控件改用 `--chrome-*` 七令牌：默认值逐项等同改前的不透明底（`--pill-bg-solid` / `--pill-bg-hover-solid` / `--soft-press-solid` / `--soft-hover-solid` / brand 18% / brand 12% / none），材质态由 `material.css` 覆写为 `--text` 5 / 8 / 11 / 7% 薄雾、brand 20% / 14% 与 `1px --text 8%` 描边环。薄雾必须用 `--text` 反向派生，不用 `--pane`（浅色云母上明度差 < 1.02，hover 等于没有）。
 6. **云母的 DWM 档位由主进程按应用明暗决定**：浅色（light / sage / honey）下发 `tabbed`（Mica Alt，着色更强），深色下发标准 `mica`；渲染层始终只标记 `mica`。原先的暗色 8% 白提亮层 `--mica-alt-scrim-alpha` 已删除，暗色恢复系统默认渲染。
-7. **壁纸贡献估算（面板区域）**：亚克力 ≈ (1 − 25%) × (1 − 58%) ≈ **31.5%**；云母无 scrim，≈ **42%**。栏内卡片以 82% `--pane` 叠在面板上，复合不透明度约 92.4%，壁纸仅以约 5%（亚克力）/ 7%（云母）透出。以上为面板区域的近似值；栏缝仍按 scrim / 材质原值透出，chrome 薄雾只覆盖控件自身（5–11%），实际观感以实机为准。
+7. **壁纸贡献估算（面板区域）**：亚克力 ≈ (1 − 25%) × (1 − 58%) ≈ **31.5%**；云母无 scrim，≈ **42%**。栏内卡片以 58% `--pane` 叠在面板上，复合不透明度约 82.4%，壁纸以约 13%（亚克力）/ 18%（云母）透出，卡片不再显实。以上为面板区域的近似值；栏缝仍按 scrim / 材质原值透出，chrome 薄雾只覆盖控件自身（5–11%），实际观感以实机为准。
 
-选择顺序：默认（材质关闭）组件填充用 `--*-solid`，`--soft-solid` 容器上的输入类控件用 `--control-on-soft*`；材质态只有左右栏 / 悬浮活动栏 / light·dark 中栏用 `--surface-pane`、右栏原先不透明的卡片用 `--surface-pane-card`（82%）、标题栏 / 状态栏控件用 `--chrome-*`，并且软底必须同域重派生；浮层、sage / honey 中栏纸面与 `.tb-brand-mark` 始终不透明。
+选择顺序：默认（材质关闭）组件填充用 `--*-solid`，`--soft-solid` 容器上的输入类控件用 `--control-on-soft*`；材质态只有左右栏 / 悬浮活动栏 / light·dark 中栏用 `--surface-pane`、右栏原先不透明的卡片用 `--surface-pane-card`（与面板同取 `--pane` 58%，复合后约 82.4%）、标题栏 / 状态栏控件用 `--chrome-*`，并且软底必须同域重派生；浮层、sage / honey 中栏纸面与 `.tb-brand-mark` 始终不透明。
 
 ---
 

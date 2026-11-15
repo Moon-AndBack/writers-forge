@@ -34,8 +34,8 @@ export interface DossierActivityActionsProps {
  *
  * 按右栏正文编辑器的聚焦态（`useRichTextEditor('dossier').editing`，真源在
  * `Writer.tsx`、由 `DossierBodyEditor` 上报）**两态切换**：
- * - **未编辑**：标题栏筛选行（`DossierFilterRow`：分类下拉 + 搜索，境界体系只有搜索）
- *   ＋竖分隔线＋「新建{{模块名}}」加号按钮（点击弹 `DossierCreateDialog` 落库）；
+ * - **未编辑**：「新建{{模块名}}」加号按钮（点击弹 `DossierCreateDialog` 落库）
+ *   ＋竖分隔线＋标题栏筛选行（`DossierFilterRow`：分类下拉 + 搜索，境界体系只有搜索）；
  * - **聚焦编辑中**：富文本工具栏（`RichTextToolbar`，与剧情正文 / 大纲同一套组件）——
  *   撤销 · 重做 ｜ 行内格式 ｜ 标题 · 段落 · 表格 · 链接 · 图片 ｜ 清除格式。
  *   正文保存为手动保存（右栏底部「保存」按钮），工具栏不含保存入口。
@@ -85,10 +85,8 @@ export default function DossierActivityActions({
           /* 聚焦编辑：富文本工具栏（容器 onMouseDown 阻止默认，保正文选区 / 聚焦）。 */
           <RichTextToolbar editor={editor} bookId={bookId} className="tb-editor-actions" />
         ) : (
-          /* 未编辑：筛选行（分类 + 搜索）｜「新建」加号；势力视图切换已在行首。 */
+          /* 未编辑：「新建」加号 ｜ 筛选行（分类 + 搜索）；势力视图切换已在行首。 */
           <>
-            <DossierFilterRow module={module} />
-            <EditorActionSep />
             <IconButton
               className="tb-action"
               label={t('createAction', { module: moduleLabel })}
@@ -98,6 +96,8 @@ export default function DossierActivityActions({
             >
               <PlusIcon />
             </IconButton>
+            <EditorActionSep />
+            <DossierFilterRow module={module} />
           </>
         )}
       </>
