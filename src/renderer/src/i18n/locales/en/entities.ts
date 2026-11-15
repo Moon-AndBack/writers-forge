@@ -33,6 +33,7 @@ const entities = {
   },
   detail: {
     back: 'Back',
+    type: 'Type',
     category: 'Category',
     bodyEmpty: 'No body text yet'
   }

@@ -1,9 +1,11 @@
 /**
  * 章节 / 大纲模块右栏「实体」页签的**只读详情**（列表 → 详情两级视图的第二级）。
  *
- * - 结构：名称 + 类型胶囊 / 类别 / 别名 / 首次登场 / 全量关系 / 品阶与档位（仅物品） /
- *   **富文本正文**；壳复用共享 `ReadonlyDetailShell`（灵感页签同款，CSS 在
- *   `styles/writer-right-panels.css`）；
+ * - 结构：标题块（仅名称）→ **属性表**（类型 / 类别 / 品阶与档位（仅物品）/ 首次登场 /
+ *   别名 / 全量关系）→ **富文本正文**；壳复用共享 `ReadonlyDetailShell`（灵感页签同款，
+ *   CSS 在 `styles/writer-right-panels.css`）；
+ * - **属性表**：两列 `label-left` 网格（短字段同行、长字段跨整行），自身无底色 / 圆角 /
+ *   描边，字段之间只靠行距分组，不加分隔线；
  * - **富文本**：列表行只有纯文本 `body`，选中时额外拉一次 `worldEntity:get` 取 `bodyJson`，
  *   交给 `EntityReadonlyRichText`（保留标题 / 列表 / 加粗；`hoverCard={false}`——整个面板
  *   只挂一个 `HoverCard`，正文与关系胶囊共用同一套事件委托）。读取中显示通用加载文案；
@@ -13,7 +15,7 @@
  * - **只读**：无 Input、无保存条、无删除 / 编辑入口，唯一操作是底部「返回」。
  */
 import { useEffect, useState } from 'react'
-import type { ReactElement } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Tag } from '../../../components/ui'
 import type { DossierRow, WorldEntityType } from '../dossier/dossierTree'
@@ -44,6 +46,38 @@ interface BodyState {
   failed: boolean
 }
 
+/** 属性表单元格：`dt` 标签 + `dd` 值。 */
+interface DetailFieldProps {
+  /** 左侧标签（`dt`）。 */
+  label: string
+  /** 值跨整行：从标签列之后一直延伸到右缘（长列表 / 位置串）。 */
+  wide?: boolean
+  /** 值弱化（空值占位，如「暂无」）。 */
+  muted?: boolean
+  children: ReactNode
+}
+
+/**
+ * 属性表单元格。`dt` / `dd` 由外层 `<div>` 包裹后放进 `<dl>`：HTML 允许 `dl` 直接
+ * 包含 `div` 分组，读屏仍按「术语 → 描述」配对；结构上的 `div` 用于承载 subgrid
+ * （`dt` / `dd` 无法既作单元格又跨列）。
+ */
+function DetailField({
+  label,
+  wide = false,
+  muted = false,
+  children
+}: DetailFieldProps): ReactElement {
+  return (
+    <div className={`wf-entity-detail__field${wide ? ' wf-entity-detail__field--wide' : ''}`}>
+      <dt className="wf-entity-detail__label">{label}</dt>
+      <dd className={`wf-entity-detail__value${muted ? ' wf-entity-detail__value--muted' : ''}`}>
+        {children}
+      </dd>
+    </div>
+  )
+}
+
 export interface EntityReadonlyDetailProps {
   /** 当前选中的实体行（列表命中项；行被删 / 刷新后由外层回落列表）。 */
   row: DossierRow
@@ -55,7 +89,7 @@ export interface EntityReadonlyDetailProps {
   onBack: () => void
 }
 
-/** 只读详情：名称 + 类型 / 类别 / 别名 / 首次登场 / 关系 / 品阶档位 / 富文本正文。 */
+/** 只读详情：标题块 + 属性表（类型 / 类别 / 品阶档位 / 首次登场 / 别名 / 关联）+ 富文本正文。 */
 export function EntityReadonlyDetail({
   row,
   bookId,
@@ -101,7 +135,7 @@ export function EntityReadonlyDetail({
   const relationLabels = useRelationLabels()
   const relations = dossierCardRelations(row.relations, relationLabels)
   const grade = row.grade.trim()
-  const hasItemMeta = row.entityType === 'item' && (grade !== '' || row.rank > 0)
+  const isItem = row.entityType === 'item'
   const name = row.name.trim()
   const category = row.subType.trim()
 
@@ -114,83 +148,84 @@ export function EntityReadonlyDetail({
     >
       <div className="wf-entity-detail__head wf-readonly-block">
         <span className="wf-entity-detail__title">{name === '' ? tDossier('unnamed') : name}</span>
-        <Tag
-          tone="neutral"
-          className={`wf-entity-detail__type chip-pill ${entityChipClass(row.entityType, '')}`}
-        >
-          {t(TYPE_LABEL_KEYS[row.entityType])}
-        </Tag>
       </div>
 
-      <div className="wf-entity-detail__section">
-        <div className="wf-entity-detail__label">{t('detail.category')}</div>
-        <div className="wf-entity-detail__chips wf-readonly-block">
-          <Tag
-            tone="neutral"
-            className={`chip-pill ${entityChipClass(row.entityType, row.presetKey)}`}
-          >
-            {category === '' ? tDossier('subTypeUncategorized') : category}
-          </Tag>
-        </div>
-      </div>
-
-      {row.aliases.length === 0 ? null : (
-        <div className="wf-entity-detail__section">
-          <div className="wf-entity-detail__label">{t('aliases')}</div>
-          <div className="wf-entity-detail__chips wf-readonly-block">
-            {row.aliases.map((alias, index) => (
-              <Tag
-                key={`alias-${index}`}
-                tone="neutral"
-                className="dossier-card__chip dossier-card__chip--alias"
-              >
-                {alias}
-              </Tag>
-            ))}
+      <dl className="wf-entity-detail__form">
+        <DetailField label={t('detail.type')}>
+          <div className="wf-entity-detail__chips">
+            <Tag tone="neutral" className={`chip-pill ${entityChipClass(row.entityType, '')}`}>
+              {t(TYPE_LABEL_KEYS[row.entityType])}
+            </Tag>
           </div>
-        </div>
-      )}
+        </DetailField>
 
-      <FirstAppearanceLine
-        place={firstAppearance}
-        label={t('firstAppearance')}
-        emptyLabel={t('firstAppearanceNone')}
-      />
-
-      {relations.items.length === 0 ? null : (
-        <div className="wf-entity-detail__section">
-          <div className="wf-entity-detail__label">{t('relations')}</div>
-          <div
-            className="wf-entity-detail__chips wf-readonly-block"
-            role="group"
-            aria-label={t('relations')}
-          >
-            {relations.items.map((item, index) => (
-              <Tag
-                key={`relation-${index}`}
-                tone="neutral"
-                className={`chip-pill ${item.chipClass}`}
-                data-entity-id={item.peerId}
-              >
-                {item.label}
-              </Tag>
-            ))}
+        <DetailField label={t('detail.category')}>
+          <div className="wf-entity-detail__chips">
+            <Tag
+              tone="neutral"
+              className={`chip-pill ${entityChipClass(row.entityType, row.presetKey)}`}
+            >
+              {category === '' ? tDossier('subTypeUncategorized') : category}
+            </Tag>
           </div>
-        </div>
-      )}
+        </DetailField>
 
-      {hasItemMeta ? (
-        <div className="wf-entity-detail__meta wf-readonly-block">
-          <span className="wf-entity-detail__meta-label">{tDossier('detail.gradeLabel')}</span>
-          <span className="wf-entity-detail__meta-value">
-            {grade === '' ? tDossier('detail.emptyValue') : grade}
-          </span>
-          <span className="wf-entity-detail__meta-label">{tDossier('detail.rankLabel')}</span>
-          <span className="wf-entity-detail__meta-value">
-            {row.rank > 0 ? String(row.rank) : tDossier('detail.emptyValue')}
-          </span>
-        </div>
-      ) : null}
+        {isItem ? (
+          <>
+            <DetailField label={tDossier('detail.gradeLabel')} muted={grade === ''}>
+              {grade === '' ? tDossier('detail.emptyValue') : grade}
+            </DetailField>
+            <DetailField label={tDossier('detail.rankLabel')} muted={row.rank <= 0}>
+              {row.rank > 0 ? String(row.rank) : tDossier('detail.emptyValue')}
+            </DetailField>
+          </>
+        ) : null}
+
+        {firstAppearance === undefined ? null : (
+          <DetailField label={t('firstAppearance')} wide>
+            {/* 位置串 / 未登场弱化态复用共享 `FirstAppearanceLine`；它自带的标签与本行
+                `dt` 重复，故传空串并在表单作用域内隐藏（见 CSS 例外注释）。 */}
+            <FirstAppearanceLine
+              place={firstAppearance}
+              label=""
+              emptyLabel={t('firstAppearanceNone')}
+            />
+          </DetailField>
+        )}
+
+        {row.aliases.length === 0 ? null : (
+          <DetailField label={t('aliases')} wide>
+            <div className="wf-entity-detail__chips">
+              {row.aliases.map((alias, index) => (
+                <Tag
+                  key={`alias-${index}`}
+                  tone="neutral"
+                  className="dossier-card__chip dossier-card__chip--alias"
+                >
+                  {alias}
+                </Tag>
+              ))}
+            </div>
+          </DetailField>
+        )}
+
+        {relations.items.length === 0 ? null : (
+          <DetailField label={t('relations')} wide>
+            <div className="wf-entity-detail__chips" role="group" aria-label={t('relations')}>
+              {relations.items.map((item, index) => (
+                <Tag
+                  key={`relation-${index}`}
+                  tone="neutral"
+                  className={`chip-pill ${item.chipClass}`}
+                  data-entity-id={item.peerId}
+                >
+                  {item.label}
+                </Tag>
+              ))}
+            </div>
+          </DetailField>
+        )}
+      </dl>
 
       <div className="wf-entity-detail__section wf-entity-detail__section--body">
         <div className="wf-entity-detail__label">{tDossier('detail.bodyLabel')}</div>

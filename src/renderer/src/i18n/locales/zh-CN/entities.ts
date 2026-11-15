@@ -38,6 +38,7 @@ const entities = {
   /** 右栏「实体」页签的只读详情（列表 → 详情两级视图的第二级）。 */
   detail: {
     back: '返回',
+    type: '类型',
     category: '类别',
     bodyEmpty: '暂无正文'
   }

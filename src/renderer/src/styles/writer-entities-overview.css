@@ -96,17 +96,14 @@
 }
 
 /* ---------- 只读详情（内容排版；壳见 writer-right-panels.css） ---------- */
-/* 标题行：名称 + 类型胶囊（胶囊配色由全局胶囊层按模块 / 预设子类提供）。 */
+/* 标题块：只留名称（类型胶囊已移入下方属性表首格）。保留底板，与正文块一起构成
+   「块 → 表 → 块」的节奏（与灵感只读详情同款）。`min-width: 0` 防超长名称把右栏
+   的滚动区撑宽。 */
 .wf-entity-detail__head {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
   min-width: 0;
 }
 
 .wf-entity-detail__title {
-  flex: 1;
-  min-width: 0;
   font-size: var(--fs-title);
   font-weight: 600;
   line-height: 1.4;
@@ -114,15 +111,67 @@
   overflow-wrap: anywhere;
 }
 
-.wf-entity-detail__type {
-  flex: none;
-  padding: 1px 8px;
-  font-size: var(--fs-micro);
-  font-weight: 500;
-  line-height: 1.6;
+/* ---------- 属性表（两列 label-left 网格） ----------
+   短字段两人一行（类型 / 类别、品阶 / 档位），长字段（首次登场 / 别名 / 关联）跨整行。
+   表单区在 `.wf-readonly-detail__fields`（`.on-soft` 软底卡）内是**单一子级**：自身
+   无底色 / 无圆角 / 无描边，字段之间只靠行距分组，不加任何分隔线。
+   列轨道：`max-content` 标签列（中文约 42px；英文按最长标签撑宽）+ `1fr` 值列；
+   单元格用 `subgrid` 继承这两列轨道，保证左右两格的标签 / 值左缘严格对齐。
+   基线对齐：标签（`--fs-micro`）与值（`--fs-body` 或 22 高胶囊）行高不同，基线对齐
+   让文字坐在同一基线上；胶囊的 inline-flex 基线取自内部文字，故与标签视觉齐平。 */
+.wf-entity-detail__form {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+  margin: 0;
 }
 
-/* 字段段：类别 / 别名 / 关系 / 正文共用的纵向小段。 */
+/* 单元格：跨两列（标签 + 值），再用 subgrid 继承父级的列轨道。
+   `column-gap` 在 subgrid 上覆写父级 12px → 8px，让「标签 → 值」比「两格之间」更紧。 */
+.wf-entity-detail__field {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: subgrid;
+  column-gap: 8px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+/* 跨整行：标签仍占第一列（与上方短字段左对齐），值从第二列一直延伸到右缘。 */
+.wf-entity-detail__field--wide {
+  grid-column: 1 / -1;
+}
+
+.wf-entity-detail__field--wide .wf-entity-detail__value {
+  grid-column: 2 / -1;
+}
+
+/* 值单元格：`dd` 默认 `margin-inline-start: 40px`，网格内必须归零。 */
+.wf-entity-detail__value {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* 空值占位（品阶 / 档位单项为空）：弱化色，不与真实值争注意力。 */
+.wf-entity-detail__value--muted {
+  color: var(--text-mute);
+}
+
+/* 表单内的首次登场复用共享 `PlaceLine` 胶囊，标签已由本行 `dt` 承担：
+   例外：隐藏共享组件自带标签（仅 `.wf-entity-detail__form` 作用域），避免标签重复
+   并去掉胶囊左侧的多余 gap。共享 `place-line.css` 不改，其它调用方不受影响。 */
+.wf-entity-detail__form .wf-place-line__label {
+  display: none;
+}
+
+/* 正文段：标签 + 正文块，吃掉剩余高度；内容超高时由壳的滚动区统一滚动。 */
 .wf-entity-detail__section {
   display: flex;
   flex-direction: column;
@@ -130,17 +179,18 @@
   min-width: 0;
 }
 
-/* 正文段吃掉剩余高度；内容超高时由壳的滚动区统一滚动。 */
 .wf-entity-detail__section--body {
   flex: 1 1 auto;
 }
 
-/* 段落小标题：与灵感 / 伏笔只读详情同口径（10px / 700 / 弱化色）。 */
+/* 字段标签：属性表 `dt` 与正文小标题共用（10px / 700 / 弱化色，与灵感 / 伏笔只读
+   详情同口径）。`nowrap` 保证 `max-content` 标签列不会被压成两行。 */
 .wf-entity-detail__label {
   font-size: var(--fs-micro);
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--text-mute);
+  white-space: nowrap;
 }
 
 /* 胶囊行：平铺 + 换行（详情空间足够，不做卡片的单行收口）。 */
@@ -154,33 +204,14 @@
 
 /* 胶囊沿用设定档案卡的统一规格（components/entity-card.css）：
    Tag 提供 22 高，这里补 1px 8px 内衬 / 10px / 500 / 1.6。
-   裸 .chip-pill 不自带尺寸，漏了会退回 12px 正文、零内衬。 */
+   裸 .chip-pill 不自带尺寸，漏了会退回 12px 正文、零内衬。
+   `min-width: 0` 允许单个超长胶囊在两列值格内收缩并省略，而不是撑破软底卡。 */
 .wf-entity-detail__chips .wf-tag {
+  min-width: 0;
   padding: 1px 8px;
   font-size: var(--fs-micro);
   font-weight: 500;
   line-height: 1.6;
-}
-
-/* 品阶 / 档位：两列（标签 | 值）紧凑网格，仅物品且非空时渲染。 */
-.wf-entity-detail__meta {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 6px 12px;
-  align-items: baseline;
-}
-
-.wf-entity-detail__meta-label {
-  font-size: var(--fs-micro);
-  font-weight: 700;
-  color: var(--text-mute);
-}
-
-.wf-entity-detail__meta-value {
-  min-width: 0;
-  font-size: var(--fs-body);
-  color: var(--text);
-  overflow-wrap: anywhere;
 }
 
 /* 富文本正文：宽度随字段块，长词 / 长链接不撑破右栏。 */
