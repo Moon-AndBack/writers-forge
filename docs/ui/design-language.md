@@ -189,7 +189,7 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 32 
 - **MUST** 选中只能靠底色 + 品牌文字 / 600 字重 + 图标表达，**不得**以描边、内描边环、外发光等「环」语言作为选中标识；环只保留给 hover 光晕与 `:focus-visible` 焦点环。
 - `--select-tint` 定义在 `theme.css` 四主题块（light / dark / sage 18%、honey 24%）。honey 品牌色与纸面明度最接近，需更高混入比例；AI 携带按钮、格式工具条按钮、活动栏筛选 chip 三处非行选中态同口径消费。
 
-已验证位置：`writer-side-chapters.css:57-83`、`writer-outline.css:46-65,124-136`、`writer-trash.css:193-223`。
+已验证位置：`writer-side-chapters.css:57-83`、`writer-outline.css:46-65,124-136`、`writer-trash.css:193-223`；卡片类选中见 `styles/components/surface.css:90-97`（品牌底 + 品牌标题，不叠加环与光晕）。
 
 ### 4.3 行操作浮现
 
@@ -336,16 +336,11 @@ box-shadow:
   0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
   var(--sh-sm),
   var(--panel-ring);
-
-/* 选中加强 */
-box-shadow:
-  0 0 0 2px color-mix(in srgb, var(--brand) 30%, transparent),
-  0 0 26px -8px color-mix(in srgb, var(--brand) 55%, transparent),
-  var(--sh-sm),
-  var(--panel-ring);
 ```
 
-已验证位置：`styles/components/surface.css:51-57,75-89`、`styles/bookshelf.css:164-170`。
+选中态只保留常态阴影（`--sh-sm` + `--panel-ring`），**不叠加 2px 环或外发光**：品牌底（`--brand` 按 `--select-tint` 混卡底）+ 品牌标题即可，光晕仅用于 hover（§4.2）。
+
+已验证位置：`styles/components/surface.css:76-82,90-97`、`styles/bookshelf.css:164-170`。
 
 - **MUST** 卡片 hover 只过渡 `box-shadow` / `border-color` / `background` / `color`，不得包含 `transform`。
 - **MUST** 卡片 hover 不得使用位移或缩放（`translate / scale / rotate`）。
@@ -444,7 +439,7 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 | 37  | 表单内隐藏共享字段标签             | `styles/writer-entities-overview.css`（`.wf-entity-detail__form .wf-place-line__label`）                                                                                                                             | `display: none`，标签不生成盒，胶囊左侧多余 gap 随之消失                                                                                                                                                                                                                                                                                                                                                                                             | 属性表已用 `dt` 承担字段名，共享 `PlaceLine` 的内嵌标签重复，且左侧 gap 会让胶囊看起来缩进错位                                                                          | 仅 `.wf-entity-detail__form` 作用域；共享 `place-line.css` 不改，其它调用方不受影响                                                                                                                                                                                                      |
 | 38  | AI 状态行 22 高胶囊行              | `styles/writer-ai.css`（`.ai-composer-status__message-tag`、`.wf-iconbtn.ai-composer-status__refresh`）                                                                                                              | 三颗胶囊统一 22（`--row-act`）/ `--r-lg` / `0 10px`：字数与状态为 `Tag`（状态底色走 `.wf-tag--danger/brand/neutral`，不另写颜色）；刷新钮以 `IconButton variant="solid"` 覆写为胶囊（双类 0,2,0 压过 `--sm` 的 32）；**可点击控件仍为 22 高**，热区用 `::after { inset: -1px 0 }` 由 22 外扩到 **24**                                                                                                                                                | 状态行需「若干同规格胶囊并排」，刷新钮若保持控件 32 档会破坏同行等高并撑高整行；22 档与 #18 / #35 同源，热区外扩补足 WCAG 2.5.8 的 24×24 基准                           | 仅 `.ai-composer-status` 作用域内的状态胶囊与刷新钮；不得扩散到其它可点击控件；`Tag` 仍不得直接用于可点击元素（刷新钮是 IconButton 覆写，不是 Tag）                                                                                                                                      |
 
-**卡片类选中已收敛（2026-11-15）**：实体卡（`.wf-card--halo.is-active`）、书籍卡（`.book-card.is-selected`）、主题卡（`.ts-option.is-selected`）均改为「底色 / 标题色 + 勾选徽标 + 外发光」，描边环全部移除；视觉辅助信号见 #8。
+**卡片类选中已收敛（2026-11-15）**：实体卡（`.wf-card--halo.is-active`）为「品牌底 + 品牌标题」，无环无光晕；书籍卡（`.book-card.is-selected`）、主题卡（`.ts-option.is-selected`）为「底色 / 标题色 + 勾选徽标 + 外发光」，描边环全部移除；视觉辅助信号见 #8。
 
 ---
 

@@ -36,6 +36,7 @@ import { TypographyProvider } from './shell/statusBarWidgets/TypographyProvider'
 import { useTitleBarOverlay } from './theme/useTitleBarOverlay'
 import './styles/shell.css'
 import './styles/material.css'
+import './styles/material-bookshelf.css'
 
 /**
  * 路由级懒加载：欢迎页（仅首启）与写作页（含编辑器 / 剧情 / 档案 / 时间线整域子图）

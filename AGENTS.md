@@ -172,7 +172,7 @@ src/
 ### 8.8 动效与卡片 hover
 
 - **MUST** 卡片（书籍卡、主题卡及今后新增的卡片类组件）在鼠标移入 / hover 时**不得**使用位移或缩放（`transform: translate / scale / rotate` 等）；hover 反馈仅允许**颜色 / 描边 / 阴影**变化。
-- **MUST** 卡片 hover 统一采用**边缘光晕**：`0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent)` + `0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent)` + `var(--sh-sm)` + `var(--panel-ring)`；选中加强为 `0 0 0 2px color-mix(in srgb, var(--brand) 30%, transparent)` + `0 0 26px -8px color-mix(in srgb, var(--brand) 55%, transparent)` + 基础阴影。
+- **MUST** 卡片 hover 统一采用**边缘光晕**：`0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent)` + `0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent)` + `var(--sh-sm)` + `var(--panel-ring)`；选中不叠加环与光晕，只靠品牌底与标题色。
 - **MUST** 卡片 hover 的 `transition` 只过渡 `box-shadow` / `border-color` / `background` / `color` 等属性，不得包含 `transform`。
 - **MUST** 动效时长只用 `--dur-fast` / `--dur-slow`（反馈 / 位移与进场），缓动只用 `--ease` / `--ease-out`；禁止裸 `0.1s` / `0.2s` / `180ms` 等字面量。
 - **MUST** 功能性 `transform`（Modal 进出场、折叠箭头、Switch 滑块、按钮按压）允许，但必须包在 `@media (prefers-reduced-motion: reduce)` 的关闭分支内。

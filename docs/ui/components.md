@@ -301,7 +301,7 @@ import { Button } from '@renderer/components/ui'
 **关键类名**：`.wf-card`、`.wf-card--soft`、`.wf-card--interactive`、`.wf-card--halo`
 （外部追加的光晕变体）、`.wf-card__head/__titles/__title/__subtitle/__extra/__body/__footer`。
 `.wf-card--halo.is-active` 为选中态：品牌底色（`--brand` 按 `--select-tint` 混入
-`--card-base`，默认 `--soft-solid`）+ 标题转 `--brand` + 加强外发光，**无描边环**；hover
+`--card-base`，默认 `--soft-solid`）+ 标题转 `--brand`，**不叠加环与光晕**；hover
 命中选中卡时仍由选中规则压住，不会叠加第二层品牌色。
 
 **键盘与无障碍**：纯布局容器，无 role、不可聚焦。`interactive` **只加样式**，不提供 `tabIndex`、
@@ -1033,30 +1033,30 @@ return (
 
 **Props**
 
-| 名称                   | 类型                                                              | 默认值      | 说明                                                                             |
-| ---------------------- | ----------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------- |
-| `head`                 | `ReactNode`                                                       | 必填        | 标题行：标题 + 徽章，由调用方组合                                                |
-| `actions`              | `ReactNode`                                                       | `undefined` | 操作按钮区，放入 `<IconButton size="sm">` 即可                                   |
-| `meta`                 | `ReactNode`                                                       | `undefined` | 次级胶囊行（如别名）                                                             |
-| `description`          | `ReactNode`                                                       | `undefined` | 描述区内容；行数由调用方类控制                                                   |
-| `descriptionClassName` | `string`                                                          | `undefined` | 追加到描述容器的类名（域内裁剪行数 / 缩进）                                      |
-| `info`                 | `ReactNode`                                                       | `undefined` | 元信息区（如伏笔位置行）                                                         |
-| `chips`                | `ReactNode`                                                       | `undefined` | 底部胶囊区内容（关系 / 实体）                                                    |
-| `chipsRef`             | `Ref<HTMLDivElement>`                                             | `undefined` | 底部胶囊容器 ref（`useChipOverflow` 测量用）                                     |
-| `chipsClassName`       | `string`                                                          | `undefined` | 追加到底部胶囊容器的类名                                                         |
-| `chipsProps`           | `Omit<HTMLAttributes<HTMLDivElement>, 'className' \| 'children'>` | `{}`        | 透传到底部胶囊容器的属性                                                         |
-| `popup`                | `ReactNode`                                                       | `undefined` | 浮层（如「+N」弹窗），portal 组件放这里不影响文档流                              |
-| `active`               | `boolean`                                                         | `false`     | 选中态：根元素追加 `is-active`，由光晕底座给出品牌底 + 品牌标题 + 外发光（无环） |
-| `readonly`             | `boolean`                                                         | `false`     | 只读变体：不暗示可点击（光标为默认箭头）                                         |
-| `compact`              | `boolean`                                                         | `false`     | 紧凑变体：只落类名钩子，尺寸由域内样式覆写                                       |
-| `className`            | `string`                                                          | `undefined` | 追加到根 `<article>` 的域语义类名                                                |
-| `cardProps`            | `Omit<HTMLAttributes<HTMLElement>, 'className' \| 'children'>`    | `{}`        | 透传到根 `<article>` 的交互 / 无障碍属性                                         |
+| 名称                   | 类型                                                              | 默认值      | 说明                                                                              |
+| ---------------------- | ----------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------- |
+| `head`                 | `ReactNode`                                                       | 必填        | 标题行：标题 + 徽章，由调用方组合                                                 |
+| `actions`              | `ReactNode`                                                       | `undefined` | 操作按钮区，放入 `<IconButton size="sm">` 即可                                    |
+| `meta`                 | `ReactNode`                                                       | `undefined` | 次级胶囊行（如别名）                                                              |
+| `description`          | `ReactNode`                                                       | `undefined` | 描述区内容；行数由调用方类控制                                                    |
+| `descriptionClassName` | `string`                                                          | `undefined` | 追加到描述容器的类名（域内裁剪行数 / 缩进）                                       |
+| `info`                 | `ReactNode`                                                       | `undefined` | 元信息区（如伏笔位置行）                                                          |
+| `chips`                | `ReactNode`                                                       | `undefined` | 底部胶囊区内容（关系 / 实体）                                                     |
+| `chipsRef`             | `Ref<HTMLDivElement>`                                             | `undefined` | 底部胶囊容器 ref（`useChipOverflow` 测量用）                                      |
+| `chipsClassName`       | `string`                                                          | `undefined` | 追加到底部胶囊容器的类名                                                          |
+| `chipsProps`           | `Omit<HTMLAttributes<HTMLDivElement>, 'className' \| 'children'>` | `{}`        | 透传到底部胶囊容器的属性                                                          |
+| `popup`                | `ReactNode`                                                       | `undefined` | 浮层（如「+N」弹窗），portal 组件放这里不影响文档流                               |
+| `active`               | `boolean`                                                         | `false`     | 选中态：根元素追加 `is-active`，由光晕底座给出品牌底 + 品牌标题（不叠加环与光晕） |
+| `readonly`             | `boolean`                                                         | `false`     | 只读变体：不暗示可点击（光标为默认箭头）                                          |
+| `compact`              | `boolean`                                                         | `false`     | 紧凑变体：只落类名钩子，尺寸由域内样式覆写                                        |
+| `className`            | `string`                                                          | `undefined` | 追加到根 `<article>` 的域语义类名                                                 |
+| `cardProps`            | `Omit<HTMLAttributes<HTMLElement>, 'className' \| 'children'>`    | `{}`        | 透传到根 `<article>` 的交互 / 无障碍属性                                          |
 
 **关键类名**：`.wf-card--halo.wf-entity-card`（根）、`.is-active`、`.wf-entity-card--readonly`、`.wf-entity-card--compact`、`.wf-entity-card__head/__actions/__meta/__desc/__info/__chips`。
 
 **键盘与无障碍**：根节点是 `<article>`，本身不带 `role` / `tabIndex` / 键盘处理；`active` 只加类，不写 `aria-selected`。整卡可点击时由调用方通过 `cardProps` 传 `role="button"`、`tabIndex={0}`、`onClick` / `onKeyDown`，或把点击语义交给内部控件。`actions` 内的删除按钮应传 `tone="danger"`，编辑 / 关联等用默认 tone。
 
-**样式边界**：`entity-card.css` 由 `styles/index.css:25` 全局引入，组件自身不 import；`.wf-entity-card.wf-card--halo` 取消通用卡 `max-height: 240px` 上限（`entity-card.css:41-45`），hover 走 `.wf-card--halo:hover` 的描边环 + 外发光，选中走 `.wf-card--halo.is-active` 的品牌底 + 品牌标题 + 外发光（无描边环），均无 `transform`。
+**样式边界**：`entity-card.css` 由 `styles/index.css:25` 全局引入，组件自身不 import；`.wf-entity-card.wf-card--halo` 取消通用卡 `max-height: 240px` 上限（`entity-card.css:41-45`），hover 走 `.wf-card--halo:hover` 的描边环 + 外发光，选中走 `.wf-card--halo.is-active` 的品牌底 + 品牌标题（不叠加环与光晕），均无 `transform`。
 
 **示例**
 

@@ -278,18 +278,15 @@
     var(--panel-ring);
 }
 
-/* 剧情卡选中态：`.wf-card--halo.is-active`（0,2,0）的底色与外发光会被上方
-   基础卡底（0,6,0）压掉，材质态同步选中信号（品牌底 + 26px 外发光），
-   避免把 surface.css 已删除的 2px 环加回来。 */
+/* 剧情卡选中态：`.wf-card--halo.is-active`（0,2,0）的底色会被上方基础卡底
+   （0,6,0）压掉，材质态同步选中信号（品牌底）；阴影回落浮卡边界
+   （--surface-pane-float-ring，与未选中的浮卡同档），不加光晕（§8.5）。 */
 :root:is([data-material='acrylic'], [data-material='mica'])
   .rightpane
   .rp-plot-timeline
   .plot-scene-card.wf-entity-card.is-active {
   background: color-mix(in srgb, var(--brand) var(--select-tint), var(--surface-pane-float));
-  box-shadow:
-    0 0 26px -8px color-mix(in srgb, var(--brand) 55%, transparent),
-    var(--sh-sm),
-    var(--panel-ring);
+  box-shadow: var(--sh-sm), var(--surface-pane-float-ring);
 }
 
 /* 错误气泡：`.ai-msg__bubble.is-error`（0,2,0）的 danger 内环会被基础阴影覆盖，
@@ -391,101 +388,6 @@
 :root:is([data-material='acrylic'], [data-material='mica'])
   .titlebar
   .tb-filter-row
-  :is(
-    .wf-search:focus-within,
-    .wf-select__trigger:focus-visible,
-    .wf-select.is-open .wf-select__trigger
-  ) {
-  background: var(--chrome-fill-strong);
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent),
-    0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
-}
-
-/* ============================================================
-   书架页 —— 材质态透明（例外 #34）
-   ------------------------------------------------------------------
-   书架页不在三栏面板作用域内：改前书籍卡与工具条全是 `--soft-solid` 不透明
-   实色，材质只从卡片缝隙透出，书籍卡信息区（.book-body）看着像实色贴片。
-
-   层次：页面底 = `.shell`（acrylic 25% scrim / mica 全透，页面自身不铺底）；
-   书籍卡用 `--surface-pane-card`（`--pane` 58%），严格比页面底实一档：
-   - 亚克力：58% 卡叠 25% scrim → 1 − 0.42 × 0.75 ≈ 68.5%，壁纸贡献 31.5%；
-   - 云母：58% 卡直接叠云母 → 壁纸贡献 42%。
-   页面内软底：分类标签（.book-tag）按 --chip-mix 同比例混 transparent，进度轨道
-   （.wf-progress）与空态次级按钮由上方四主题令牌块在 `.bookshelf-view` 作用域
-   同域重派生（--text 薄雾）——不会在半透明卡上重新铺实。
-   `.book-body` 自身没有独立底色，随卡底一起透明 —— 不需要额外规则。
-
-   工具条（筛选段控 / 搜索框 / 排序触发器）直接落在窗口材质上，改用 `--chrome-*`
-   令牌本身（令牌定义在 :root，与 `.titlebar` 作用域无关；这里只是**消费**同一组
-   令牌，不复用标题栏选择器），与标题栏筛选行同一套「薄雾底 + 1px 描边环」语言。
-   下拉 / 提示浮层经 portal 挂到 body，不受影响。
-
-   保持不透明：.book-cover（行内作品色渐变）、.book-status（封面状态胶囊固定色，
-   例外 #2）、.book-actions（覆盖在封面上的操作按钮固定暗底）——它们描述封面
-   画作与封面上的覆盖物，透明会丢失识别度与对比度。
-   非材质态没有这些规则：卡片 / 工具条仍是 bookshelf.css 的不透明取值，零变化。
-   ============================================================ */
-
-/* 书籍卡：与右栏内容卡同档（--pane 58%），叠在页面底上约 68.5%（亚克力）。 */
-:root:is([data-material='acrylic'], [data-material='mica']) .bookshelf-view .book-card {
-  background: var(--surface-pane-card);
-}
-
-/* 选中态在页面 CSS 是 --brand 按 --select-tint 混 --pane（不透明）；此处同比例混入
-   半透明卡底：light / dark / sage 18% + 82% × 58% ≈ 65.6%、honey 24% ≈ 68.9%，
-   均高于普通卡 58%，选中仍可辨。 */
-:root:is([data-material='acrylic'], [data-material='mica']) .bookshelf-view .book-card.is-selected {
-  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--surface-pane-card));
-}
-
-/* 书籍卡内的分类标签：`.chip-pill` 的兜底底是 `--text` 14%（--chip-mix）混
-   `--pane`（不透明）；本页标签只挂 `chip-pill--neutral`，没有 `--chip-bg` 实色
-   注入，故材质态改按同比例混 transparent（卡片上的薄雾标签）。 */
-:root:is([data-material='acrylic'], [data-material='mica']) .bookshelf-view .book-tag {
-  background: color-mix(in srgb, var(--text) var(--chip-mix), transparent);
-}
-
-/* 筛选段控：轨道 / 滑块改用 chrome 薄雾（非材质态仍是 --soft-solid + --seg-thumb-bg）。 */
-:root:is([data-material='acrylic'], [data-material='mica']) .bookshelf-view .shelf-toolbar .wf-seg {
-  background: var(--chrome-fill);
-  box-shadow: var(--chrome-ring);
-}
-
-:root:is([data-material='acrylic'], [data-material='mica'])
-  .bookshelf-view
-  .shelf-toolbar
-  .wf-seg__thumb {
-  background: var(--chrome-active);
-  box-shadow: var(--chrome-ring);
-}
-
-/* 搜索框 / 排序下拉：默认薄雾 + 描边环。 */
-:root:is([data-material='acrylic'], [data-material='mica'])
-  .bookshelf-view
-  .shelf-toolbar
-  :is(.wf-search, .wf-select__trigger, .shelf-sort__trigger) {
-  background: var(--chrome-fill);
-  box-shadow: var(--chrome-ring);
-}
-
-:root:is([data-material='acrylic'], [data-material='mica'])
-  .bookshelf-view
-  .shelf-toolbar
-  :is(
-    .wf-search:hover:not(.is-disabled),
-    .wf-select__trigger:hover:not(:disabled),
-    .shelf-sort__trigger:hover
-  ) {
-  background: var(--chrome-fill-hover);
-}
-
-/* 聚焦 / 下拉展开：组件自身会回到不透明 --pane，材质态改用强一档薄雾 +
-   品牌环（与标题栏筛选行同口径）。 */
-:root:is([data-material='acrylic'], [data-material='mica'])
-  .bookshelf-view
-  .shelf-toolbar
   :is(
     .wf-search:focus-within,
     .wf-select__trigger:focus-visible,
