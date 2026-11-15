@@ -119,7 +119,7 @@
 - 状态写入根元素 `data-material`：写**实际材质名** `acrylic` / `mica` / `none`；**不写 `tabbed`**——浅色下主进程实际下发 Mica Alt，但渲染层标记始终为 `mica`（`WindowMaterialProvider.tsx:45-47,53-56`）。
 - `styles/material.css` 依 `data-material` 生效：
   - `[data-material='acrylic'] .shell` 用 `--desk-solid-alpha`（**25%**）混合纯色底；`[data-material='mica'] .shell` 为 `transparent`，不叠 scrim（`material.css:29-38`）。标题栏与状态栏本体在云母下同样透明，不另设整条底色；浅色 Mica Alt / 深色标准 Mica 的差异完全由主进程决定，渲染层无提亮层。
-  - 材质态三栏与活动栏：左右栏、悬浮活动栏以及 light / dark 中栏改用 `--surface-pane`（`--pane` 按 `--pane-surface-alpha` **58%** 混透明），sage / honey 中栏保留不透明 `--doc-surface` 纸面；面板内 L2 / L3 软底在同一作用域按 `--text` 混 `transparent` 重派生，面板阴影降为 `--panel-ring`；右栏原先不透明的卡片 / 只读内容块改用 `--surface-pane-card`（与面板同取 `--pane` 58%，复合后约 82.4%，严格高于面板 58%），范围见 `material.css:74-206`。标题栏 / 状态栏控件改用 `--chrome-*` 薄雾底 + 1px 描边环，浮层与状态栏弹层保持不透明（`material.css:209-257`）。
+  - 材质态三栏与活动栏：左右栏、悬浮活动栏以及中栏的**非纸面模块**改用 `--surface-pane`（`--pane` 按 `--pane-surface-alpha` **58%** 混透明），sage / honey 只有**章节 / 大纲**中栏保留不透明 `--doc-surface` 纸面（`.editor-pane[data-module=…]`，其余模块与 light / dark 一致透明）；面板内 L2 / L3 软底在同一作用域按 `--text` 混 `transparent` 重派生，面板阴影降为 `--panel-ring`；右栏原先不透明的卡片 / 只读内容块与书架书籍卡改用 `--surface-pane-card`（与面板同取 `--pane` 58%，右栏复合后约 82.4%，书架卡叠页面底约 68.5% / 58%，均严格高于各自的底），范围见 `material.css` 三栏段与文件末尾书架页段。标题栏 / 状态栏与书架工具条控件改用 `--chrome-*` 薄雾底 + 1px 描边环，浮层与状态栏弹层保持不透明。
   - `:is([data-material='acrylic'], [data-material='mica']) body` 置透明，否则 body 底会挡住 DWM 材质（`material.css:42-44`）。
 - 切换时三件事同步：调主进程、写 `data-material`、经 `settings:set` 持久化（`WindowMaterialProvider.tsx:49-78`）。
 - 主进程返回的实际值与请求不一致时（如系统不支持），Provider 回退本地状态（`WindowMaterialProvider.tsx:72-76`）。

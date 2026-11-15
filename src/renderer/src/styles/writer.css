@@ -208,14 +208,27 @@ body.is-resizing .splitter {
   display: flex;
   flex-direction: column;
   position: relative; /* 提供包含块：章节搜索浮窗锚定中栏右上（.ep-search 绝对定位） */
-  /* 写作中栏专用底色：light / dark 等于 --pane；sage / honey 为护眼纸色。 */
-  background: var(--doc-surface);
+  /* 写作中栏底色：默认 --pane；sage / honey 只有章节 / 大纲铺护眼纸色（见下）。 */
+  background: var(--pane);
   border-radius: var(--r-lg);
   box-shadow: var(--sh-sm), var(--panel-ring);
   overflow: hidden;
   contain: layout paint;
   /* 无 transition：原有两条（background / box-shadow）只服务于主题切换，
      已随「主题切换整体瞬变」一并移除；本栏无布局 / 显隐过渡需求。 */
+}
+
+/* ---------- 护眼纸面：仅章节 / 大纲（sage / honey） ----------
+   纸色不再挂在全部模块上：`.editor-pane` 的 data-module 由 EditorPane 按活动模块
+   写入（chapters / outline / plot / timeline / 设定五域 / foreshadow / inspiration），
+   只有章节与大纲（含回收站，回收站是 chapters 模块内的 data-view='trash'）回到
+   --doc-surface；其余模块沿用 --pane，与 light / dark 一致，材质态由 material.css
+   改为 --surface-pane 透明。 */
+[data-theme='sage'] .editor-pane[data-module='chapters'],
+[data-theme='sage'] .editor-pane[data-module='outline'],
+[data-theme='honey'] .editor-pane[data-module='chapters'],
+[data-theme='honey'] .editor-pane[data-module='outline'] {
+  background: var(--doc-surface);
 }
 
 /* ---------- 护眼纸面内的软底重派生（sage / honey） ----------

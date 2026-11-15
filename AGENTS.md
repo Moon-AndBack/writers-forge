@@ -108,20 +108,21 @@ src/
 ### 8.1 单一真源与配色
 
 - **MUST** 颜色、动效时长、缓动只从 `src/renderer/src/styles/theme.css` 的 `--*` 令牌取用；圆角只用两档：`--r-lg`（8）用于全部界面元素；`--r-pill`（999）用于胶囊 / chip / 开关轨道 / 进度条 / 滚动条。正圆（`50%`）仅用于图标按钮与状态点；≤3px 的装饰微条与贴平（`0`）为例外。阴影优先用 `--sh-*` / `--panel-ring`。新增不得写颜色 / 时长 / 缓动 / 圆角字面量；卡片光晕公式（§8.8）与已登记例外除外。
-- **MUST** 组件填充默认用不透明 `--*-solid`（或 `--pane` / `--control-on-soft`）；`--soft` 等半透明档只允许用于确需透出下层的浮层，不得用于卡片 / 控件主体。材质态的两条例外见下方 `--surface-pane` / `--chrome-*` 条款。
+- **MUST** 组件填充默认用不透明 `--*-solid`（或 `--pane` / `--control-on-soft`）；`--soft` 等半透明档只允许用于确需透出下层的浮层，不得用于卡片 / 控件主体。材质态的三条例外见下方 `--surface-pane` / `--chrome-*` / 书架页条款。
 - **MUST** 任何字面量例外必须同时满足：① 在 `design-language.md` 的「例外登记表」登记；② 在代码处用 `/* 例外：… */` 注明；③ 不扩大使用范围。
-- **MUST** 窗口材质（亚克力 / 云母）下，**承载正文与可编辑内容**的表面保持 alpha = 1：中栏编辑区在 **sage / honey** 主题下一律不透明（护眼纸面）；light / dark 下中栏可降至 `--surface-pane`，但正文对比度不得低于 AA。
+- **MUST** 窗口材质（亚克力 / 云母）下，**承载正文与可编辑内容**的表面保持 alpha = 1：**章节与大纲**的中栏在 **sage / honey** 下不透明（护眼纸面）；其它模块与 light / dark 一致，中栏可降至 `--surface-pane`，但正文对比度不得低于 AA。
 - **MUST** 左右栏与悬浮活动栏在材质态可使用 `--surface-pane`（`--pane` 58%）；其内的 L2 / L3 软底必须**在同作用域内重派生**为半透明（`--text` 混 `transparent`），栏内原先不透明的卡片 / 只读内容块必须同步改用 `--surface-pane-card`（与面板同取 `--pane` 58%，复合后约 82.4%，严格高于面板 58%）；令牌自身不得低于面板档，否则不得降低栏底透明度。
+- **MUST** 书架页在材质态可半透明：书籍卡用 `--surface-pane-card`（`--pane` 58%，叠在页面底上约 68.5%，严格比页面底实），工具条控件改用 `--chrome-*` 薄雾 + 1px 描边环，页面内软底必须同域重派生；封面画作、封面状态胶囊与封面操作按钮保持不透明。仅限书架页（§9 #34）。
 - **MUST** 标题栏 / 状态栏的控件在材质态使用 `--chrome-*` 令牌；每个控件必须同时具备「薄雾底 + 1px 描边环」或「图标自身足够对比」之一。
 - **MUST NOT** 中栏 sage / honey 纸色面、`.tb-brand-mark`、任何浮层（Modal / Select 面板 / Tooltip / 状态栏弹层）使用半透明填充。
 - **MUST** 关闭材质（`data-material='none'`）时以上令牌回退为原不透明值，外观与改动前一致。
-- **MUST** 固定态活动栏的轻微磨砂仍作为既有例外保留（§9 #11）；其余材质态透明只允许走 `--surface-pane`（含栏内 `--surface-pane-card`）/ `--chrome-*` 两条已登记路径（§9 #31 / #32）。
+- **MUST** 固定态活动栏的轻微磨砂仍作为既有例外保留（§9 #11）；其余材质态透明只允许走 `--surface-pane`（含栏内 / 书架卡的 `--surface-pane-card`）/ `--chrome-*` 三条已登记路径（§9 #31 / #32 / #34）。
 - **SHOULD** 语义色只表达状态：`--ok` / `--warn` / `--danger` 不作品牌强调；`--brand` 可被系统强调色覆盖，不作固定插画色。
 
 ### 8.2 表面层级
 
-- **MUST** 按五层组织：L0 桌面 `.shell`（`--desk-*`）→ L1 栏 / 编辑区（默认 `--pane`；材质态左右栏 / 悬浮活动栏与 light / dark 中栏改用 `--surface-pane`，sage / honey 中栏仍为不透明 `--doc-surface`）→ L2 分区（`--soft-solid`，内衬 6px，圆角 `--r-lg`）→ L3 卡片（`--soft-solid`，内衬 14×16，`--r-lg`，`--sh-xs` / `--sh-sm`）→ L4 控件 / 只读块（`--control-on-soft`，**默认态无描边**，边界靠与 `--soft-solid` 的底色差；仅 focus / invalid / checked 等状态使用描边，只读块 10×12、输入类 9×12）。浮层独立于五层，用 `--pane` + `--sh-sm`。
-- **MUST** 材质态的面板底与 L2 / L3 软底必须同域成套替换：左右栏 / 悬浮活动栏与 light / dark 中栏用 `--surface-pane`，sage / honey 中栏仍用不透明 `--doc-surface`；浮层始终用不透明 `--pane`，不参与面板透明。
+- **MUST** 按五层组织：L0 桌面 `.shell`（`--desk-*`）→ L1 栏 / 编辑区（默认 `--pane`；材质态左右栏 / 悬浮活动栏与中栏的非纸面模块改用 `--surface-pane`，sage / honey 章节 / 大纲中栏仍为不透明 `--doc-surface`）→ L2 分区（`--soft-solid`，内衬 6px，圆角 `--r-lg`）→ L3 卡片（`--soft-solid`，内衬 14×16，`--r-lg`，`--sh-xs` / `--sh-sm`）→ L4 控件 / 只读块（`--control-on-soft`，**默认态无描边**，边界靠与 `--soft-solid` 的底色差；仅 focus / invalid / checked 等状态使用描边，只读块 10×12、输入类 9×12）。浮层独立于五层，用 `--pane` + `--sh-sm`。
+- **MUST** 材质态的面板底与 L2 / L3 软底必须同域成套替换：左右栏 / 悬浮活动栏与中栏的非纸面模块用 `--surface-pane`，sage / honey 章节 / 大纲中栏仍用不透明 `--doc-surface`；浮层始终用不透明 `--pane`，不参与面板透明。
 - **MUST** 同色软底不得再套同色软底卡；需要再分层时改用 `--control-on-soft`、`--pane`，或仅用描边 / 间距分区。
 - **MUST** 内衬固定：栏内衬 8px、分区内衬 6px、卡片 14×16px、弹窗 body 4×20×16px（上 / 左右 / 下）；不得在同类容器另立内衬。
 - **SHOULD** 层级优先用底色 + 间距 / 描边表达，不用阴影堆叠制造伪层级。
