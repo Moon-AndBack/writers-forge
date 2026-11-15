@@ -143,7 +143,7 @@ export const VOLUME_CHAPTERS: SeedVolume = {
           '违禁词：命中处画波浪下划线，悬停显示该词所属类别'
         ]),
         seedRichParagraph([{ text: '选中文字的右键菜单', bold: true }]),
-        seedParagraph('选中一段文字后右键，菜单里是这五项：'),
+        seedParagraph('选中同一段内的文字后右键，菜单里是这五项：'),
         seedBulletList([
           '添加伏笔 / 关联伏笔 / 回收伏笔',
           '搜索选中文字',
@@ -153,7 +153,8 @@ export const VOLUME_CHAPTERS: SeedVolume = {
         seedBulletList([
           '没有标题、列表与表格，分段与空行就是全部排版手段',
           '实体高亮只用来查信息，不代表可以点击跳去设定档案',
-          '右键菜单的伏笔三项只在选中文字后才出现',
+          '右键菜单的伏笔三项与「加入违禁词库」只对同一段内的选区可用',
+          '跨段选区时菜单只保留「搜索选中文字」',
           '占位诗句不占字数，也不会被保存'
         ])
       ]

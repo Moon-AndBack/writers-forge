@@ -121,6 +121,7 @@ const common = {
   selectionMenu: {
     title: 'Selected text',
     search: 'Search selected text',
+    searchOnly: 'Multi-paragraph selections only support search',
     addWord: 'Add to banned words',
     categoryTitle: 'Choose banned word category',
     searchEmpty: 'No text to search',

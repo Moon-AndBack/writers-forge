@@ -130,6 +130,7 @@ const common = {
   selectionMenu: {
     title: '选中文字',
     search: '搜索选中文字',
+    searchOnly: '跨段选区仅支持搜索',
     addWord: '加入违禁词库',
     categoryTitle: '选择违禁词类别',
     searchEmpty: '没有可搜索的文字',

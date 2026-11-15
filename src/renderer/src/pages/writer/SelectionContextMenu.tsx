@@ -17,7 +17,12 @@ import {
   type ForeshadowLabelResolver
 } from '../../components/editor/useForeshadowMarks'
 import ForeshadowCreateDialog from './foreshadow/ForeshadowCreateDialog'
-import { fetchRecoverable, readSelectedText, toSearchQuery } from './selectionMenuUtils'
+import {
+  fetchRecoverable,
+  readSelectedText,
+  shouldOpenSelectionMenu,
+  toSearchQuery
+} from './selectionMenuUtils'
 import ForeshadowRecoverDialog from '../../components/dialogs/ForeshadowRecoverDialog'
 import { useForeshadowFilters } from './foreshadow/foreshadowFilterContext'
 import {
@@ -40,18 +45,19 @@ import { useToast } from '../../components/ui'
  * 一个菜单，由调用方传回调决定可选项目是否出现。
  *
  * 壳（挂载 / 拦截 / 定位 / 关闭 / 选区保持）见 `EditorContextMenu`；本组件只声明：
- * - **接管条件**：选区落在单个顶层块内（`resolveParagraphAnchor` 非 null），
- *   大纲额外要求不在表格内（让给 `TableContextMenu`，经 `shouldOpenExtra` 传入）；
- * - **菜单内容**：
- *   1. 「添加伏笔」（`foreshadow` ns `contextMenu.add`，始终出现）；
- *   2. 「关联伏笔」（`foreshadow` ns `contextMenu.attach`，始终出现）——点击后把**当前
+ * - **接管条件**：选区是文本选区、非空且有文字；跨段选区照常接管，菜单降级为仅搜索
+ *   （伏笔与违禁词依赖单段锚点，跨段不提供）。大纲额外要求不在表格内
+ *   （让给 `TableContextMenu`，经 `shouldOpenExtra` 传入）；
+ * - **菜单内容**（1–3 与 5 仅在选区可构成单段锚点时出现；跨段 → 只保留 4 并附一行说明）：
+ *   1. 「添加伏笔」（`foreshadow` ns `contextMenu.add`，锚点可用时出现）；
+ *   2. 「关联伏笔」（`foreshadow` ns `contextMenu.attach`，锚点可用时出现）——点击后把**当前
  *      选区快照**挂成某条伏笔的埋点（槽位由上下文决定：章节 → 正文埋点，大纲条目 → 大纲埋点；
  *      弹窗内选目标，无可挂候选时由弹窗给空态提示）；
  *   3. 「回收伏笔」（`foreshadow` ns `contextMenu.recover`，**仅章节编辑器**出现——回收是
  *      「伏笔在正文里兑现」的事件、需要正文位置，大纲是规划层，故大纲不显示该项；当前书
  *      **没有**埋设中（派生 `planted`）伏笔时置灰不可点，可回收性在 `bookId` 变化 / 伏笔写操作后重算）；
  *   4. 「搜索选中文字」（传 `onSearchText` 时出现）；
- *   5. 「加入违禁词库」（传 `onAddCleanWord` 时出现）——点击后**在同一浮层内**展开
+ *   5. 「加入违禁词库」（传 `onAddCleanWord` 且锚点可用时出现）——点击后**在同一浮层内**展开
  *      六个类别按钮（二级选择），选完即入库并收起。
  * - **点击后**：`FormatButton` 已 `onMouseDown` 阻止默认，故编辑器选区在回调内仍有效；
  * - **创建伏笔成功后**：按本题 `chapterId` / `outlineItemId` 重拉伏笔并写回正文标记
@@ -59,9 +65,9 @@ import { useToast } from '../../components/ui'
  * - **回收伏笔**：点菜单项时把**当前选区快照**记为回收锚点（与添加伏笔共用 `buildAnchor`），
  *   回收成功后再 `refreshForeshadowMarks`：埋设点变灰实线、回收处铺「回收点」标记。
  *
- * 选中文字来源（两处一致）：`resolveParagraphAnchor` 的 `quote` 按 `charStart` / `charEnd`
- * 截取。选它而不是 `readEditorSelection`：锚点函数已保证选区**落在单个顶层块内**，
- * 天然排除跨段文本（搜索按段 `indexOf`，跨段查询词必然匹配不到）。
+ * 选中文字来源（两处一致）：有单段锚点时按 `charStart` / `charEnd` 截取锚点 `quote`；
+ * 跨段无锚点时回退选区原文（块间以换行分隔），搜索再经 `toSearchQuery` 取首个非空行
+ * ——章节与大纲搜索都是逐段 `indexOf`，含换行的整段查询词必然匹配不到。
  *
  * 锚点载体：
  * - 传 `chapterId` → `kind: 'chapter'`（章 + 段落序号 + 段文本 + 段内字符区间）；
@@ -158,6 +164,8 @@ function SelectionMenuContent({
   const { t: tCleanWords } = useTranslation('chapters')
   /** 非 null = 已展开「选择类别」二级面板（值为待入库的词）。 */
   const [pendingWord, setPendingWord] = useState<string | null>(null)
+  /** 选区能否构成单段锚点；跨段无锚点 → 伏笔与违禁词项不可用，只留搜索。 */
+  const hasAnchor = editor !== null && resolveParagraphAnchor(editor) !== null
 
   /**
    * 进入「加入违禁词库」：先按 IPC 口径前置校验，不合法就地提示并收起菜单。
@@ -240,25 +248,33 @@ function SelectionMenuContent({
   return (
     <>
       <div className="wf-format-pop__section">
+        {!hasAnchor && <div className="wf-format-pop__title">{t('selectionMenu.searchOnly')}</div>}
         <div className="wf-format-pop__grid wf-format-pop__grid--stack">
-          <FormatButton label={tForeshadow('contextMenu.add')} onClick={onAddForeshadow} />
-          {/* 「关联伏笔」始终显示、不置灰：没有可挂的候选时由弹窗给出空态提示
-              （`attach.empty`），比在菜单里猜「为什么不可点」更可解释。 */}
-          <FormatButton label={tForeshadow('contextMenu.attach')} onClick={onAttachForeshadow} />
-          {/* 「回收伏笔」只在章节上下文渲染（大纲是规划层，回收语义错位）；章节内当前书
-              没有埋设中伏笔时仍渲染并置灰——`FormatButton` 原生 `disabled` 已排除 hover
-              并给出 not-allowed 光标，无需额外阻止点击（浏览器不派发 click）。 */}
-          {showRecover && (
-            <FormatButton
-              label={tForeshadow('contextMenu.recover')}
-              disabled={!canRecover}
-              onClick={onRecoverForeshadow}
-            />
+          {hasAnchor && (
+            <>
+              <FormatButton label={tForeshadow('contextMenu.add')} onClick={onAddForeshadow} />
+              {/* 「关联伏笔」不置灰：没有可挂的候选时由弹窗给出空态提示
+                  （`attach.empty`），比在菜单里猜「为什么不可点」更可解释。 */}
+              <FormatButton
+                label={tForeshadow('contextMenu.attach')}
+                onClick={onAttachForeshadow}
+              />
+              {/* 「回收伏笔」只在章节上下文渲染（大纲是规划层，回收语义错位）；章节内当前书
+                  没有埋设中伏笔时仍渲染并置灰——`FormatButton` 原生 `disabled` 已排除 hover
+                  并给出 not-allowed 光标，无需额外阻止点击（浏览器不派发 click）。 */}
+              {showRecover && (
+                <FormatButton
+                  label={tForeshadow('contextMenu.recover')}
+                  disabled={!canRecover}
+                  onClick={onRecoverForeshadow}
+                />
+              )}
+            </>
           )}
           {onSearchText !== undefined && (
             <FormatButton label={t('selectionMenu.search')} onClick={runSearch} />
           )}
-          {onAddCleanWord !== undefined && pendingWord === null && (
+          {hasAnchor && onAddCleanWord !== undefined && pendingWord === null && (
             <FormatButton label={t('selectionMenu.addWord')} onClick={beginAddWord} />
           )}
         </div>
@@ -369,7 +385,7 @@ export function SelectionContextMenu({
         className="wf-selectionmenu"
         shouldOpen={(instance) =>
           (shouldOpenExtra ? shouldOpenExtra(instance) : true) &&
-          resolveParagraphAnchor(instance) !== null
+          shouldOpenSelectionMenu(instance, onSearchText !== undefined)
         }
       >
         {(close) => (

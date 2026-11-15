@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core'
+import { TextSelection } from '@tiptap/pm/state'
 import { deriveForeshadowStatus } from '../../../../shared/foreshadowStatus'
 import { sliceSelectedText } from '../../../../shared/foreshadowAnchorText'
 import { resolveParagraphAnchor } from '../../components/editor/paragraphAnchor'
@@ -11,15 +12,32 @@ import { resolveParagraphAnchor } from '../../components/editor/paragraphAnchor'
  */
 
 /**
- * 取选中的文字片段（所在块文本按段内区间截取后 trim）。
+ * 取选中的文字片段。
  *
- * 选区跨块 / 空选区时 `resolveParagraphAnchor` 返回 null，此处回退空串（调用方不动作）。
+ * 选区落在单个顶层块内时按锚点的段内区间截取；跨段选区没有锚点，回退到文档选区原文
+ * （块间以换行分隔，调用方按需取首个非空行）。空选区返回空串。
  */
 export function readSelectedText(editor: Editor | null): string {
   if (!editor) return ''
   const info = resolveParagraphAnchor(editor)
-  if (!info) return ''
-  return sliceSelectedText(info.quote, info.charStart, info.charEnd).trim()
+  if (info) return sliceSelectedText(info.quote, info.charStart, info.charEnd).trim()
+  const { selection, doc } = editor.state
+  if (selection.empty) return ''
+  return doc.textBetween(selection.from, selection.to, '\n').trim()
+}
+
+/**
+ * 菜单接管判定：选区必须是**文本选区**、非空，且能读出文字。
+ *
+ * 与锚点解耦：跨段选区（`resolveParagraphAnchor` 返回 null）照常接管，由菜单按锚点
+ * 降级为仅「搜索选中文字」。调用方没有搜索回调时跨段无可用项，退回不接管（不弹空菜单）。
+ */
+export function shouldOpenSelectionMenu(editor: Editor, hasSearchItem: boolean): boolean {
+  if (editor.isDestroyed) return false
+  const { selection } = editor.state
+  if (!(selection instanceof TextSelection) || selection.empty) return false
+  if (readSelectedText(editor) === '') return false
+  return resolveParagraphAnchor(editor) !== null || hasSearchItem
 }
 
 /**

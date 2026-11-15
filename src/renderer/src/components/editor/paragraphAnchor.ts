@@ -11,7 +11,8 @@ import type { Node as PMNode } from '@tiptap/pm/model'
  *   此时序号按顶层块计（与伏笔数据层 `paragraph_idx` 的存储口径一致）。
  *
  * 仅当**选区非空**且**首尾落在同一个顶层块内**时返回，否则返回 `null`：
- * - 跨块选区无法用单条 `quote` + 段内区间表达；
+ * - 跨块选区无法用单条 `quote` + 段内区间表达（选区菜单据此降级为仅搜索，
+ *   伏笔与词库因锚点的单块约束而不可用）；
  * - 块内只有原子节点（图片 / 分隔线）而无文字时 `charEnd === charStart`，同样不产生锚点。
  */
 export interface ParagraphAnchorInfo {
