@@ -130,7 +130,6 @@ const dossier = {
     aliasesLabel: 'Aliases',
     aliasesPlaceholder: 'Enter an alias',
     addAlias: 'Add alias',
-    bodyLabel: 'Body',
     bodyPlaceholder: 'Write the full entry…',
     tagsLabel: 'Tags',
     tagsPlaceholder: 'Press Enter or comma to add a tag',

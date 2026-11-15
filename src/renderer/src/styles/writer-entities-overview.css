@@ -188,11 +188,11 @@
   display: none;
 }
 
-/* 正文段：标签 + 正文块，吃掉剩余高度；内容超高时由壳的滚动区统一滚动。 */
+/* 正文段：单一正文块，吃掉剩余高度；内容超高时由壳的滚动区统一滚动。
+   正文区不再渲染小标题，与上方表单块的间距由壳的 `__fields` 的 12px gap 承担。 */
 .wf-entity-detail__section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
   min-width: 0;
 }
 
@@ -200,8 +200,8 @@
   flex: 1 1 auto;
 }
 
-/* 字段标签：属性表 `dt` 与正文小标题共用（10px / 700 / 弱化色，与灵感 / 伏笔只读
-   详情同口径）。`nowrap` 保证 `max-content` 标签列不会被压成两行。 */
+/* 字段标签：仅属性表 `dt` 使用（10px / 700 / 弱化色，与灵感 / 伏笔只读详情同口径）。
+   `nowrap` 保证 `max-content` 标签列不会被压成两行。 */
 .wf-entity-detail__label {
   font-size: var(--fs-micro);
   font-weight: 700;

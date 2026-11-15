@@ -225,7 +225,6 @@ export function EntityReadonlyDetail({
       </div>
 
       <div className="wf-entity-detail__section wf-entity-detail__section--body">
-        <div className="wf-entity-detail__label">{tDossier('detail.bodyLabel')}</div>
         {currentBody === null ? (
           <div className="wf-entity-detail__placeholder wf-readonly-block">
             {tCommon('loading')}

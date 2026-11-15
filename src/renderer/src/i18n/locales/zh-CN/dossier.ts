@@ -153,7 +153,6 @@ const dossier = {
     aliasesLabel: '别名',
     aliasesPlaceholder: '输入别名',
     addAlias: '添加别名',
-    bodyLabel: '正文',
     bodyPlaceholder: '填写详细设定…',
     tagsLabel: '标签',
     tagsPlaceholder: '回车或逗号添加标签',
