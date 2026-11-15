@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../components/ui'
 import { RichTextEditorProvider } from '../components/editor/richTextEditorProvider'
-import type { RichTextEditorSlots } from '../components/editor/richTextEditorContext'
 import { useActivityBar, useRegisterActivityBar } from '../shell/activityBarContext'
 import type { WriterModule } from '../shell/activityBarModules'
 import { useRegisterUnsavedSwitchGuard } from '../shell/unsavedSwitchGuard'
@@ -29,6 +28,7 @@ import { useInspirationBundle } from './writer/inspiration/useInspirationBundle'
 import { usePlotTimelineBundle } from './writer/usePlotTimelineBundle'
 import { useFlushAllModules } from './writer/useFlushAllModules'
 import { useWriterModuleSwitch } from './writer/useWriterModuleSwitch'
+import { useWriterRichTextSlots } from './writer/useWriterRichTextSlots'
 import { useWriterShortcuts } from './writer/useWriterShortcuts'
 import '../styles/writer.css'
 
@@ -265,18 +265,9 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
       tCommon('saveFailed')
     )
 
-  // 设定档案右栏正文编辑器聚焦态（真源在本页）：右栏 `DossierBodyEditor` 经通用注册表上报。
-  const [dossierEditing, setDossierEditing] = useState(false)
-
   // 富文本编辑器槽位表：编辑器实例由各域右栏自行注册，此处只提供聚焦态真源与上报入口。
-  // 剧情取 `usePlotWorkspace`（状态栏 / 切换守卫同源），设定库取本页 state。
-  const richTextEditorSlots = useMemo<RichTextEditorSlots>(
-    () => ({
-      plot: { editing: plot.editing, onEditingChange: plot.reportEditing },
-      dossier: { editing: dossierEditing, onEditingChange: setDossierEditing }
-    }),
-    [plot.editing, plot.reportEditing, dossierEditing]
-  )
+  // 剧情取 `usePlotWorkspace`（状态栏 / 切换守卫同源）；设定库的聚焦态 state 收在 hook 内。
+  const richTextEditorSlots = useWriterRichTextSlots(plot.editing, plot.reportEditing)
 
   /* ---------- 模块切换未保存守卫（活动栏图标 / 筛选浮层发起） ----------
      外壳经 `useRequestSwitch` 把目标模块交给本页裁决：同模块 / 无脏 → 直接切，有脏草稿 → 两态确认。

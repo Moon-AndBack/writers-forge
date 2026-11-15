@@ -4,19 +4,33 @@
  *
  * 仅活动模块为 `foreshadow` 时返回非空包；其余模块返回 null，中 / 右栏不挂载。
  */
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { WriterModule } from '../../../shell/activityBarModules'
 import type { ForeshadowBundle } from './foreshadowTree'
 import { useForeshadowFilters } from './foreshadowFilterContext'
 import { filterForeshadowRows } from './foreshadowFilterMatch'
 import { useForeshadowWorkspace } from './useForeshadowWorkspace'
 
+/**
+ * 伏笔装配包 + 富文本编辑态：正文编辑器聚焦态仅供标题栏工具栏按态显隐，
+ * 不参与守卫判定（与剧情 `usePlotWorkspace` 的 `editing` 同口径）。
+ *
+ * 暂以交叉类型在本 hook 内补字段，避免本批扩散到 `ForeshadowBundle` 定义；
+ * 右栏接入编辑器时再并入该接口。
+ */
+export interface ForeshadowBundleWithEditing extends ForeshadowBundle {
+  /** 正文编辑器是否处于聚焦编辑（右栏上报）。 */
+  editing: boolean
+  /** 右栏聚焦 / 失焦上报（写回本 hook，引用稳定）。 */
+  reportEditing: (editing: boolean) => void
+}
+
 export function useForeshadowBundle(
   module: WriterModule,
   bookId: string,
   rightPaneHidden: boolean,
   showRightPane: () => void
-): ForeshadowBundle | null {
+): ForeshadowBundleWithEditing | null {
   const enabled = module === 'foreshadow'
   const {
     rows,
@@ -54,6 +68,10 @@ export function useForeshadowBundle(
   )
   const hasFilter = foreshadowFilters.status !== null || foreshadowFilters.query.trim() !== ''
 
+  // 正文编辑器聚焦态（右栏编辑器上报；仅供标题栏工具栏按态显隐，不参与守卫判定）。
+  const [editing, setEditing] = useState(false)
+  const reportEditing = useCallback((next: boolean): void => setEditing(next), [])
+
   const handleSelect = useCallback(
     (id: number): void => {
       select(id)
@@ -62,7 +80,7 @@ export function useForeshadowBundle(
     [select, rightPaneHidden, showRightPane]
   )
 
-  return useMemo<ForeshadowBundle | null>(() => {
+  return useMemo<ForeshadowBundleWithEditing | null>(() => {
     if (!enabled) return null
     return {
       bookId,
@@ -83,6 +101,8 @@ export function useForeshadowBundle(
       onResolveSwitch: resolveSwitch,
       guardSwitch,
       confirming,
+      editing,
+      reportEditing,
       onSelect: handleSelect,
       onUpdate: update,
       onClearBodyAnchor: clearBodyAnchor,
@@ -112,6 +132,8 @@ export function useForeshadowBundle(
     resolveSwitch,
     guardSwitch,
     confirming,
+    editing,
+    reportEditing,
     handleSelect,
     update,
     clearBodyAnchor,

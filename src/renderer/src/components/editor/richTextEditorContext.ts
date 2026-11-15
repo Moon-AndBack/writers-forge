@@ -7,13 +7,13 @@ import type { Editor } from '@tiptap/core'
  * 背景：写作页的「右栏正文编辑器」与「标题栏工具栏」分处两棵子树——编辑器实例在右栏，
  * 动作节点注册在标题栏。二者需一个共同祖先（`Writer.tsx`）中转 `editor` 实例与聚焦态。
  * 机制上提为**按槽位（slot）登记**的通用注册表：同一个 Provider 同时承载章节 / 剧情 /
- * 设定库三个槽位，各域只用自己的 slot 读写，互不串扰。
+ * 设定库 / 灵感 / 伏笔五个槽位，各域只用自己的 slot 读写，互不串扰。
  *
  * 职责边界：
  * - `editors`：Provider 内部 state。各栏正文编辑器挂载 / 卸载时经 `registerEditor` 写入
  *   （卸载传 `null`），标题栏动作组件 / 右栏 AI 面板只读；
  * - `editing`（聚焦态）：**真源仍在页面层**——剧情取 `usePlotWorkspace().editing`、
- *   设定库取 `Writer.tsx` 的页面 state，经 `slots` 传入本 Provider 透传；
+ *   设定库取 `useWriterRichTextSlots()` 的页面级 state，经 `slots` 传入本 Provider 透传；
  *   `useRichTextEditor().reportEditing` 把右栏编辑器的聚焦 / 失焦交回页面层，
  *   本 Provider **不另存第二份状态**（避免与状态栏 / 守卫口径打架）；
  * - `bookId`：Provider 级统一传入，供工具栏插图按书隔离入库。
@@ -25,7 +25,7 @@ import type { Editor } from '@tiptap/core'
  *
  * 分工：本文件只放上下文本体与 hook；Provider 组件在 `richTextEditorProvider.tsx`。
  */
-export type RichTextEditorSlot = 'chapter' | 'plot' | 'dossier'
+export type RichTextEditorSlot = 'chapter' | 'plot' | 'dossier' | 'inspiration' | 'foreshadow'
 
 /** 页面层交给 Provider 的单槽位配置（聚焦态真源 + 上报入口）。 */
 export interface RichTextEditorSlotSource {

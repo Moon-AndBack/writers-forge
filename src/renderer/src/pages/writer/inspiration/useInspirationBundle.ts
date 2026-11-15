@@ -32,12 +32,26 @@ interface InspirationRowsState {
   rows: InspirationRow[]
 }
 
+/**
+ * 灵感装配包 + 富文本编辑态：正文编辑器聚焦态仅供标题栏工具栏按态显隐，
+ * 不参与守卫判定（与剧情 `usePlotWorkspace` 的 `editing` 同口径）。
+ *
+ * 暂以交叉类型在本 hook 内补字段，避免本批扩散到 `InspirationBundle` 定义；
+ * 右栏接入编辑器时再并入该接口。
+ */
+export interface InspirationBundleWithEditing extends InspirationBundle {
+  /** 正文编辑器是否处于聚焦编辑（右栏上报）。 */
+  editing: boolean
+  /** 右栏聚焦 / 失焦上报（写回本 hook，引用稳定）。 */
+  reportEditing: (editing: boolean) => void
+}
+
 export function useInspirationBundle(
   module: WriterModule,
   bookId: string,
   rightPaneHidden: boolean,
   showRightPane: () => void
-): InspirationBundle | null {
+): InspirationBundleWithEditing | null {
   const enabled = module === 'inspiration'
   const { filters, clearAll: clearInspirationFilters, refreshTags } = useInspirationFilters()
 
@@ -60,6 +74,9 @@ export function useInspirationBundle(
   const saveRef = useRef<(() => void | Promise<boolean>) | null>(null)
   // 草稿重置键：放弃时递增，右栏表单以它为 key 重挂、草稿回退到行值。
   const [draftResetKey, setDraftResetKey] = useState(0)
+  // 正文编辑器聚焦态（右栏编辑器上报；仅供标题栏工具栏按态显隐，不参与守卫判定）。
+  const [editing, setEditing] = useState(false)
+  const reportEditing = useCallback((next: boolean): void => setEditing(next), [])
 
   const rowsMatch = enabled && rowsState.bookId === bookId
   const allRows = rowsMatch ? rowsState.rows : EMPTY_ROWS
@@ -244,7 +261,7 @@ export function useInspirationBundle(
     [select, rightPaneHidden, showRightPane]
   )
 
-  return useMemo<InspirationBundle | null>(() => {
+  return useMemo<InspirationBundleWithEditing | null>(() => {
     if (!enabled) return null
     return {
       bookId,
@@ -263,6 +280,8 @@ export function useInspirationBundle(
       onResolveSwitch: resolve,
       guardSwitch: guard,
       confirming,
+      editing,
+      reportEditing,
       onSelect: handleSelect,
       onCreate: create,
       onUpdate: update,
@@ -287,6 +306,8 @@ export function useInspirationBundle(
     resolve,
     guard,
     confirming,
+    editing,
+    reportEditing,
     handleSelect,
     create,
     update,
