@@ -13,7 +13,7 @@ const inspiration = {
   filter: {
     all: 'All',
     tagAria: 'Filter by tag',
-    searchPlaceholder: 'Search titles, content or tags',
+    searchPlaceholder: 'Search titles or content',
     searchAria: 'Search titles, content or tags'
   },
   field: {

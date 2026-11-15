@@ -16,7 +16,7 @@ const dossier = {
     all: 'All',
     allSubtypes: 'All categories',
     subtypeAria: 'Filter by category',
-    searchPlaceholder: 'Search entity names or aliases',
+    searchPlaceholder: 'Search name or alias',
     searchAria: 'Search entity names or aliases',
     search: 'Search',
     emptyTitle: 'No matching results',
