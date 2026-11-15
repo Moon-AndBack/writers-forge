@@ -273,7 +273,7 @@ export function RightPane({
             `active` 仅在「章节模块 + 页签可见」时为真（惰性加载）；大纲模块页签集不含 AI，
             必须为假，否则会话与流式状态会一直挂着。总开关关闭时整块不渲染（条件卸载）：
             面板的流式订阅在卸载时退订并 abort 在途请求，配置与会话历史保留。
-            开关开启时面板常驻，切页签不丢状态。 */}
+            开关开启时面板常驻：切页签只中止在途请求（半截回复落库），消息保留，回来直接复用。 */}
         {aiEnabled ? (
           <div className="rp-tabpanel" hidden={!isChapterView || activeTab !== 'ai'}>
             <AiPanel

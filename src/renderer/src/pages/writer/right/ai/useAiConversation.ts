@@ -6,7 +6,6 @@ import {
   createActiveRequest,
   createOptimisticMessages,
   insertCompactionDivider,
-  loadSessionMessages,
   persistAssistantPartial,
   readCompressionEnabled,
   UNKNOWN_ERROR
@@ -19,6 +18,7 @@ import type {
   EnsuredSession
 } from './chatRuntime'
 import { autoTitleSession } from './aiSessionTitle'
+import { useAiHistoryLoad } from './useAiHistoryLoad'
 import { composeMessages, type AiComposeInput } from './functions'
 import { encodeSummaryRow, prepareOutgoingMessages } from './contextSummary'
 import type { SavedSummary } from './contextSummary'
@@ -32,6 +32,7 @@ export type { AiConversationMessage, AiConversationState }
  *
  * 会话由 `useAiSessions` 选中后经 `sessionId` 传入（默认仍是该书最近一条）；
  * `sessionId` / 书籍变化时中止在途请求（半截回复落库）→ 清空消息 → 重载历史。
+ * 面板切走（`active=false`）只中止在途请求、**保留消息**，回来直接复用（历史缺失才重载）。
  * 会话按书归属、与章解耦：**切章既不清空消息也不中止在途请求**，会话保持不变；
  * 消息落库时记录**发起时**所在的章，供回插校验（无章聊天为 null）。
  * **所有请求（润色 / 续写 / 改写 / 翻译 / 自由对话）**
@@ -57,7 +58,6 @@ export function useAiConversation(input: {
   const [messages, setMessages] = useState<AiConversationMessage[]>([])
   const [generating, setGenerating] = useState(false)
   const [compressing, setCompressing] = useState(false)
-  const [hydrating, setHydrating] = useState(false)
   const [summary, setSummary] = useState<SavedSummary | null>(null)
   const [notice, setNotice] = useState<AiContextNotice | null>(null)
 
@@ -66,6 +66,8 @@ export function useAiConversation(input: {
   const sessionIdRef = useRef<number | null>(null)
   /** `sessionIdRef` 里那条会话归属的书（切书后据此丢弃旧书会话，见 `ensureSession`）。 */
   const sessionBookRef = useRef<string | null>(null)
+  /** 当前消息所属的会话：作用域切换时据此判断历史是否已载入（见 `useAiHistoryLoad`）。 */
+  const loadedSessionRef = useRef<number | null>(null)
   /** 当前会话摘要的同步副本（发送路径在异步分支里读）。 */
   const summaryRef = useRef<SavedSummary | null>(null)
   const providerRef = useRef<AiProviderId>('deepseek')
@@ -149,6 +151,9 @@ export function useAiConversation(input: {
       const id = created?.id ?? null
       sessionIdRef.current = id
       sessionBookRef.current = book
+      // 新会话的消息列表（含本轮乐观消息）即归属该 id：避免随后的 sessionId prop 变化
+      // 被当成「切换会话」而中止刚启动的请求 / 清空消息。
+      loadedSessionRef.current = id
       if (id !== null) sessionCallbacksRef.current.onSessionCreated?.(id)
       return { id, created: id !== null }
     } catch (error) {
@@ -424,63 +429,25 @@ export function useAiConversation(input: {
 
   /* ---------- 章节 / 会话 / 面板切换：清空 + 载入历史 ---------- */
 
-  useEffect(() => {
-    // 只按「书」判断作用域：切章不重置（消息保留、在途请求不中止、会话不变）。
-    const bookChanged = bookIdRef.current !== bookId
-    // 会话由本 hook 的 send 路径新建（内部 ref 已指向该 id）：忽略这次 prop 变化，
-    // 否则会在请求刚启动时把在途请求中止掉。其余变化（切换 / 删除 / 新建草稿）都重载。
-    if (!bookChanged && active && sessionId !== null && sessionIdRef.current === sessionId) {
-      return undefined
-    }
+  // 作用域切换与历史载入集中在 `useAiHistoryLoad`（本文件已到 500 行上限）。
+  // ⚠️ 必须在下方 ref 同步 effect **之前**调用：切书时要先由它读到旧 bookId 判定作用域。
+  const hydrating = useAiHistoryLoad({
+    bookId,
+    active,
+    sessionId,
+    bookIdRef,
+    sessionIdRef,
+    sessionBookRef,
+    activeRequestRef,
+    loadedSessionRef,
+    applyMessages,
+    applySummary,
+    setNotice,
+    stopActive
+  })
 
-    // 切书 / 切会话 / 开关面板：中止在途请求（半截回复落库）→ 指向目标会话 → 清空消息。
-    stopActive(false)
-    sessionIdRef.current = sessionId
-    sessionBookRef.current = bookId
-    applyMessages([])
-    applySummary(null)
-    setNotice(null)
-
-    // 会话与章解耦：无选中章节时仍可载入当前会话历史。
-    if (!active || sessionId === null) {
-      return undefined
-    }
-
-    let cancelled = false
-
-    void (async () => {
-      setHydrating(true)
-      const api = window.api?.ai
-      if (!api) {
-        if (!cancelled) setHydrating(false)
-        return
-      }
-
-      try {
-        const loaded = await loadSessionMessages({
-          api,
-          sessionId,
-          isCancelled: () => cancelled
-        })
-        if (cancelled || loaded === null) return
-        // 载入期间用户已发起新请求（乐观消息已在界面上）：不用历史覆盖，避免丢失流式占位。
-        if (activeRequestRef.current !== null) return
-        applySummary(loaded.summary)
-        applyMessages(loaded.messages)
-      } catch (error) {
-        if (!cancelled) chatLog.warn('AI 会话载入失败', error)
-      } finally {
-        if (!cancelled) setHydrating(false)
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [active, bookId, sessionId, applyMessages, applySummary, stopActive])
-
-  // ref 同步（无副作用）。必须在主 effect 之后：否则切书时 ref 已被写成新值，
-  // 主 effect 会把 `bookChanged` 误判为 false。切章只更新章快照，不影响消息与请求。
+  // ref 同步（无副作用）。必须在历史载入 effect 之后：否则切书时 ref 已被写成新值，
+  // 该 effect 会把 `bookChanged` 误判为 false。切章只更新章快照，不影响消息与请求。
   useEffect(() => {
     bookIdRef.current = bookId
     chapterIdRef.current = chapterId
@@ -490,7 +457,7 @@ export function useAiConversation(input: {
     messages,
     generating,
     compressing,
-    hydrating: active && sessionId !== null && hydrating,
+    hydrating,
     summary,
     notice,
     send,
