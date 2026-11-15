@@ -96,8 +96,17 @@
   box-shadow: var(--surface-panel-shadow);
 }
 
+/* 两个分支缺一不可：分支 1 只按模块判别（任意主题的非纸面模块），分支 2 补齐
+   light / dark 的章节与大纲——这两个主题没有护眼纸面，若沿用 sage / honey 的
+   `:not(chapters):not(outline)` 排除，中栏会回退到 writer.css 的不透明 --pane。
+   sage / honey 的章节 / 大纲两个分支都不命中，保留 --doc-surface 与 .editor-pane
+   原阴影（--sh-sm + --panel-ring），不被 --surface-panel-shadow 覆盖。
+   特异性：分支 1 (0,5,0)、分支 2 (0,4,0)，均高于 writer.css 的 (0,1,0) / (0,2,0)。 */
 :root:is([data-material='acrylic'], [data-material='mica'])
-  .editor-pane:not([data-module='chapters']):not([data-module='outline']) {
+  .editor-pane:not([data-module='chapters']):not([data-module='outline']),
+:root:is([data-material='acrylic'], [data-material='mica'])
+  :is([data-theme='light'], [data-theme='dark'])
+  .editor-pane {
   background: var(--surface-pane);
   box-shadow: var(--surface-panel-shadow);
 }
