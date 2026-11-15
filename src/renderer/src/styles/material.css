@@ -2,15 +2,15 @@
    窗口材质（亚克力 / 云母）—— 桌面底色覆盖
    ------------------------------------------------------------------
    开启时 `.shell` 从「3 层光斑 + 线性渐变」（dark 为斜切色带，见 shell.css）
-   切换为透明底：acrylic 经 `--desk-solid` 保留 35% 不透明度的纯色 scrim；
+   切换为透明底：acrylic 经 `--desk-solid` 保留 25% 不透明度的纯色 scrim；
    mica 不叠任何 scrim，直接透出 DWM 材质（采样桌面壁纸，不模糊）。
-   面板 / 侧栏 / 编辑区改为半透明 `--surface-pane`（85%）；
+   面板 / 侧栏 / 编辑区改为半透明 `--surface-pane`（75%）；
     弹窗 / 浮层 / Select / Tooltip；sage / honey 的中栏纸面保持不透明。
    亚克力实时模糊背后内容，两档材质共用同一套 body 透明规则。
 
    组织方式：
    - 四主题纯色底在 theme.css 提供 `--desk-solid`（light/sage/honey 取 --desk-2，
-     dark 取 #161616）；acrylic 使用 `--desk-solid-alpha`（35%），经 color-mix
+     dark 取 #161616）；acrylic 使用 `--desk-solid-alpha`（25%），经 color-mix
      派生半透明底；mica 的 `.shell` 为 transparent；
    - 根元素标记由 WindowMaterialProvider 写入实际材质名：
      亚克力 `data-material='acrylic'`、云母 `data-material='mica'`、
@@ -46,7 +46,7 @@
 /* ============================================================
    材质态表面层 —— 三栏 / 活动栏
    ------------------------------------------------------------------
-   面板底以 --pane 为基色按 --pane-surface-alpha（85%）派生：
+   面板底以 --pane 为基色按 --pane-surface-alpha（75%）派生：
    - 保留主题色相。若改用 --text 薄雾做面板底，浅色主题 + 浅色云母上
      合成色与背景差 < 1.02，等于没有透明；
    - 面板内的软底（L2 .pane-region / L3 .wf-card / 控件）则**反向**从
@@ -85,8 +85,10 @@
   box-shadow: var(--surface-panel-shadow);
 }
 
-:root:is([data-theme='light'], [data-theme='dark'])
-  :is([data-material='acrylic'], [data-material='mica'])
+:root:is([data-theme='light'], [data-theme='dark']):is(
+    [data-material='acrylic'],
+    [data-material='mica']
+  )
   .editor-pane {
   background: var(--surface-pane);
   box-shadow: var(--surface-panel-shadow);
@@ -114,8 +116,8 @@
   --soft-press-solid: color-mix(in srgb, var(--text) 9%, transparent);
   --control-on-soft: color-mix(in srgb, var(--text) 13%, transparent);
   --control-on-soft-hover: color-mix(in srgb, var(--text) 18%, transparent);
-  /* 85% 面板上 --text-mute（10px 元信息）最低约 2.45–3.27:1，低于 3:1，
-     提升到 --text-dim 的观感。禁用 / 只读输入框走末尾的
+  /* 75% 面板上 --text-mute（10px 元信息）对比度进一步低于 3:1（85% 时最低约
+     2.45–3.27:1），提升到 --text-dim 的观感。禁用 / 只读输入框走末尾的
      --text-mute-weak 回退规则，不会跟着变深。 */
   --text-mute: var(--text-dim);
 }

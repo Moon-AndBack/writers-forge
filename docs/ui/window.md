@@ -118,8 +118,8 @@
 - `WindowMaterialProvider` 计算 `material = setting !== 'none' && supported ? setting : 'none'`，`enabled = material !== 'none'`（`WindowMaterialProvider.tsx:42-43`）。
 - 状态写入根元素 `data-material`：写**实际材质名** `acrylic` / `mica` / `none`；**不写 `tabbed`**——浅色下主进程实际下发 Mica Alt，但渲染层标记始终为 `mica`（`WindowMaterialProvider.tsx:45-47,53-56`）。
 - `styles/material.css` 依 `data-material` 生效：
-  - `[data-material='acrylic'] .shell` 用 `--desk-solid-alpha`（**35%**）混合纯色底；`[data-material='mica'] .shell` 为 `transparent`，不叠 scrim（`material.css:29-38`）。标题栏与状态栏本体在云母下同样透明，不另设整条底色；浅色 Mica Alt / 深色标准 Mica 的差异完全由主进程决定，渲染层无提亮层。
-  - 材质态三栏与活动栏：左右栏、悬浮活动栏以及 light / dark 中栏改用 `--surface-pane`（`--pane` 按 `--pane-surface-alpha` **85%** 混透明），sage / honey 中栏保留不透明 `--doc-surface` 纸面；面板内 L2 / L3 软底在同一作用域按 `--text` 混 `transparent` 重派生，面板阴影降为 `--panel-ring`（`material.css:74-166`）。标题栏 / 状态栏控件改用 `--chrome-*` 薄雾底 + 1px 描边环，浮层与状态栏弹层保持不透明（`material.css:189-217`）。
+  - `[data-material='acrylic'] .shell` 用 `--desk-solid-alpha`（**25%**）混合纯色底；`[data-material='mica'] .shell` 为 `transparent`，不叠 scrim（`material.css:29-38`）。标题栏与状态栏本体在云母下同样透明，不另设整条底色；浅色 Mica Alt / 深色标准 Mica 的差异完全由主进程决定，渲染层无提亮层。
+  - 材质态三栏与活动栏：左右栏、悬浮活动栏以及 light / dark 中栏改用 `--surface-pane`（`--pane` 按 `--pane-surface-alpha` **75%** 混透明），sage / honey 中栏保留不透明 `--doc-surface` 纸面；面板内 L2 / L3 软底在同一作用域按 `--text` 混 `transparent` 重派生，面板阴影降为 `--panel-ring`（`material.css:74-168`）。标题栏 / 状态栏控件改用 `--chrome-*` 薄雾底 + 1px 描边环，浮层与状态栏弹层保持不透明（`material.css:191-219`）。
   - `:is([data-material='acrylic'], [data-material='mica']) body` 置透明，否则 body 底会挡住 DWM 材质（`material.css:42-44`）。
 - 切换时三件事同步：调主进程、写 `data-material`、经 `settings:set` 持久化（`WindowMaterialProvider.tsx:49-78`）。
 - 主进程返回的实际值与请求不一致时（如系统不支持），Provider 回退本地状态（`WindowMaterialProvider.tsx:72-76`）。
@@ -157,7 +157,7 @@ DWM 材质（云母 / 亚克力）的明暗在 Windows 上由系统主题决定�
 ## 5. 自绘标题栏与 WCO
 
 - `titleBarStyle: 'hidden'` 隐藏系统标题栏，右上角保留窗口控制按钮（WCO），高度 **42**（`window.ts:86-91`）。
-- 初始符号色 `#5c5c5c`；背景保持全透明，让自绘标题栏与 DWM 材质透出（`window.ts:88-89`；`useTitleBarOverlay.ts:5-8`）。材质态标题栏内的控件底由 `--chrome-*` 薄雾承担，标题栏本体仍不铺整条底色（`material.css:189-217`）。
+- 初始符号色 `#5c5c5c`；背景保持全透明，让自绘标题栏与 DWM 材质透出（`window.ts:88-89`；`useTitleBarOverlay.ts:5-8`）。材质态标题栏内的控件底由 `--chrome-*` 薄雾承担，标题栏本体仍不铺整条底色（`material.css:191-219`）。
 - CSS `.titlebar` 高度同为 42px（`styles/shell.css:86-91`），三处（主进程 overlay / 渲染层常量 / CSS）必须一致。
 - 主题切换或系统明暗变化后，由 `useTitleBarOverlay()` 读取 `--text-dim` 作为新的 `symbolColor`，读取失败回退 `#5c5c5c`（`useTitleBarOverlay.ts:11-18,40-57`）。
 - 同步延迟一帧（`requestAnimationFrame`），确保取到新主题下的令牌值（`useTitleBarOverlay.ts:47-54`）。
