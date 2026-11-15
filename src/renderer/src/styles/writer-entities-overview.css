@@ -96,25 +96,41 @@
 }
 
 /* ---------- 只读详情（内容排版；壳见 writer-right-panels.css） ---------- */
-/* 标题块：只留名称（类型胶囊已移入下方属性表首格）。保留底板，与正文块一起构成
-   「块 → 表 → 块」的节奏（与灵感只读详情同款）。`min-width: 0` 防超长名称把右栏
-   的滚动区撑宽。 */
+/* 标题块：名称与类别胶囊同一行。名称可收缩并省略，胶囊不参与收缩；保留底板，
+   与表单块 / 正文块一起构成「块 → 块 → 块」的节奏（与灵感只读详情同款）。
+   `min-width: 0` 防超长名称把右栏的滚动区撑宽。 */
 .wf-entity-detail__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   min-width: 0;
 }
 
 .wf-entity-detail__title {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: var(--fs-title);
   font-weight: 600;
   line-height: 1.4;
   color: var(--text);
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 类别胶囊不参与标题行收缩：长名称先省略，胶囊始终完整可读。 */
+.wf-entity-detail__head > .wf-tag {
+  flex: none;
 }
 
 /* ---------- 属性表（两列 label-left 网格） ----------
-   短字段两人一行（类型 / 类别、品阶 / 档位），长字段（首次登场 / 别名 / 关联）跨整行。
-   表单区在 `.wf-readonly-detail__fields`（`.on-soft` 软底卡）内是**单一子级**：自身
-   无底色 / 无圆角 / 无描边，字段之间只靠行距分组，不加任何分隔线。
+   类型整行；物品的品阶 / 档位两人一行；首次登场 / 别名 / 关联跨整行。
+   表单区在 `.wf-readonly-detail__fields`（`.on-soft` 软底卡）内是**单一子级**：
+   外层 `.wf-readonly-block` 负责 `--control-on-soft` 底 / `--r-lg` 圆角 / 10×12
+   内衬（与标题块 / 正文块同档），`dl` 自身无底色 / 无圆角 / 无描边。
+   `padding-inline: 4px` 在底色块内额外留出左右呼吸空间；padding 位于网格容器的
+   内容区之外，只收窄可用宽度，不改变列轨道计算。
    列轨道：`max-content` 标签列（中文约 42px；英文按最长标签撑宽）+ `1fr` 值列；
    单元格用 `subgrid` 继承这两列轨道，保证左右两格的标签 / 值左缘严格对齐。
    基线对齐：标签（`--fs-micro`）与值（`--fs-body` 或 22 高胶囊）行高不同，基线对齐
@@ -127,6 +143,7 @@
   align-items: baseline;
   min-width: 0;
   margin: 0;
+  padding-inline: 4px;
 }
 
 /* 单元格：跨两列（标签 + 值），再用 subgrid 继承父级的列轨道。
@@ -203,10 +220,12 @@
 }
 
 /* 胶囊沿用设定档案卡的统一规格（components/entity-card.css）：
-   Tag 提供 22 高，这里补 1px 8px 内衬 / 10px / 500 / 1.6。
+   Tag 提供 22 高，这里补 1px 8px 内衬 / 10px / 500 / 1.6。属性表胶囊行与标题行的
+   类别胶囊共用本规则，避免两处各写一套尺寸。
    裸 .chip-pill 不自带尺寸，漏了会退回 12px 正文、零内衬。
-   `min-width: 0` 允许单个超长胶囊在两列值格内收缩并省略，而不是撑破软底卡。 */
-.wf-entity-detail__chips .wf-tag {
+   `min-width: 0` 允许单个超长胶囊在值格内收缩并省略，而不是撑破软底卡。 */
+.wf-entity-detail__chips .wf-tag,
+.wf-entity-detail__head > .wf-tag {
   min-width: 0;
   padding: 1px 8px;
   font-size: var(--fs-micro);
