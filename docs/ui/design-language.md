@@ -26,7 +26,7 @@
 代表位置：
 
 - L1：左右栏 / 面板用 `--pane`；写作中栏（`.editor-pane`）默认 `--pane`，**sage / honey 下只有章节 / 大纲**（`data-module` 判别，含回收站）用 `--doc-surface`（`theme.css`）——light / dark 与 `--pane` 同值，sage / honey 为护眼纸色 `#f0f8f0` / `#faf6e8`；剧情 / 设定五域 / 伏笔 / 灵感 / 时间线沿用 `--pane`。纸面作用域（`.editor-head` / `.editor-scroll` / `.editor-foot` / `.trash-view`）内的 `--soft-solid` 等 5 个软底令牌按本主题基色重派生（`writer.css`），避免焦点底与块级底和纸面同色。**材质态**下左右栏、悬浮活动栏与中栏非纸面模块用 `--surface-pane`（`--pane` 58%），书架页书籍卡与欢迎页引导卡用 `--surface-pane-card`（58%）；面板 / 页面内的 `--soft-solid` / `--soft-hover-solid` / `--soft-press-solid` / `--control-on-soft*` 在同一作用域按 `--text` 混 `transparent` 重派生，面板阴影降为 `--panel-ring`；右栏浮卡改用 `--surface-pane-float`（`--text` 10% 薄雾 + 1px 文字 8% 环，复合约 64.5%，不再与面板同色叠加变实），只读正文块保留 `--surface-pane-card`（58%）以维持可辨识边界；sage / honey 章节 / 大纲纸面、固定态活动栏（§9 #11）与所有浮层保持不透明（§9 #32 / #34）。
-- L2：`.pane-region`（`src/renderer/src/styles/components/surface.css:145-149`，`--soft-solid` + `padding: 6px` + `--r-lg`）；右栏字段卡 / 保存条 / 页签卡（`--soft-solid` 直接落在 `--pane` 上，无外描边，边界靠明度差 + 间距）。
+- L2：`.pane-region`（`src/renderer/src/styles/components/surface.css:145-149`，`--soft-solid` + `padding: 6px` + `--r-lg`）；右栏字段卡（`components/surface.css` 的 `.wf-edit-block`，`--soft-solid` + `14px` 内衬）/ 保存条 / 页签卡（`--soft-solid` 直接落在 `--pane` 上，无外描边，边界靠明度差 + 间距）。
 - L3：`.wf-card`（`surface.css:16-28`）、`.wf-card__body`（`surface.css:122-127`，`padding: 14px 16px`）、`.wf-entity-card`（`components/entity-card.css:16-26`）。
 - L4：`.on-soft .wf-input`（`components/form.css:146-150`，仅 `--control-on-soft` 底，无描边）、`.wf-readonly-block`（`surface.css:155-159`，`10px 12px` + `--control-on-soft` 底，无描边）。
 - 浮层：`.wf-window`（`components/window.css:9-25`）、`__body`（`window.css:88`）、`__footer`（`window.css:106`）。
