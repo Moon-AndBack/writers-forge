@@ -4,8 +4,9 @@
  * 说明：
  * - 各组件同时提供默认导出与具名导出，这里只转发具名导出；
  *   需要默认导出时请从具体文件引入（如 `./Button`）。
- * - 已核对 23 个组件的 props 类型名互不冲突，无需额外消歧。
+ * - 已核对 25 个组件的 props 类型名互不冲突，无需额外消歧。
  */
+export * from './ActionSeparator'
 export * from './Badge'
 export * from './Button'
 export * from './Card'

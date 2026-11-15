@@ -80,10 +80,11 @@
   height: 28px;
 }
 
-/* 分组竖分隔线：横排按钮组内的竖向 1px 线（替代活动栏的横向 `.act-sep`）。 */
+/* 例外：标题栏分组竖分隔线 2px 线宽，登记见 docs/ui/design-language.md §9 #36。
+   分组竖分隔线：横排按钮组内的竖向 2px 线（替代活动栏的横向 `.act-sep`）。 */
 .tb-sep {
   flex: none;
-  width: 1px;
+  width: 2px;
   height: 16px;
   margin: 0 4px;
   border-radius: var(--r-pill);

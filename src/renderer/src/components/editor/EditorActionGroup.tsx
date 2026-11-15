@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconButton } from '../ui'
+import { ActionSeparator as EditorActionSep } from '../ui/ActionSeparator'
 import { RedoIcon, SaveIcon, SearchIcon, TrashIcon, UndoIcon } from '../icons'
 
 /**
@@ -29,10 +30,8 @@ import { RedoIcon, SaveIcon, SearchIcon, TrashIcon, UndoIcon } from '../icons'
  * （调用方以 `useMemo` 缓存包含本组件的节点，避免注册循环）。
  */
 
-/** 分组竖分隔线：横排按钮组内的竖向 1px 线（`.tb-sep`）。 */
-export function EditorActionSep(): ReactNode {
-  return <span className="tb-sep" aria-hidden="true" />
-}
+/** 分组竖分隔线别名：实现见通用组件 `ActionSeparator`（横排按钮组内的竖向 2px 线）。 */
+export { EditorActionSep }
 
 export interface EditorUndoRedoGroupProps {
   /** 撤销正文。 */
