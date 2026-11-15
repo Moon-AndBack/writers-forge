@@ -182,18 +182,109 @@
   min-height: 0;
 }
 
-/* 描述富文本字段容器：撑满控件容器剩余高度（内部 `.short-rich-field--fill` 继续撑满，
-   内容超高时由字段自身滚动）；新建弹窗中无固定高度约束，退化为按内容高度。 */
+/* 描述富文本容器：块内唯一伸缩字段，撑满控件容器剩余高度，内容超高时自身滚动；
+   新建弹窗（无 `--fill`）退化为短字段——高度上限内自滚，避免长文把 360px 弹窗撑爆。 */
 .foreshadow-desc-field {
   display: flex;
   flex: 1 1 auto;
-  flex-direction: column;
   min-height: 0;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* 版心与长文排版：显式声明字号 / 行高 / 字距 / 字族（同全局 `.doc-body` 口径），
+   保证右栏窄卡与弹窗内都跟随状态栏排版设置（`--doc-zoom`）等比缩放。 */
+.foreshadow-desc-field .doc-body {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  width: 100%;
+  padding: 2px 0 4px;
+  font-family: var(--doc-font);
+  font-size: calc(18px * var(--doc-zoom));
+  line-height: var(--doc-line);
+  letter-spacing: var(--doc-letter);
+}
+
+/* 逐层撑满：点击正文下方空白仍落在可编辑区。 */
+.foreshadow-desc-field .doc-body .ProseMirror {
+  flex: 1 0 auto;
+}
+
+/* ---------- `on-soft` 软底卡适配（右栏编辑卡为 --soft-solid） ----------
+   `.doc-body p` 默认左右各 -8px 出血 + 8px 横向内衬，在软底卡内负 margin 会贴到
+   卡片内缘、hover 底又与卡片同族而糊成一片。故：
+   - 负 margin 与横向内衬归零，顶层段落保留 2em 首行缩进，与上方标题输入框对齐；
+   - 段落 hover / focus 底改用卡内控件层令牌（弹窗字段自带底色，故只作用于 `on-soft`）。 */
+.foreshadow-desc-field .doc-body .ProseMirror p {
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+  text-indent: 2em;
+}
+
+.on-soft .foreshadow-desc-field .doc-body .ProseMirror p:hover {
+  background: var(--control-on-soft-hover);
+}
+
+.on-soft .foreshadow-desc-field .doc-body .ProseMirror p:focus {
+  background: color-mix(in srgb, var(--brand) 8%, var(--soft-solid));
+}
+
+/* 列表 / 引用 / 表格内的段落不再缩进：只让顶层段落首行缩进 2em。 */
+.foreshadow-desc-field .doc-body .ProseMirror li p,
+.foreshadow-desc-field .doc-body .ProseMirror blockquote p,
+.foreshadow-desc-field .doc-body .ProseMirror th p,
+.foreshadow-desc-field .doc-body .ProseMirror td p {
+  text-indent: 0;
+}
+
+/* 弹窗短字段变体（无 `--fill`）：补可辨边界与聚焦反馈，高度上限内自滚
+   （与通用短文本字段同口径：最小 82px / 最大 220px）。 */
+.foreshadow-desc-field:not(.foreshadow-desc-field--fill) {
+  min-height: 82px;
+  max-height: 220px;
+  padding: 10px 12px;
+  background: var(--soft-solid);
+  border: 1px solid transparent;
+  border-radius: var(--r-lg);
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+}
+
+.foreshadow-desc-field:not(.foreshadow-desc-field--fill):hover {
+  background: var(--soft-hover-solid);
+}
+
+.foreshadow-desc-field:not(.foreshadow-desc-field--fill):focus-within {
+  background: var(--pane);
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--brand) 11%, transparent);
+}
+
+/* 空描述占位（同章节 / 剧情口径：`::before` 绝对定位，文案经 `--editor-placeholder`
+   由 React 传入）；横向内衬已归零，左移量按「段落左缘 + 2em 首行缩进 + 一个光标宽」计。 */
+.foreshadow-desc-field .doc-body.is-empty .ProseMirror > p:first-child::before {
+  content: var(--editor-placeholder);
+  position: absolute;
+  left: calc(2em + 2px);
+  right: 0;
+  top: 2px;
+  text-indent: 0;
+  font-style: italic;
+  color: var(--text-mute);
+  opacity: 0.85;
+  pointer-events: none;
+  user-select: none;
+  animation: editor-placeholder-in 0.6s var(--ease) both;
 }
 
 /* 右栏无可分配余量时仍保留可用高度下限（与改造前 Textarea 的 min-height 同口径）；
    剩余高度不足时由 `.foreshadow-panel__scroll` 接管滚动。 */
-.foreshadow-fields > .wf-field.foreshadow-fields__desc .short-rich-field--fill {
+.foreshadow-fields > .wf-field.foreshadow-fields__desc .foreshadow-desc-field--fill {
   min-height: 82px;
 }
 
