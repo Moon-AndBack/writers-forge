@@ -178,6 +178,18 @@
   padding: 10px 12px;
 }
 
+/* ---------- Edit block 可编辑字段块 ----------
+   右栏「一字段一块」的字段卡（伏笔名称 / 描述、灵感标题 / 正文 / 标签）：
+   `--soft-solid` 底 + `--r-lg` 圆角 + 14 内衬，直接落在 `--pane` 上，
+   与锚点只读块、保存条同属右栏底色块层级。块内控件挂 `.on-soft` 换
+   `--control-on-soft`（见 form.css），形成「字段块（L2/L3）→ 控件（L4）」两层；
+   描述 / 正文编辑器在 `--fill` 态本身透明，不再叠第二层底色。 */
+.wf-edit-block {
+  padding: 14px;
+  background: var(--soft-solid);
+  border-radius: var(--r-lg);
+}
+
 /* ---------- Tag 标签 ----------
    原型：.field-chip（可关闭）/ .book-tag / .list-tag / .mood-chip / .scene-tag。 */
 .wf-tag {

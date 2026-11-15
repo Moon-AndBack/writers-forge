@@ -4,8 +4,8 @@
  * （由调用方按锚点 `quote.slice(charStart, charEnd)` 切好传入；+ 可选附加段落，如回收备注）；
  * 未锚定 / 失效才渲染胶囊或占位文案。
  *
- * 底色 / 边框由 `.foreshadow-anchor-card` 提供（与可编辑块 `.foreshadow-fields`
- * 共享同一条底色卡规则），本组件不重复定义外观。
+ * 底色 / 边框由 `.foreshadow-anchor-card` 提供（`--soft-solid` + `--r-lg` + 12×14，
+ * 与编辑态字段块 `.wf-edit-block` 同档），本组件不重复定义外观。
  */
 import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'

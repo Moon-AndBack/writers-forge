@@ -1,10 +1,11 @@
 /**
- * 伏笔右栏详情：四块独立底色卡 ——
- * ① 可编辑块：名称 / 描述（富文本草稿态，仅实体自动高亮）；状态由中栏卡片胶囊展示，右栏不重复；
- * ② 只读块：正文埋点位置 + 原文摘抄（可移除）；
- * ③ 只读块：大纲埋点位置 + 原文摘抄（可移除）；
- * ④ 只读块：回收位置 + 原文摘抄 + 回收备注（可移除）；
- * ⑤ 底部固定保存条（左侧「废弃 / 恢复」toggle）。
+ * 伏笔右栏详情：每字段一块独立底色卡 ——
+ * ① 名称块（单行输入）；② 描述块（富文本草稿态，仅实体自动高亮）；
+ * ③ 只读块：正文埋点位置 + 原文摘抄（可移除）；
+ * ④ 只读块：大纲埋点位置 + 原文摘抄（可移除）；
+ * ⑤ 只读块：回收位置 + 原文摘抄 + 回收备注（可移除）；
+ * ⑥ 底部固定保存条（左侧「废弃 / 恢复」toggle）。
+ * 字段块不再显示小标签，可访问名由 `aria-label` 提供；状态由中栏卡片胶囊展示，右栏不重复。
  * 删除入口只在卡片上（中栏 `ForeshadowView`），右栏不再提供。
  *
  * 状态口径：**不可手动编辑**，「建设中 / 埋设中 / 已回收 / 已废弃」由
@@ -279,40 +280,37 @@ function ForeshadowPanelForm({
   return (
     <div className="foreshadow-panel">
       <div className="foreshadow-panel__scroll">
-        {/* `on-soft`：本块为 --soft-solid 底色，内部输入控件需换用 --control-on-soft
-            令牌，否则控件与卡片同色、边界不可辨（见 form.css）。 */}
-        <div className="foreshadow-fields on-soft">
-          <FormField
-            label={t('field.name')}
-            htmlFor={`${fieldId}-title`}
+        {/* 名称块：字段块外观由 `wf-edit-block` 提供，`on-soft` 让输入框换
+            --control-on-soft 底，避免与块同色（见 form.css / surface.css）。 */}
+        <FormField
+          className="wf-edit-block on-soft foreshadow-fields__name"
+          htmlFor={`${fieldId}-title`}
+          error={titleEmpty ? t('field.nameRequired') : undefined}
+        >
+          <Input
+            id={`${fieldId}-title`}
+            aria-label={t('field.name')}
             required
-            error={titleEmpty ? t('field.nameRequired') : undefined}
-          >
-            <Input
-              id={`${fieldId}-title`}
-              value={draft.title}
-              placeholder={t('field.namePlaceholder')}
-              autoComplete="off"
-              spellCheck={false}
-              onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
-            />
-          </FormField>
+            value={draft.title}
+            placeholder={t('field.namePlaceholder')}
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
+          />
+        </FormField>
 
-          {/* 描述字段是块内唯一伸缩项：外层 FormField 撑满可编辑块剩余高度，
-              `fill` 让富文本字段拉满控件容器（实际高度由 writer-foreshadow.css 的
-              flex 规则决定），内容超高后字段内部滚动。 */}
-          <FormField className="foreshadow-fields__desc" label={t('field.description')}>
-            <ForeshadowDescriptionField
-              bookId={bookId}
-              initialJson={initialDescriptionJson}
-              placeholder={t('field.descriptionPlaceholder')}
-              ariaLabel={t('field.description')}
-              fill
-              hoverCard
-              onChange={(value) => setDraft((prev) => ({ ...prev, descriptionJson: value.json }))}
-            />
-          </FormField>
-        </div>
+        {/* 描述块是滚动区内唯一伸缩项：吃掉右栏剩余高度，内容超高时字段内部滚动。 */}
+        <FormField className="wf-edit-block on-soft foreshadow-fields__desc">
+          <ForeshadowDescriptionField
+            bookId={bookId}
+            initialJson={initialDescriptionJson}
+            placeholder={t('field.descriptionPlaceholder')}
+            ariaLabel={t('field.description')}
+            fill
+            hoverCard
+            onChange={(value) => setDraft((prev) => ({ ...prev, descriptionJson: value.json }))}
+          />
+        </FormField>
 
         {/* 正文埋点：已埋设才提供「移除」（未锚定无可移除内容）。 */}
         <ForeshadowAnchorBlock

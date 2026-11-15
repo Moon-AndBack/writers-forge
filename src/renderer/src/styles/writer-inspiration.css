@@ -5,8 +5,9 @@
    筛选 / 搜索入口在活动栏模块浮层，中栏不再保留顶部筛选条；
    卡 `.inspiration-card` 三行（标题 / 正文摘要 / 标签），结构 / 内衬 / 阴影 / 标题行 /
    胶囊规格由通用壳 `EntityStyleCard` 承载，本文件只覆写摘要 3 行裁剪与域内类。
-   右栏：无面板头（模块标题由中栏承载），单块软底编辑卡（标题 / 富文本正文 / 标签）+
-   底部保存条；正文富文本编辑器吃掉剩余高度，排版沿用全局 `.doc-body` 长文口径
+   右栏：无面板头（模块标题由中栏承载），每个字段一块独立底色卡（标题 / 富文本正文 /
+   标签）+ 底部保存条；字段块外观走共享 `.wf-edit-block`（components/surface.css），
+   正文富文本编辑器吃掉剩余高度，排版沿用全局 `.doc-body` 长文口径
    （字号 / 行高 / 首行缩进，见 writer-editor-doc.css），超高时自身滚动。
    颜色一律取 theme.css 令牌，四主题通用。
    hover / 选中仅描边环 + 外发光，全程无位移 / 缩放（AGENTS §8）。
@@ -96,30 +97,22 @@
   overflow-y: auto;
 }
 
-/* 单块软底编辑卡：标题 / 正文 / 标签三字段共享同一底色。 */
-.inspiration-fields {
-  display: flex;
-  flex: 1 0 auto;
-  flex-direction: column;
-  gap: 12px;
-  padding: 14px;
-  background: var(--soft-solid);
-  border-radius: var(--r-lg);
-}
-
-/* 标题 / 标签按内容高度，不参与剩余空间分配。 */
-.inspiration-fields > .wf-field {
+/* 三个字段块（标题 / 正文 / 标签）：外观统一由共享 `.wf-edit-block` 提供，
+   本域只分配纵向高度。 */
+.inspiration-fields__title,
+.inspiration-fields__tags {
   flex: none;
 }
 
-/* 正文：块内唯一伸缩字段，吃掉可编辑块的剩余高度。 */
-.inspiration-fields > .wf-field.inspiration-fields__content {
-  flex: 1 1 auto;
+/* 正文块：`__scroll` 内唯一伸缩项 —— 吃掉剩余高度。
+   `flex: 1 0 auto`：有余量时拉满；内容超高时不压缩编辑器，改由 `__scroll` 接管滚动。 */
+.inspiration-fields__content {
+  flex: 1 0 auto;
   min-height: 0;
 }
 
 /* 控件容器同步转纵向 flex（默认 block 无法把剩余高度下发给正文容器）。 */
-.inspiration-fields > .wf-field.inspiration-fields__content > .wf-field__control {
+.inspiration-fields__content > .wf-field__control {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;

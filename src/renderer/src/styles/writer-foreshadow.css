@@ -9,9 +9,10 @@
    位置行、描述 4 行裁剪与实体胶囊等域内细节，并复用通用 `.wf-card--halo`
    （常态中性，hover / 选中仅描边环 + 外发光），全程无位移 / 缩放，
    transition 只过渡阴影 / 颜色（AGENTS §8）。
-   右栏：无面板头（模块标题由中栏承载），四块独立底色卡 —— 可编辑块 + 埋点只读块 +
-   回收只读块 + 底部固定保存条；删掉标题栏让出的高度由可编辑块吸收（描述框撑满块内剩余），
-   只读块与保存条仍按内容高度，内容超出时字段区自身滚动。颜色一律取 theme.css 令牌，四主题通用。
+   右栏：无面板头（模块标题由中栏承载），每个字段一块独立底色卡 —— 名称块 + 描述块 +
+   埋点只读块 + 回收只读块 + 底部固定保存条；删掉标题栏让出的高度由描述块吸收
+   （描述框撑满块内剩余），只读块与保存条仍按内容高度，内容超出时字段区自身滚动。
+   字段块外观走共享 `.wf-edit-block`（components/surface.css），颜色一律取 theme.css 令牌，四主题通用。
    ============================================================ */
 
 /* ---------- 中栏卡片网格 ---------- */
@@ -139,7 +140,8 @@
   overflow-y: auto;
 }
 
-/* 四块底色卡：可编辑块与两个只读锚点块共享同一条外观规则。 */
+/* 只读详情（`.foreshadow-fields`）与只读锚点块共享同一条外观规则；
+   可编辑右栏的字段块改用共享 `.wf-edit-block`（components/surface.css）。 */
 .foreshadow-fields,
 .foreshadow-anchor-card {
   display: flex;
@@ -156,26 +158,27 @@
   padding: 12px 14px;
 }
 
-/* 可编辑块：`__scroll` 内唯一伸缩项 —— 吃掉右栏剩余高度（删掉面板头让出的空间归它）。
-   `flex: 1 0 auto`：有余量时拉满；内容超高时不压缩块内控件，改由 `__scroll` 的
-   `overflow-y: auto` 接管滚动，避免 flex 撑高把滚动区顶破。 */
+/* 只读详情容器：`__scroll` 内唯一伸缩项，把剩余高度下发给描述段
+   （编辑右栏已改用 `.wf-edit-block`，不再使用本容器）。 */
 .foreshadow-fields {
   flex: 1 0 auto;
 }
 
-/* 名称：按内容高度，不参与剩余空间分配。 */
-.foreshadow-fields > .wf-field {
+/* 名称块：按内容高度，不参与剩余空间分配。 */
+.foreshadow-fields__name {
   flex: none;
 }
 
-/* 描述：块内唯一伸缩字段，吃掉可编辑块的剩余高度。 */
-.foreshadow-fields > .wf-field.foreshadow-fields__desc {
-  flex: 1 1 auto;
+/* 描述块：`__scroll` 内唯一伸缩项 —— 吃掉右栏剩余高度（删掉面板头让出的空间归它）。
+   `flex: 1 0 auto`：有余量时拉满；内容超高时不压缩块内控件，改由 `__scroll` 的
+   `overflow-y: auto` 接管滚动，避免 flex 撑高把滚动区顶破。 */
+.foreshadow-fields__desc {
+  flex: 1 0 auto;
   min-height: 0;
 }
 
 /* 控件容器同步转纵向 flex（默认 block 无法把高度分给富文本字段）。 */
-.foreshadow-fields > .wf-field.foreshadow-fields__desc > .wf-field__control {
+.foreshadow-fields__desc > .wf-field__control {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
@@ -284,7 +287,7 @@
 
 /* 右栏无可分配余量时仍保留可用高度下限（与改造前 Textarea 的 min-height 同口径）；
    剩余高度不足时由 `.foreshadow-panel__scroll` 接管滚动。 */
-.foreshadow-fields > .wf-field.foreshadow-fields__desc .foreshadow-desc-field--fill {
+.foreshadow-fields__desc .foreshadow-desc-field--fill {
   min-height: 82px;
 }
 

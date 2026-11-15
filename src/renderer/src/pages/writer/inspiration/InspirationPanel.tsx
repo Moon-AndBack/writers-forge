@@ -111,45 +111,49 @@ function InspirationPanelForm({
   return (
     <div className="inspiration-panel">
       <div className="inspiration-panel__scroll">
-        <div className="inspiration-fields on-soft">
-          <FormField label={t('field.title')} htmlFor={`${fieldId}-title`}>
-            <Input
-              id={`${fieldId}-title`}
-              value={draft.title}
-              placeholder={t('field.titlePlaceholder')}
-              autoComplete="off"
-              spellCheck={false}
-              onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
-            />
-          </FormField>
+        {/* 每字段一块：`wf-edit-block` 提供 --soft-solid 底色，`on-soft` 让块内控件换
+            --control-on-soft；小标签已去掉，可访问名由 aria-label 提供。 */}
+        <FormField
+          className="wf-edit-block on-soft inspiration-fields__title"
+          htmlFor={`${fieldId}-title`}
+        >
+          <Input
+            id={`${fieldId}-title`}
+            aria-label={t('field.title')}
+            value={draft.title}
+            placeholder={t('field.titlePlaceholder')}
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
+          />
+        </FormField>
 
-          {/* 正文是块内唯一伸缩项：吃掉右栏剩余高度，内容超高时由正文容器自身滚动。 */}
-          <FormField className="inspiration-fields__content" label={t('field.content')}>
-            <InspirationBodyField
-              bookId={bookId}
-              initialJson={resolveInspirationContentJson(row)}
-              placeholder={t('field.contentPlaceholder')}
-              ariaLabel={t('field.content')}
-              onChange={(value) => setDraft((prev) => ({ ...prev, contentJson: value.json }))}
-            />
-          </FormField>
+        {/* 正文块是滚动区内唯一伸缩项：吃掉剩余高度，内容超高时由正文容器自身滚动。 */}
+        <FormField className="wf-edit-block on-soft inspiration-fields__content">
+          <InspirationBodyField
+            bookId={bookId}
+            initialJson={resolveInspirationContentJson(row)}
+            placeholder={t('field.contentPlaceholder')}
+            ariaLabel={t('field.content')}
+            onChange={(value) => setDraft((prev) => ({ ...prev, contentJson: value.json }))}
+          />
+        </FormField>
 
-          <FormField
-            label={t('field.tags')}
-            htmlFor={`${fieldId}-tags`}
-            hint={t('field.tagsHint', { max: INSPIRATION_MAX_TAGS })}
-          >
-            <ChipInput
-              id={`${fieldId}-tags`}
-              value={draft.tags}
-              max={INSPIRATION_MAX_TAGS}
-              placeholder={t('field.tagsPlaceholder')}
-              ariaLabel={t('field.tags')}
-              suggestions={PRESET_INSPIRATION_TAGS}
-              onChange={(tags) => setDraft((prev) => ({ ...prev, tags }))}
-            />
-          </FormField>
-        </div>
+        <FormField
+          className="wf-edit-block on-soft inspiration-fields__tags"
+          htmlFor={`${fieldId}-tags`}
+          hint={t('field.tagsHint', { max: INSPIRATION_MAX_TAGS })}
+        >
+          <ChipInput
+            id={`${fieldId}-tags`}
+            value={draft.tags}
+            max={INSPIRATION_MAX_TAGS}
+            placeholder={t('field.tagsPlaceholder')}
+            ariaLabel={t('field.tags')}
+            suggestions={PRESET_INSPIRATION_TAGS}
+            onChange={(tags) => setDraft((prev) => ({ ...prev, tags }))}
+          />
+        </FormField>
       </div>
 
       <SaveBar
