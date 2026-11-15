@@ -24,6 +24,9 @@ import type Database from 'better-sqlite3'
  * - `action` 记录该条回复由哪个功能产生（`polish` / `continue` / `rewrite` /
  *   `translate` / `chat`），历史消息为 NULL；同样不加 SQL CHECK，未知值由数据层
  *   窄化为 NULL（见 `database/aiChat.ts` 的 `toAiMessageRow`）；
+ * - `context_json` 记录该条消息携带的上下文快照（可空）：**只存类型 / 字数 / 前段片段，
+ *   不存全文**（单条正文上限 10 万字符，整段复制会让库与备份膨胀）；解析失败按 NULL
+ *   处理，不影响历史加载；
  * - `updated_at` 在追加消息 / 重命名 / 流式结束（`touchAiSession`）时刷新，供会话按
  *   最近活跃倒序排列；
  * - 幂等建表（`CREATE ... IF NOT EXISTS`）+ 幂等补列（`PRAGMA table_info` 探测后
@@ -101,6 +104,7 @@ export function createAiChatSchema(db: Database.Database): void {
       usage_json TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       action TEXT,
+      context_json TEXT,
       FOREIGN KEY (session_id) REFERENCES ai_chat_sessions(id) ON DELETE CASCADE
     )
   `)
@@ -112,6 +116,11 @@ export function createAiChatSchema(db: Database.Database): void {
   // 老库（无 `action` 列）幂等补列：可空、无默认值，存量消息保持 NULL（不猜历史功能）。
   // `ADD COLUMN` 语义上追加在表尾，故新表 DDL 也把 `action` 放在 `created_at` 之后。
   ensureColumn(db, 'ai_chat_messages', 'action', 'TEXT')
+
+  // 老库（无 `context_json` 列）幂等补列：可空、无默认值，存量消息保持 NULL（不猜历史上下文）。
+  // 与 `status` / `action` 同一套 `PRAGMA table_info` 探测：已有列直接跳过，缺失才 ADD COLUMN；
+  // 不重建表、不改动 / 删除任何既有行。
+  ensureColumn(db, 'ai_chat_messages', 'context_json', 'TEXT')
 
   // 索引：按书取会话列表（最近活跃倒序）；按会话按 id 升序取消息。
   db.exec(`

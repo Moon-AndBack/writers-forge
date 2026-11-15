@@ -111,6 +111,10 @@ const ai = {
     /** 气泡内长文本（选中预览）展开 / 收起。 */
     expand: '展开',
     collapse: '收起',
+    /** 历史气泡上的上下文快照：携带类型 + 字数（悬停看前段片段）。 */
+    contextFull: '携带全章',
+    contextSelection: '携带选区',
+    contextChars: '{{count}} 字',
     /** 上下文压缩分隔行（不是气泡，不进正文）。 */
     compacted: '已压缩前 {{rounds}} 轮对话',
     /** 摘要生成失败 / 后续再超限时的纯截断说明。 */

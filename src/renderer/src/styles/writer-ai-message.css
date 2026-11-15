@@ -169,6 +169,14 @@
   color: var(--text-dim);
 }
 
+/* 上下文快照：弱化元信息（携带类型 + 字数，悬停标题看前段片段）；纯文本、无交互、无描边。 */
+.ai-msg__context {
+  margin: 8px 0 0;
+  font-size: var(--fs-micro);
+  line-height: 1.6;
+  color: var(--text-mute);
+}
+
 /* 可点击的跨章来源：沿用气泡内链接（`.ai-md-a`）的品牌色 + 下划线语言，只重置按钮外壳；
    不做位移 / 动画（§8）。 */
 .ai-msg__foreign--link {

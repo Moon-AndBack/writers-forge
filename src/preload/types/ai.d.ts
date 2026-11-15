@@ -27,6 +27,7 @@ import type {
   AiChatRole,
   AiChatSessionRow,
   AiMessageAction,
+  AiMessageContextSnapshot,
   AiMessageStatus,
   AppendAiMessageInput,
   CreateAiSessionInput
@@ -46,6 +47,7 @@ export type {
   AiChatRole,
   AiChatSessionRow,
   AiMessageAction,
+  AiMessageContextSnapshot,
   AiMessageStatus,
   AppendAiMessageInput,
   CreateAiSessionInput,
@@ -193,7 +195,11 @@ export interface AiApi {
      */
     renameIfEmpty: (id: number, title: string) => Promise<boolean>
   }
-  /** 消息：按会话按写入顺序；追加时 `AppendAiMessageInput.chapterId` 记录来源章（可空）。 */
+  /**
+   * 消息：按会话按写入顺序；追加时 `AppendAiMessageInput.chapterId` 记录来源章（可空）。
+   * `contextSnapshot` 只存类型 / 字数 / 片段（`context_json`），不存完整正文；
+   * 历史行解析失败为 `null`，气泡据此隐藏该行。
+   */
   messages: {
     list: (sessionId: number) => Promise<AiChatMessageRow[]>
     append: (input: AppendAiMessageInput) => Promise<AiChatMessageRow | null>

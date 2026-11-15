@@ -44,7 +44,7 @@ schema 目录下 18 个文件承载 46 张表；`settings` / `books` / `book_cov
 | L3.5 关系边     | 1    | `world_refs`                                      | 实体间的有向语义边                         |
 | L4 境界专表     | 0    | （已下线）                                        | 渠道 / 层级 / 晋升边 / 角色境界 4 表已删除 |
 | 剧情域          | 3    | `plot_lines`、`plot_scenes`                       | 独立两级结构，不复用卷章                   |
-| AI 域           | 2    | `ai_chat_sessions`、`ai_chat_messages`            | 按章归属的对话过程数据                     |
+| AI 域           | 2    | `ai_chat_sessions`、`ai_chat_messages`            | 按书归属的对话过程数据                     |
 | 旧实体域        | 3    | `entities`、`entity_aliases`、`entity_relations`  | 早期实体 CRUD，仅保留旧链路                |
 
 分层求和：12 + 7 + 1 + 2 + 18 + 1 + 0 + 3 + 2 + 3 = **49**。
@@ -125,7 +125,7 @@ schema 目录下 18 个文件承载 46 张表；`settings` / `books` / `book_cov
 
 ### 3.9 AI 域（2 张）
 
-`ai_chat_sessions`（`book_id`、`chapter_id`、`provider`、`model`、`title`、`updated_at`）按章归属；`ai_chat_messages`（`session_id`、`role` CHECK `system`/`user`/`assistant`、`content`、`usage_json`）。无软删除，删除即物理删除并级联。
+`ai_chat_sessions`（`book_id`、`provider`、`model`、`title`、`created_at`、`updated_at`）按书归属（与章解耦）；`ai_chat_messages`（`session_id`、`chapter_id` 纯来源标记、`role` CHECK `system`/`user`/`assistant`、`content`、`status`、`action`、`usage_json`、`context_json`）。`context_json` 只存上下文类型 / 字数 / 前段片段，不存全文。无软删除，删除即物理删除并级联。
 
 ### 3.10 旧实体域（3 张）
 

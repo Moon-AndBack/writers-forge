@@ -105,6 +105,7 @@ export interface ChatMessageProps {
  *
  * - user / assistant 靠对齐方向与底色区分（无 transform，§8）；
  * - user 气泡：功能胶囊 + 正文（输入或上下文兜底）+ 携带内容预览（分隔线后 3 行折叠）；
+ * - 历史气泡另显示一行弱化的上下文快照（类型 + 字数，悬停看前段片段）；无快照的老消息不显示；
  * - assistant 走 `react-markdown` + `remark-gfm`（元素类名见 `MD_COMPONENTS`）；
  * - 流式中追加闪烁光标（只动 opacity）；错误走 `ai` ns 的 `error.<code>`；
  * - 回插按钮按 `applyActions` 渲染：润色 / 重写 / 翻译只替换，续写只插入，
@@ -190,6 +191,23 @@ export function ChatMessage({
               })}
             </p>
           )
+        ) : null}
+        {/* 上下文快照：历史气泡仍能看到「这轮带了什么、带了多少」；老消息无快照不显示。 */}
+        {message.contextSnapshot !== undefined && message.contextSnapshot.kind !== 'none' ? (
+          <p
+            className="ai-msg__context"
+            title={
+              message.contextSnapshot.excerpt !== '' ? message.contextSnapshot.excerpt : undefined
+            }
+          >
+            {t(
+              message.contextSnapshot.kind === 'full'
+                ? 'message.contextFull'
+                : 'message.contextSelection'
+            )}
+            {' · '}
+            {t('message.contextChars', { count: message.contextSnapshot.chars })}
+          </p>
         ) : null}
       </div>
       {applyActions !== null && !isUser ? (

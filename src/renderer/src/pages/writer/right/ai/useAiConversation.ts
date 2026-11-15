@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AiError, AiProviderId, AiUsage } from '../../../../../../preload/types/ai'
 import {
   appendMessage,
+  buildContextSnapshot,
   chatLog,
   createActiveRequest,
   createOptimisticMessages,
@@ -284,6 +285,8 @@ export function useAiConversation(input: {
       // system + user 两条（输入与上下文都为空时为空数组 → 直接忽略）。
       const composed = composeMessages(compose)
       if (composed.length === 0) return Promise.resolve(false)
+      // 本轮上下文快照（类型 / 字数 / 前段片段）：user / assistant 各落一份，重开后仍可显示。
+      const contextSnapshot = buildContextSnapshot(compose)
 
       // 自由对话带历史（不含空内容消息；报错中断的半截回复仍带上——它是模型自己的产出，
       // 丢掉会断掉多轮连贯性，界面已另行标注「因错误中断」，system 不落库）。
@@ -298,7 +301,8 @@ export function useAiConversation(input: {
         sessionId: sessionIdRef.current,
         chapterId: chapterIdRef.current,
         action: compose.action,
-        ...(compose.selection !== undefined ? { selection: compose.selection } : {})
+        ...(compose.selection !== undefined ? { selection: compose.selection } : {}),
+        contextSnapshot
       })
       activeRequestRef.current = request
       setNotice(null)
@@ -317,7 +321,8 @@ export function useAiConversation(input: {
           chapterId: request.chapterId,
           action: compose.action,
           ...(compose.attach !== undefined ? { attach: compose.attach } : {}),
-          ...(compose.selection !== undefined ? { selection: compose.selection } : {})
+          ...(compose.selection !== undefined ? { selection: compose.selection } : {}),
+          contextSnapshot
         })
       )
       /** 超预算拒绝：撤掉本轮乐观消息、恢复输入（由调用方按 false 处理）。 */
@@ -397,7 +402,8 @@ export function useAiConversation(input: {
           if (sessionId !== null && userText !== '') {
             void appendMessage(sessionId, 'user', userText, {
               chapterId: request.chapterId,
-              action: compose.action
+              action: compose.action,
+              contextSnapshot
             })
           }
 

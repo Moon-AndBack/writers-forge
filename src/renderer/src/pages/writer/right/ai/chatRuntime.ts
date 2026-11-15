@@ -3,6 +3,7 @@ import type {
   AiApi,
   AiChatRole,
   AiError,
+  AiMessageContextSnapshot,
   AiMessageStatus,
   AiProviderId,
   AiUsage
@@ -58,7 +59,7 @@ export interface AiConversationMessage {
   action?: AiComposeAction
   /**
    * 本次携带的上下文预览（仅 user 消息、仅本次会话内存中）：输入与选中 / 全文
-   * 同时存在时展示在气泡第二段。**不落库**，重开会话后历史气泡只剩 `content`。
+   * 同时存在时展示在气泡第二段。**不落库**；重开后由 `contextSnapshot` 提供精简信息。
    */
   attach?: AiComposeAttachment
   /**
@@ -70,6 +71,11 @@ export interface AiConversationMessage {
    * 重开会话后历史消息没有快照，回插时退回当前选区并校验原文。
    */
   selection?: AiSelectionSnapshot
+  /**
+   * 本轮携带的上下文快照（类型 / 字数 / 前段片段，落库为 `context_json`）：
+   * 重开会话后仍在气泡上显示「这轮带了什么、带了多少」。老消息无快照为 `undefined`。
+   */
+  contextSnapshot?: AiMessageContextSnapshot
   /** 是否正在流式输出。 */
   streaming?: boolean
   /** 错误消息（assistant 气泡内的错误提示）。 */
@@ -132,6 +138,8 @@ export interface ActiveRequest {
   action: AiComposeAction
   /** 发起时快照的正文选区（含「携带全文」标记；仅内存，便于排查回插错位；不落库）。 */
   selection?: AiSelectionSnapshot
+  /** 本轮携带的上下文快照（落库为消息的 `context_json`；user / assistant 各记一份）。 */
+  contextSnapshot: AiMessageContextSnapshot
   /** 发送前对 `prepared.messages` 的 token 估算（校准分母；0 = 尚未计算，不参与校准）。 */
   estimatedPromptTokens: number
   /** 校准键 `provider/model`（发送前回填；空串 = 未知，不参与校准）。 */
@@ -179,6 +187,7 @@ export function createActiveRequest(input: {
   chapterId: number | null
   action: AiComposeAction
   selection?: AiSelectionSnapshot
+  contextSnapshot: AiMessageContextSnapshot
 }): ActiveRequest {
   return {
     requestId: createRequestId(),
@@ -187,6 +196,7 @@ export function createActiveRequest(input: {
     sessionId: input.sessionId,
     chapterId: input.chapterId,
     action: input.action,
+    contextSnapshot: input.contextSnapshot,
     estimatedPromptTokens: 0,
     calibrationKey: '',
     ...(input.selection !== undefined ? { selection: input.selection } : {})
@@ -202,6 +212,7 @@ export function createActiveRequest(input: {
  * 气泡据此收敛回插按钮。
  * `attach` 只挂 user 气泡（携带内容预览），不落库。
  * `selection` 只挂 assistant 气泡（发起时的选区快照），不落库。
+ * `contextSnapshot` 两条都挂（精简快照，随消息落库），重开后仍可显示。
  */
 export function createOptimisticMessages(input: {
   base: AiConversationMessage[]
@@ -211,8 +222,10 @@ export function createOptimisticMessages(input: {
   action: AiComposeAction
   attach?: AiComposeAttachment
   selection?: AiSelectionSnapshot
+  contextSnapshot?: AiMessageContextSnapshot
 }): AiConversationMessage[] {
-  const { base, userText, assistantId, chapterId, action, attach, selection } = input
+  const { base, userText, assistantId, chapterId, action, attach, selection, contextSnapshot } =
+    input
   return [
     ...base,
     ...(userText !== ''
@@ -223,7 +236,8 @@ export function createOptimisticMessages(input: {
             content: userText,
             chapterId,
             action,
-            ...(attach !== undefined ? { attach } : {})
+            ...(attach !== undefined ? { attach } : {}),
+            ...(contextSnapshot !== undefined ? { contextSnapshot } : {})
           }
         ]
       : []),
@@ -234,9 +248,28 @@ export function createOptimisticMessages(input: {
       streaming: true,
       chapterId,
       action,
-      ...(selection !== undefined ? { selection } : {})
+      ...(selection !== undefined ? { selection } : {}),
+      ...(contextSnapshot !== undefined ? { contextSnapshot } : {})
     }
   ]
+}
+
+/** 快照片段上限（字符）：与主进程 `context_json` 的 `excerpt` 口径一致。 */
+const CONTEXT_EXCERPT_CHARS = 200
+
+/**
+ * 生成本轮上下文快照：**只记类型 / 字数 / 前 200 字，不复制全文**
+ * （章节正文单条上限 10 万字符，整段落库会让库与备份膨胀）。
+ *
+ * 类型优先取气泡预览的 `attach.kind`（仅输入与上下文同时存在时才有），
+ * 否则按选区快照的「携带全文」标记判定；没有携带内容时记 `none`。
+ */
+export function buildContextSnapshot(compose: AiComposeInput): AiMessageContextSnapshot {
+  const text = compose.context.trim()
+  if (text === '') return { kind: 'none', chars: 0, excerpt: '' }
+  const kind =
+    compose.attach?.kind ?? (compose.selection?.carryFull === true ? 'full' : 'selection')
+  return { kind, chars: text.length, excerpt: text.slice(0, CONTEXT_EXCERPT_CHARS) }
 }
 
 /**
@@ -246,6 +279,7 @@ export function createOptimisticMessages(input: {
  * `status` 缺省为 `done`，只有上游报错中断写 `interrupted`（见 `persistAssistantPartial`）。
  * `chapterId` 记录消息产生时所在的章（无章聊天为 null），供回插校验。
  * `action` 记录消息由哪个功能产生（历史行为 / 未知为 null）。
+ * `contextSnapshot` 记录本轮携带的上下文类型 / 字数 / 前段片段（不存全文）。
  * 内容一律按原样落库，中断说明属于界面文案，**不进正文**。
  */
 export async function appendMessage(
@@ -257,6 +291,7 @@ export async function appendMessage(
     status?: AiMessageStatus
     chapterId?: number | null
     action?: AiComposeAction | null
+    contextSnapshot?: AiMessageContextSnapshot
   }
 ): Promise<void> {
   const api = window.api?.ai
@@ -271,7 +306,10 @@ export async function appendMessage(
       ...(options?.action !== undefined && options.action !== null
         ? { action: options.action }
         : {}),
-      ...(options?.usage !== undefined ? { usageJson: JSON.stringify(options.usage) } : {})
+      ...(options?.usage !== undefined ? { usageJson: JSON.stringify(options.usage) } : {}),
+      ...(options?.contextSnapshot !== undefined
+        ? { contextSnapshot: options.contextSnapshot }
+        : {})
     })
   } catch (error) {
     chatLog.warn('AI 消息落库失败', error)
@@ -299,6 +337,7 @@ export function persistAssistantPartial(
   void appendMessage(request.sessionId, 'assistant', request.content, {
     chapterId: request.chapterId,
     action: request.action,
+    contextSnapshot: request.contextSnapshot,
     ...(options?.usage !== undefined ? { usage: options.usage } : {}),
     ...(options?.status !== undefined ? { status: options.status } : {})
   })
@@ -332,6 +371,7 @@ export async function loadSessionMessages(input: {
       content: row.content,
       chapterId: row.chapterId,
       ...(row.action !== null ? { action: row.action } : {}),
+      ...(row.contextSnapshot !== null ? { contextSnapshot: row.contextSnapshot } : {}),
       ...(row.status === 'interrupted' ? { interrupted: true } : {})
     }))
 

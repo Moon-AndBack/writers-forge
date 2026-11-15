@@ -45,6 +45,65 @@ export function isAiMessageAction(value: unknown): value is AiMessageAction {
   )
 }
 
+/** 消息携带上下文的类型：整章全文 / 选区 / 未携带。 */
+export type AiMessageContextKind = 'full' | 'selection' | 'none'
+
+/** `context_json` 的片段长度上限（字符）：只供气泡悬浮提示辨认，不存全文。 */
+const CONTEXT_EXCERPT_MAX = 200
+
+/**
+ * 消息携带的上下文快照（落库为 `context_json`）。
+ *
+ * **只存类型、字数与前段片段，不存完整正文**：章节正文单条上限 10 万字符，
+ * 整段复制进消息表会让数据库与备份迅速膨胀；历史气泡只需要回答
+ * 「这轮带了什么、带了多少」，正文本身仍在章节表里。
+ */
+export interface AiMessageContextSnapshot {
+  kind: AiMessageContextKind
+  /** 实际随请求发出的上下文字符数（原文 trim 后）。 */
+  chars: number
+  /** 前 ≤ 200 字，仅供气泡悬浮提示。 */
+  excerpt: string
+}
+
+function isAiMessageContextKind(value: unknown): value is AiMessageContextKind {
+  return value === 'full' || value === 'selection' || value === 'none'
+}
+
+/** 校验已解析的对象；任一字段不合法即返回 `null`（不抛错）。 */
+function readContextRecord(value: unknown): AiMessageContextSnapshot | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return null
+  const record = value as Record<string, unknown>
+  const { kind, chars, excerpt } = record
+  if (!isAiMessageContextKind(kind)) return null
+  if (typeof chars !== 'number' || !Number.isFinite(chars) || chars < 0) return null
+  if (typeof excerpt !== 'string') return null
+  return { kind, chars: Math.floor(chars), excerpt: excerpt.slice(0, CONTEXT_EXCERPT_MAX) }
+}
+
+/**
+ * 宽容解析 `context_json`：JSON 损坏 / 字段缺失 / 类型不符一律返回 `null`。
+ *
+ * 读取历史时**不得抛错**：单条脏数据不能拖垮整个会话的加载。
+ */
+export function parseAiMessageContextJson(
+  raw: string | null | undefined
+): AiMessageContextSnapshot | null {
+  if (raw === null || raw === undefined || raw === '') return null
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    return readContextRecord(parsed)
+  } catch {
+    return null
+  }
+}
+
+/** 归一化入参（对象或 JSON 字符串）；非法返回 `null`，由 IPC 层决定拒绝。 */
+export function normalizeAiMessageContextSnapshot(value: unknown): AiMessageContextSnapshot | null {
+  if (typeof value === 'string') return parseAiMessageContextJson(value)
+  return readContextRecord(value)
+}
+
 /** 会话行（归属书，与章无关）。 */
 export interface AiChatSessionRow {
   id: number
@@ -76,6 +135,8 @@ export interface AiChatMessageRow {
   action: AiMessageAction | null
   /** 模型返回的 token 用量等原样 JSON 文本；无则 `null`。 */
   usageJson: string | null
+  /** 该条消息携带的上下文快照；老消息 / 未记录为 `null`。 */
+  contextSnapshot: AiMessageContextSnapshot | null
   createdAt: string
 }
 
@@ -102,22 +163,28 @@ export interface AppendAiMessageInput {
   /** 产生该条消息的功能；省略 / null 表示未知（历史行为）。 */
   action?: AiMessageAction | null
   usageJson?: string | null
+  /** 本轮携带的上下文快照；省略 / null 表示未记录（老消息 / system 摘要行）。 */
+  contextSnapshot?: AiMessageContextSnapshot | null
 }
 
 const SESSION_COLUMNS = `id, book_id AS bookId, provider, model,
   title, created_at AS createdAt, updated_at AS updatedAt`
 
 const MESSAGE_COLUMNS = `id, session_id AS sessionId, chapter_id AS chapterId, role, content, status,
-  usage_json AS usageJson, created_at AS createdAt, action`
+  usage_json AS usageJson, context_json AS contextJson, created_at AS createdAt, action`
 
 /** 库内会话行形状（snake_case 已别名，仅列名映射）。 */
 type SessionDbRow = AiChatSessionRow
 
 /** 库内消息行形状（`role` / `status` / `action` 按字符串读入，再做窄化）。 */
-interface MessageDbRow extends Omit<AiChatMessageRow, 'role' | 'status' | 'action'> {
+interface MessageDbRow extends Omit<
+  AiChatMessageRow,
+  'role' | 'status' | 'action' | 'contextSnapshot'
+> {
   role: string
   status: string
   action: string | null
+  contextJson: string | null
 }
 
 /** 读取单个会话，不存在返回 `null`（仅供写后回读）。 */
@@ -136,7 +203,7 @@ function readAiMessage(id: number): AiChatMessageRow | null {
   return row ? toAiMessageRow(row) : null
 }
 
-/** 脏数据兜底：未知角色按 `user`、未知状态按 `done`、未知功能类型按 `null` 处理。 */
+/** 脏数据兜底：未知角色按 `user`、未知状态按 `done`、未知功能类型 / 快照按 `null` 处理。 */
 function toAiMessageRow(row: MessageDbRow): AiChatMessageRow {
   return {
     id: row.id,
@@ -147,6 +214,8 @@ function toAiMessageRow(row: MessageDbRow): AiChatMessageRow {
     status: row.status === 'interrupted' ? 'interrupted' : 'done',
     action: isAiMessageAction(row.action) ? row.action : null,
     usageJson: row.usageJson,
+    // 解析失败按 null 处理（不抛错），单条脏数据不影响整条历史加载。
+    contextSnapshot: parseAiMessageContextJson(row.contextJson),
     createdAt: row.createdAt
   }
 }
@@ -202,15 +271,17 @@ export function listAiMessages(sessionId: number): AiChatMessageRow[] {
  * 追加一条消息并刷新所属会话的 `updated_at`（同一事务），返回落库后的消息行。
  * 会话不存在时由 `session_id` 外键拒绝（`foreign_keys = ON`），抛错且不落库。
  * `status` 省略时落库为 `'done'`（正常完成）；`chapterId` 省略时落库为 `NULL`（无章聊天）；
- * `action` 省略时落库为 `NULL`（历史行为 / 未知功能）。
+ * `action` 省略时落库为 `NULL`（历史行为 / 未知功能）；
+ * `contextSnapshot` 省略时落库为 `NULL`（未记录上下文），有值时序列化为 `context_json`。
  */
 export function appendAiMessage(input: AppendAiMessageInput): AiChatMessageRow {
   const db = getDb()
   return db.transaction((): AiChatMessageRow => {
     const result = db
       .prepare(
-        `INSERT INTO ai_chat_messages (session_id, chapter_id, role, content, status, usage_json, action)
-         VALUES (@sessionId, @chapterId, @role, @content, @status, @usageJson, @action)`
+        `INSERT INTO ai_chat_messages
+           (session_id, chapter_id, role, content, status, usage_json, action, context_json)
+         VALUES (@sessionId, @chapterId, @role, @content, @status, @usageJson, @action, @contextJson)`
       )
       .run({
         sessionId: input.sessionId,
@@ -219,7 +290,11 @@ export function appendAiMessage(input: AppendAiMessageInput): AiChatMessageRow {
         content: input.content,
         status: input.status ?? 'done',
         usageJson: input.usageJson ?? null,
-        action: input.action ?? null
+        action: input.action ?? null,
+        contextJson:
+          input.contextSnapshot !== undefined && input.contextSnapshot !== null
+            ? JSON.stringify(input.contextSnapshot)
+            : null
       })
 
     db.prepare("UPDATE ai_chat_sessions SET updated_at = datetime('now') WHERE id = ?").run(

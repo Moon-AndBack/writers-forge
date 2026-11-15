@@ -158,10 +158,12 @@ preload 侧的白名单 `AI_ERROR_CODES` 已改为对象 + `satisfies Record<AiE
 
 两张表，`schema/aiChat.ts` 建表，`database/aiChat.ts` 提供读写：
 
-| 表                 | 列                                                                                      | 说明                                                                    |
-| ------------------ | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `ai_chat_sessions` | `id`、`book_id`、`chapter_id`、`provider`、`model`、`title`、`created_at`、`updated_at` | 会话归属「书 + 章」；索引 `(book_id, chapter_id)`；删书 / 删章物理级联  |
-| `ai_chat_messages` | `id`、`session_id`、`role`、`content`、`usage_json`、`created_at`                       | `role` 由 CHECK 限 `system`/`user`/`assistant`；索引 `(session_id, id)` |
+| 表                 | 列                                                                                                                  | 说明                                                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `ai_chat_sessions` | `id`、`book_id`、`provider`、`model`、`title`、`created_at`、`updated_at`                                           | 会话按书归属（与章解耦）；索引 `(book_id, updated_at DESC)`；删书物理级联                                                         |
+| `ai_chat_messages` | `id`、`session_id`、`chapter_id`、`role`、`content`、`status`、`action`、`usage_json`、`context_json`、`created_at` | `role` 由 CHECK 限 `system`/`user`/`assistant`；`context_json` 只存类型 / 字数 / 前 200 字片段，不存全文；索引 `(session_id, id)` |
+
+`context_json` 的结构为 `{ "kind": "full" | "selection" | "none", "chars": 1234, "excerpt": "前 200 字…" }`：`kind` 是本轮携带的上下文类型（全章 / 选区 / 无），`chars` 是实际随请求发出的字符数，`excerpt` 取前 ≤ 200 字供气泡悬浮提示。**不存完整正文**——章节正文单条上限 10 万字符，整段复制进消息表会让数据库与备份迅速膨胀；历史气泡只需要回答「这轮带了什么、带了多少」，正文本身仍在章节表里。老消息该列为 `NULL`，气泡不显示这一行；解析失败同样按 `null` 返回，不影响整条历史加载。
 
 落库时机（渲染层 `useAiConversation` + `chatRuntime.ts`）：
 

@@ -19,6 +19,7 @@ import {
   isAiMessageAction,
   listAiMessages,
   listAiSessions,
+  normalizeAiMessageContextSnapshot,
   renameAiSession,
   renameAiSessionIfEmpty
 } from '../database/aiChat'
@@ -110,7 +111,7 @@ type TestResult = { ok: boolean; latencyMs: number; error?: AiError }
  * - ai:sessions:rename   ({ id, title })                         → boolean
  * - ai:sessions:renameIfEmpty ({ id, title })                    → boolean（仅标题为空时写入）
  * - ai:messages:list     ({ sessionId })                         → AiChatMessageRow[]
- * - ai:messages:append   ({ sessionId, chapterId?, role, content, status?, action?, usageJson? }) → AiChatMessageRow | null
+ * - ai:messages:append   ({ sessionId, chapterId?, role, content, status?, action?, usageJson?, contextSnapshot? }) → AiChatMessageRow | null
  * 推送（主进程 → 渲染层）：
  * - ai:chat:delta        { requestId, delta }
  * - ai:chat:done         { requestId, usage? }
@@ -369,6 +370,14 @@ export function registerAiIpc(): void {
     ) {
       return null
     }
+    // `contextSnapshot` 接受对象或 JSON 字符串：省略 / null 表示不记录；
+    // 给了就必须可归一化（类型 / 字数 / 片段），否则按非法入参拒绝。
+    const rawContext = input.contextSnapshot
+    const contextSnapshot =
+      rawContext === undefined || rawContext === null
+        ? null
+        : normalizeAiMessageContextSnapshot(rawContext)
+    if (rawContext !== undefined && rawContext !== null && contextSnapshot === null) return null
     const safeRole: AiChatRole = role
     const safeChapterId: number | null = isPositiveInt(chapterId) ? chapterId : null
     const safeStatus: AiMessageStatus | undefined =
@@ -382,7 +391,8 @@ export function registerAiIpc(): void {
         chapterId: safeChapterId,
         role: safeRole,
         status: safeStatus ?? 'done',
-        action: safeAction
+        action: safeAction,
+        contextKind: contextSnapshot?.kind ?? null
       },
       () =>
         appendAiMessage({
@@ -392,7 +402,8 @@ export function registerAiIpc(): void {
           content,
           ...(safeStatus !== undefined ? { status: safeStatus } : {}),
           action: safeAction,
-          ...(usageJson !== undefined ? { usageJson } : {})
+          ...(usageJson !== undefined ? { usageJson } : {}),
+          contextSnapshot
         }),
       null
     )

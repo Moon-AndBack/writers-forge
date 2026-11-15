@@ -112,6 +112,9 @@ const ai = {
     openChapterAria: 'Go to "{{place}}"',
     expand: 'Expand',
     collapse: 'Collapse',
+    contextFull: 'Full chapter carried',
+    contextSelection: 'Selection carried',
+    contextChars: '{{count}} characters',
     compacted: 'Compacted the previous {{rounds}} conversation turns',
     truncated: 'Summary unavailable; earlier {{rounds}} turns were omitted'
   },
