@@ -1,8 +1,9 @@
 /**
- * 灵感右栏详情：标题 + 纯文本正文 + 标签编辑 + 底部保存条。
+ * 灵感右栏详情：标题 + 富文本正文 + 标签编辑 + 底部保存条。
  *
  * 保存口径与伏笔 / 剧情 / 设定档案一致：
  * - 表单只改本地草稿，点保存条才组装「仅变更字段」补丁落库；
+ *   正文以块级 JSON 为真源（`contentJson`），主进程据 JSON 同步纯文本摘要列；
  * - 脏态经 `onDirtyChange` 上报（保存按钮 + 切换守卫共用），`saveRef` 挂载时写入
  *   `saveNow`（域内切换确认 / 关闭前 flush / 切模块兜底调用）；
  * - ⚠️ 卸载时**不注销** `saveRef`：右栏条件挂载，切模块时先卸载表单、后执行装配清理，
@@ -13,13 +14,15 @@ import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
-import { ChipInput, FormField, Input, Textarea, useToast } from '../../../components/ui'
+import { ChipInput, FormField, Input, useToast } from '../../../components/ui'
 import SaveBar from '../SaveBar'
+import InspirationBodyField from './InspirationBodyField'
 import { PRESET_INSPIRATION_TAGS } from './inspirationPresets'
 import {
   buildInspirationPatch,
   createInspirationDraft,
   INSPIRATION_MAX_TAGS,
+  resolveInspirationContentJson,
   type InspirationBundle,
   type InspirationDraft,
   type InspirationRow,
@@ -45,6 +48,7 @@ export default function InspirationPanel({ bundle }: InspirationPanelProps) {
   ) : (
     <InspirationPanelForm
       key={`${row.id}-${bundle.draftResetKey}`}
+      bookId={bundle.bookId}
       row={row}
       onUpdate={bundle.onUpdate}
       onDirtyChange={bundle.onDirtyChange}
@@ -54,6 +58,8 @@ export default function InspirationPanel({ bundle }: InspirationPanelProps) {
 }
 
 interface InspirationPanelFormProps {
+  /** 归属书 id（正文实体高亮按书匹配）。 */
+  bookId: string
   row: InspirationRow
   onUpdate: (id: number, patch: InspirationUpdatePatch) => Promise<boolean>
   onDirtyChange: (dirty: boolean) => void
@@ -62,6 +68,7 @@ interface InspirationPanelFormProps {
 
 /** 单条编辑表单（按 `row.id + draftResetKey` 重建，内部持草稿；手动保存 + 脏态上报）。 */
 function InspirationPanelForm({
+  bookId,
   row,
   onUpdate,
   onDirtyChange,
@@ -116,19 +123,14 @@ function InspirationPanelForm({
             />
           </FormField>
 
-          {/* 正文是块内唯一伸缩项：吃掉右栏剩余高度，内容超高时由 textarea 自身滚动。 */}
-          <FormField
-            className="inspiration-fields__content"
-            label={t('field.content')}
-            htmlFor={`${fieldId}-content`}
-          >
-            <Textarea
-              id={`${fieldId}-content`}
-              className="inspiration-content"
-              value={draft.content}
+          {/* 正文是块内唯一伸缩项：吃掉右栏剩余高度，内容超高时由正文容器自身滚动。 */}
+          <FormField className="inspiration-fields__content" label={t('field.content')}>
+            <InspirationBodyField
+              bookId={bookId}
+              initialJson={resolveInspirationContentJson(row)}
               placeholder={t('field.contentPlaceholder')}
-              spellCheck={false}
-              onChange={(event) => setDraft((prev) => ({ ...prev, content: event.target.value }))}
+              ariaLabel={t('field.content')}
+              onChange={(value) => setDraft((prev) => ({ ...prev, contentJson: value.json }))}
             />
           </FormField>
 

@@ -5,8 +5,10 @@
    筛选 / 搜索入口在活动栏模块浮层，中栏不再保留顶部筛选条；
    卡 `.inspiration-card` 三行（标题 / 正文摘要 / 标签），结构 / 内衬 / 阴影 / 标题行 /
    胶囊规格由通用壳 `EntityStyleCard` 承载，本文件只覆写摘要 3 行裁剪与域内类。
-   右栏：无面板头（模块标题由中栏承载），单块软底编辑卡（标题 / 正文 / 标签）+ 底部保存条；
-   正文 textarea 吃掉剩余高度，内容超高时自身滚动。颜色一律取 theme.css 令牌，四主题通用。
+   右栏：无面板头（模块标题由中栏承载），单块软底编辑卡（标题 / 富文本正文 / 标签）+
+   底部保存条；正文富文本编辑器吃掉剩余高度，排版沿用全局 `.doc-body` 长文口径
+   （字号 / 行高 / 首行缩进，见 writer-editor-doc.css），超高时自身滚动。
+   颜色一律取 theme.css 令牌，四主题通用。
    hover / 选中仅描边环 + 外发光，全程无位移 / 缩放（AGENTS §8）。
    ============================================================ */
 
@@ -116,7 +118,7 @@
   min-height: 0;
 }
 
-/* 控件容器同步转纵向 flex（默认 block 无法把高度分给 textarea）。 */
+/* 控件容器同步转纵向 flex（默认 block 无法把剩余高度下发给正文容器）。 */
 .inspiration-fields > .wf-field.inspiration-fields__content > .wf-field__control {
   display: flex;
   flex-direction: column;
@@ -124,13 +126,82 @@
   min-height: 0;
 }
 
-/* 正文多行输入：撑满控件容器剩余高度，内容超高时自身滚动；
-   关闭手动拖拽（右栏高度由布局分配，手拖会破坏保存条固定位）。 */
-.inspiration-content {
+/* 正文富文本容器：撑满控件容器剩余高度，内容超高时自身滚动（与旧多行输入同口径）；
+   容器透明无框，滚动条贴卡片内缘，版心落在内层 `.doc-body`。 */
+.inspiration-body {
+  display: flex;
   flex: 1 1 auto;
   min-height: 132px;
-  line-height: 1.7;
-  resize: none;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* 版心与长文排版：显式声明字号 / 行高 / 字距 / 字族（同全局 `.doc-body` 口径），
+   保证右栏窄卡内也跟随状态栏排版设置（`--doc-zoom`）等比缩放。
+   不做 `--page-width` 居中收口——卡片本身就是右栏宽，左右内衬由卡片提供。 */
+.inspiration-body .doc-body {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  width: 100%;
+  padding: 2px 0 4px;
+  font-family: var(--doc-font);
+  font-size: calc(18px * var(--doc-zoom));
+  line-height: var(--doc-line);
+  letter-spacing: var(--doc-letter);
+}
+
+/* 逐层撑满：点击正文下方空白仍落在可编辑区（同章节 / 剧情正文链路）。 */
+.inspiration-body .doc-body .ProseMirror {
+  flex: 1 0 auto;
+}
+
+/* ---------- `on-soft` 软底卡适配（本右栏编辑卡为 --soft-solid） ----------
+   `.doc-body p` 默认左右各 -8px 出血 + 8px 横向内衬，并叠 `--soft-hover-solid` 段落
+   hover 底：在软底卡内负 margin 会贴到卡片内缘，hover 底又与卡片同族而糊成一片。
+   故本域内：
+   - 负 margin 与横向内衬归零（顶层段落仍保留 2em 首行缩进），正文与上方标题输入框对齐；
+   - 段落 hover / focus 底改用卡内控件层令牌，既保留「可输入」提示又不与卡片同色。 */
+.inspiration-body .doc-body .ProseMirror p {
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+  text-indent: 2em;
+}
+
+.inspiration-body .doc-body .ProseMirror p:hover {
+  background: var(--control-on-soft-hover);
+}
+
+.inspiration-body .doc-body .ProseMirror p:focus {
+  background: color-mix(in srgb, var(--brand) 8%, var(--soft-solid));
+}
+
+/* 列表 / 引用 / 表格内的段落不再缩进：只让顶层段落首行缩进 2em。 */
+.inspiration-body .doc-body .ProseMirror li p,
+.inspiration-body .doc-body .ProseMirror blockquote p,
+.inspiration-body .doc-body .ProseMirror th p,
+.inspiration-body .doc-body .ProseMirror td p {
+  text-indent: 0;
+}
+
+/* 空正文占位（同章节 / 剧情口径：`::before` 绝对定位，文案经 `--editor-placeholder`
+   由 React 传入；脱离行内流，不推动空段落光标）。横向内衬已归零，故左移量按
+   「段落左缘 + 2em 首行缩进 + 一个光标宽」计。 */
+.inspiration-body .doc-body.is-empty .ProseMirror > p:first-child::before {
+  content: var(--editor-placeholder);
+  position: absolute;
+  left: calc(2em + 2px);
+  right: 0;
+  top: 2px;
+  text-indent: 0;
+  font-style: italic;
+  color: var(--text-mute);
+  opacity: 0.85;
+  pointer-events: none;
+  user-select: none;
+  animation: editor-placeholder-in 0.6s var(--ease) both;
 }
 
 /* 保存条：与伏笔 / 剧情右栏同款软底卡片（--soft-solid + --r-lg）。
@@ -143,4 +214,38 @@
   padding: 10px 12px;
   background: var(--soft-solid);
   border-radius: var(--r-lg);
+}
+
+/* ---------- 只读详情（章节模块右栏「灵感」页签） ---------- */
+/* 正文容器挂 `.doc-body` 复用长文排版，但两条既有规则会把它压回纯文本口径：
+   - `.inspiration-readonly__content`（writer-inspiration-overview.css）为 12px +
+     `white-space: pre-wrap`（纯文本时代的换行口径）；
+   - 共用的 `.rp-read .ProseMirror` / `… p`（writer-right-outline.css）把字号压回
+     `--fs-body`、段落首行缩进归零。
+   故按正文口径还原：字号随 `--doc-zoom` 等比缩放，行高 / 字距 / 字族取正文令牌，
+   顶层段落 2em 首行缩进。段规则多带一层 `.wf-readonly-block`，特异性 (0,4,1) 高于
+   上述基础规则 (0,3,1)，不受 @import 顺序影响。 */
+.inspiration-readonly__content.doc-body {
+  font-family: var(--doc-font);
+  font-size: calc(18px * var(--doc-zoom));
+  line-height: var(--doc-line);
+  letter-spacing: var(--doc-letter);
+  /* 富文本由块级结构换行，不再需要纯文本时代的 pre-wrap。 */
+  white-space: normal;
+}
+
+.inspiration-readonly__content.doc-body .ProseMirror {
+  font-size: calc(18px * var(--doc-zoom));
+  line-height: var(--doc-line);
+}
+
+.inspiration-readonly__content.doc-body.wf-readonly-block .ProseMirror p {
+  text-indent: 2em;
+}
+
+.inspiration-readonly__content.doc-body.wf-readonly-block .ProseMirror li p,
+.inspiration-readonly__content.doc-body.wf-readonly-block .ProseMirror blockquote p,
+.inspiration-readonly__content.doc-body.wf-readonly-block .ProseMirror th p,
+.inspiration-readonly__content.doc-body.wf-readonly-block .ProseMirror td p {
+  text-indent: 0;
 }

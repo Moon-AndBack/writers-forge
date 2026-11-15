@@ -266,8 +266,13 @@ export default function Writer({ bookId, initialModule }: WriterProps) {
     )
 
   // 富文本编辑器槽位表：编辑器实例由各域右栏自行注册，此处只提供聚焦态真源与上报入口。
-  // 剧情取 `usePlotWorkspace`（状态栏 / 切换守卫同源）；设定库的聚焦态 state 收在 hook 内。
-  const richTextEditorSlots = useWriterRichTextSlots(plot.editing, plot.reportEditing)
+  // 剧情取 `usePlotWorkspace`（状态栏 / 切换守卫同源）；设定库的聚焦态 state 收在 hook 内；
+  // 灵感的聚焦态真源在 `useInspirationBundle`（活动模块非灵感时为 null → 按未编辑处理）。
+  const richTextEditorSlots = useWriterRichTextSlots(
+    plot.editing,
+    plot.reportEditing,
+    inspirationBundle ?? undefined
+  )
 
   /* ---------- 模块切换未保存守卫（活动栏图标 / 筛选浮层发起） ----------
      外壳经 `useRequestSwitch` 把目标模块交给本页裁决：同模块 / 无脏 → 直接切，有脏草稿 → 两态确认。
