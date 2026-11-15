@@ -446,7 +446,7 @@ export default function ChaptersView({
         chapters={chapters}
       />
       {/* 标题 / 信息头部：置于滚动区之外，始终固定显示，仅正文滚动。
-          标题行右侧承载「复制全文」按钮（见 ChapterEditorHead）。 */}
+          标题行右侧承载「复制全文」胶囊；元信息行为「最后编辑 + 状态」胶囊（见 ChapterEditorHead / DocMeta）。 */}
       <ChapterEditorHead
         chapterId={chapterId}
         name={name}

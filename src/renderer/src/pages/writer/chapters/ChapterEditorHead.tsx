@@ -73,8 +73,10 @@ export default function ChapterEditorHead({
               · 特殊章：前段（创建时已设置，只读 span）+ 空隙 + 名段输入。
               失焦 / Enter 提交落库，Escape 还原；不做按键逐次写库。 */}
           <DocTitleRow chapterId={chapterId} name={name} />
+          {/* 「复制全文」保留在标题行右侧，尺寸 / 圆角 / 字号复用元信息胶囊类
+              （`.doc-meta__pill`）；材质由 `.editor-head-copy` 覆写为软底可点击样式。 */}
           <IconButton
-            className="editor-head-copy"
+            className="editor-head-copy doc-meta__pill"
             size="sm"
             label={t('editor.copyAll')}
             tooltip={t('editor.copyAll')}

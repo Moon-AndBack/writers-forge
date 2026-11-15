@@ -145,25 +145,33 @@
   min-width: 0;
 }
 
-/* 「复制全文」按钮：可见文字（左）+ 图标（右）。
-   IconButton（--sm）默认是 32×32 的圆形单图标容器，这里在**调用处**改为自适应宽度的
-   胶囊：高度沿用 --sm 的 32px，保证与 28px 标题行垂直居中不错位；文字 12.5px 与
-   头部元信息同档，不换行、不参与收缩（标题侧 .doc-title-row 已 flex: 1 + min-width: 0，
+/* 「复制全文」胶囊：可见文字（左）+ 图标（右），保留在标题行右侧。
+   尺寸 / 圆角 / 字号复用 `.doc-meta__pill`（32 高 / --r-lg / 12 内衬 / --fs-body），
+   此处只补「可点击」材质与布局，并显式写回 display / padding-inline / border-radius，
+   压过 `.wf-iconbtn` 的圆形单图标默认值（不依赖样式表加载顺序）。
+   不换行、不参与收缩（标题侧 .doc-title-row 已 flex: 1 + min-width: 0，
    空间不足时只压缩名段输入，不会挤压按钮或导致换行）。
-   图标由 --sm 的 14px 放大到 16px（+2px，仍居中于 32px 高容器），仅作用于本按钮，
-   不改 IconButton 的全局尺寸。 */
+   图标由 --sm 的 14px 放大到 16px（+2px，仍居中于 32px 高容器），仅作用于本按钮。 */
 .editor-head .editor-head-copy {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
   width: auto;
-  gap: 4px;
-  padding: 0 8px;
+  padding-inline: 12px;
   border-radius: var(--r-lg);
-  font-size: var(--fs-body);
   line-height: 1;
-  white-space: nowrap;
+  background: var(--soft-solid);
+  color: var(--text-dim);
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+/* 中性软底在 light 主题与 hover 同为 6%，只换底看不到反应——必须同时提亮文字。 */
+.editor-head .editor-head-copy:hover:not(:disabled) {
+  background: var(--soft-hover-solid);
+  color: var(--text);
 }
 
 .editor-head .editor-head-copy > svg {
@@ -182,28 +190,70 @@
   margin-bottom: 10px;
 }
 
-/* 章节状态按钮（两态：草稿 / 定稿）：嵌在元信息行内，视觉为彩色小标签。
-   点击切换状态（定稿 → 草稿 / 草稿 → 定稿）；按钮基础样式复位，
-   仅保留文字 + 轻底；颜色随 --warn（草稿）/ --ok（定稿）四主题自适应。 */
-.editor-head .doc-status {
-  display: inline-flex;
+/* 元信息行容器：三项胶囊允许换行（窄窗英文放不下一行时由「最后编辑」让位），
+   行内间距沿用 14px，换行后的行间距取 8px（§8.4 的 4px 网格档）。 */
+.doc-meta {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  min-height: var(--control-h-sm);
-  padding: 0 8px;
-  border: none;
-  border-radius: var(--r-lg);
-  background: var(--soft-solid);
+  gap: 14px;
+  row-gap: 8px;
+  margin-bottom: 34px;
+  padding-left: 2px;
   font-size: var(--fs-micro);
-  font-weight: 600;
-  color: var(--text-dim);
-  cursor: pointer;
-  transition:
-    background 0.1s var(--ease),
-    color 0.1s var(--ease);
+  color: var(--text-mute);
 }
 
-.editor-head .doc-status:hover {
-  background: var(--soft-hover-solid);
+/* ---------- 元信息胶囊（最后编辑 / 状态 / 复制全文 统一规格） ----------
+   三项统一为「32 高（--control-h-md）+ 8 圆角（--r-lg）」：左右内衬 12、
+   字号 --fs-body、内距 6、单行不换行。这是**控件档**（§3.3 的 32 档），
+   与 22px 展示胶囊（Badge / Tag，§9 #17）不是同一档，不得互相套用。
+   材质按可点性分级：只读项 = 1px --line 描边且无 hover；可切换项 = 语义色
+   16% 混 --doc-surface（hover 24%）；可点击项 = --soft-solid 软底
+   （hover --soft-hover-solid + 文字提亮，见 `.editor-head-copy`）。
+   本段必须排在 `.doc-meta` 之后：两者同为 0,1,0，靠顺序才能覆盖其 10px 字号。 */
+.doc-meta__pill {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: var(--control-h-md);
+  padding-inline: 12px;
+  border-radius: var(--r-lg);
+  font-size: var(--fs-body);
+  white-space: nowrap;
+}
+
+/* 只读项（最后编辑）：描边材质，不挂 transition（无 hover 态）。
+   窄窗时由它让位：可收缩 + 单行省略；状态 / 操作胶囊保持 flex: none 不被挤压。 */
+.doc-meta__pill--time {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid var(--line);
+  color: var(--text-mute);
+}
+
+/* 省略号必须落在内层文本上：flex 容器的 text-overflow 不作用于匿名 flex item。 */
+.doc-meta__pill-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 章节状态（两态：草稿 / 定稿）：元信息胶囊的「可切换」档，语义色 16% 混正文纸面。
+   hover 必须写在 `.is-draft` / `.is-done` 之后并带上状态类（0,5,0 > 0,3,0）：
+   旧版 `.doc-status:hover` 与状态底色同为 0,3,0 且更靠前，hover 被完全覆盖而失效。 */
+.editor-head .doc-status {
+  border: none;
+  color: var(--text-dim);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
 .editor-head .doc-status.is-draft {
@@ -216,18 +266,16 @@
   background: color-mix(in srgb, var(--ok) 16%, var(--doc-surface));
 }
 
-.editor-head .doc-status:disabled {
-  cursor: default;
+.editor-head .doc-status.is-draft:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--warn) 24%, var(--doc-surface));
 }
 
-.doc-meta {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 34px;
-  padding-left: 2px;
-  font-size: var(--fs-micro);
-  color: var(--text-mute);
+.editor-head .doc-status.is-done:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ok) 24%, var(--doc-surface));
+}
+
+.editor-head .doc-status:disabled {
+  cursor: default;
 }
 
 /* ---------- SpecialChapterDialog（「特殊章节」弹窗） ----------

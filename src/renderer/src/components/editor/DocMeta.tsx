@@ -10,6 +10,8 @@ import type { ReactNode } from 'react'
  * - `status`：状态按钮（仅章节页有状态概念；大纲 / 世界观无状态，不传）；
  * - `children`：附加元信息节点（如世界观静态演示文本）。
  *
+ * 两项均挂统一胶囊类 `.doc-meta__pill`（32 高 / `--r-lg` / 12 内衬 / `--fs-body`），
+ * 仅材质按可点性分级：只读项描边、可切换项语义色底（样式见 `writer-editor-head.css`）。
  * 本组件不取 i18n、不做时间格式化——保持与领域无关，差异一律由调用处表达。
  */
 
@@ -39,12 +41,18 @@ export interface DocMetaProps {
 export default function DocMeta({ lastEdited, status, children }: DocMetaProps) {
   return (
     <div className="doc-meta">
-      {lastEdited ? <span>{lastEdited}</span> : null}
+      {lastEdited ? (
+        /* 只读项：胶囊本体承载描边 / 高度，内层 span 承载单行省略——`text-overflow`
+           不继承到匿名 flex item，必须落在内层文本节点上才生效。 */
+        <span className="doc-meta__pill doc-meta__pill--time">
+          <span className="doc-meta__pill-text">{lastEdited}</span>
+        </span>
+      ) : null}
       {children}
       {status && (
         <button
           type="button"
-          className={`doc-status is-${status.value}`}
+          className={`doc-meta__pill doc-status is-${status.value}`}
           onClick={status.onClick}
           disabled={status.disabled}
           aria-label={status.ariaLabel}
