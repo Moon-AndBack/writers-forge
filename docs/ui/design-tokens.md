@@ -10,16 +10,16 @@
 
 ## 1. 单一真源与文件结构
 
-`theme.css` 是**主题 / 语义令牌**的单一真源（颜色、字号、圆角、字体、动效、层级、光斑）；其他样式一律 `var(--x)` 取用，组件样式不得重定义同名主题令牌。注意：领域色板 / 组件局部变量不在本文件范围内——`chip-pill-tokens.css`（28 条胶囊色板）、`entity-highlight-tokens.css`（8 条实体基色）、`theme-switcher.css`（28 条 `--mini-*` 预览镜像）各自定义领域令牌；`material.css` 另派生材质态专用的 `--surface-pane` / `--surface-panel-shadow`；`shell.css`、`window.css`、`clean-words.css`、`writer-ai.css` 等另有局部变量。间距 / 控件高度 / 选中态等视觉规则不在本文件，见 [`design-language.md`](./design-language.md)。
+`theme.css` 是**主题 / 语义令牌**的单一真源（颜色、字号、圆角、字体、动效、层级、光斑）；其他样式一律 `var(--x)` 取用，组件样式不得重定义同名主题令牌。注意：领域色板 / 组件局部变量不在本文件范围内——`chip-pill-tokens.css`（28 条胶囊色板）、`entity-highlight-tokens.css`（8 条实体基色）、`theme-switcher.css`（28 条 `--mini-*` 预览镜像）各自定义领域令牌；`material.css` 另派生材质态专用的 `--surface-pane*` / `--surface-panel-shadow`；`shell.css`、`window.css`、`clean-words.css`、`writer-ai.css` 等另有局部变量。间距 / 控件高度 / 选中态等视觉规则不在本文件，见 [`design-language.md`](./design-language.md)。
 
 | 区块         | 选择器                        | 行号    | 声明数  | 作用                                                                            |
 | ------------ | ----------------------------- | ------- | ------- | ------------------------------------------------------------------------------- |
-| 主题无关     | `:root`                       | 9-139   | 44      | 排版、字号、圆角、控件高度、字体、动效、层级、光斑、材质透明度、chrome 组、选区 |
-| 亮色（默认） | `:root, [data-theme='light']` | 143-229 | 35      | 亮色主题，同时是全部主题的**基底**                                              |
-| 暗色         | `[data-theme='dark']`         | 232-302 | 33      | 暗色主题                                                                        |
-| 浅绿         | `[data-theme='sage']`         | 305-363 | 32      | 浅绿主题                                                                        |
-| 浅黄         | `[data-theme='honey']`        | 366-429 | 33      | 浅黄主题                                                                        |
-| **合计**     | —                             | —       | **177** | —                                                                               |
+| 主题无关     | `:root`                       | 9-147   | 46      | 排版、字号、圆角、控件高度、字体、动效、层级、光斑、材质透明度、chrome 组、选区 |
+| 亮色（默认） | `:root, [data-theme='light']` | 150-237 | 35      | 亮色主题，同时是全部主题的**基底**                                              |
+| 暗色         | `[data-theme='dark']`         | 240-310 | 33      | 暗色主题                                                                        |
+| 浅绿         | `[data-theme='sage']`         | 313-371 | 32      | 浅绿主题                                                                        |
+| 浅黄         | `[data-theme='honey']`        | 374-437 | 33      | 浅黄主题                                                                        |
+| **合计**     | —                             | —       | **179** | —                                                                               |
 
 - **亮色块与 `:root` 同挂 `<html>`**：选择器是 `:root, [data-theme='light']`，任何主题下都会命中。sage / honey 块同为 0,1,0 特异性且排在后面，只覆盖自己声明的属性，**未声明项回退到亮色块**——这正是它们分别为 32 / 33 条的原因（省略了 `--sh-xs`、`--sh-sm`、sage 的 `--overlay-mask` 等）。
 - 每个主题块首行写 `color-scheme`（light / dark），驱动原生滚动条、表单控件与选区基线；块内分组顺序固定：桌面/窗口表面 → 交互底色 → 不透明交互底色 → 控件 on-soft → 文本 → 品牌/语义 → 正文 → 阴影/描边 → 遮罩 → 选区。变量名沿用原型命名，仅 `--desk-3` 大小写被规范为小写。
@@ -168,7 +168,7 @@
 
 - **`--brand` / `--brand-2` 的静态值只是回退**：light / dark 下会被系统强调色内联覆盖（§6），sage / honey 始终使用静态值。
 - light 的 `--caret` 由品牌色向正文色暗化，避免浅底上过亮；其余三套直接取 `--brand`。
-- **`--text-mute-weak` 是材质态回退色**：默认与 `--text-mute` 同值；材质态面板作用域把 `--text-mute` 提升到 `--text-dim` 观感后，禁用 / 只读输入框改用它，保持「不可用」弱于可用元信息（`material.css:118-130`）。
+- **`--text-mute-weak` 是材质态回退色**：默认与 `--text-mute` 同值；材质态面板作用域把 `--text-mute` 提升到 `--text-dim` 观感后，禁用 / 只读输入框改用它，保持「不可用」弱于可用元信息（`material.css:146-153`）。
 - **兼容层已删除**：`--bg` / `--fg` 原为历史令牌，仅 `global.css` 的 `body` 使用；`body` 已改用 `--desk-1` / `--text`，四套主题中的定义已移除。同组的 `--accent` / `--border` 已在更早批次删除。
 
 ### 4.5 阴影、遮罩与选区
@@ -196,27 +196,29 @@
 
 `--*-solid` 组（light 169-173、dark 255-259、sage 327-331、honey 388-392）是组件自身填充专用：**alpha 恒为 1**，用 `color-mix` 把原半透明档的比例混入不透明 `--pane`。
 
-| 令牌                                        | 语义                         | 典型消费                                                                                                                            |
-| ------------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `--soft-solid`                              | 卡片 / 分区容器 / 次级按钮底 | 56 处（`surface.css`、`bookshelf.css`、`form.css`…）                                                                                |
-| `--soft-hover-solid`                        | 上述元素 hover               | 标题栏按钮、书卡、状态栏                                                                                                            |
-| `--soft-press-solid`                        | 按下态                       | 标题栏按钮                                                                                                                          |
-| `--pill-bg-solid` / `--pill-bg-hover-solid` | 胶囊底 / hover               | `statusbar-widgets.css`                                                                                                             |
-| `--surface-pane`                            | 材质态面板底（`--pane` 58%） | `material.css:75`；`.sidepane` / `.rightpane` / 非章节·大纲 `.editor-pane` / 悬浮 `.activitybar`                                    |
-| `--surface-pane-card`                       | 材质态卡片底（58%）          | `material.css`；右栏原先不透明的卡片 / 只读内容块与书架书籍卡（右栏复合后约 82.4%，严格高于面板 58%；书架卡叠页面底约 68.5% / 58%） |
-| `--surface-panel-shadow`                    | 材质态面板阴影（仅描边环）   | `material.css:87`；同上                                                                                                             |
+| 令牌                                        | 语义                          | 典型消费                                                                                                                        |
+| ------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `--soft-solid`                              | 卡片 / 分区容器 / 次级按钮底  | 56 处（`surface.css`、`bookshelf.css`、`form.css`…）                                                                            |
+| `--soft-hover-solid`                        | 上述元素 hover                | 标题栏按钮、书卡、状态栏                                                                                                        |
+| `--soft-press-solid`                        | 按下态                        | 标题栏按钮                                                                                                                      |
+| `--pill-bg-solid` / `--pill-bg-hover-solid` | 胶囊底 / hover                | `statusbar-widgets.css`                                                                                                         |
+| `--surface-pane`                            | 材质态面板底（`--pane` 58%）  | `material.css:75`；`.sidepane` / `.rightpane` / 非章节·大纲 `.editor-pane` / 悬浮 `.activitybar`                                |
+| `--surface-pane-card`                       | 材质态实底卡（58%）           | `material.css`；书架书籍卡（叠页面底约 68.5% / 58%）与右栏只读正文块（代码块 / 行内代码 / 表头 / 缺图占位，保持可辨识边界）     |
+| `--surface-pane-float`                      | 材质态面板浮卡底（文字 10%）  | `material.css`；右栏伏笔 / 灵感 / 剧情卡、AI 气泡、伏笔摘抄；叠 58% 面板 + 6% 软底复合约 64.5%（亚克力壁纸 26.6% / 云母 35.5%） |
+| `--surface-pane-float-ring`                 | 材质态浮卡边界（1px 文字 8%） | 同上；替代域内 `box-shadow: none` 的底色差边界，非材质态为 `none`                                                               |
+| `--surface-panel-shadow`                    | 材质态面板阴影（仅描边环）    | `material.css:88`；同上                                                                                                         |
 
 材质（亚克力 / 云母）链路：
 
 1. `WindowMaterialProvider` 在 `<html>` 写 `data-material='acrylic' | 'mica' | 'none'`（实际生效材质；**不写 `tabbed`**）。
 2. 开启时 `.shell` 依材质分别处理：acrylic 通过 `--desk-solid-alpha` 保留 **25%** 不透明度的纯色 scrim（壁纸经实时模糊 + 25% scrim，贡献约 75%）；mica 的 `.shell` 为 `transparent`，不叠 scrim，标题栏与状态栏同样透明，直接透出云母；同时 `body` 背景置透明（`material.css:42-44`），否则 `body` 的不透明背景会挡住 DWM 材质。亚克力实时模糊、更透，云母采样壁纸着色、偏实色；客户区材质的实际可见性以实机为准（`backgroundColor` 的 alpha 需 `transparent: true` 才保证生效，本项目未开启）。
-3. 材质态面板底不再固定不透明 `--pane`：左右栏 / 悬浮活动栏与中栏的非纸面模块用 `--surface-pane`（`--pane` 按 `--pane-surface-alpha` **58%** 混 `transparent`），sage / honey 的**章节 / 大纲** `.editor-pane` 保留不透明 `--doc-surface` 纸面（判别 `data-module`），其余模块与 light / dark 一致透明。面板内的 L2 / L3 软底（`--soft-solid` / `--soft-hover-solid` / `--soft-press-solid` / `--control-on-soft*`）必须在**同一作用域**改由 `--text` 混 `transparent` 重派生（比例逐项对齐原主题：light 6/6/9/13/18、dark 5/8/11/14/19），否则 58% 透明面板会在卡片内部重新铺实。右栏原先不透明的内容卡 / 只读块（`--pane`）与书架书籍卡改用 `--surface-pane-card`（与面板同取 `--pane` 58%，右栏复合后约 82.4%，严格高于面板 58%；书架卡叠页面底约 68.5% / 58%），避免透明栏 / 页面里出现实色贴片，同时保持「卡 > 底」。面板阴影同时降为 `--panel-ring`，避免半透明面板下叠出黑影。浮层（Modal / Select / Tooltip / 状态栏弹层）与固定态活动栏不参与，仍用不透明填充（后者见例外 #11）。
+3. 材质态面板底不再固定不透明 `--pane`：左右栏 / 悬浮活动栏与中栏的非纸面模块用 `--surface-pane`（`--pane` 按 `--pane-surface-alpha` **58%** 混 `transparent`），sage / honey 的**章节 / 大纲** `.editor-pane` 保留不透明 `--doc-surface` 纸面（判别 `data-module`），其余模块与 light / dark 一致透明。面板内的 L2 / L3 软底（`--soft-solid` / `--soft-hover-solid` / `--soft-press-solid` / `--control-on-soft*`）必须在**同一作用域**改由 `--text` 混 `transparent` 重派生（比例逐项对齐原主题：light 6/6/9/13/18、dark 5/8/11/14/19），否则 58% 透明面板会在卡片内部重新铺实。右栏原先不透明的浮卡（伏笔 / 灵感 / 剧情卡、AI 气泡、伏笔摘抄）改用 `--surface-pane-float`（`--text` 10% 薄雾 + 1px 文字 8% 环；叠 58% 面板 + 6% 软底复合约 64.5%，壁纸透出 26.6% / 35.5%，仍高于面板），不再与面板同色叠加变实；只读正文块（代码块 / 行内代码 / 表头 / 缺图占位）保留 `--surface-pane-card`（58%）以维持可辨识边界；书架书籍卡也用 `--surface-pane-card`（叠页面底约 68.5% / 58%）。面板阴影同时降为 `--panel-ring`，避免半透明面板下叠出黑影。浮层（Modal / Select / Tooltip / 状态栏弹层）与固定态活动栏不参与，仍用不透明填充（后者见例外 #11）。
 4. `--desk-solid-alpha` 是 acrylic 专用的主题无关 scrim 旋钮，四主题共用，固定为 **25%**（mica 不使用该令牌）。dark 的 `--desk-solid` 取 `#161616`（与色带中段同值），避免深色下材质偏亮。主进程窗口底：材质开 `#00000000`，关 `#f3f3f3`，避免创建瞬间黑闪（`window.ts:169-174`）；该 alpha 仅在 `transparent: true` 时保证生效，本项目未开启，材质可见性以实机为准。
 5. 标题栏 / 状态栏不落三栏作用域，控件改用 `--chrome-*` 七令牌：默认值逐项等同改前的不透明底（`--pill-bg-solid` / `--pill-bg-hover-solid` / `--soft-press-solid` / `--soft-hover-solid` / brand 18% / brand 12% / none），材质态由 `material.css` 覆写为 `--text` 5 / 8 / 11 / 7% 薄雾、brand 20% / 14% 与 `1px --text 8%` 描边环。薄雾必须用 `--text` 反向派生，不用 `--pane`（浅色云母上明度差 < 1.02，hover 等于没有）。
 6. **云母的 DWM 档位由主进程按应用明暗决定**：浅色（light / sage / honey）下发 `tabbed`（Mica Alt，着色更强），深色下发标准 `mica`；渲染层始终只标记 `mica`。原先的暗色 8% 白提亮层 `--mica-alt-scrim-alpha` 已删除，暗色恢复系统默认渲染。
-7. **壁纸贡献估算（面板 / 书架区域）**：亚克力 ≈ (1 − 25%) × (1 − 58%) ≈ **31.5%**；云母无 scrim，≈ **42%**。栏内卡片以 58% `--pane` 叠在面板上，复合不透明度约 82.4%，壁纸以约 13%（亚克力）/ 18%（云母）透出，卡片不再显实。书架页没有面板底，书籍卡 58% 直接叠在 25% scrim / 云母上：亚克力复合约 **68.5%**（壁纸 31.5%），云母 **58%**（壁纸 42%），仍严格高于页面底。以上为近似值；栏缝仍按 scrim / 材质原值透出，chrome 薄雾只覆盖控件自身（5–11%），实际观感以实机为准。
+7. **壁纸贡献估算（面板 / 书架区域）**：亚克力 ≈ (1 − 25%) × (1 − 58%) ≈ **31.5%**；云母无 scrim，≈ **42%**。面板浮卡以 `--text` 10% 薄雾叠在 58% 面板 + 6% 软底上，复合不透明度约 64.5%，壁纸以约 26.6%（亚克力）/ 35.5%（云母）透出；只读正文块仍为 58% `--pane` 卡底（复合约 83.4%），边界更实。书架页没有面板底，书籍卡 58% 直接叠在 25% scrim / 云母上：亚克力复合约 **68.5%**（壁纸 31.5%），云母 **58%**（壁纸 42%），仍严格高于页面底。以上为近似值；栏缝仍按 scrim / 材质原值透出，chrome 薄雾只覆盖控件自身（5–11%），实际观感以实机为准。
 
-选择顺序：默认（材质关闭）组件填充用 `--*-solid`，`--soft-solid` 容器上的输入类控件用 `--control-on-soft*`；材质态只有左右栏 / 悬浮活动栏 / 非纸面中栏用 `--surface-pane`、右栏原先不透明的卡片与书架书籍卡用 `--surface-pane-card`（与面板同取 `--pane` 58%，右栏复合后约 82.4%、书架卡约 68.5%）、标题栏 / 状态栏与书架工具条控件用 `--chrome-*`，并且软底必须同域重派生；浮层、sage / honey 章节 / 大纲纸面与 `.tb-brand-mark` 始终不透明。
+选择顺序：默认（材质关闭）组件填充用 `--*-solid`，`--soft-solid` 容器上的输入类控件用 `--control-on-soft*`；材质态只有左右栏 / 悬浮活动栏 / 非纸面中栏用 `--surface-pane`、面板浮卡用 `--surface-pane-float`（文字 10% + 1px 文字 8% 环，复合约 64.5%）、书架卡与只读正文块用 `--surface-pane-card`（58%，书架卡约 68.5%）、标题栏 / 状态栏与书架工具条控件用 `--chrome-*`，并且软底必须同域重派生；浮层、sage / honey 章节 / 大纲纸面与 `.tb-brand-mark` 始终不透明。
 
 ---
 
@@ -316,7 +318,7 @@ system 档：
 2. **不得给主题令牌挂 `transition`**。`--dur-*` 只服务交互（hover / 展开 / 拖拽 / 显隐）与进出场；仅由 `data-theme` 引起的 `color` / `background` / `box-shadow` 过渡一律删除。主题整体由全屏模糊覆盖层过渡，CSS 再过渡会出现「一部分渐变、一部分硬跳」。
 3. **新增令牌必须四套主题齐全**。主题相关令牌在 light / dark / sage / honey 四块**各自显式声明**（尤其 `--control-on-soft*`，注释明确要求不依赖 `:root` 继承）；主题无关才放 `:root`。只加一侧会让某主题悄悄沿用亮色值。
 4. **不得跨主题推导**。dark 的 `--desk-2/3`、`--pane`、阴影、选区透明度与 light 语义不同（§4.6），复制 light 比例再调亮度必然出错。
-5. **默认不透明，材质态按登记透明**：组件填充默认用 `--*-solid`；只有材质态（acrylic / mica）的左右栏 / 悬浮活动栏 / 非纸面中栏可用 `--surface-pane`，右栏内容卡与书架书籍卡可用 `--surface-pane-card`，标题栏 / 状态栏与书架工具条控件可用 `--chrome-*`，且软底必须同域重派生（`design-language.md` §9 #31 / #32 / #34）。浮层与 sage / honey 章节 / 大纲纸面始终不透明。
+5. **默认不透明，材质态按登记透明**：组件填充默认用 `--*-solid`；只有材质态（acrylic / mica）的左右栏 / 悬浮活动栏 / 非纸面中栏可用 `--surface-pane`，面板浮卡可用 `--surface-pane-float`，书架卡与只读正文块可用 `--surface-pane-card`，标题栏 / 状态栏与书架工具条控件可用 `--chrome-*`，且软底必须同域重派生（`design-language.md` §9 #31 / #32 / #34）。浮层与 sage / honey 章节 / 大纲纸面始终不透明。
 6. **界面字号走 `--fs-*`，正文 / 行高 / 缩放走 `--doc-*`**，时长走 `--dur-*`，缓动走 `--ease` / `--ease-out`；层级优先走 `--z-*`（当前 970–972 与 1105 已令牌化，其余待收敛，新代码不得再写裸 `z-index`）。禁止裸 `0.2s`、`ease-in-out`、字面量 `z-index`，以及界面 `font-size` 数值字面量（封面首字 34 / 56 已登记例外）。
 7. **语义色不改语义**：`--ok` / `--warn` / `--danger` 只表达状态，不当品牌强调；`--brand` 会被系统强调色覆盖，不要当固定色画插画。
 8. **兼容层已删除**：`--bg` / `--fg` 已从四套主题移除，`body` 改用 `--desk-1` / `--text`；同组原 `--accent` / `--border` 已随更早批次清理删除。

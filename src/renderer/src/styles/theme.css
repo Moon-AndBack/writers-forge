@@ -112,6 +112,13 @@
      不是令牌失配。58% 是「能看出壁纸颜色与纹理、文字仍清晰」的折中值。 */
   --pane-surface-alpha: 58%;
 
+  /* 面板之上浮卡的材质态令牌：material.css 覆写为 `--text` 10% 薄雾 +
+     1px 文字色环；默认回退 `--pane` / `none`，非材质态与改前一致。
+     `--surface-pane-card` 只留给直接叠在页面底上的卡（书架卡）与需保持
+     实底的只读正文块，面板上的浮卡不再消费它，避免与 58% 面板同色叠加变实。 */
+  --surface-pane-float: var(--pane);
+  --surface-pane-float-ring: none;
+
   /* 文本选区底色（::selection，见 base.css）：由品牌色派生，四主题自动跟随。
      data-theme 与 :root 同挂在 <html> 上，故此处 var(--brand) 解析到当前主题的
      --brand 值（深色 / 浅黄另有覆写，见各 [data-theme='...'] 块）。
