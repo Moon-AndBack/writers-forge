@@ -43,8 +43,8 @@
   display: none;
 }
 
-/* 组首视图切换器（势力模块「卡片 / 架构」）：分段控件沿用 32px 控件档，
-   `flex: none` 防止窄窗下被 `.tb-module-actions` 的收缩压扁；
+/* 组首视图切换器（势力模块「卡片 / 架构」）：分段控件使用标题栏独立 28px 档
+   （见下方 #33 例外），`flex: none` 防止窄窗下被 `.tb-module-actions` 的收缩压扁；
    标题栏整体可拖拽，控件本体需显式 no-drag（按钮另由 `.titlebar button` 兜底）。 */
 .tb-view-switch {
   display: inline-flex;
@@ -63,6 +63,22 @@
    的默认值 --pill-bg-solid 在 light / dark 上各差 1–2%，滑块现状
    --seg-thumb-bg 19% 亦非 --chrome-active 的 18% —— 直接换会破坏「非材质态
    零变化」。 */
+
+/* 例外：标题栏分段控件与筛选行控件统一为 28px 独立档，
+   登记见 docs/ui/design-language.md §9 #33。
+   42px 标题栏内上下各留 7px；不复用 --control-h-*（sm / md / lg 三值同为 32，
+   改值会波及全程序控件），也不新增全局档。仅在 .titlebar 作用域内命中，
+   通用组件本体与其它使用方（书架工具条 / 弹窗 / 主题面板 / 右栏页签）保持 32px。
+   28px 下的内衬 / 文字：Segmented 的 item 为 height: 100%，随容器收缩；thumb 的
+   高度与偏移由实测 item 高与 sm 档 --wf-seg-inset-y（2px）推导，得 24px 高、
+   上下各内缩 2px，选中态保持居中。SearchInput / Select 的垂直内衬为 0，
+   --fs-body / 1.4（16.8px 行高）与 15px 图标 / 18px 清除按钮均在 28px 内，
+   文字不裁切；水平内衬沿用组件默认（搜索 12 / 下拉 10）。 */
+.titlebar .tb-view-switch .wf-seg,
+.titlebar .tb-dossier-filter .wf-search,
+.titlebar .tb-dossier-filter .wf-select__trigger {
+  height: 28px;
+}
 
 /* 分组竖分隔线：横排按钮组内的竖向 1px 线（替代活动栏的横向 `.act-sep`）。 */
 .tb-sep {
@@ -222,7 +238,7 @@
 
 /* ---------- 设定五域标题栏筛选行（非编辑态） ----------
    位于动作组内、势力「卡片 / 架构」切换之后、「新建」加号之前：分类下拉 + 搜索框，
-   同一行控件统一 32px 档位（Select sm / SearchInput 均取 `--control-h-*`，当前同为 32）。
+   同一行控件统一取标题栏 28px 独立档（见上方 #33 例外；组件默认仍为 32）。
    两者 `flex: none`：`.tb-module-actions` 允许收缩，筛选控件不得被压扁（窄窗由外层
    `overflow: hidden` 裁切，沿用既有降级口径）。宽度为标题栏的固定预算：分类 132 / 搜索 160。 */
 .tb-dossier-filter {

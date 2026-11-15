@@ -125,16 +125,18 @@
 > 局部魔法值 `--cw-control-h`（违禁词弹窗）与 `--ai-ctl-h`（AI 面板）已删除：两处同行控件均走组件自身的 32px 档，不再另存高度变量。
 >
 > sm / md / lg 修饰类仍保留字号与内衬差异，高度一律 32；设置弹窗、右栏、工具条、主表单不再按档分工。
+>
+> 例外：标题栏作用域内的分段控件与筛选行控件（分类下拉 / 搜索）为 **28px** 独立档，见 §3.4 与 §9 #33；组件默认及其它使用方仍为 32px。
 
 ### 3.4 chrome 尺寸域
 
-状态栏控件 **24** / 活动栏按钮 **36** / 标题栏 **42**（px）。
+状态栏控件 **24** / 活动栏按钮 **36** / 标题栏 **42** / 标题栏内大控件 **28**（px）。
 
 chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 32 约束，高度由框架自身固定：
 
 - 状态栏：本体 36（`styles/statusbar.css:22`），内部控件 24（`styles/statusbar-widgets.css:19,81,233,242,274,297`）。
 - 活动栏：模块按钮 36×36（`styles/shell.css:368-372`）。
-- 标题栏：42（`styles/shell.css:91`）；标题栏内按钮按自身尺寸规则，不参与正文控件等高。标题栏内分段控件（势力模块「卡片 / 架构」切换）沿用 32px 图标按钮档（`components/segmented.css:20`），与同排图标按钮等高。
+- 标题栏：42（`styles/shell.css:91`）；标题栏内按钮按自身尺寸规则，不参与正文控件等高。标题栏内分段控件（势力模块「卡片 / 架构」切换）与筛选行控件（分类下拉 / 搜索）使用 **28px** 独立档（`styles/titlebar.css` 的 `.tb-view-switch .wf-seg`、`.tb-dossier-filter .wf-search` / `.wf-select__trigger`，例外 §9 #33），42px 高度内上下各留 7px；其它位置的分段控件、搜索框与下拉仍为 32px。
 
 新增 chrome 控件必须落在对应域内：不得借用控件 32 档，也不得把正文控件塞进 chrome。
 
@@ -429,6 +431,7 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 | 30  | 主题切换整窗遮罩                   | `styles/components/theme-reveal.css:45-62,76-97`                                                                                                                                                                     | `backdrop-filter: blur(12px)` + 55% `--desk-solid` tint；图标 112px                                                                                                                                       | 主题切换需在遮罩内完成原生材质与渲染层切换，并完全遮住 DWM 背板跳变                                                   | 仅 `.wf-theme-reveal`；动画期间存在，结束即移除                                                                                                              |
 | 31  | 材质态 chrome 控件薄雾底           | `styles/material.css:226-255`、`styles/theme.css:122-139`、`styles/statusbar-widgets.css:26-45`、`styles/titlebar.css:57-65`                                                                                         | 材质态 `--text` 5 / 8 / 11 / 7% 薄雾；`--chrome-active` 品牌 20%（soft 14%）；`--chrome-ring` = 1px `--text` 8%                                                                                           | 标题栏 / 状态栏原为不透明实色条，材质态会完全挡住 DWM；`--pane` 派生在浅色云母上明度差 < 1.02，需用 `--text` 反向派生 | 仅材质态（acrylic / mica）的标题栏 / 状态栏控件与 `.tb-view-switch` 段控；不含浮层、状态栏弹层（`.st-popup`）与图标本体；`none` 回退原不透明值               |
 | 32  | 材质态左右栏 / 悬浮活动栏半透明    | `styles/material.css:74-203`、`styles/theme.css:100-113`                                                                                                                                                             | `--surface-pane` = `--pane` 58%（`--pane-surface-alpha`）；栏内原先不透明的卡 / 只读块用 `--surface-pane-card`（82%，复合后约 92.4%）；面板内 5 个软底按 `--text` 同域重派生；面板阴影降为 `--panel-ring` | 让材质真正参与界面，而非只从栏缝透出；软底不重派生会把 58% 面板重新铺成实色，卡片不改则成了透明栏里的实色贴片         | 仅 `.sidepane` / `.rightpane` / 悬浮 `.activitybar` 与 light / dark `.editor-pane`；**sage / honey 中栏不在例外范围内**；固定态活动栏（#11）与所有浮层不适用 |
+| 33  | 标题栏分段 / 筛选控件 28px 档      | `styles/titlebar.css`（`.titlebar .tb-view-switch .wf-seg`、`.titlebar .tb-dossier-filter .wf-search` / `.wf-select__trigger`）                                                                                      | 三类控件外层高 28px；Segmented item 随容器 `height: 100%`，thumb 由实测 item 高与 2px 内衬推导为 24px、上下各内缩 2px；搜索框 / 下拉垂直内衬 0，12px / 1.4 行高与 15px 图标 / 18px 清除按钮均在 28px 内   | 42px 标题栏内 32px 控件偏挤，28px 上下各留 7px 更贴合；同一筛选行的分类下拉与搜索必须等高（§8.4）                     | 仅 `.titlebar` 作用域内的 `.tb-view-switch` 分段控件与 `.tb-dossier-filter` 筛选行控件；书架工具条 / 弹窗 / 主题面板 / 右栏页签等其它实例仍为 32px           |
 
 ---
 
