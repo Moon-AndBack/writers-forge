@@ -172,7 +172,16 @@
   max-height: none;
   gap: 6px;
   padding: 11px 13px;
+  /* 选中底色基准：`--surface-pane-float` 非材质态 = `--pane`（与本规则实底一致），
+     材质态 = 右栏浮卡薄雾底（与 material.css 的卡底一致）。 */
+  --card-base: var(--surface-pane-float);
   background: var(--pane);
+}
+
+/* 选中底色：本域卡底规则（0,3,0）高于通用 `.wf-card--halo.is-active`（0,2,0），
+   需以 0,4,0 同域回写；材质态由 material.css 按同一公式覆写。 */
+.rp-plot-timeline .plot-scene-card.wf-entity-card.is-active {
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--card-base));
 }
 
 .rp-plot-timeline .plot-scene-title {

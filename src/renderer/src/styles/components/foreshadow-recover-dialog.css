@@ -1,6 +1,7 @@
 /* ---------- ForeshadowRecoverDialog（「回收伏笔」弹窗） ----------
    复用全局 Modal / FormField / SearchInput / Textarea / Tag；
-   列表行沿用通用光晕卡 `.wf-card--halo`（hover / 选中仅描边 + 外发光，无 transform，AGENTS §8）。
+   列表行沿用通用光晕卡 `.wf-card--halo`（hover 为描边环 + 外发光；选中为
+   品牌底 + 标题色 + 外发光，无 transform，AGENTS §8）。
    样式自包含，随组件一同加载。 */
 .foreshadow-recover-dialog {
   display: flex;
@@ -62,6 +63,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 选中行标题转品牌色（与实体卡 `.wf-entity-card__title` 同口径）：本行标题是
+   独立类名，不命中 surface.css 的实体卡标题规则。 */
+.foreshadow-recover-item.is-active .foreshadow-recover-item__title {
+  color: var(--brand);
 }
 
 /* 空态 / 搜索无结果 / 加载中 / 加载失败：列表区域内的说明文字。 */

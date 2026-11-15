@@ -183,16 +183,13 @@
   outline-offset: 2px;
 }
 
-/* 选中态：与两个实心按钮「一眼可分」——采用「整卡 2px 描边环 + 外发光 + 轻微品牌底」
-   的大范围视觉语言，而按钮是 26×26 的小圆实心，形态 / 强度均明显不同。
-   环色刻意比 --brand 压暗一档（color-mix 混入 #000）：light / dark 下 --brand 与编辑按钮
-   同系，若直接用 var(--brand) 会与按钮完全同色、无法满足「选中环 / 编辑底 / 删除底 三者
-   两两不同」的验收；压暗后仍属品牌色系，但 RGB 与按钮拉开。
-   外发光取 --brand 半透明，提供 hover 之外的「更强、更大范围」光晕。 */
+/* 选中态：底色按统一比例（`--select-tint`）混入卡底 + 封面左下角勾选徽标，
+   不再以描边环承载选中（AGENTS §8.5）；外发光取 --brand 半透明，提供 hover
+   之外的「更大范围」光晕。混 `--pane` 而非卡底的 `--soft-solid`：卡底与 `--pane`
+   仅差 6% 文字色，混 `--pane` 的底色差更清楚。 */
 .book-card.is-selected {
-  background: color-mix(in srgb, var(--brand) 5%, var(--pane));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane));
   box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--brand) 72%, #000),
     0 10px 26px -10px color-mix(in srgb, var(--brand) 62%, transparent),
     var(--sh-sm);
 }
@@ -284,6 +281,35 @@
 
 .book-status.wf-badge--warn {
   background: #9d5d00;
+}
+
+/* 选中勾选徽标：封面左下角的品牌圆 + 白色勾，仅 `.is-selected` 时显示。
+   左上被状态胶囊、右上被操作组占用，左下是唯一空闲角；封面底部暗角
+   （`.book-cover::after`）正好托住白勾。选中语义已由卡片 `aria-pressed`
+   表达，徽标为纯视觉辅助（`aria-hidden`）。
+   例外（§9 #8）：18×18 与图标 11 为封面覆盖物小档，不属控件 / 字号体系；
+   白勾为品牌底上的固定前景色，四主题下对比恒优（同 #12 口径）。 */
+.book-check {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 2;
+  display: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--r-pill);
+  color: #fff;
+  background: var(--brand);
+}
+
+.book-card.is-selected .book-check {
+  display: grid;
+}
+
+.book-check > svg {
+  width: 11px;
+  height: 11px;
 }
 
 /* 封面右上角操作组：编辑 + 删除两个 IconButton 并排（编辑在左），

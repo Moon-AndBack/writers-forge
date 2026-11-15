@@ -8,6 +8,7 @@
    变量，逐字取自 theme.css 同主题令牌），不随当前文档主题变化
    （sage 弹窗下也能预览 light / honey 的样子）。
    描边 / 阴影选中态使用 color-mix(... transparent)，符合项目卡片约定。
+   选中态改用「外发光 + 右上勾选徽标」，不以描边环承载；hover / 焦点仍用描边环。
    ============================================================ */
 
 /* 按钮包裹层：浮层定位锚点。标题栏整体 -webkit-app-region: drag，
@@ -133,15 +134,43 @@
   outline-offset: 1px;
 }
 
-/* 选中态：品牌色描边（沿用原选中风格，color-mix 仅用于描边 / 阴影）。
-   追加 :hover 选择器，确保 hover 时仍保留选中描边环（优先级高于上方 hover 光晕）。 */
+/* 选中态：不再用 1px 内环（环只保留给 hover 与 `:focus-visible`），改为保留
+   外发光 + 右上角勾选徽标（见下）。追加 :hover 选择器：hover 选中卡时同样
+   只保留这份光晕、不叠加 hover 的 1px 环，避免「hover 比选中更显眼」。 */
 .ts-option.is-selected,
 .ts-option.is-selected:hover:not(:disabled) {
-  border-color: var(--brand);
-  box-shadow: inset 0 0 0 1px var(--brand);
+  box-shadow:
+    0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent),
+    var(--sh-sm),
+    var(--panel-ring);
 }
 
-/* 选中态右上角勾选标记规则已移除：选中语义仅由上方品牌色描边承载。 */
+/* 选中勾选徽标：卡面右上角 16px 品牌圆 + 白色勾，仅 `is-selected` 显示。
+   选中语义由按钮 `aria-pressed` 表达，徽标为纯视觉辅助（`aria-hidden`）。
+   例外（§9 #8）：16px / 图标 10px 为状态徽标小档，不属控件 / 字号体系；
+   白勾为品牌底上的固定前景色，四主题下对比恒优（同 #12 口径）。 */
+.ts-option-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  display: none;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--r-pill);
+  color: #fff;
+  background: var(--brand);
+}
+
+.ts-option.is-selected .ts-option-check {
+  display: grid;
+}
+
+.ts-option-check > svg {
+  width: 10px;
+  height: 10px;
+}
 
 /* ------------------------------------------------------------------
    主题缩影：卡面从「桌面渐变纯色块」改为「应用界面三栏缩影」

@@ -1,4 +1,6 @@
+import { createElement } from 'react'
 import type { ReactElement } from 'react'
+import { Check } from 'lucide'
 
 /**
  * 共享标题栏操作图标（保存 / 撤销 / 重做 / 搜索 / 回收站 / 还原，stroke 1.9，随 currentColor 着色）。
@@ -429,6 +431,28 @@ export function ImageIcon(): ReactElement {
       <rect x="3" y="4" width="18" height="16" rx="2.5" />
       <circle cx="8.5" cy="9.5" r="1.6" />
       <path d="m4 17 4.5-4.5 3.5 3.5 3-3L20 17" />
+    </svg>
+  )
+}
+
+/* ---------- 状态标记 ---------- */
+
+/**
+ * 勾选（Lucide `Check` 的 `IconNode` 数据源，不另画路径）：用于卡片选中徽标。
+ * 笔画取 3——按 24 视口换算，10–11px 下有效笔画约 1.3px，小尺寸仍清晰不糊。
+ */
+export function CheckIcon(): ReactElement {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {Check.map(([tag, attrs], index) => createElement(tag, { key: `${tag}-${index}`, ...attrs }))}
     </svg>
   )
 }

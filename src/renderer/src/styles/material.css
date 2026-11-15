@@ -272,14 +272,15 @@
     var(--panel-ring);
 }
 
-/* 剧情卡选中态：`.wf-card--halo.is-active`（0,3,0）同样会被基础阴影压掉，
-   按 `surface.css` 原值恢复 2px 品牌 30% 环 + 26px 品牌 55% 外发光。 */
+/* 剧情卡选中态：`.wf-card--halo.is-active`（0,2,0）的底色与外发光会被上方
+   基础卡底（0,6,0）压掉，材质态同步选中信号（品牌底 + 26px 外发光），
+   避免把 surface.css 已删除的 2px 环加回来。 */
 :root:is([data-material='acrylic'], [data-material='mica'])
   .rightpane
   .rp-plot-timeline
   .plot-scene-card.wf-entity-card.is-active {
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--surface-pane-float));
   box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--brand) 30%, transparent),
     0 0 26px -8px color-mix(in srgb, var(--brand) 55%, transparent),
     var(--sh-sm),
     var(--panel-ring);
@@ -426,10 +427,11 @@
   background: var(--surface-pane-card);
 }
 
-/* 选中态在页面 CSS 是 --brand 5% 混 --pane（不透明）；此处同比例混入半透明卡底，
-   复合不透明度 5% + 95% × 58% ≈ 60.1%，仍略高于普通卡 58%，选中仍可辨。 */
+/* 选中态在页面 CSS 是 --brand 按 --select-tint 混 --pane（不透明）；此处同比例混入
+   半透明卡底：light / dark / sage 18% + 82% × 58% ≈ 65.6%、honey 24% ≈ 68.9%，
+   均高于普通卡 58%，选中仍可辨。 */
 :root:is([data-material='acrylic'], [data-material='mica']) .bookshelf-view .book-card.is-selected {
-  background: color-mix(in srgb, var(--brand) 5%, var(--surface-pane-card));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--surface-pane-card));
 }
 
 /* 书籍卡内的分类标签：`.chip-pill` 的兜底底是 `--text` 14%（--chip-mix）混

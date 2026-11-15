@@ -65,7 +65,8 @@
    通用卡 hover 态：常态中性（口径同书籍卡常态），仅移入显边缘光晕、
    移出即消（描边环 + 外发光，口径同书籍卡 hover）；
    剧情卡（PlotTimeline / TimelineView）挂载此类与系统其他卡一致；
-   选中更强档（2px 环 + 更强外发光）。均无 transform，仅颜色 / 描边 / 阴影过渡。 */
+   选中改为「品牌底色 + 品牌标题 + 更强外发光」，不再用描边环（§8.5）。
+   均无 transform，仅颜色 / 描边 / 阴影过渡。 */
 .wf-card--halo {
   min-height: 120px;
   max-height: 240px;
@@ -80,12 +81,24 @@
     var(--panel-ring);
 }
 
+/* 选中：底色 = `--brand` 按 `--select-tint` 混入卡片自身底色（`--card-base` 默认
+   `--soft-solid`；右栏 `--pane` 系卡由域内规则覆写），标题转 `--brand`；
+   外发光加强、去掉 2px 环。hover 时本规则（同为 0,2,0、后声明）压住上方 hover
+   光晕，不会在品牌底上叠第二层品牌色（§8.5）。 */
 .wf-card--halo.is-active {
+  background: color-mix(
+    in srgb,
+    var(--brand) var(--select-tint),
+    var(--card-base, var(--soft-solid))
+  );
   box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--brand) 30%, transparent),
     0 0 26px -8px color-mix(in srgb, var(--brand) 55%, transparent),
     var(--sh-sm),
     var(--panel-ring);
+}
+
+.wf-card--halo.is-active .wf-entity-card__title {
+  color: var(--brand);
 }
 
 .wf-card__head {

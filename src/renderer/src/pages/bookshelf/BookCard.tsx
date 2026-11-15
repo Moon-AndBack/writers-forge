@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { KeyboardEvent, MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/cn'
+import { CheckIcon } from '../../components/icons'
 import { Badge, IconButton, Progress, Tag } from '../../components/ui'
 import type { BadgeTone } from '../../components/ui'
 import { getCoverGradient } from './bookMeta'
@@ -211,6 +212,10 @@ export function BookCard({
             <TrashIcon />
           </IconButton>
         </div>
+        {/* 选中勾选徽标（纯视觉辅助）：选中语义由整卡 aria-pressed 表达。 */}
+        <span className="book-check" aria-hidden="true">
+          <CheckIcon />
+        </span>
       </div>
 
       <div className="book-body">

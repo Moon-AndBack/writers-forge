@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MorphIcon } from 'morphicons/react'
+import { CheckIcon } from '../components/icons'
 import { IconButton, Segmented, Switch } from '../components/ui'
 import { THEME_ICONS } from '../theme/themeIcons'
 import type { ResolvedThemeId, ThemeId } from '../theme/themes'
@@ -179,6 +180,10 @@ export default function ThemeSwitcherPopover() {
                       <span className="ts-mini-line" />
                       <span className="ts-mini-line ts-mini-line--short" />
                     </span>
+                  </span>
+                  {/* 选中勾选徽标（纯视觉辅助）：选中语义由 aria-pressed 表达。 */}
+                  <span className="ts-option-check" aria-hidden="true">
+                    <CheckIcon />
                   </span>
                 </button>
               )
