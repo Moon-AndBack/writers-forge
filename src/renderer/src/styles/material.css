@@ -2,14 +2,15 @@
    窗口材质（亚克力 / 云母）—— 桌面底色覆盖
    ------------------------------------------------------------------
    开启时 `.shell` 从「3 层光斑 + 线性渐变」（dark 为斜切色带，见 shell.css）
-   切换为透明底：acrylic 经 `--desk-solid` 保留 50% 不透明度的纯色 scrim；
+   切换为透明底：acrylic 经 `--desk-solid` 保留 35% 不透明度的纯色 scrim；
    mica 不叠任何 scrim，直接透出 DWM 材质（采样桌面壁纸，不模糊）。
-   面板 / 侧栏 / 编辑区仍用不透明 --pane，内容保持可读。
+   面板 / 侧栏 / 编辑区改为半透明 `--surface-pane`（85%）；
+    弹窗 / 浮层 / Select / Tooltip；sage / honey 的中栏纸面保持不透明。
    亚克力实时模糊背后内容，两档材质共用同一套 body 透明规则。
 
    组织方式：
    - 四主题纯色底在 theme.css 提供 `--desk-solid`（light/sage/honey 取 --desk-2，
-     dark 取 #161616）；acrylic 使用 `--desk-solid-alpha`（50%），经 color-mix
+     dark 取 #161616）；acrylic 使用 `--desk-solid-alpha`（35%），经 color-mix
      派生半透明底；mica 的 `.shell` 为 transparent；
    - 根元素标记由 WindowMaterialProvider 写入实际材质名：
      亚克力 `data-material='acrylic'`、云母 `data-material='mica'`、
@@ -40,4 +41,126 @@
    挡住 DWM 材质。仅清 body / 画布底，面板等组件不受影响。 */
 :is([data-material='acrylic'], [data-material='mica']) body {
   background: transparent;
+}
+
+/* ============================================================
+   材质态表面层 —— 三栏 / 活动栏
+   ------------------------------------------------------------------
+   面板底以 --pane 为基色按 --pane-surface-alpha（85%）派生：
+   - 保留主题色相。若改用 --text 薄雾做面板底，浅色主题 + 浅色云母上
+     合成色与背景差 < 1.02，等于没有透明；
+   - 面板内的软底（L2 .pane-region / L3 .wf-card / 控件）则**反向**从
+     --text 派生薄雾：浅色主题压暗、深色主题提亮，永远朝背景反方向走。
+     否则不透明软底会把透明面板重新铺实，透明只在栏缝与内衬露出，
+     观感与改前几乎相同。
+
+   作用域只到三栏与活动栏：弹窗 / Select / Tooltip 均经 portal 挂到 body，
+   不在这些选择器内 → 底色与软底保持不透明（不会出现「整窗灾难性透明」）。
+
+   sage / honey 的中栏是护眼纸色阅读面：.editor-pane 的 --doc-surface 为
+   不透明纸色，本文件不对这两个主题覆写中栏背景；纸面作用域
+   （writer.css 的 [data-theme='sage'] .editor-pane … :is(.editor-head, …)）
+   挂在**子元素**上、特异性 (0,4,0) 且直接命中元素，会覆盖这里由
+   .editor-pane 继承下去的软底薄雾 → 纸面层级胜出（见下方注释）。
+
+   选择器特异性（不依赖导入顺序）：App.tsx 先导入 shell.css / 本文件，
+   main.tsx 末尾才导入 index.css（theme.css），→ 这里的令牌覆写统一用
+   :root:is([data-material=…]) = (0,2,0)，高于 theme.css 主题块 (0,1,0)；
+   面板块为 (0,3,0) / (0,4,0)，高于 writer.css 的 .sidepane (0,1,0) 与
+   [data-theme='dark'] .sidepane (0,2,0)。
+   ============================================================ */
+
+/* ---------- 表面令牌 ---------- */
+:root:is([data-material='acrylic'], [data-material='mica']) {
+  --surface-pane: color-mix(in srgb, var(--pane) var(--pane-surface-alpha), transparent);
+  /* 半透明面板上再压 --sh-sm 会形成「玻璃下垫黑影」，降为描边环；
+     与固定态活动栏（shell.css:357-359）同一口径。 */
+  --surface-panel-shadow: var(--panel-ring);
+}
+
+/* ---------- 三栏 ----------
+   左右栏四主题都透明；中栏只对 light / dark 透明（sage / honey 保留纸色）。 */
+:root:is([data-material='acrylic'], [data-material='mica']) :is(.sidepane, .rightpane) {
+  background: var(--surface-pane);
+  box-shadow: var(--surface-panel-shadow);
+}
+
+:root:is([data-theme='light'], [data-theme='dark'])
+  :is([data-material='acrylic'], [data-material='mica'])
+  .editor-pane {
+  background: var(--surface-pane);
+  box-shadow: var(--surface-panel-shadow);
+}
+
+/* ---------- 活动栏（悬浮态） ----------
+   body:not(.act-pinned) 排除固定态：固定态保持 55% + blur(10px) 的既有例外
+   （例外 #11，不改）。悬浮态的 .act-pill（8px 指示条）保持不透明 --pane：
+   透明后细条在壁纸上不可见。投影保留 --sh-sm：活动栏从屏幕左缘滑出，
+   本质是浮层，需要投影表达悬浮层级。 */
+:root:is([data-material='acrylic'], [data-material='mica']) body:not(.act-pinned) .activitybar {
+  background: var(--surface-pane);
+}
+
+/* ---------- 面板内软底：同域重派生 ----------
+   比例逐项对齐 theme.css 各主题的原定义（light 6/6/9/13/18、dark 5/8/11/14/19、
+   sage 6/8/11/13/18、honey 6/7/10/13/18），只把基色从 --pane 换成 transparent；
+   方向由 --text 保证（浅色压暗、深色提亮）。
+   --control-on-soft-line 不在此列：它本就由 --text + transparent 派生（不含
+   --pane），在透明软底上无需重算。 */
+:root[data-theme='light']:is([data-material='acrylic'], [data-material='mica'])
+  :is(.activitybar, .sidepane, .editor-pane, .rightpane) {
+  --soft-solid: color-mix(in srgb, var(--text) 6%, transparent);
+  --soft-hover-solid: color-mix(in srgb, var(--text) 6%, transparent);
+  --soft-press-solid: color-mix(in srgb, var(--text) 9%, transparent);
+  --control-on-soft: color-mix(in srgb, var(--text) 13%, transparent);
+  --control-on-soft-hover: color-mix(in srgb, var(--text) 18%, transparent);
+  /* 85% 面板上 --text-mute（10px 元信息）最低约 2.45–3.27:1，低于 3:1，
+     提升到 --text-dim 的观感。禁用 / 只读输入框走末尾的
+     --text-mute-weak 回退规则，不会跟着变深。 */
+  --text-mute: var(--text-dim);
+}
+
+/* 材质态面板内的禁用 / 只读文字：回退到未提升的 --text-mute-weak，
+   避免「不可用」与「可用元信息」同色（form.css 的禁用规则带 opacity: 0.6，
+   叠加后仍是全库最弱的一档文本）。占位符不在此列——空输入框里它是唯一
+   文本，随元信息一起提升是期望行为。 */
+:root:is([data-material='acrylic'], [data-material='mica'])
+  :is(.activitybar, .sidepane, .editor-pane, .rightpane)
+  :is(.wf-input, .wf-textarea):is(:disabled, :read-only, [aria-readonly='true']) {
+  color: var(--text-mute-weak);
+}
+
+:root[data-theme='dark']:is([data-material='acrylic'], [data-material='mica'])
+  :is(.activitybar, .sidepane, .editor-pane, .rightpane) {
+  --soft-solid: color-mix(in srgb, var(--text) 5%, transparent);
+  --soft-hover-solid: color-mix(in srgb, var(--text) 8%, transparent);
+  --soft-press-solid: color-mix(in srgb, var(--text) 11%, transparent);
+  --control-on-soft: color-mix(in srgb, var(--text) 14%, transparent);
+  --control-on-soft-hover: color-mix(in srgb, var(--text) 19%, transparent);
+  --text-mute: var(--text-dim);
+}
+
+/* sage / honey：中栏纸面不透明，只在左右栏与活动栏重派生。
+   纸面作用域（writer.css）在 .editor-head / .editor-scroll / .editor-foot /
+   .trash-view 上再次声明这 5 个令牌——规则直接命中子元素，元素自身声明
+   优先于从 .editor-pane 继承的值 → 纸面层级的软底胜出，中栏内不出现
+   「透明薄雾叠在实色纸面上」的混色。 */
+:root[data-theme='sage']:is([data-material='acrylic'], [data-material='mica'])
+  :is(.activitybar, .sidepane, .rightpane) {
+  --soft-solid: color-mix(in srgb, var(--text) 6%, transparent);
+  --soft-hover-solid: color-mix(in srgb, var(--text) 8%, transparent);
+  --soft-press-solid: color-mix(in srgb, var(--text) 11%, transparent);
+  --control-on-soft: color-mix(in srgb, var(--text) 13%, transparent);
+  --control-on-soft-hover: color-mix(in srgb, var(--text) 18%, transparent);
+  --text-mute: var(--text-dim);
+}
+
+:root[data-theme='honey']:is([data-material='acrylic'], [data-material='mica'])
+  :is(.activitybar, .sidepane, .rightpane) {
+  --soft-solid: color-mix(in srgb, var(--text) 6%, transparent);
+  --soft-hover-solid: color-mix(in srgb, var(--text) 7%, transparent);
+  --soft-press-solid: color-mix(in srgb, var(--text) 10%, transparent);
+  --control-on-soft: color-mix(in srgb, var(--text) 13%, transparent);
+  --control-on-soft-hover: color-mix(in srgb, var(--text) 18%, transparent);
+  --text-mute: var(--text-dim);
 }
