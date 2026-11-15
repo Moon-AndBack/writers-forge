@@ -152,6 +152,16 @@
   min-width: 0;
 }
 
+/* 胶囊沿用设定档案卡的统一规格（components/entity-card.css）：
+   Tag 提供 22 高，这里补 1px 8px 内衬 / 10px / 500 / 1.6。
+   裸 .chip-pill 不自带尺寸，漏了会退回 12px 正文、零内衬。 */
+.wf-entity-detail__chips .wf-tag {
+  padding: 1px 8px;
+  font-size: var(--fs-micro);
+  font-weight: 500;
+  line-height: 1.6;
+}
+
 /* 品阶 / 档位：两列（标签 | 值）紧凑网格，仅物品且非空时渲染。 */
 .wf-entity-detail__meta {
   display: grid;

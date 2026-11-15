@@ -116,7 +116,7 @@ export function EntityReadonlyDetail({
         <span className="wf-entity-detail__title">{name === '' ? tDossier('unnamed') : name}</span>
         <Tag
           tone="neutral"
-          className={`wf-entity-detail__type ${entityChipClass(row.entityType, '')}`}
+          className={`wf-entity-detail__type chip-pill ${entityChipClass(row.entityType, '')}`}
         >
           {t(TYPE_LABEL_KEYS[row.entityType])}
         </Tag>
@@ -125,9 +125,12 @@ export function EntityReadonlyDetail({
       <div className="wf-entity-detail__section">
         <div className="wf-entity-detail__label">{t('detail.category')}</div>
         <div className="wf-entity-detail__chips wf-readonly-block">
-          <span className={`chip-pill ${entityChipClass(row.entityType, row.presetKey)}`}>
+          <Tag
+            tone="neutral"
+            className={`chip-pill ${entityChipClass(row.entityType, row.presetKey)}`}
+          >
             {category === '' ? tDossier('subTypeUncategorized') : category}
-          </span>
+          </Tag>
         </div>
       </div>
 
@@ -136,7 +139,11 @@ export function EntityReadonlyDetail({
           <div className="wf-entity-detail__label">{t('aliases')}</div>
           <div className="wf-entity-detail__chips wf-readonly-block">
             {row.aliases.map((alias, index) => (
-              <Tag key={`alias-${index}`} tone="neutral">
+              <Tag
+                key={`alias-${index}`}
+                tone="neutral"
+                className="dossier-card__chip dossier-card__chip--alias"
+              >
                 {alias}
               </Tag>
             ))}
@@ -159,13 +166,14 @@ export function EntityReadonlyDetail({
             aria-label={t('relations')}
           >
             {relations.items.map((item, index) => (
-              <span
+              <Tag
                 key={`relation-${index}`}
+                tone="neutral"
                 className={`chip-pill ${item.chipClass}`}
                 data-entity-id={item.peerId}
               >
                 {item.label}
-              </span>
+              </Tag>
             ))}
           </div>
         </div>
