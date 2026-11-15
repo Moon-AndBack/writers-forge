@@ -9,8 +9,9 @@
  *   底部返回栏回列表）。列表只被 `hidden`、常驻挂载，返回时**保留滚动位置**；
  * - **卡片复用**：中栏设定档案卡 `DossierCard` 的 `compact` 变体（AGENTS §9：不复制平行
  *   组件）；不传编辑 / 关系 / 删除入口，故卡片只保留「点卡进详情」的按钮语义；
- * - **筛选**：列表卡上方一张独立筛选卡（分类下拉 + 搜索），选项从已加载行提取
- *   （`buildEntitySubtypeOptions`，带域前缀）；关键词只匹配名称 / 别名 / 子类，不扫正文。
+ * - **筛选**：列表卡上方一张独立筛选卡（模块下拉 + 子类下拉 + 搜索）。模块选项从已加载
+ *   行提取（按 `DOSSIER_MODULES` 排序），子类选项只列**当前模块**下的子类且只显示纯
+ *   名称；模块为「全部模块」时子类下拉禁用。关键词只匹配名称 / 别名 / 子类，不扫正文。
  *   过滤后空分组自然隐藏，全部无命中时在列表卡内提示「没有匹配的实体」；
  * - **实体悬停**：整个总览共用一个 `useEntityHover` + 一个 `HoverCard`。关系胶囊经
  *   `showFor` 显式锚定，详情正文经根容器事件委托定位 `span[data-entity-id]`；
@@ -31,6 +32,7 @@ import { useEntityHover } from '../entities/useEntityHover'
 import { EntityReadonlyDetail } from './EntityReadonlyDetail'
 import { ReadonlyOverviewList } from './ReadonlyOverviewList'
 import {
+  buildEntityModuleOptions,
   buildEntitySubtypeOptions,
   filterBookEntityRows,
   groupBookEntities,
@@ -45,8 +47,8 @@ export interface EntitiesOverviewPanelProps {
   active: boolean
 }
 
-/** 分类下拉「全部」哨兵值：真实分类 value 均含 `:`，不会撞车。 */
-const ALL_CATEGORY = 'all'
+/** 两个筛选下拉共用的「全部」哨兵值：真实 value 为 `entityType` / 子类名，不会撞车。 */
+const ALL_FILTER = 'all'
 
 /** 实体右栏总览（按五域分组；点卡片 → 右栏内只读详情；无编辑入口）。 */
 export function EntitiesOverviewPanel({
@@ -57,21 +59,36 @@ export function EntitiesOverviewPanel({
   // 组标题取模块名（同 `useModuleLabel` 的 `module` ns，循环内不能调用 hook）。
   const { t: tModule } = useTranslation('module')
   const { rows, total, loading, loadError, reload } = useBookEntities(bookId, active)
-  // 筛选：关键词走共享草稿（防抖 + IME），分类立即生效；两者都只喂给本面板列表。
+  // 筛选：关键词走共享草稿（防抖 + IME），两个下拉立即生效；三者都只喂给本面板列表。
   const [query, setQuery] = useState('')
-  const [category, setCategory] = useState<string | null>(null)
+  const [entityType, setEntityType] = useState<string | null>(null)
+  const [subType, setSubType] = useState<string | null>(null)
   const draft = useFilterQueryDraft(query, setQuery)
-  const categoryOptions = useMemo(
+  const moduleOptions = useMemo(
     () => [
-      { value: ALL_CATEGORY, label: t('filter.categoryAll') },
-      ...buildEntitySubtypeOptions(rows, tModule)
+      { value: ALL_FILTER, label: t('filter.moduleAll') },
+      ...buildEntityModuleOptions(rows, tModule)
     ],
     [rows, t, tModule]
   )
-  // 先过滤再分组：过滤后为空的域分组由 `groupBookEntities` 丢弃，自然隐藏。
+  // 子类选项只取当前模块：未选模块（「全部模块」）时下拉禁用，不跨域混列同名子类。
+  const subtypeOptions = useMemo(
+    () => [
+      { value: ALL_FILTER, label: t('filter.subtypeAll') },
+      ...buildEntitySubtypeOptions(rows, entityType)
+    ],
+    [rows, entityType, t]
+  )
+  // 切换模块必须重置子类：旧子类多半不属于新模块，残留会过滤出 0 条。
+  const changeModule = (value: string): void => {
+    setEntityType(value === ALL_FILTER ? null : value)
+    setSubType(null)
+  }
+  // 先过滤再分组：模块 / 子类 / 关键词取交集，过滤后为空的域分组由 `groupBookEntities`
+  // 丢弃，自然隐藏。
   const filteredRows = useMemo(
-    () => filterBookEntityRows(rows, query, category),
-    [rows, query, category]
+    () => filterBookEntityRows(rows, query, entityType, subType),
+    [rows, query, entityType, subType]
   )
   const groups = useMemo(() => groupBookEntities(filteredRows), [filteredRows])
   const { selectedRow, listHidden, select, back } = useReadonlyOverviewSelection(rows)
@@ -87,15 +104,23 @@ export function EntitiesOverviewPanel({
     <>
       <div className="rp-panel">
         {/* 筛选卡：与剧情页签同款独立软底卡；进详情或整本书无实体时不渲染，
-            查询词 / 分类留在 state，返回列表时恢复。 */}
+            查询词 / 模块 / 子类留在 state，返回列表时恢复。 */}
         {listHidden || total === 0 ? null : (
           <div className="pane-region rp-card rp-entity-filters on-soft">
             <Select
               size="sm"
-              value={category ?? ALL_CATEGORY}
-              onChange={(value) => setCategory(value === ALL_CATEGORY ? null : value)}
-              options={categoryOptions}
-              ariaLabel={t('filter.categoryAria')}
+              value={entityType ?? ALL_FILTER}
+              onChange={changeModule}
+              options={moduleOptions}
+              ariaLabel={t('filter.moduleAria')}
+            />
+            <Select
+              size="sm"
+              value={subType ?? ALL_FILTER}
+              onChange={(value) => setSubType(value === ALL_FILTER ? null : value)}
+              options={subtypeOptions}
+              disabled={entityType === null}
+              ariaLabel={t('filter.subtypeAria')}
             />
             <SearchInput
               value={draft.value}

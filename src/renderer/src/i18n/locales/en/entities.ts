@@ -25,8 +25,10 @@ const entities = {
   filter: {
     searchPlaceholder: 'Search name, alias, or category',
     searchAria: 'Search entities',
-    categoryAll: 'All categories',
-    categoryAria: 'Filter by category',
+    moduleAll: 'All modules',
+    moduleAria: 'Filter by module',
+    subtypeAll: 'All subtypes',
+    subtypeAria: 'Filter by subtype',
     noMatch: 'No matching entities'
   },
   detail: {

@@ -15,8 +15,9 @@
  *   `reload()` 供失败态重试；
  * - **不接 `entities:revision`**：关系增删不 touch 实体 `revision`，用它做判重短路会漏刷新；
  *   沿用「每次激活都重拉」；
- * - **筛选**：`buildEntitySubtypeOptions` 从已加载行提取分类下拉（带域前缀），
- *   `filterBookEntityRows` 按名称 / 别名 / 子类过滤，均不额外发 IPC。
+ * - **筛选**：`buildEntityModuleOptions` / `buildEntitySubtypeOptions` 从已加载行提取
+ *   模块与子类两个下拉（子类只列当前模块，选项只显示纯名称）；`filterBookEntityRows`
+ *   按模块 / 子类 / 关键词（名称 / 别名 / 子类）取交集，均不额外发 IPC。
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DOSSIER_MODULES, MODULE_ENTITY_TYPE } from '../../../shell/activityBarModules'
@@ -60,54 +61,75 @@ export interface BookEntities {
   reload: () => void
 }
 
-/** 实体分类下拉的一项：`value` 为 `${entityType}:${subType}`，跨域唯一。 */
+/** 模块下拉的一项：`value` 为数据层 `entityType`（如 `character`），`label` 为模块名。 */
+export interface BookEntityModuleOption {
+  value: string
+  label: string
+}
+
+/**
+ * 从已加载的实体行提取模块下拉选项：按 `DOSSIER_MODULES` 顺序遍历，只保留实际出现过的
+ * 实体类型（同域多行只留一项）；模块名由调用方注入 `module` ns 的翻译函数——纯函数
+ * 不持有 i18n 实例，词典仍以 zh-CN 为真源。
+ */
+export function buildEntityModuleOptions(
+  rows: readonly DossierRow[],
+  moduleLabel: (module: DossierModule) => string
+): BookEntityModuleOption[] {
+  const present = new Set<string>(rows.map((row) => row.entityType))
+  const options: BookEntityModuleOption[] = []
+  for (const module of DOSSIER_MODULES) {
+    const entityType = MODULE_ENTITY_TYPE[module]
+    if (!present.has(entityType)) continue
+    options.push({ value: entityType, label: moduleLabel(module) })
+  }
+  return options
+}
+
+/** 子类下拉的一项：`value` 与 `label` 均为子类名（域上下文由模块下拉承担）。 */
 export interface BookEntitySubtypeOption {
   value: string
   label: string
 }
 
 /**
- * 从已加载的实体行提取分类下拉选项：按 `DOSSIER_MODULES` 顺序遍历（各域内保持后端
- * 行序），`entityType + subType` 去重；未分类（`subType` 为空）不生成选项。
- *
- * `value` 带域前缀（如 `character:主角`），避免「主角」等多域重名子类无法区分；
- * `label` 取「模块名 · 子类名」，模块名由调用方注入 `module` ns 的翻译函数——
- * 纯函数不持有 i18n 实例，词典仍以 zh-CN 为真源。
+ * 从已加载的实体行提取**指定模块**下的子类下拉选项：按后端行序去重，只显示纯子类名，
+ * 不再拼模块前缀（模块已由另一个下拉选定）；`entityType` 为 `null`（全部模块）时返回
+ * 空数组——跨域同名子类会混淆。未分类（`subType` 为空）不生成选项。
  */
 export function buildEntitySubtypeOptions(
   rows: readonly DossierRow[],
-  moduleLabel: (module: DossierModule) => string
+  entityType: string | null
 ): BookEntitySubtypeOption[] {
+  if (entityType === null) return []
   const seen = new Set<string>()
   const options: BookEntitySubtypeOption[] = []
-  for (const module of DOSSIER_MODULES) {
-    const entityType = MODULE_ENTITY_TYPE[module]
-    for (const row of rows) {
-      if (row.entityType !== entityType) continue
-      const subType = row.subType.trim()
-      if (subType === '') continue
-      const value = `${entityType}:${subType}`
-      if (seen.has(value)) continue
-      seen.add(value)
-      options.push({ value, label: `${moduleLabel(module)} · ${subType}` })
-    }
+  for (const row of rows) {
+    if (row.entityType !== entityType) continue
+    const subType = row.subType.trim()
+    if (subType === '' || seen.has(subType)) continue
+    seen.add(subType)
+    options.push({ value: subType, label: subType })
   }
   return options
 }
 
 /**
- * 按筛选条件过滤实体行：关键词匹配名称 / 别名 / 子类（大小写不敏感、`trim`，
- * 不扫正文——沿用设定模块「不扫正文」口径）；`category` 为 `null` 时不过滤。
+ * 按筛选条件过滤实体行：模块、子类、关键词三者取交集；关键词匹配名称 / 别名 / 子类
+ * （大小写不敏感、`trim`，不扫正文——沿用设定模块「不扫正文」口径）。`entityType` /
+ * `subType` 为 `null` 时对应维度不过滤。
  */
 export function filterBookEntityRows(
   rows: readonly DossierRow[],
   query: string,
-  category: string | null
+  entityType: string | null,
+  subType: string | null
 ): DossierRow[] {
   const keyword = query.trim().toLowerCase()
-  if (keyword === '' && category === null) return [...rows]
+  if (keyword === '' && entityType === null && subType === null) return [...rows]
   return rows.filter((row) => {
-    if (category !== null && `${row.entityType}:${row.subType}` !== category) return false
+    if (entityType !== null && row.entityType !== entityType) return false
+    if (subType !== null && row.subType.trim() !== subType) return false
     if (keyword === '') return true
     return (
       row.name.toLowerCase().includes(keyword) ||

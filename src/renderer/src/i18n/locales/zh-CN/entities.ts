@@ -25,12 +25,14 @@ const entities = {
   overview: {
     empty: '这本书还没有任何设定条目'
   },
-  /** 右栏「实体」页签的筛选卡（分类下拉 + 搜索）。 */
+  /** 右栏「实体」页签的筛选卡（模块下拉 + 子类下拉 + 搜索）。 */
   filter: {
     searchPlaceholder: '搜索名称、别名或类别',
     searchAria: '搜索实体',
-    categoryAll: '全部分类',
-    categoryAria: '按分类筛选',
+    moduleAll: '全部模块',
+    moduleAria: '按模块筛选',
+    subtypeAll: '全部子类',
+    subtypeAria: '按子类筛选',
     noMatch: '没有匹配的实体'
   },
   /** 右栏「实体」页签的只读详情（列表 → 详情两级视图的第二级）。 */
