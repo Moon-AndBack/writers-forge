@@ -210,6 +210,17 @@
   white-space: nowrap;
 }
 
+/* 中文标签在列宽内两端对齐：`dt` 已是 `max-content` 列宽（各格等宽），短标签
+   （「类型」「品阶」两字）用 `text-align-last: justify` 按字拉开，右缘与四字的
+   「首次登场」齐平，形成中式表单的分散对齐观感。
+   仅中文生效：`<html lang>` 由 `index.html` 首帧写 `zh-CN`、`LocaleProvider` 运行期
+   校正为实际档位，故用前缀匹配兼容 `zh` / `zh-CN`。英文必须排除，否则 "Grade"
+   会被拉成 "G r a d e"；英文档位下本规则不命中，标签保持左对齐。 */
+:root[lang^='zh'] .wf-entity-detail__label {
+  text-align: justify;
+  text-align-last: justify;
+}
+
 /* 胶囊行：平铺 + 换行（详情空间足够，不做卡片的单行收口）。 */
 .wf-entity-detail__chips {
   display: flex;
