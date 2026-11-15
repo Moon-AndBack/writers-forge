@@ -74,9 +74,9 @@
 /* ---------- 表面令牌 ---------- */
 :root:is([data-material='acrylic'], [data-material='mica']) {
   --surface-pane: color-mix(in srgb, var(--pane) var(--pane-surface-alpha), transparent);
-  /* 直接叠在页面底上的卡（书架书籍卡）：--pane 58%，见文件末尾书架页段。
-     面板之上的卡不用本令牌——与 58% 面板同色再叠一层会复合成 83.4% 实色，
-     改由下方 --surface-pane-float 的文字薄雾承担。 */
+  /* 直接叠在页面底上的卡（书架书籍卡 / 欢迎页引导卡）：--pane 58%，见文件末尾
+     书架页段。面板之上的卡不用本令牌——与 58% 面板同色再叠一层会复合成 83.4%
+     实色，改由下方 --surface-pane-float 的文字薄雾承担。 */
   --surface-pane-card: color-mix(in srgb, var(--pane) 58%, transparent);
   /* 面板之上的浮卡：用文字色反向薄雾（浅色压暗、深色提亮），避免与面板同色叠加。
      叠在 58% 面板 + --text 6% 容器软底上复合约 64.5%，壁纸贡献 26.6%（亚克力）/
@@ -125,12 +125,13 @@
    比例逐项对齐 theme.css 各主题的原定义（light 6/6/9/13/18、dark 5/8/11/14/19、
    sage 6/8/11/13/18、honey 6/7/10/13/18），只把基色从 --pane 换成 transparent；
    方向由 --text 保证（浅色压暗、深色提亮）。
-   `.bookshelf-view` 直接落在窗口材质上（无面板底），同样需要重派生：卡内标签 /
-   进度轨道 / 空态次级按钮才会跟着透，而不是在半透明卡上重新铺实。
+   `.bookshelf-view` / `.wf-welcome` 直接落在窗口材质上（无面板底），同样需要
+   重派生：卡内标签 / 进度轨道 / 空态次级按钮 / 欢迎页笔名输入框才会跟着透，
+   而不是在半透明卡上重新铺实。
    --control-on-soft-line 不在此列：它本就由 --text + transparent 派生（不含
    --pane），在透明软底上无需重算。 */
 :root[data-theme='light']:is([data-material='acrylic'], [data-material='mica'])
-  :is(.activitybar, .sidepane, .editor-pane, .rightpane, .bookshelf-view) {
+  :is(.activitybar, .sidepane, .editor-pane, .rightpane, .bookshelf-view, .wf-welcome) {
   --soft-solid: color-mix(in srgb, var(--text) 6%, transparent);
   --soft-hover-solid: color-mix(in srgb, var(--text) 6%, transparent);
   --soft-press-solid: color-mix(in srgb, var(--text) 9%, transparent);
@@ -154,7 +155,7 @@
 }
 
 :root[data-theme='dark']:is([data-material='acrylic'], [data-material='mica'])
-  :is(.activitybar, .sidepane, .editor-pane, .rightpane, .bookshelf-view) {
+  :is(.activitybar, .sidepane, .editor-pane, .rightpane, .bookshelf-view, .wf-welcome) {
   --soft-solid: color-mix(in srgb, var(--text) 5%, transparent);
   --soft-hover-solid: color-mix(in srgb, var(--text) 8%, transparent);
   --soft-press-solid: color-mix(in srgb, var(--text) 11%, transparent);
@@ -163,8 +164,8 @@
   --text-mute: var(--text-dim);
 }
 
-/* sage / honey：章节 / 大纲的中栏纸色不透明，只在左右栏、活动栏、书架页与
-   中栏的非纸面模块重派生（纸面模块由 writer.css 在子元素上自行重派生）。
+/* sage / honey：章节 / 大纲的中栏纸色不透明，只在左右栏、活动栏、书架页、
+   欢迎页与中栏的非纸面模块重派生（纸面模块由 writer.css 在子元素上自行重派生）。
    纸面作用域（writer.css）在 .editor-head / .editor-scroll / .editor-foot /
    .trash-view 上再次声明这 5 个令牌——规则直接命中子元素，元素自身声明
    优先于从 .editor-pane 继承的值 → 纸面层级的软底胜出，中栏内不出现
@@ -175,6 +176,7 @@
     .sidepane,
     .rightpane,
     .bookshelf-view,
+    .wf-welcome,
     .editor-pane:not([data-module='chapters']):not([data-module='outline'])
   ) {
   --soft-solid: color-mix(in srgb, var(--text) 6%, transparent);
@@ -191,6 +193,7 @@
     .sidepane,
     .rightpane,
     .bookshelf-view,
+    .wf-welcome,
     .editor-pane:not([data-module='chapters']):not([data-module='outline'])
   ) {
   --soft-solid: color-mix(in srgb, var(--text) 6%, transparent);

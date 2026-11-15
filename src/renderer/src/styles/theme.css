@@ -114,8 +114,9 @@
 
   /* 面板之上浮卡的材质态令牌：material.css 覆写为 `--text` 10% 薄雾 +
      1px 文字色环；默认回退 `--pane` / `none`，非材质态与改前一致。
-     `--surface-pane-card` 只留给直接叠在页面底上的卡（书架卡）与需保持
-     实底的只读正文块，面板上的浮卡不再消费它，避免与 58% 面板同色叠加变实。 */
+     `--surface-pane-card` 只留给直接叠在页面底上的卡（书架卡 / 欢迎页引导卡）
+     与需保持实底的只读正文块，面板上的浮卡不再消费它，避免与 58% 面板同色
+     叠加变实。 */
   --surface-pane-float: var(--pane);
   --surface-pane-float-ring: none;
 

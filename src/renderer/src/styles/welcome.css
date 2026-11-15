@@ -4,9 +4,9 @@
    注意：本页渲染在 `.app-viewport` 内部，标题栏 / 状态栏由外壳保留，
    故此处不再绘制自绘标题栏，只负责内容区（居中卡片）。
    卡片本体复用组件库窗口框架 `Window`（.wf-window*），
-   此处仅补齐欢迎页专属的标题组 / 笔名表单 / 尺寸与不透明填充。
+   此处补齐欢迎页专属的标题组 / 笔名表单 / 尺寸，以及材质态的半透明卡底。
    颜色一律引用 styles/theme.css 令牌（含 color-mix），
-   兼容 light / dark / sage / honey 四主题；卡片填充不透明。
+   兼容 light / dark / sage / honey 四主题；非材质态卡片填充不透明。
    ============================================================ */
 
 .wf-welcome {
@@ -24,6 +24,17 @@
 .wf-window.wf-welcome__card {
   width: 440px;
   max-width: 100%;
+}
+
+/* ---------- 材质态（亚克力 / 云母）----------
+   卡片直接落在页面底（`.shell`）上：`.app-viewport` 与 `.wf-welcome` 都
+   不铺底，故与书架书籍卡同档取 `--surface-pane-card`（`--pane` 58%，严格
+   比页面底实一档）。不用 `--surface-pane-float`（`--text` 10% 薄雾）——
+   那是叠在 58% 面板之上的浮卡专用，本卡下方没有面板，薄雾会丢掉主题色相、
+   只剩 1px 环可辨。非材质态（`none`）不命中本规则，`.wf-window` 的
+   `--pane` 不透明底原样保留。 */
+:root:is([data-material='acrylic'], [data-material='mica']) .wf-window.wf-welcome__card {
+  background: var(--surface-pane-card);
 }
 
 /* ---------- 标题组（标题 + 说明）----------
