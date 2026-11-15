@@ -8,8 +8,10 @@
  *
  * 描述走 `ReadonlyRichText`（只读富文本），并通过可选 `extensions` 注入
  * `EntityHighlight`（按书匹配、打开即有内容），与伏笔模块右栏描述的实体高亮同源；
- * 实体悬停卡复用列表层传入的 `useEntityHover` 实例（整块详情挂事件委托），避免重复挂
- * 第二个 `HoverCard`。描述里的高亮与「相关实体」胶囊共用同一套悬停定位。
+ * 容器挂 `.doc-body` 复用正文排版（字号随 `--doc-zoom` 缩放 + 2em 首行缩进），域内规则见
+ * `styles/writer-foreshadow.css`。实体悬停卡复用列表层传入的 `useEntityHover` 实例（整块
+ * 详情挂事件委托），避免重复挂第二个 `HoverCard`；描述里的高亮与「相关实体」胶囊共用
+ * 同一套悬停定位。
  */
 import { useMemo } from 'react'
 import type { ReactElement } from 'react'
@@ -145,7 +147,7 @@ export function ForeshadowReadonlyDetail({
             <ReadonlyRichText
               json={descriptionJson}
               emptyText={t('detail.descriptionEmpty')}
-              className="foreshadow-detail__desc wf-readonly-block"
+              className="foreshadow-detail__desc wf-readonly-block doc-body"
               extensions={extensions}
             />
           </div>

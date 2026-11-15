@@ -1,25 +1,19 @@
 /* ============================================================
    伏笔模块：中栏卡片网格 + 右栏详情
    ------------------------------------------------------------------
-   中栏：`.foreshadow-grid` 弹性轨道多列网格（布局走通用 `.wf-card-grid`，与
-   设定档案五域共用），
-   卡 `.foreshadow-item` 五行（名称 / 描述 / 埋点位置 / 回收位置 / 相关实体；用了
-   大纲埋点再多一行「大纲埋点」）。卡片结构 / 内衬 / 阴影 / 进场动画 / 标题行由
-   通用壳 `EntityStyleCard`（`styles/components/entity-card.css`）承载，本文件只覆写
-   位置行、描述 4 行裁剪与实体胶囊等域内细节，并复用通用 `.wf-card--halo`
-   （常态中性，hover / 选中仅描边环 + 外发光），全程无位移 / 缩放，
-   transition 只过渡阴影 / 颜色（AGENTS §8）。
-   右栏：无面板头（模块标题由中栏承载），每个字段一块独立底色卡 —— 名称块 + 描述块 +
-   埋点只读块 + 回收只读块 + 底部固定保存条；删掉标题栏让出的高度由描述块吸收
-   （描述框撑满块内剩余），只读块与保存条仍按内容高度，内容超出时字段区自身滚动。
-   字段块外观走共享 `.wf-edit-block`（components/surface.css），颜色一律取 theme.css 令牌，四主题通用。
+   中栏：`.foreshadow-grid` 弹性轨道多列网格（布局走通用 `.wf-card-grid`，与设定档案五域共用）；
+   卡 `.foreshadow-item` 五行 + 可选的「大纲埋点」行。卡片结构 / 内衬 / 阴影 / 进场 / 标题行由
+   `EntityStyleCard`（components/entity-card.css）承载，本文件只覆写位置行、描述 4 行裁剪与
+   实体胶囊，并复用 `.wf-card--halo`（hover / 选中仅描边环 + 外发光，无位移 / 缩放，AGENTS §8）。
+   右栏：无面板头（模块标题由中栏承载），每个字段一块独立底色卡 —— 名称 + 描述 + 埋点 / 回收
+   只读块 + 底部固定保存条；描述块吸收剩余高度，只读块与保存条按内容高度，超出时字段区自滚。
+   字段块外观走共享 `.wf-edit-block`（components/surface.css），颜色一律取 theme.css 令牌（四主题通用）。
    ============================================================ */
 
 /* ---------- 中栏卡片网格 ---------- */
-/* 网格布局统一走通用 `.wf-card-grid`（styles/components/card-grid.css：弹性轨道
-   250~320px + 左对齐，与设定档案五域共用）。`.foreshadow-grid` 仅作伏笔模块的语义
-   钩子保留，不设宽度上限：网格吃满 `.editor-inner.is-full` 的可用宽，列数由 `auto-fit`
-   随中栏宽度增减（与五域 `.dossier-grid` 同口径）。 */
+/* 网格布局统一走通用 `.wf-card-grid`（styles/components/card-grid.css：弹性轨道 250~320px + 左对齐，
+   与设定档案五域共用）。`.foreshadow-grid` 仅作伏笔模块的语义钩子保留，不设宽度上限：网格吃满
+   `.editor-inner.is-full` 的可用宽，列数由 `auto-fit` 随中栏宽度增减（与五域 `.dossier-grid` 同口径）。 */
 
 /* ---------- 列表卡（五行：名称 / 描述 / 埋点 / 回收 / 实体） ---------- */
 /* 结构 / 内衬 / 圆角 / 柔和底 / 常态阴影 / 进场动画 / 标题行布局统一由通用壳
@@ -158,8 +152,7 @@
   padding: 12px 14px;
 }
 
-/* 只读详情容器：`__scroll` 内唯一伸缩项，把剩余高度下发给描述段
-   （编辑右栏已改用 `.wf-edit-block`，不再使用本容器）。 */
+/* 只读详情容器：`__scroll` 内唯一伸缩项，把剩余高度下发给描述段（编辑右栏改用 `.wf-edit-block`）。 */
 .foreshadow-fields {
   flex: 1 0 auto;
 }
@@ -215,10 +208,9 @@
 }
 
 /* ---------- `on-soft` 软底卡适配（右栏编辑卡为 --soft-solid） ----------
-   `.doc-body p` 默认左右各 -8px 出血 + 8px 横向内衬，在软底卡内负 margin 会贴到
-   卡片内缘、hover 底又与卡片同族而糊成一片。故：
-   - 负 margin 与横向内衬归零，顶层段落保留 2em 首行缩进，与上方标题输入框对齐；
-   - 段落 hover / focus 底改用卡内控件层令牌（弹窗字段自带底色，故只作用于 `on-soft`）。 */
+   `.doc-body p` 默认左右各 -8px 出血 + 8px 横向内衬，卡内负 margin 会贴到内缘、
+   hover 底又与卡片同族：故负 margin 与横向内衬归零（顶层段落仍保 2em 首行缩进），
+   段落 hover / focus 底改用卡内控件层令牌（弹窗字段自带底色，只作用于 `on-soft`）。 */
 .foreshadow-desc-field .doc-body .ProseMirror p {
   margin-left: 0;
   margin-right: 0;
@@ -243,8 +235,7 @@
   text-indent: 0;
 }
 
-/* 弹窗短字段变体（无 `--fill`）：补可辨边界与聚焦反馈，高度上限内自滚
-   （与通用短文本字段同口径：最小 82px / 最大 220px）。 */
+/* 弹窗短字段变体（无 `--fill`）：补可辨边界与聚焦反馈，高度上限内自滚（同通用短文本字段：82–220px）。 */
 .foreshadow-desc-field:not(.foreshadow-desc-field--fill) {
   min-height: 82px;
   max-height: 220px;
@@ -285,8 +276,7 @@
   animation: editor-placeholder-in 0.6s var(--ease) both;
 }
 
-/* 右栏无可分配余量时仍保留可用高度下限（与改造前 Textarea 的 min-height 同口径）；
-   剩余高度不足时由 `.foreshadow-panel__scroll` 接管滚动。 */
+/* 右栏无可分配余量时保留可用高度下限（同改造前 Textarea）；不足时由 `.foreshadow-panel__scroll` 滚动。 */
 .foreshadow-fields__desc .foreshadow-desc-field--fill {
   min-height: 82px;
 }
@@ -398,14 +388,10 @@
 
 /* ---------- 右栏「伏笔」页签：只读详情 ---------- */
 /* 结构复用 .foreshadow-panel / __scroll / .foreshadow-fields；本段只补详情专属排版。
-   名称行 + 状态胶囊、描述段、相关实体平铺换行、底部返回栏。
-
-   字段软底块（名称 / 描述 / 相关实体三块统一）：容器 `.foreshadow-fields.on-soft`
-   已铺 `--soft-solid` 软底，块内若用同色会糊成一片，故复用通用只读值块
-   `.wf-readonly-block`（components/surface.css：--control-on-soft 底，默认无描边，
-   + 10 / 12 内衬，JSX 侧追加类）。
-   块只裹「值」，标签（描述 / 相关实体）留在块外——与编辑态「标签在上、控件在下」
-   的层级一致；名称块的标题与状态本就是值，直接落在块内。 */
+   字段值统一复用通用只读值块 `.wf-readonly-block`（components/surface.css：--control-on-soft
+   底 + 10 / 12 内衬，默认无描边）——容器已铺 `--soft-solid` 软底，块内再用同色会糊成一片。
+   块只裹「值」，标签留在块外，与编辑态「标签在上、控件在下」一致；名称块的标题与状态本就
+   是值，直接落在块内。 */
 .foreshadow-detail__head {
   display: flex;
   align-items: flex-start;
@@ -450,16 +436,48 @@
   flex: 1 1 auto;
 }
 
-/* 描述块吃掉面板剩余高度（内容不足时撑满，不再贴内容高度）。
-   溢出走「整页滚动」：内容超高时本块按内容增高、由 `.foreshadow-panel__scroll`
-   统一滚动，故这里显式 `overflow: visible` 关掉 `.rp-read` 的内滚——
-   否则内滚会把下方三个锚点块挤到视口外且无法滚到。
-   内衬由上方字段软底块统一提供（原 `padding: 0` 撤掉，避免压掉块内衬）；
-   `min-height: 0` 撤掉 flex 项的内容下限，保证余量分配不被内容撑住。 */
+/* 描述块吃掉面板剩余高度（内容不足时撑满）。溢出走「整页滚动」：内容超高时本块
+   按内容增高、由 `.foreshadow-panel__scroll` 统一滚动，故显式 `overflow: visible`
+   关掉 `.rp-read` 的内滚（否则会把下方三个锚点块挤出视口且滚不到）；`min-height: 0`
+   撤掉 flex 项内容下限，内衬仍由上方字段软底块提供。 */
 .foreshadow-detail__desc {
   flex: 1 1 auto;
   min-height: 0;
   overflow: visible;
+}
+
+/* ---------- 只读详情：描述正文跟随正文排版 ----------
+   容器挂 `.doc-body`；`.rp-read` 基础规则把字号压回 `--fs-body`、首行缩进归零
+   （writer-right-outline.css），故按正文口径还原字号 / 行高 / 字距 / 字族。 */
+.foreshadow-detail__desc.doc-body .ProseMirror {
+  font-family: var(--doc-font);
+  font-size: calc(18px * var(--doc-zoom));
+  line-height: var(--doc-line);
+  letter-spacing: var(--doc-letter);
+}
+
+/* 软底卡适配（同灵感 / 编辑字段）：`-8px` 出血与 `8px` 横向内衬归零，顶层段落保留
+   2em 首行缩进；hover / focus 底改用卡内控件层令牌（--soft-hover-solid 与卡面同族）。 */
+.foreshadow-detail__desc.doc-body.wf-readonly-block .ProseMirror > p {
+  margin-inline: 0;
+  padding-inline: 0;
+  text-indent: 2em;
+}
+
+.foreshadow-detail__desc.doc-body.wf-readonly-block .ProseMirror > p:hover {
+  background: var(--control-on-soft-hover);
+}
+
+.foreshadow-detail__desc.doc-body.wf-readonly-block .ProseMirror > p:focus {
+  background: color-mix(in srgb, var(--brand) 8%, var(--soft-solid));
+}
+
+/* 列表 / 引用 / 表格内的段落不缩进（只顶层段落 2em）。 */
+.foreshadow-detail__desc.doc-body .ProseMirror li p,
+.foreshadow-detail__desc.doc-body .ProseMirror blockquote p,
+.foreshadow-detail__desc.doc-body .ProseMirror th p,
+.foreshadow-detail__desc.doc-body .ProseMirror td p {
+  text-indent: 0;
 }
 
 /* 相关实体：平铺 + 换行（与卡片的单行「+N」收口不同，详情空间足够时不裁内容）。 */
