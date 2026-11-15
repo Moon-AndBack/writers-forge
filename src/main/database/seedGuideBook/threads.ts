@@ -53,7 +53,10 @@ export interface SeedGuideForeshadow {
 /** 灵感示范条目。 */
 export interface SeedGuideInspiration {
   title: string
-  /** 正文：纯文本多行（灵感模块不保留富文本格式）。 */
+  /**
+   * 正文：纯文本多行。灵感正文的真源是 `content_json`，这里只播种派生摘要列；
+   * 打开时按行包成文档，首次保存后由主进程补齐富文本。
+   */
   content: string
   /** 标签：只用预置建议之一 / 之二。 */
   tags: readonly string[]

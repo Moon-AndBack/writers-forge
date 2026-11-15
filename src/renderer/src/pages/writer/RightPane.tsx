@@ -64,8 +64,8 @@ const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { curr
  *   未保存切换由 `ConfirmDialog` 两态确认）。
  * - **伏笔模块**：右栏为详情表单（名称 / 描述 / 状态 + 只读锚点 + 底部保存条；
  *   不设面板头，可编辑块吸收剩余高度；未保存切换同样两态确认）。
- * - **灵感模块**：右栏为详情表单（标题 / 纯文本正文 / 标签 + 底部保存条与删除入口；
- *   不设面板头，正文 textarea 吸收剩余高度；未保存切换同样两态确认）。
+ * - **灵感模块**：右栏为详情表单（标题 / 富文本正文 / 标签 + 底部保存条与删除入口；
+ *   不设面板头，富文本正文区吸收剩余高度；未保存切换同样两态确认）。
  * - 面板常驻，`is-active` 控制显示；宽度由 `WorkspaceLayout` 经 `--wf-right-width`
  *   下发（本栏内联 `style.width` 消费，拖拽改宽不触发本栏重渲染）；
  *   显隐由标题栏「隐藏/显示右栏」按钮的偏好驱动（`hidden` → `.is-hidden`）。
@@ -444,7 +444,7 @@ export function RightPane({
       {inspiration ? (
         <div className="rp-view is-active" data-view="inspiration">
           {/* 不设面板头（模块标题由中栏承载）：`.rp-body--no-head` 补顶部内衬，
-              正文 textarea 吸收剩余高度（见 writer-inspiration.css）。 */}
+              富文本正文区吸收剩余高度（见 writer-inspiration.css 的 `.inspiration-body`）。 */}
           <div className="rp-body rp-body--no-head">
             <InspirationPanel bundle={inspiration} />
           </div>

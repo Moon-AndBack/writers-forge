@@ -8,7 +8,8 @@
 }
 
 /* 只读「选中文字」框随宽度撑满，纵向可拉伸；不改变全局 Textarea 默认最小高度。
-   描述字段已改为富文本（`ShortRichTextField`，样式见 short-rich-field.css）。 */
+   描述字段已改为块级富文本：`ForeshadowDescriptionField` 直接装配 `RICH_TEXT_EXTENSIONS`，
+   样式见 `writer-foreshadow.css` 的 `.foreshadow-desc-field`，不再走 Textarea。 */
 .foreshadow-create-dialog .wf-textarea {
   width: 100%;
   resize: vertical;
