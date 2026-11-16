@@ -100,48 +100,91 @@ export function useOutlineDoc({ contentId, editor }: UseOutlineDocOptions): UseO
   const dirtyRef = useRef(false)
   // 最近一次保存的快照（`{contentJson, text}` JSON；避免内容未变时重复写库）
   const lastSavedRef = useRef<string | null>(null)
+  // 编辑器内**实际装载**的内容 id（读链路 setContent 完成后写入）。
+  // 与 contentIdRef 区分：后者在加载开始即指向新目标，而编辑器此时仍是旧内容。
+  const loadedContentIdRef = useRef<number | null>(null)
+  // 保存序号：每次 saveNow 递增，回包只有最新序号可生效（旧回包丢弃）。
+  const saveSeqRef = useRef(0)
+
+  // 当前编辑器内容的保存载荷与快照（保存前 / 回包后比对用，口径必须一致）。
+  const captureContent = useCallback((): {
+    contentJson: string
+    text: string
+    snapshot: string
+  } => {
+    if (!editor) return { contentJson: 'null', text: '', snapshot: 'null' }
+    const contentJson = JSON.stringify(sanitizeOutlineContent(editor.getJSON()))
+    const text = editor.state.doc.textContent
+    return { contentJson, text, snapshot: JSON.stringify({ contentJson, text }) }
+  }, [editor])
 
   const saveNow = useCallback(async (): Promise<void> => {
     const itemId = contentIdRef.current
     if (!itemId || !editor || !editor.isInitialized) return
+    // 归属守卫：编辑器里实际装载的必须就是当前正文载体；加载窗口内仍是旧内容时跳过，
+    // 避免旧内容被写到新目标、覆盖新目标原文。
+    if (loadedContentIdRef.current !== itemId) {
+      log.warn('跳过大纲保存：编辑器内容不属于当前载体', {
+        loadedContentId: loadedContentIdRef.current,
+        contentId: itemId
+      })
+      return
+    }
 
-    const contentJson = JSON.stringify(sanitizeOutlineContent(editor.getJSON()))
-    const text = editor.state.doc.textContent
-    const snapshot = JSON.stringify({ contentJson, text })
+    const { contentJson, text, snapshot } = captureContent()
     if (lastSavedRef.current !== null && snapshot === lastSavedRef.current) {
       dirtyRef.current = false
       setDirty(false)
       return
     }
 
+    // 保存序号：回包只有仍是「最新一次保存」（且归属未变）时才可生效。
+    saveSeqRef.current += 1
+    const seq = saveSeqRef.current
+    const isStale = (): boolean =>
+      saveSeqRef.current !== seq || loadedContentIdRef.current !== itemId
+    // 成功落库后的收尾：仅最新回包更新快照 / 状态；仅当编辑器当前内容仍等于刚保存的
+    // 快照时才清 dirty（保存期间的新输入必须保持脏，等待下一轮保存落库）。
+    const acceptSaved = (): void => {
+      lastSavedRef.current = snapshot
+      setLastSavedAt(new Date().toISOString())
+      setStatus('ready')
+      if (captureContent().snapshot === snapshot) {
+        dirtyRef.current = false
+        setDirty(false)
+      }
+    }
+
     setStatus('saving')
     try {
       const ok = await window.api.outline.saveContent(itemId, contentJson, text)
       if (ok) {
-        lastSavedRef.current = snapshot
-        dirtyRef.current = false
-        setDirty(false)
-        setLastSavedAt(new Date().toISOString())
-        setStatus('ready')
+        if (isStale()) {
+          log.info('丢弃过期大纲保存回包', { seq, contentId: itemId })
+          return
+        }
+        acceptSaved()
       } else {
         // 静默重试一次
         const retry = await window.api.outline.saveContent(itemId, contentJson, text)
         if (retry) {
-          lastSavedRef.current = snapshot
-          dirtyRef.current = false
-          setDirty(false)
-          setLastSavedAt(new Date().toISOString())
-          setStatus('ready')
+          if (isStale()) {
+            log.info('丢弃过期大纲保存回包（重试）', { seq, contentId: itemId })
+            return
+          }
+          acceptSaved()
         } else {
+          if (isStale()) return
           log.warn('大纲正文保存失败（含一次重试）')
           setStatus('error')
         }
       }
     } catch (error) {
+      if (isStale()) return
       log.warn('大纲正文保存异常', error)
       setStatus('error')
     }
-  }, [editor])
+  }, [editor, captureContent])
 
   // flush：切换条目 / 卸载前立即落盘（可 await）
   const flush = useCallback(async (): Promise<void> => {
@@ -161,6 +204,7 @@ export function useOutlineDoc({ contentId, editor }: UseOutlineDocOptions): UseO
     void flush()
 
     contentIdRef.current = null
+    loadedContentIdRef.current = null
     lastSavedRef.current = null
     dirtyRef.current = false
 
@@ -189,6 +233,8 @@ export function useOutlineDoc({ contentId, editor }: UseOutlineDocOptions): UseO
         const contentJson = payload?.contentJson ?? null
         const text = payload?.text ?? ''
         editor.commands.setContent(parseContentJson(contentJson), { emitUpdate: false })
+        // 内容已真正装入编辑器：此刻起才允许把编辑器内容保存到该载体。
+        loadedContentIdRef.current = contentId
         lastSavedRef.current = JSON.stringify({ contentJson, text })
         setStatus('ready')
         // 切换条目内容提交：翻转相位 → 正文区淡入（见 useContentSwap；排在同批 setState 之后）。

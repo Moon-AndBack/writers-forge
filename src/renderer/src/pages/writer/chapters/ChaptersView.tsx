@@ -213,12 +213,6 @@ export default function ChaptersView({
     return () => registerEditor(null)
   }, [editor, registerEditor])
 
-  // 只读态同步：状态切换（草稿 ↔ 定稿）时更新可编辑性；保留滚动与实体高亮 / 悬停弹窗。
-  useEffect(() => {
-    if (!editor) return
-    editor.setEditable(!isDone)
-  }, [editor, isDone])
-
   // 伏笔正文标记：切章时按 chapterId 重拉锚点（埋设点 + 回收点）并写进插件 state（不参与 useEditor 选项）。
   useForeshadowMarks(editor, chapterId, null, resolveForeshadowTargetLabel)
   // 伏笔标记悬停浮层：事件委托挂在 editor.view.dom（不碰 editorProps），切章（resetKey）即收起。
@@ -237,6 +231,13 @@ export default function ChaptersView({
     editor
   })
   useSyncFlushHandler(flushRef, flush)
+
+  // 只读态同步：定稿或正文加载中时只读（加载窗口内编辑器仍是旧章内容，可编辑会把输入
+  // 写进新目标）；保留滚动与实体高亮 / 悬停弹窗。
+  useEffect(() => {
+    if (!editor) return
+    editor.setEditable(!isDone && docStatus !== 'loading')
+  }, [editor, isDone, docStatus])
 
   // 「复制全文」：读当前 doc（含防抖窗口内未落盘改动）；空正文提示、失败回退 execCommand。
   const { copyAll, canCopy, toastNode } = useChapterCopy({

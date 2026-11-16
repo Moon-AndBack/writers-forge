@@ -67,10 +67,24 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
   const dirtyRef = useRef(false)
   // 最近一次保存的文本快照（JSON 序列化；避免 doc 变更但 texts 未变时重复写库）
   const lastSavedRef = useRef<string | null>(null)
+  // 编辑器内**实际装载**的内容 id（读链路 setContent / reload 完成后写入）。
+  // 与 chapterIdRef 区分：后者在加载开始即指向新章，而编辑器此时仍是旧章内容。
+  const loadedContentIdRef = useRef<number | null>(null)
+  // 保存序号：每次 saveNow 递增，回包只有最新序号可生效（旧回包丢弃）。
+  const saveSeqRef = useRef(0)
 
   const saveNow = useCallback(async (): Promise<void> => {
     const chapterId = chapterIdRef.current
     if (!chapterId || !editor || !editor.isInitialized) return
+    // 归属守卫：编辑器里实际装载的必须就是当前目标章；加载窗口内仍是旧章内容时跳过，
+    // 避免旧内容被写到新目标、覆盖新章原文。
+    if (loadedContentIdRef.current !== chapterId) {
+      log.warn('跳过保存：编辑器内容不属于当前章节', {
+        loadedContentId: loadedContentIdRef.current,
+        chapterId
+      })
+      return
+    }
 
     const paragraphs = docToParagraphs(editor, { withContentJson: true })
     const snapshot = JSON.stringify(paragraphs)
@@ -80,34 +94,52 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
       return
     }
 
+    // 保存序号：回包只有仍是「最新一次保存」（且归属未变）时才可生效。
+    saveSeqRef.current += 1
+    const seq = saveSeqRef.current
+    const isStale = (): boolean =>
+      saveSeqRef.current !== seq || loadedContentIdRef.current !== chapterId
+    // 成功落库后的收尾：仅最新回包更新快照 / 状态；仅当编辑器当前内容仍等于刚保存的
+    // 快照时才清 dirty（保存期间的新输入必须保持脏，等待下一轮保存落库）。
+    const acceptSaved = (): void => {
+      lastSavedRef.current = snapshot
+      setLastSavedAt(new Date().toISOString())
+      setStatus('ready')
+      if (JSON.stringify(docToParagraphs(editor, { withContentJson: true })) === snapshot) {
+        dirtyRef.current = false
+        setDirty(false)
+      }
+      // 正文已落库（快照相同会提前返回，不会走到这里）：广播首次登场失效，
+      // 主进程按内容版本增量重扫，渲染层后台重取。
+      window.dispatchEvent(new Event(FIRST_APPEARANCES_INVALIDATE_EVENT))
+    }
+
     setStatus('saving')
     try {
       const result = await window.api.chapters.saveParagraphs(chapterId, paragraphs)
       if (result.ok) {
-        lastSavedRef.current = snapshot
-        dirtyRef.current = false
-        setDirty(false)
-        setLastSavedAt(new Date().toISOString())
-        setStatus('ready')
-        // 正文已落库（快照相同会提前返回，不会走到这里）：广播首次登场失效，
-        // 主进程按内容版本增量重扫，渲染层后台重取。
-        window.dispatchEvent(new Event(FIRST_APPEARANCES_INVALIDATE_EVENT))
+        if (isStale()) {
+          log.info('丢弃过期保存回包', { seq, chapterId })
+          return
+        }
+        acceptSaved()
       } else {
         // 静默重试一次
         const retry = await window.api.chapters.saveParagraphs(chapterId, paragraphs)
         if (retry.ok) {
-          lastSavedRef.current = snapshot
-          dirtyRef.current = false
-          setDirty(false)
-          setLastSavedAt(new Date().toISOString())
-          setStatus('ready')
-          window.dispatchEvent(new Event(FIRST_APPEARANCES_INVALIDATE_EVENT))
+          if (isStale()) {
+            log.info('丢弃过期保存回包（重试）', { seq, chapterId })
+            return
+          }
+          acceptSaved()
         } else {
+          if (isStale()) return
           log.warn('段落保存失败（含一次重试）')
           setStatus('error')
         }
       }
     } catch (error) {
+      if (isStale()) return
       log.warn('段落保存异常', error)
       setStatus('error')
     }
@@ -138,6 +170,9 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
               .sort((a, b) => a.idx - b.idx)
               .map((row) => ({ text: row.text, contentJson: row.contentJson }))
           : [{ text: '', contentJson: null }]
+      // 重载即开启新一轮：更早发起的保存回包一律丢弃（避免旧快照回写 / 误清脏）。
+      saveSeqRef.current += 1
+      loadedContentIdRef.current = chapterId
       editor.commands.setContent(
         paragraphsToDocJSON(paragraphs, { withContentJson: true, schema: editor.schema }),
         { emitUpdate: false }
@@ -161,6 +196,7 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
     void flush()
 
     chapterIdRef.current = null
+    loadedContentIdRef.current = null
     lastSavedRef.current = null
     dirtyRef.current = false
 
@@ -199,6 +235,8 @@ export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
           paragraphsToDocJSON(paragraphs, { withContentJson: true, schema: editor.schema }),
           { emitUpdate: false }
         )
+        // 内容已真正装入编辑器：此刻起才允许把编辑器内容保存到该章。
+        loadedContentIdRef.current = chapterId
         lastSavedRef.current = JSON.stringify(paragraphs)
         setStatus('ready')
         // 切章内容提交：翻转相位 → 正文区淡入（见 useContentSwap；排在同批 setState 之后）。

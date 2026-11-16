@@ -161,12 +161,6 @@ export default function OutlineEditor({
     editorProps: RICH_TEXT_EDITOR_PROPS
   })
 
-  // 可编辑性同步：切换条目 / 载体缺失时更新（缺失载体 → 只读）。
-  useEffect(() => {
-    if (!editor) return
-    editor.setEditable(canEdit)
-  }, [editor, canEdit])
-
   // 伏笔正文标记：仅条目行有锚点（卷 / 分组目标传 null → 清空标记）；埋设点与回收点一并加载。
   useForeshadowMarks(editor, null, outlineItemId, resolveForeshadowTargetLabel)
   // 伏笔标记悬停浮层：事件委托挂在 editor.view.dom（不改 RICH_TEXT_EDITOR_PROPS），切条目即收起。
@@ -179,6 +173,13 @@ export default function OutlineEditor({
     editor
   })
   useSyncFlushHandler(flushRef, flush)
+
+  // 可编辑性同步：切换条目 / 载体缺失 / 正文加载中时更新（加载窗口内编辑器仍是旧条目内容，
+  // 可编辑会把输入写进新目标；缺失载体 → 只读）。
+  useEffect(() => {
+    if (!editor) return
+    editor.setEditable(canEdit && status !== 'loading')
+  }, [editor, canEdit, status])
 
   // 绑定 update：引用稳定，effect 保证只挂一次、卸载时解除。
   useEffect(() => {
