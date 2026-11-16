@@ -9,7 +9,7 @@
  *
  * 本文件**只组装通道签名**（各域入参 / 出参类型一律从 `./database` / `./outline` /
  * `./entities` / `./plot` 经 `import type` 取用），与 `index.ts` 的 `api` 对象**逐一对应**：
- * 改主进程通道须同步两侧。
+ * 该对象以 `satisfies Api` 声明，任一通道签名漂移都会在 `npm run typecheck` 报错。
  */
 
 import type {
@@ -121,7 +121,7 @@ interface SaveParagraphsResult {
 
 /**
  * preload 暴露给渲染层的全部 IPC 通道（`contextBridge.exposeInMainWorld('api', …)`）。
- * 与 `index.ts` 的 `api` 对象**逐成员对应**（`typeof api`）。
+ * `index.ts` 的 `api` 对象以 `satisfies Api` 声明，签名漂移在编译期暴露。
  */
 export interface Api {
   versions: {

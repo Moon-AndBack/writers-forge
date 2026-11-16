@@ -4,8 +4,8 @@
  * 属 `src/preload/types/` 按域拆分产物（`index.d.ts` 超 §3 的 500 行上限）。
  * **单一真源**：经 `import type` 取用，不逐字镜像（理由见 `database.d.ts` 文件头）。
  *
- * ⚠️ 窗口材质的 `'acrylic' | 'mica' | 'none'` 与标题栏覆盖选项是**渲染层唯一持有**的形状
- * （主进程按值处理、不导出该类型），故本地声明。
+ * ⚠️ 窗口材质 `WindowMaterial` **取自主进程真源**（`../../main/windowMaterial` 已导出，此处仅
+ * 转发）；标题栏覆盖选项与封面载荷是纯跨 IPC 的形状（主进程按值处理、不导出该类型），故本地声明。
  */
 
 import type {
@@ -21,6 +21,7 @@ import type {
   PlotSceneEntityRow
 } from '../../main/database/plotSceneEntities'
 import type { SnapConfig, SnapStatus } from '../../main/resizeSnap'
+import type { WindowMaterial } from '../../main/windowMaterial'
 
 export type {
   CreatePlotLineOptions,
@@ -32,11 +33,9 @@ export type {
   UpdatePlotLinePatch,
   UpdatePlotScenePatch,
   SnapConfig,
-  SnapStatus
+  SnapStatus,
+  WindowMaterial
 }
-
-/** 系统窗口材质档位：`'acrylic'` 亚克力 / `'mica'` 云母 / `'none'` 关（仅 Windows 11 22H2+）。 */
-export type WindowMaterial = 'acrylic' | 'mica' | 'none'
 
 /** 标题栏覆盖层配置（主进程 `window:titlebar:set-overlay` 入参）。 */
 export interface TitleBarOverlayOptions {

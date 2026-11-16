@@ -64,6 +64,8 @@ import type { SnapConfig, SnapStatus } from '../main/resizeSnap'
 import type { ParagraphRow } from '../main/database/paragraphs'
 import type { BookStats } from '../main/database/stats'
 import type { ImagePayload, ImageRow } from './types/images'
+import type { CoverPayload, TitleBarOverlayOptions, WindowMaterial } from './types/plot'
+import type { Api } from './types/window'
 import { worldEntityApi } from './api/worldEntity'
 import { worldSubtypeApi } from './api/worldSubtype'
 import { chipColorsApi } from './api/chipColors'
@@ -71,18 +73,6 @@ import { aiApi } from './api/ai'
 import { cleanWordsApi } from './api/cleanWords'
 import { onedriveApi } from './api/onedrive'
 import { backupApi } from './api/backup'
-
-/** 封面图读取结果：`data` 为 Uint8Array（structured clone 跨 IPC 传输形式）。 */
-export interface CoverPayload {
-  mime: string
-  data: Uint8Array
-}
-
-export interface TitleBarOverlayOptions {
-  color?: string
-  symbolColor?: string
-  height?: number
-}
 
 const api = {
   versions: {
@@ -420,7 +410,7 @@ const api = {
   },
   windowMaterial: {
     /** 切换窗口系统材质（'acrylic' / 'mica' / 'none'）；返回实际生效值（不支持时降级 'none'） */
-    set: (material: 'acrylic' | 'mica' | 'none'): Promise<'acrylic' | 'mica' | 'none' | null> =>
+    set: (material: WindowMaterial): Promise<WindowMaterial | null> =>
       ipcRenderer.invoke('window:setMaterial', material),
     /** 当前系统是否支持窗口材质（Electron 限制：仅 Windows 11 22H2+） */
     materialSupported: (): Promise<boolean> => ipcRenderer.invoke('window:materialSupported')
@@ -457,8 +447,6 @@ const api = {
       }
     }
   }
-}
-
-export type Api = typeof api
+} satisfies Api
 
 contextBridge.exposeInMainWorld('api', api)
