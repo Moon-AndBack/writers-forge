@@ -14,6 +14,7 @@ import type {
   OutlineKind,
   OutlinePurgeCounts,
   OutlineScope,
+  OutlineVolumeContentRefRow,
   OutlineVolumeRow
 } from '../../main/database/outline'
 
@@ -25,6 +26,7 @@ export type {
   OutlineKind,
   OutlinePurgeCounts,
   OutlineScope,
+  OutlineVolumeContentRefRow,
   OutlineVolumeRow
 }
 

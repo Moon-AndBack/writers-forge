@@ -41,6 +41,7 @@ import type {
   CreatePlotLineOptions,
   CreatePlotSceneInput,
   PlotLineRow,
+  PlotSceneContentRow,
   PlotSceneEntityInput,
   PlotSceneEntityRow,
   PlotSceneRow,
@@ -63,6 +64,7 @@ import type {
   OutlineContentPayload,
   OutlineItemRow,
   OutlinePurgeCounts,
+  OutlineVolumeContentRefRow,
   OutlineVolumeRow
 } from './outline'
 import type { DiagnosticsReport } from './diagnostics'
@@ -317,6 +319,9 @@ export interface Api {
     /** 按卷 id 读取该卷的卷级大纲行（`scope='volume'`，即卷纲）正文载荷；
      *  渲染层点开正文卷时经此拿到卷纲载体行 id；无卷纲行 / 已软删 / 卷不存在 → null */
     getVolumeOutline: (volumeId: number) => Promise<OutlineContentPayload | null>
+    /** 批量取全部卷纲行轻量引用（卷 id / 载体行 id / 最后编辑时间），不含正文；
+     *  供列表页一次拿齐「每卷是否有卷纲」，替代逐卷读取整份正文 */
+    listVolumeContentRefs: (bookId: string) => Promise<OutlineVolumeContentRefRow[]>
     /** 保存正文：contentJson 非空须为合法 JSON 串（主进程复验），空串/null = 清空正文；
      *  text = 调用方派生的纯文本摘要（字数统计与搜索真源）；行不存在返回 false */
     saveContent: (itemId: number, contentJson: string | null, text: string) => Promise<boolean>
@@ -337,6 +342,8 @@ export interface Api {
   plot: {
     listLines: (bookId: string) => Promise<PlotLineRow[]>
     listScenes: (bookId: string) => Promise<PlotSceneRow[]>
+    /** 按 id 读取场景正文（富文本 JSON + 派生纯文本摘要）；不存在 / 已软删 → null */
+    getSceneContent: (sceneId: number) => Promise<PlotSceneContentRow | null>
     /** 创建剧情线；name 缺省 →「新剧情线」；options 缺省取默认类型 + 首色 */
     createLine: (
       bookId: string,

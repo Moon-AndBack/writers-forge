@@ -26,12 +26,14 @@ import type {
   OutlineContentPayloadRow,
   OutlineItemRow,
   OutlinePurgeCounts,
+  OutlineVolumeContentRefRow,
   OutlineVolumeRow
 } from '../main/database/outline'
 import type {
   CreatePlotLineOptions,
   CreatePlotSceneInput,
   PlotLineRow,
+  PlotSceneContentRow,
   PlotSceneRow,
   UpdatePlotLinePatch,
   UpdatePlotScenePatch
@@ -263,6 +265,9 @@ const api = {
     /** 按卷 id 读取该卷的卷级大纲行（scope='volume'）正文载荷；无 / 已软删 / 卷不存在 → null */
     getVolumeOutline: (volumeId: number): Promise<OutlineContentPayloadRow | null> =>
       ipcRenderer.invoke('outline:getVolumeOutline', volumeId),
+    /** 批量取全部卷纲行轻量引用（卷 id / 载体行 id / 最后编辑时间），不含正文 */
+    listVolumeContentRefs: (bookId: string): Promise<OutlineVolumeContentRefRow[]> =>
+      ipcRenderer.invoke('outline:listVolumeContentRefs', bookId),
     /** 保存正文：contentJson 非空须为合法 JSON 串（主进程复验）；空串/null = 清空；行不存在返回 false */
     saveContent: (itemId: number, contentJson: string | null, text: string): Promise<boolean> =>
       ipcRenderer.invoke('outline:saveContent', itemId, contentJson, text),
@@ -288,6 +293,9 @@ const api = {
       ipcRenderer.invoke('plot:listLines', bookId),
     listScenes: (bookId: string): Promise<PlotSceneRow[]> =>
       ipcRenderer.invoke('plot:listScenes', bookId),
+    /** 按 id 读取场景正文（富文本 JSON + 派生纯文本摘要）；不存在 / 已软删 → null */
+    getSceneContent: (sceneId: number): Promise<PlotSceneContentRow | null> =>
+      ipcRenderer.invoke('plot:getSceneContent', sceneId),
     /** 创建剧情线；name 缺省 →「新剧情线」；options 缺省取默认类型 + 首色 */
     createLine: (
       bookId: string,

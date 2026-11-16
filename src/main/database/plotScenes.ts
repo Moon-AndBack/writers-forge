@@ -36,6 +36,31 @@ export function listPlotScenes(bookId: string): PlotSceneRow[] {
   return statement.all(bookId)
 }
 
+/** 场景正文载荷：`descriptionJson` = 整条块级 Tiptap JSON（`null` = 空正文）；
+ *  `description` = 由 JSON 派生的纯文本摘要；`updatedAt` = 行 `updated_at`（SQLite UTC 文本）。 */
+export interface PlotSceneContentRow {
+  id: number
+  descriptionJson: string | null
+  description: string
+  updatedAt: string
+}
+
+/**
+ * 按 id 取场景正文（**仅未软删场景**）：场景不存在 / 已软删 → null。
+ *
+ * 供大列表以「摘要行 + 按需正文」投影读取，避免 `listPlotScenes` 一次搬回全书正文 JSON；
+ * 正文列与 `PLOT_SCENE_COLUMNS` 同口径（`description_json` 恒与 `description` 同步）。
+ */
+export function getPlotSceneContent(sceneId: number): PlotSceneContentRow | null {
+  const row = getDb()
+    .prepare(
+      `SELECT id, description_json AS descriptionJson, description, updated_at AS updatedAt
+       FROM plot_scenes WHERE id = ? AND deleted_at IS NULL`
+    )
+    .get(sceneId) as PlotSceneContentRow | undefined
+  return row ?? null
+}
+
 /* ---------- 场景：写入 ---------- */
 
 /**

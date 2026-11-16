@@ -8,6 +8,7 @@ import {
   createPlotScene,
   deletePlotLine,
   deletePlotScene,
+  getPlotSceneContent,
   listPlotLines,
   listPlotScenes,
   renamePlotLine,
@@ -217,6 +218,7 @@ function sanitizeScenePatch(value: unknown): UpdatePlotScenePatch | null | undef
  * 通道 → 入参 / 出参（非法入参一律回退安全默认，不抛异常；数据层校验失败抛错原样上抛）：
  * - plot:listLines   (bookId: string)                              → PlotLineRow[]（未删除）
  * - plot:listScenes  (bookId: string)                              → PlotSceneRow[]（未删除）
+ * - plot:getSceneContent (sceneId: number)                         → PlotSceneContentRow | null（未删场景正文）
  * - plot:createLine  (bookId: string, name?: string, options?: { lineType?, lineColor? })
  *                                                                   → PlotLineRow | null（缺名 → 空串，展示层 i18n 兜底；类型 / 颜色非法 → 默认）
  * - plot:renameLine  (id: number, name: string)                   → PlotLineRow | null（name 须非空；兼容保留）
@@ -260,6 +262,11 @@ export function registerPlotIpc(): void {
   ipcMain.handle('plot:listScenes', (_event, bookId: unknown) => {
     if (typeof bookId !== 'string' || bookId === '') return []
     return listPlotScenes(bookId)
+  })
+
+  ipcMain.handle('plot:getSceneContent', (_event, sceneId: unknown) => {
+    if (!isPositiveInt(sceneId)) return null
+    return getPlotSceneContent(sceneId)
   })
 
   ipcMain.handle('plot:createLine', (_event, bookId: unknown, name: unknown, options: unknown) => {

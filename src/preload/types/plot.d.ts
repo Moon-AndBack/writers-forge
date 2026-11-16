@@ -12,6 +12,7 @@ import type {
   CreatePlotLineOptions,
   CreatePlotSceneInput,
   PlotLineRow,
+  PlotSceneContentRow,
   PlotSceneRow,
   UpdatePlotLinePatch,
   UpdatePlotScenePatch
@@ -27,6 +28,7 @@ export type {
   CreatePlotLineOptions,
   CreatePlotSceneInput,
   PlotLineRow,
+  PlotSceneContentRow,
   PlotSceneEntityInput,
   PlotSceneEntityRow,
   PlotSceneRow,

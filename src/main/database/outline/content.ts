@@ -12,7 +12,9 @@ import type { OutlineItemDbRow, OutlineItemRow } from './types'
  * - `getOutlineItem`：按行 id 取整行（条目 / 卷纲行通用）；
  * - `getOutlineContent`：按行 id 取正文载荷（`contentJson` + `text`），**条目 / 卷纲通用**
  *   （渲染层「点开条目」与「点开卷」都先拿到载体行 id 再读正文）；
- * - `getOutlineVolumeContent`：按**卷 id** 取该卷卷纲行（`scope='volume'`）正文载荷。
+ * - `getOutlineVolumeContent`：按**卷 id** 取该卷卷纲行（`scope='volume'`）正文载荷；
+ * - `listOutlineVolumeContentRefs`：按**书**取全部卷纲行的轻量引用（卷 id / 行 id / 最后编辑），
+ *   供列表页一次拿齐「每卷是否有卷纲 + 载体行 id」，不再逐卷取整份正文。
  *
  * `text` 为**完整纯文本（含标点）**：它是搜索匹配的真源（带标点的原文片段须能命中），
  * 标点只在**字数统计**口径（`countEffectiveChars`）才排除，此处**不得裁剪**。
@@ -61,6 +63,31 @@ export function getOutlineVolumeContent(volumeId: number): OutlineContentPayload
     )
     .get(volumeId) as OutlineContentPayloadRow | undefined
   return row ?? null
+}
+
+/** 卷纲载体引用：仅卷 id / 载体行 id / 最后编辑时间，**不含正文**（列表页轻量投影）。
+ *  `updatedAt` = 行 `updated_at`（SQLite UTC 文本），与 `OutlineContentPayloadRow` 同口径。 */
+export interface OutlineVolumeContentRefRow {
+  volumeId: number
+  id: number
+  updatedAt: string
+}
+
+/**
+ * 列出某书全部**未删除**卷纲行（`scope='volume'`）的轻量引用，按 `volume_id, id` 升序。
+ *
+ * 列表页据此一次拿齐「有哪些卷已有卷纲 / 载体行 id / 最后编辑时间」，
+ * 替代此前逐卷调 `getOutlineVolumeContent` 取整份正文却只用 id / updatedAt 的 N+1 读法。
+ * 无卷纲行的卷不出现在结果里（「卷是否有卷纲」仍以卷纲行是否存在为判据）。
+ */
+export function listOutlineVolumeContentRefs(bookId: string): OutlineVolumeContentRefRow[] {
+  return getDb()
+    .prepare(
+      `SELECT volume_id AS volumeId, id, updated_at AS updatedAt FROM outline_items
+       WHERE book_id = ? AND scope = 'volume' AND deleted_at IS NULL
+       ORDER BY volume_id, id`
+    )
+    .all(bookId) as OutlineVolumeContentRefRow[]
 }
 
 /**

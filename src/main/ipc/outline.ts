@@ -12,6 +12,7 @@ import {
   listDeletedOutline,
   listOutlineItems,
   listOutlineVolumes,
+  listOutlineVolumeContentRefs,
   moveOutlineItem,
   purgeAllDeletedOutline,
   purgeOutlineItem,
@@ -95,6 +96,7 @@ function isValidContentJson(value: unknown): value is string | null {
  * - outline:move           (id: number, volumeId: number)       → boolean（跨卷，移至目标卷末尾）
  * - outline:getContent     (itemId: number)                     → OutlineContentPayload | null（条目 / 卷纲通用）
  * - outline:getVolumeOutline (volumeId: number)                 → OutlineContentPayload | null（按卷 id 取卷纲行）
+ * - outline:listVolumeContentRefs (bookId: string)              → OutlineVolumeContentRefRow[]（未删卷纲行轻量引用）
  * - outline:saveContent    (itemId: number, contentJson: string | null, text: string) → boolean
  *     （contentJson 非空须为合法 JSON；行不存在 / 已软删 → false）
  * - outline:listDeleted    (bookId: string)                     → DeletedOutlineContent（软删卷 / 未删收拢卷 + 软删条目）
@@ -184,6 +186,11 @@ export function registerOutlineIpc(): void {
   ipcMain.handle('outline:getVolumeOutline', (_event, volumeId: unknown) => {
     if (!isPositiveInt(volumeId)) return null
     return getOutlineVolumeContent(volumeId)
+  })
+
+  ipcMain.handle('outline:listVolumeContentRefs', (_event, bookId: unknown) => {
+    if (typeof bookId !== 'string' || bookId === '') return []
+    return listOutlineVolumeContentRefs(bookId)
   })
 
   ipcMain.handle(

@@ -40,12 +40,13 @@ export {
   toOutlineItem
 } from './outline/types'
 
-export type { OutlineContentPayloadRow } from './outline/content'
+export type { OutlineContentPayloadRow, OutlineVolumeContentRefRow } from './outline/content'
 export {
   deriveOutlineText,
   getOutlineContent,
   getOutlineItem,
   getOutlineVolumeContent,
+  listOutlineVolumeContentRefs,
   saveOutlineContent
 } from './outline/content'
 
