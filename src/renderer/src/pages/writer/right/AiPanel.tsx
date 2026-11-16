@@ -173,9 +173,12 @@ export function AiPanel({
     t
   })
 
-  /** 编辑器派生的只读指标（选区 / 全章字数、选区文案、焦点），订阅逻辑见 `useEditorMetrics`。 */
+  /**
+   * 编辑器派生的只读指标（选区 / 全章字数、选区文案、焦点），订阅逻辑见 `useEditorMetrics`。
+   * 页签不可见时传 `active` 门控：不订阅、不统计（字数走 `readTotalChars` 的块级缓存）。
+   */
   const { selectionChars, totalChars, selectionText, selectionRange, editorFocused } =
-    useEditorMetrics(editor)
+    useEditorMetrics(editor, active)
 
   /**
    * 上下文占用估算：未压缩历史 + 已存摘要 + 输入框草稿 + 携带正文。

@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { readEditorSelection } from '../../../../components/editor/useEditorSelection'
 import type { AiConversationMessage } from './chatRuntime'
 import type { AiComposeAction } from './functions'
@@ -113,9 +114,97 @@ export function readFullText(editor: Editor | null): string {
   return doc.textBetween(0, doc.content.size, '\n\n')
 }
 
-/** 整章正文字数（与「携带全文」发送的内容同源，含段间分隔符）。 */
+/** 块分隔符（与 `readFullText` 传给 `textBetween` 的实参一致）。 */
+const PARAGRAPH_SEPARATOR = '\n\n'
+
+/** 单个顶层块的测量结果（`textBetween` 口径）。 */
+interface BlockChars {
+  /** 块内全部文本节点的字符数。 */
+  chars: number
+  /** 块内文本块数量：`textBetween` 在每个文本块前插块分隔符（首个除外）。 */
+  textBlocks: number
+}
+
+/**
+ * 顶层块字数缓存。
+ *
+ * ProseMirror 节点不可变且结构共享：未被事务触碰的块保持同一引用，故以节点对象为 key
+ * 缓存后，一次编辑只需重算被改动的块（与 `docWordLimit` 的块级缓存同一思路）。
+ */
+const blockCharsCache = new WeakMap<ProseMirrorNode, BlockChars | null>()
+
+/** 整篇 doc → 字数：同一次编辑内的多次读取（选区 / 焦点 / 重渲染）直接命中。 */
+const docCharsCache = new WeakMap<ProseMirrorNode, number>()
+
+/**
+ * 测量单个顶层块（结果缓存）。
+ *
+ * 返回 `null` 表示该块含带 `leafText` 的叶子节点（`textBetween` 会为它产出文本），
+ * 块级快路径不覆盖这种结构，由调用方回退全文统计以保证口径一致。
+ */
+function measureBlock(node: ProseMirrorNode): BlockChars | null {
+  const cached = blockCharsCache.get(node)
+  if (cached !== undefined) return cached
+
+  let chars = 0
+  let textBlocks = 0
+  let unsupported = false
+
+  const visit = (current: ProseMirrorNode): void => {
+    if (current.isText) {
+      chars += current.text?.length ?? 0
+      return
+    }
+    if (current.isTextblock) textBlocks += 1
+    if (current.isLeaf) {
+      if (current.type.spec.leafText) unsupported = true
+      return
+    }
+    current.forEach((child) => visit(child))
+  }
+  visit(node)
+
+  const measured = unsupported ? null : { chars, textBlocks }
+  blockCharsCache.set(node, measured)
+  return measured
+}
+
+/** 整篇正文字数（与 `readFullText` 同值：文本块以 `\n\n` 拼接后的字符串长度）。 */
+function measureDocChars(doc: ProseMirrorNode): number {
+  const cached = docCharsCache.get(doc)
+  if (cached !== undefined) return cached
+
+  let chars = 0
+  let textBlocks = 0
+  let unsupported = false
+  doc.forEach((node) => {
+    const measured = measureBlock(node)
+    if (measured === null) {
+      unsupported = true
+      return
+    }
+    chars += measured.chars
+    textBlocks += measured.textBlocks
+  })
+
+  // 分隔符只在第 2 个起每个文本块前各插一次 → 总数 = 文本块数 - 1。
+  const total = unsupported
+    ? doc.textBetween(0, doc.content.size, PARAGRAPH_SEPARATOR).length
+    : chars + Math.max(0, textBlocks - 1) * PARAGRAPH_SEPARATOR.length
+
+  docCharsCache.set(doc, total)
+  return total
+}
+
+/**
+ * 整章正文字数（与「携带全文」发送的内容同源，含段间分隔符）。
+ *
+ * 走整篇 / 块级两级缓存：切章、选区变化、面板重渲染都不再逐字重扫全篇，
+ * 只有正文实际改动时才重算被触碰的块。
+ */
 export function readTotalChars(editor: Editor | null): number {
-  return readFullText(editor).length
+  if (!editor || editor.isDestroyed) return 0
+  return measureDocChars(editor.state.doc)
 }
 
 /** 模型 ID → 下拉选项（展示名与 ID 一致）。 */

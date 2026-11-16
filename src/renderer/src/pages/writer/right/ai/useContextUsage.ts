@@ -13,6 +13,9 @@ import {
  *
  * - 窗口值来自主进程解析（`ai:catalog:limit`）：**按 `服务商:模型` 缓存**，同一键不重复 IPC；
  * - 已用 = 未压缩历史（含每条开销）+ 已存摘要 + 输入框草稿 + 携带的正文；
+ * - 历史消息的 token 估算按**消息对象缓存**（见 `contextBudget.estimateMessages`），
+ *   输入时只重算草稿；
+ * - 草稿按 250ms 防抖后参与估算，打字期间不逐键重算占用条；
  * - `active === false`（面板未激活）时不发 IPC、不重算，直接返回 null；
  * - 本 hook 只读估算；发送 / 拒绝 / 压缩决策在 `contextSummary.ts`。
  *
@@ -116,6 +119,29 @@ export interface UseContextUsageOptions {
   active: boolean
 }
 
+/** 草稿参与估算的防抖时长（ms）：打字停顿后再更新占用条。 */
+const DRAFT_DEBOUNCE_MS = 250
+
+/**
+ * 输入框草稿防抖（只在 `active` 时排定时器）。
+ *
+ * - 新增文字：等停顿 `DRAFT_DEBOUNCE_MS` 后再参与估算，打字期间不逐键重算；
+ * - 删减 / 清空：立即同步（文本更短、扫描更便宜），`draft === ''`（发送后清空）
+ *   当帧就按空草稿返回，避免占用条短暂沿用上一轮草稿。
+ */
+function useDebouncedDraft(draft: string, active: boolean): string {
+  const [debounced, setDebounced] = useState(draft)
+
+  useEffect(() => {
+    if (!active || draft === debounced) return undefined
+    const delay = draft.length < debounced.length ? 0 : DRAFT_DEBOUNCE_MS
+    const timer = window.setTimeout(() => setDebounced(draft), delay)
+    return () => window.clearTimeout(timer)
+  }, [active, draft, debounced])
+
+  return draft === '' ? '' : debounced
+}
+
 export function useContextUsage({
   model,
   provider,
@@ -162,6 +188,8 @@ export function useContextUsage({
   }, [active, modelKey, cacheKey, provider, cacheEpoch])
 
   const cached = modelKey === '' ? undefined : limitCache.get(cacheKey)
+  /** 参与估算的草稿：打字期间用防抖值，删减 / 清空立即生效。 */
+  const estimatedDraft = useDebouncedDraft(draft, active)
 
   return useMemo(() => {
     if (!active) return null
@@ -173,7 +201,7 @@ export function useContextUsage({
     const rawTokens =
       estimateMessages(visible) +
       estimateTokens(summaryText) +
-      estimateTokens(draft) +
+      estimateTokens(estimatedDraft) +
       estimateTokens(carryContext)
     // 展示「校准后估算」：按最近真实 usage 修正估算偏差（发送决策仍用原始估算）。
     const usedTokens = calibrateForModel(modelKey, rawTokens)
@@ -186,5 +214,5 @@ export function useContextUsage({
       matchedId: limit.matchedId,
       calibrated: usedTokens !== rawTokens
     }
-  }, [active, cached, modelKey, messages, covered, summaryText, draft, carryContext])
+  }, [active, cached, modelKey, messages, covered, summaryText, estimatedDraft, carryContext])
 }

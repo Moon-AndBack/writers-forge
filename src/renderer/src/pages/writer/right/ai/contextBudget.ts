@@ -64,11 +64,32 @@ export function estimateTokens(text: string): number {
   return Math.ceil(cjkChars + otherChars / CHARS_PER_TOKEN)
 }
 
-/** 估算消息列表的 token 数（含每条 4 tokens 开销）。 */
+/**
+ * 每条消息的估算缓存：消息对象在会话里**不可变**（改动一律新建对象，见
+ * `useAiConversation` 的 `patchMessage` / `appendDelta`），故直接用对象引用作 key。
+ *
+ * 选 `WeakMap` 而非 content 字符串表：历史消息对象在重渲染 / 流式增量时被复用
+ * （未变的消息保持同一引用），命中率足够；同时不把已删会话的长正文字符串留在内存里
+ * （没有 key 引用后条目随对象一起回收），也无需 LRU 上限。
+ * 历史重新载入 / 重建对象时按内容重算一次，代价与旧实现相同。
+ */
+const messageTokensCache = new WeakMap<object, number>()
+
+/**
+ * 估算消息列表的 token 数（含每条 4 tokens 开销）。
+ *
+ * 只对缓存未命中的消息（通常是刚追加 / 正在流式增长的那条）调用 `estimateTokens`，
+ * 历史部分直接累加缓存值——输入框每键重算占用时不再遍历全部历史正文。
+ */
 export function estimateMessages(messages: readonly { content: string }[]): number {
   let total = 0
   for (const message of messages) {
-    total += MESSAGE_OVERHEAD_TOKENS + estimateTokens(message.content)
+    let tokens = messageTokensCache.get(message)
+    if (tokens === undefined) {
+      tokens = MESSAGE_OVERHEAD_TOKENS + estimateTokens(message.content)
+      messageTokensCache.set(message, tokens)
+    }
+    total += tokens
   }
   return total
 }

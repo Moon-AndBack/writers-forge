@@ -15,6 +15,10 @@ import { readSelectionChars, readTotalChars } from './panelUtils'
  *
  * 快照取值必须引用稳定：数量是 number、选区文案是 string（按值比较），
  * 选区 range 由 `rangeRef` 复用同一对象，`getSnapshot` 返回新对象会触发无限重渲染。
+ *
+ * `active === false`（AI 页签不可见）时**不订阅**编辑器，快照返回空指标（0 / 空串 /
+ * null / false）：面板在右栏常驻但只 `hidden`，若照常订阅，Writer 层任何 state 变化
+ * （切章 / 切卷 / 切页签 / dirty 等）都会触发一次全篇字数统计。
  */
 export interface EditorMetrics {
   /** 当前选区字数（空选区 → 0）。 */
@@ -29,10 +33,11 @@ export interface EditorMetrics {
   editorFocused: boolean
 }
 
-export function useEditorMetrics(editor: Editor | null): EditorMetrics {
+export function useEditorMetrics(editor: Editor | null, active: boolean): EditorMetrics {
   const subscribeEditor = useCallback(
     (onStoreChange: () => void): (() => void) => {
-      if (!editor || editor.isDestroyed) return () => undefined
+      // 页签不可见时不订阅：编辑器的选区 / 更新事件与面板重渲染都不该驱动全篇统计。
+      if (!active || !editor || editor.isDestroyed) return () => undefined
       editor.on('selectionUpdate', onStoreChange)
       editor.on('update', onStoreChange)
       editor.on('focus', onStoreChange)
@@ -44,7 +49,7 @@ export function useEditorMetrics(editor: Editor | null): EditorMetrics {
         editor.off('blur', onStoreChange)
       }
     },
-    [editor]
+    [active, editor]
   )
 
   const rangeRef = useRef<{ from: number; to: number } | null>(null)
@@ -62,23 +67,27 @@ export function useEditorMetrics(editor: Editor | null): EditorMetrics {
 
   const selectionChars = useSyncExternalStore(
     subscribeEditor,
-    () => readSelectionChars(editor),
+    () => (active ? readSelectionChars(editor) : 0),
     () => 0
   )
   const totalChars = useSyncExternalStore(
     subscribeEditor,
-    () => readTotalChars(editor),
+    () => (active ? readTotalChars(editor) : 0),
     () => 0
   )
   const selectionText = useSyncExternalStore(
     subscribeEditor,
-    () => readEditorSelection(editor)?.text ?? '',
+    () => (active ? (readEditorSelection(editor)?.text ?? '') : ''),
     () => ''
   )
-  const selectionRange = useSyncExternalStore(subscribeEditor, readSelectionRange, () => null)
+  const selectionRange = useSyncExternalStore(
+    subscribeEditor,
+    () => (active ? readSelectionRange() : null),
+    () => null
+  )
   const editorFocused = useSyncExternalStore(
     subscribeEditor,
-    () => editor !== null && !editor.isDestroyed && editor.isFocused,
+    () => active && editor !== null && !editor.isDestroyed && editor.isFocused,
     () => false
   )
 
