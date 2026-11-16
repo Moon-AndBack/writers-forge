@@ -41,6 +41,9 @@ export interface PlotLineRow {
  * 正文富文本化（与大纲正文同口径）：`descriptionJson` 为**整条块级 Tiptap JSON**
  * （`null` = 空正文）；`description` 为**派生纯文本摘要**（卡片摘要 / 搜索真源，恒与 JSON 同步）。
  * 出场实体不再落库：由渲染层据正文匹配实体生成胶囊。
+ *
+ * `descriptionJson` **仅完整行携带**：列表查询走投影列（`PLOT_SCENE_LIST_COLUMNS`）时不返回，
+ * 正文按 id 经 `plot:getSceneContent` 按需读取；`description` 摘要恒在（卡片 / 搜索使用）。
  */
 export interface PlotSceneRow {
   id: number
@@ -53,8 +56,8 @@ export interface PlotSceneRow {
   title: string
   /** 派生纯文本摘要（`descriptionJson` 的 text 拼接结果；空正文 = ''）。 */
   description: string
-  /** 整条块级 Tiptap JSON 串；`null` = 空正文。 */
-  descriptionJson: string | null
+  /** 整条块级 Tiptap JSON 串；`null` = 空正文。**列表投影行缺省**（未读取）。 */
+  descriptionJson?: string | null
   sortOrder: number
   createdAt: string
   updatedAt: string
@@ -89,9 +92,17 @@ export interface UpdatePlotScenePatch {
 export const PLOT_LINE_COLUMNS =
   'id, book_id AS bookId, name, line_type AS lineType, line_color AS lineColor, timeline_id AS timelineId, default_origin AS defaultOrigin, sort_order AS sortOrder, created_at AS createdAt, deleted_at AS deletedAt'
 
-/** 场景列 SQL 片段（AS 别名对齐 `PlotSceneRow`）。 */
+/** 场景列 SQL 片段（AS 别名对齐 `PlotSceneRow`，含正文列；供按 id 读完整行）。 */
 export const PLOT_SCENE_COLUMNS =
   'id, book_id AS bookId, line_id AS lineId, time_text AS timeText, time_era AS timeEra, time_year AS timeYear, time_desc AS timeDesc, title, description, description_json AS descriptionJson, sort_order AS sortOrder, created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt'
+
+/**
+ * 场景列表投影列：去掉 `description_json`，保留派生摘要 `description`。
+ * 列表消费方（时间轴卡片 / 剧情页签卡片 / 悬停全文 / 实体胶囊）只用摘要，正文由右栏
+ * 选中时经 `plot:getSceneContent` 按需读取，避免一次搬回全书正文 JSON。
+ */
+export const PLOT_SCENE_LIST_COLUMNS =
+  'id, book_id AS bookId, line_id AS lineId, time_text AS timeText, time_era AS timeEra, time_year AS timeYear, time_desc AS timeDesc, title, description, sort_order AS sortOrder, created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt'
 
 /** 结构化时间纪元白名单（'' = 未设置；bc 纪前 / zero 元年 / ad 纪后）。 */
 const PLOT_TIME_ERAS: readonly string[] = ['bc', 'zero', 'ad']

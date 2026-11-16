@@ -3,6 +3,7 @@ import { getDb } from './index'
 import {
   NOW,
   PLOT_SCENE_COLUMNS,
+  PLOT_SCENE_LIST_COLUMNS,
   nextSceneSortOrder,
   normalizeTimeEra,
   normalizeTimeYear,
@@ -23,10 +24,13 @@ import type { CreatePlotSceneInput, PlotSceneRow, UpdatePlotScenePatch } from '.
  * 列出某书全部**未删除**场景，按**绝对年优先**排序（跨线聚合，同年一排由渲染层分组）：
  * 已定年升序（纪前负年 → 元年 0 → 纪后正年），未定年沉底；同年 / 未定年组内按 `sortOrder, id` 兜底。
  * 未定年 = 纪元未设置，或纪前 / 纪后缺年份（元年恒为已定年，年份忽略）。
+ *
+ * **列表投影**：只取摘要（`PLOT_SCENE_LIST_COLUMNS`，不含 `description_json`）——列表消费方
+ * 只用 `description`，正文由右栏选中时经 `plot:getSceneContent` 按需读取。
  */
 export function listPlotScenes(bookId: string): PlotSceneRow[] {
   const statement: Database.Statement<[string], PlotSceneRow> = getDb().prepare(
-    `SELECT ${PLOT_SCENE_COLUMNS} FROM plot_scenes
+    `SELECT ${PLOT_SCENE_LIST_COLUMNS} FROM plot_scenes
      WHERE book_id = ? AND deleted_at IS NULL
      ORDER BY
       CASE WHEN (time_era = 'zero' OR (time_era IN ('bc', 'ad') AND time_year IS NOT NULL)) THEN 0 ELSE 1 END,

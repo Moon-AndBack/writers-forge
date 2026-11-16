@@ -96,6 +96,9 @@ export function normalizePlotLineColor(value: unknown): string {
  * 正文富文本化（与大纲正文同口径）：`descriptionJson` 为**整条块级 Tiptap JSON**
  * （`null` = 空正文）；`description` 为**派生纯文本摘要**（卡片摘要 / 搜索真源，恒与 JSON 同步），
  * 故卡片 / 只读视图直接消费 `description` 即可，无需解析 JSON；亦为**实体匹配的正文真源**。
+ *
+ * `descriptionJson` **仅完整行携带**（镜像主进程）：`listScenes` 走投影列，不返回该字段；
+ * 正文由右栏选中时经 `plot:getSceneContent` 按需读取（见 `usePlotSceneContent`）。
  */
 export interface PlotSceneRow {
   id: number
@@ -108,8 +111,8 @@ export interface PlotSceneRow {
   title: string
   /** 派生纯文本摘要（`descriptionJson` 的 text 拼接结果；空正文 = ''）。 */
   description: string
-  /** 整条块级 Tiptap JSON 串；`null` = 空正文。 */
-  descriptionJson: string | null
+  /** 整条块级 Tiptap JSON 串；`null` = 空正文。**列表投影行缺省**（未读取）。 */
+  descriptionJson?: string | null
   sortOrder: number
   createdAt: string
   updatedAt: string

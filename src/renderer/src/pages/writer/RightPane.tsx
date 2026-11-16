@@ -324,6 +324,7 @@ export function RightPane({
             key={`${plotScene?.id}-${plotDraftResetKey}`}
             line={plotLine}
             scene={plotScene}
+            active={module === 'plot'}
             dirty={plotDirty}
             onUpdateScene={onUpdatePlotScene ?? (() => undefined)}
             onDirtyChange={onPlotDirtyChange ?? (() => undefined)}
@@ -357,6 +358,7 @@ export function RightPane({
         <TimelineRightPanel
           bookId={bookId}
           activeTimelineId={activeTimelineId}
+          active={module === 'timeline'}
           onUpdateOrigin={onUpdateTimelineOrigin}
           flushRef={timelineFlushRef}
           scene={timelineScene}
