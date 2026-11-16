@@ -2,6 +2,7 @@ import Database from 'better-sqlite3'
 import { getDb } from './index'
 import { getParagraphs, saveParagraphs } from './paragraphs'
 import { markChapterContentChanged } from './chapterContentVersion'
+import { blockJsonPlainText, replaceAllInBlockJson, replaceInBlockJson } from './richTextReplace'
 import { chapterEffectiveWords, recordDailyDelta } from './stats'
 import { MAX_DOC_CHARS, docEffectiveChars } from '../ipc/docLimit'
 import { logger } from '../logger'
@@ -293,6 +294,29 @@ function findLiveChapterId(chapterId: number): number | null {
 }
 
 /**
+ * 段级 JSON 保留格式替换：返回替换后的 `contentJson`；纯文本段 / JSON 非法或与 `text` 列
+ * 不一致 / 命中跨文本节点（或替换文本含换行）时返回 null，调用方按既有语义把 `contentJson`
+ * 置 null 回落纯文本；后两种回落会丢段内格式，故记 warn 便于统计发生频率。
+ */
+function replaceParagraphJson(
+  contentJson: string | null,
+  text: string,
+  replace: (json: string) => string | null,
+  where: { chapterId: number; paragraphIdx: number }
+): string | null {
+  if (contentJson === null || contentJson.trim() === '') return null
+  if (blockJsonPlainText(contentJson) !== text) {
+    log.warn('段级 JSON 非法或与 text 不一致，替换回落为纯文本', where)
+    return null
+  }
+  const replaced = replace(contentJson)
+  if (replaced === null) {
+    log.warn('替换命中跨文本节点（或含换行），段落格式已丢失，已回落为纯文本', where)
+  }
+  return replaced
+}
+
+/**
  * 单条替换：重新读取该章段落，校验 `text.slice(start, end) === query`（过期命中则不改），
  * 改写该段后经 `saveParagraphs` 落库并记录当日增量。
  *
@@ -327,16 +351,21 @@ export function replaceHit(bookId: string, input: ChapterReplaceInput): ChapterR
     return { replaced: 0, chapterId }
   }
 
-  // 未改动的段落保留既有 contentJson；被替换段落的 JSON 里仍是**旧文字**，与 text 冲突
-  // （读侧按 textContent === text 校验后会回退纯文本），故显式置 null，让 text 成为唯一真源。
-  // 段内 marks 随本次替换丢失——「JSON 内替换并保留 marks」为后续项（P1）。
+  // 未改动的段落保留既有 contentJson；被替换段落优先在段级 JSON 内替换（保留 marks 与块结构），
+  // 无法在单个文本节点内落位时回落 null，让 text 成为唯一真源（既有行为）。
   const paragraphs = rows.map((row) => ({
     text: row.text,
     contentJson: row.contentJson
   }))
+  const nextText = text.slice(0, input.start) + input.replacement + text.slice(input.end)
   paragraphs[index] = {
-    text: text.slice(0, input.start) + input.replacement + text.slice(input.end),
-    contentJson: null
+    text: nextText,
+    contentJson: replaceParagraphJson(
+      rows[index].contentJson,
+      text,
+      (json) => replaceInBlockJson(json, input.start, input.end, input.replacement),
+      { chapterId, paragraphIdx: input.paragraphIdx }
+    )
   }
 
   const nextTexts = paragraphs.map((item) => item.text)
@@ -412,8 +441,16 @@ export function replaceAllChapters(
         const next = replaceOccurrences(text, input.query, input.replacement)
         if (next === text) continue
         texts[i] = next
-        // 同 replaceHit：被改段落的 JSON 内仍是旧文字，置 null 让 text 成为唯一真源。
-        paragraphs[i] = { text: next, contentJson: null }
+        // 同 replaceHit：优先在段级 JSON 内替换（保留 marks）；无法落位时回落纯文本。
+        paragraphs[i] = {
+          text: next,
+          contentJson: replaceParagraphJson(
+            rows[i].contentJson,
+            text,
+            (json) => replaceAllInBlockJson(json, input.query, input.replacement),
+            { chapterId: chapter.chapterId, paragraphIdx: i }
+          )
+        }
         chapterReplaced += countOccurrences(text, input.query)
         changed = true
       }
