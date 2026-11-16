@@ -12,13 +12,7 @@ import type { AiComposeAction } from './ai/functions'
 import { useAiConversation } from './ai/useAiConversation'
 import { useAiSessions } from './ai/useAiSessions'
 import { AiSessionBar } from './ai/AiSessionBar'
-import {
-  ACTION_LABEL_KEYS,
-  applyActionsFor,
-  fallbackActionFor,
-  readFullText,
-  toOption
-} from './ai/panelUtils'
+import { ACTION_LABEL_KEYS, fallbackActionFor, readFullText, toOption } from './ai/panelUtils'
 import { useApplyToEditor } from './ai/useApplyToEditor'
 import { useAiModels } from './ai/useAiModels'
 import { useBookProfile } from './ai/useBookProfile'
@@ -375,11 +369,8 @@ export function AiPanel({
               <ChatMessage
                 key={message.id}
                 message={message}
-                applyActions={applyActionsFor(
-                  message,
-                  chapterId,
-                  fallbackActionFor(messages, index)
-                )}
+                chapterId={chapterId}
+                fallbackAction={fallbackActionFor(messages, index)}
                 otherChapterPlace={
                   message.chapterId != null && message.chapterId !== chapterId
                     ? (chapterPlaces.get(message.chapterId) ?? null)

@@ -28,6 +28,9 @@ import { resolveContextLimit } from './useContextUsage'
 
 export type { AiConversationMessage, AiConversationState }
 
+/** 流式增量批处理间隔（ms）：把连续 chunk 合并成一次 setMessages，避免逐 chunk 重建消息树。 */
+const DELTA_FLUSH_MS = 80
+
 /**
  * 章节右栏 AI · 会话 + 消息 + 流式状态机（统一输入区口径）。
  *
@@ -107,14 +110,25 @@ export function useAiConversation(input: {
     [applyMessages]
   )
 
-  const appendDelta = useCallback(
-    (id: string, delta: string): void => {
-      applyMessages(
-        messagesRef.current.map((m) => (m.id === id ? { ...m, content: m.content + delta } : m))
-      )
-    },
-    [applyMessages]
-  )
+  /* ---------- 流式增量批处理 ---------- */
+
+  /** 待提交增量的消息 id（正文真源是 `ActiveRequest.content`）+ 批处理定时器。 */
+  const pendingDeltaRef = useRef<string | null>(null)
+  const deltaTimerRef = useRef<number | null>(null)
+
+  /** 立即提交缓冲的增量（完成 / 停止 / 出错前必调，否则尾段只留在 request 上）。 */
+  const flushDelta = useCallback((): void => {
+    if (deltaTimerRef.current !== null) {
+      window.clearTimeout(deltaTimerRef.current)
+      deltaTimerRef.current = null
+    }
+    const id = pendingDeltaRef.current
+    const request = activeRequestRef.current
+    pendingDeltaRef.current = null
+    if (id !== null && request !== null && request.assistantId === id) {
+      patchMessage(id, { content: request.content })
+    }
+  }, [patchMessage])
 
   /* ---------- 配置 / 会话 ---------- */
 
@@ -176,6 +190,8 @@ export function useAiConversation(input: {
    */
   const stopActive = useCallback(
     (finalize: boolean): void => {
+      // 先把缓冲的增量落到气泡：此请求仍在 `activeRequestRef` 上，flush 才读得到完整正文。
+      flushDelta()
       const request = activeRequestRef.current
       if (request === null) return
 
@@ -190,21 +206,26 @@ export function useAiConversation(input: {
 
       if (finalize) patchMessage(request.assistantId, { streaming: false })
     },
-    [patchMessage]
+    [flushDelta, patchMessage]
   )
 
   /* ---------- 流式事件 ---------- */
 
   const handleDelta = useCallback(
     (request: ActiveRequest, delta: string): void => {
+      // 先累计到请求上（落库 / 定稿的唯一真源），界面正文按批从它整体同步。
       request.content += delta
-      appendDelta(request.assistantId, delta)
+      pendingDeltaRef.current = request.assistantId
+      // 已有在途批次就继续攒：任意多个 chunk 合并成一次 setMessages。
+      deltaTimerRef.current ??= window.setTimeout(() => flushDelta(), DELTA_FLUSH_MS)
     },
-    [appendDelta]
+    [flushDelta]
   )
 
   const handleDone = useCallback(
     (request: ActiveRequest, usage?: AiUsage): void => {
+      // 先提交缓冲的尾段（随后定稿写入同一份 `request.content`，同批渲染只生效一次）。
+      flushDelta()
       activeRequestRef.current = null
       setGenerating(false)
       setCompressing(false)
@@ -224,11 +245,13 @@ export function useAiConversation(input: {
       persistAssistantPartial(request, { usage })
       autoTitleSession(request, sessionCallbacksRef.current.onSessionTitled)
     },
-    [patchMessage]
+    [flushDelta, patchMessage]
   )
 
   const handleError = useCallback(
     (request: ActiveRequest, error: AiError): void => {
+      // 先提交缓冲的尾段：报错只改状态，不覆盖正文，不 flush 会丢最后一段显示。
+      flushDelta()
       activeRequestRef.current = null
       setGenerating(false)
       setCompressing(false)
@@ -237,7 +260,7 @@ export function useAiConversation(input: {
       // 由气泡按状态渲染结构化标记（不进正文，避免污染回插与后续上下文）。
       persistAssistantPartial(request, { status: 'interrupted' })
     },
-    [patchMessage]
+    [flushDelta, patchMessage]
   )
 
   // 订阅在挂载时挂一次；回调内按 requestId 过滤（onStream 是全局广播，别的面板 / 已中止
@@ -263,6 +286,10 @@ export function useAiConversation(input: {
 
     return () => {
       unsubscribe()
+      // 丢弃未提交的增量（正文已累计在 `request.content` 上，随下方落库一起保存）。
+      if (deltaTimerRef.current !== null) window.clearTimeout(deltaTimerRef.current)
+      deltaTimerRef.current = null
+      pendingDeltaRef.current = null
       const request = activeRequestRef.current
       activeRequestRef.current = null
       setCompressing(false)

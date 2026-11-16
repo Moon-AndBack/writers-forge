@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Markdown from 'react-markdown'
-import type { Components } from 'react-markdown'
+import type { Components, Options } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Button, Tag } from '../../../../components/ui'
 import { AI_ERROR_TEXT_KEYS } from './aiErrorText'
-import { ACTION_LABEL_KEYS } from './panelUtils'
-import type { ApplyActions } from './panelUtils'
+import { ACTION_LABEL_KEYS, applyActionsFor } from './panelUtils'
+import type { AiComposeAction } from './functions'
 import type { AiConversationMessage } from './chatRuntime'
 
 /**
@@ -47,6 +47,12 @@ const MD_COMPONENTS: Components = {
 }
 
 /**
+ * remark 插件列表：与 `MD_COMPONENTS` 同理置于模块层——每次渲染新建数组会让
+ * react-markdown 认为插件配置变了而重跑解析。
+ */
+const REMARK_PLUGINS: Options['remarkPlugins'] = [remarkGfm]
+
+/**
  * 可折叠长文本：默认按 3 行截断（CSS `-webkit-line-clamp`），实际溢出时才出现
  * 「展开 / 收起」。用 `scrollHeight` 与 `clientHeight` 比对判断是否截断，
  * 避免按字符数猜测（中英文 / 换行差异大）。
@@ -84,11 +90,13 @@ function CollapsibleText({ text, className }: { text: string; className: string 
 
 export interface ChatMessageProps {
   message: AiConversationMessage
+  /** 当前章 id：回插资格据此判定（见 `applyActionsFor`；`null` = 无章，不可回插）。 */
+  chapterId: number | null
   /**
-   * 该消息允许的回插动作；`null` = 不可回插
-   * （非 assistant / 流式 / 错误 / 中断 / 空正文 / 跨章）。
+   * 历史消息没有 `action` 时的功能兜底（由配对的 user 轮次推断，见 `fallbackActionFor`）。
+   * 传原始值而非现算的 `ApplyActions` 对象：否则每次父层渲染都是新引用，memo 失效。
    */
-  applyActions: ApplyActions | null
+  fallbackAction?: AiComposeAction
   /**
    * 跨章来源位置串：`undefined` = 非跨章（不渲染提示）；
    * `null` = 来源章已删除（显示「已删除的章节」，不可跳转）。
@@ -108,13 +116,17 @@ export interface ChatMessageProps {
  * - 历史气泡另显示一行弱化的上下文快照（类型 + 字数，悬停看前段片段）；无快照的老消息不显示；
  * - assistant 走 `react-markdown` + `remark-gfm`（元素类名见 `MD_COMPONENTS`）；
  * - 流式中追加闪烁光标（只动 opacity）；错误走 `ai` ns 的 `error.<code>`；
- * - 回插按钮按 `applyActions` 渲染：润色 / 重写 / 翻译只替换，续写只插入，
+ * - 回插按钮按 `applyActionsFor` 的判定渲染：润色 / 重写 / 翻译只替换，续写只插入，
  *   自由对话两个都给；历史消息（功能未知）只给插入，避免旧续写回复覆盖正文。
  *   插入按钮文案随 `insertAtEnd` 切换落点（携带全文 → 全文末尾）。
+ *
+ * `memo` 边界：props 全是原始值 + 稳定的回调，`message` 只在自身变化时换引用
+ * （流式增量按批只改目标消息），故生成期间历史气泡不重渲染。
  */
-export function ChatMessage({
+export const ChatMessage = memo(function ChatMessage({
   message,
-  applyActions,
+  chapterId,
+  fallbackAction,
   otherChapterPlace,
   onOpenChapter,
   onApplyReplace,
@@ -131,6 +143,19 @@ export function ChatMessage({
   // 来源章提示只挂在 assistant 气泡上：它才是「能不能回插」的对象，user 消息加标记只是噪音。
   const foreignChapterId =
     !isUser && hasContent && otherChapterPlace !== undefined ? (message.chapterId ?? null) : null
+  // 回插动作在内部按原始值现算：父层不再每次渲染都造新对象，memo 才有意义。
+  const applyActions = applyActionsFor(message, chapterId, fallbackAction)
+  // 正文 markdown 解析结果按 content 缓存：已完成回复重渲染（切章 / 来源提示变化）不再重解析；
+  // 流式回复每帧 content 都在变，缓存自然失效，仍是逐帧解析。
+  const markdown = useMemo(
+    () =>
+      hasContent ? (
+        <Markdown remarkPlugins={REMARK_PLUGINS} components={MD_COMPONENTS}>
+          {message.content}
+        </Markdown>
+      ) : null,
+    [hasContent, message.content]
+  )
 
   return (
     <article className={`ai-msg ai-msg--${isUser ? 'user' : 'assistant'}`}>
@@ -157,9 +182,7 @@ export function ChatMessage({
           </>
         ) : hasContent ? (
           <div className="ai-msg__body">
-            <Markdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>
-              {message.content}
-            </Markdown>
+            {markdown}
             {streaming ? <span className="ai-msg__cursor" aria-hidden="true" /> : null}
           </div>
         ) : streaming ? (
@@ -226,6 +249,6 @@ export function ChatMessage({
       ) : null}
     </article>
   )
-}
+})
 
 export default ChatMessage
