@@ -103,7 +103,9 @@
    登记见 docs/ui/design-language.md §9 #38，作用域仅 .ai-composer-status。
    双类（0,2,0）稳定压过 .wf-iconbtn / .wf-iconbtn--sm 的 32px，不依赖层叠顺序。
    底色沿用 IconButton solid（--soft-solid / hover --soft-hover-solid），与 neutral
-   Tag 同材质；材质态随 .rightpane 的软底同域重派生，无需另处理。
+   Tag 同材质；材质态由 material.css 随 .rightpane 的软底同域重派生。语义胶囊
+   （Tag / Badge 的 brand / ok / warn / danger）不复用软底，其 `--pane` 混色由
+   material.css 例外 #39 扩展单独覆盖。
    热区：视觉 22 高，伪元素上下各外扩 1px 补到 24（WCAG 2.5.8 基准）；行内 gap 6
    足够，不侵入相邻胶囊。 */
 .wf-iconbtn.ai-composer-status__refresh {

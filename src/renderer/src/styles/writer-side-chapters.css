@@ -63,7 +63,7 @@
 }
 
 .chapter.is-active {
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane));
 }
 
 /* 选中态（600 + 品牌色）挂在行容器，前后缀两段同时生效。 */

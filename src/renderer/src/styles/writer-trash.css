@@ -196,7 +196,7 @@
 }
 
 .trash-row.is-selected {
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane));
 }
 
 .trash-row.is-selected .trash-row-name {
@@ -219,7 +219,7 @@
 }
 
 .trash-view--split .trash-row.is-selected {
-  background: color-mix(in srgb, var(--brand) 12%, var(--soft-solid));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--soft-solid));
 }
 
 /* 选中行 hover 回退中性悬停底，避免品牌底与悬停底叠加成第三种颜色。 */
@@ -232,9 +232,9 @@
   background: var(--control-on-soft);
 }
 
-/* 分栏选中行：操作组底色与选中行同口径（卡底 --soft-solid 混品牌 12%）。 */
+/* 分栏选中行：操作组底色与选中行同口径（卡底 --soft-solid 混品牌 --select-tint）。 */
 .trash-view--split .trash-row.is-selected .trash-row-actions {
-  background: color-mix(in srgb, var(--brand) 12%, var(--soft-solid));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--soft-solid));
 }
 
 /* 分栏选中行 hover：回退软底控件令牌，避免品牌底与悬停底叠加。 */
@@ -386,7 +386,7 @@
 
 /* 选中行：操作组底色取选中行同一混色，保持视觉连续（同左栏选中章行）。 */
 .trash-row.is-selected .trash-row-actions {
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane));
 }
 
 /* 选中行 hover：回退中性悬停底，避免品牌底上叠加第二层品牌色。 */

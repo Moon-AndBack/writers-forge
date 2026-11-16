@@ -44,7 +44,7 @@
 }
 
 .outline-chapter.is-active {
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane));
 }
 
 .outline-chapter-dot {
@@ -222,14 +222,15 @@
   transform: rotate(90deg);
 }
 
-/* 卷行 / 分组行选中态：与 .outline-chapter.is-active 同口径（品牌 12% 底）。
+/* 卷行 / 分组行选中态：与 .outline-chapter.is-active 同口径（品牌底，比例取
+   `--select-tint`）。
    选中类挂在行容器 .vol / .nonvol-group 上，与折叠态 is-open 正交可并存；
    收起列表时高亮保持（选中跟随中栏编辑器，视图态折叠不解除选中）。
    选择器挂 .vol-head（行头本身），而非容器直子级，以压过 writer-side.css 的
    `.vol-head:hover`（同特异性 0,2,0 → 后源序胜），保证选中底与 hover 底不打架。 */
 .vol.is-active .vol-head,
 .nonvol-group.is-active .nonvol-group-head {
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane));
 }
 
 /* 选中卷 hover：让位给行 hover 底（口径同 .chapter.is-active:hover）。 */

@@ -86,12 +86,13 @@
   color: var(--text);
 }
 
-/* 选中态：品牌 12% + `--pane` 混合底 + 品牌文字 600（§8.5 基准公式，行位于
-   --pane 上）。不另造色条 / 下划线；选中行 hover 回落 `--soft-hover-solid`，
-   叠加不产生第三种颜色。四套主题的 hover 差值：light 6% 深字混白、dark 8%
-   白字混 #202020、sage 8% 绿混 #fcfffc、honey 7% 暖褐混 #fffef9，均可见。 */
+/* 选中态：品牌 `--select-tint`（light / dark / sage 18%、honey 24%）+ `--pane`
+   混合底 + 品牌文字 600（§8.5 基准公式，行位于 --pane 上）。不另造色条 /
+   下划线；选中行 hover 回落 `--soft-hover-solid`，叠加不产生第三种颜色。
+   四套主题的 hover 差值：light 6% 深字混白、dark 8% 白字混 #202020、
+   sage 8% 绿混 #fcfffc、honey 7% 暖褐混 #fffef9，均可见。 */
 .settings-nav__item[aria-current='page'] {
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane));
   color: var(--brand);
   font-weight: 600;
 }

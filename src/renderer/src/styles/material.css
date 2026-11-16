@@ -301,7 +301,7 @@
 }
 
 /* ============================================================
-   右栏中性胶囊 —— 材质态薄雾底
+   右栏胶囊（中性 / 语义）—— 材质态薄雾底
    ------------------------------------------------------------------
    `.chip-pill` 的兜底底是「`--chip-base` 按 `--chip-mix` 混 `--pane`」，
    而 `--pane` 在材质态**从不被重派生**（四主题都是不透明实色）——直接消费
@@ -310,6 +310,8 @@
    没有 `--chip-bg` 实色注入，故按同比例改混 `transparent`，与 `.book-tag`
    （material-bookshelf.css）同一口径；`--chip-mix` 原样保留，域内收窄
    （如 `.dossier-card__chip--more` 的 8%）不会被抹平。
+   语义胶囊（`.wf-tag--*` / `.wf-badge--*` / `.wf-tag__close`）同因消费 `--pane`，
+   在本段末尾按 surface.css 的同比例扩展覆盖（例外 #39 扩展）。
    例外：模块色 / 预设色胶囊（#10）的 `--chip-bg` 是数据注入实色，不在此列。
    ============================================================ */
 
@@ -331,6 +333,42 @@
   .rightpane
   .wf-chipinput__suggestion:hover:not(:disabled) {
   background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+
+/* 例外 #39 扩展：右栏语义胶囊（Tag / Badge 的 tone 变体与 Tag 关闭点）同样改混
+   transparent。它们的基础底是「色调 N% 混 `--pane`」，而 `--pane` 在材质态从不被
+   重派生 → 在 58% 右栏上就是实色贴片。中性档走 `--soft-solid`（已在同域重派生），
+   不在本段范围。比例逐条对齐 components/surface.css，只换底部令牌、不动比例。 */
+:root:is([data-material='acrylic'], [data-material='mica']) .rightpane .wf-tag--brand {
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+}
+
+:root:is([data-material='acrylic'], [data-material='mica']) .rightpane .wf-badge--brand {
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+}
+
+:root:is([data-material='acrylic'], [data-material='mica'])
+  .rightpane
+  :is(.wf-tag--ok, .wf-badge--ok) {
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
+}
+
+:root:is([data-material='acrylic'], [data-material='mica'])
+  .rightpane
+  :is(.wf-tag--warn, .wf-badge--warn) {
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+}
+
+:root:is([data-material='acrylic'], [data-material='mica'])
+  .rightpane
+  :is(.wf-tag--danger, .wf-badge--danger) {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+/* 语义 Tag 的关闭点：`currentColor 16%` 同样混 `--pane`，tone 由当前文字色继承；
+   hover 仍是 danger 实色（surface.css），不在覆写范围。 */
+:root:is([data-material='acrylic'], [data-material='mica']) .rightpane .wf-tag__close:not(:hover) {
+  background: color-mix(in srgb, currentColor 16%, transparent);
 }
 
 /* ============================================================

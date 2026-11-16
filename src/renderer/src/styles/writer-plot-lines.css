@@ -37,7 +37,7 @@
 }
 
 .plot-line.is-active {
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane));
 }
 
 /* 色点：非选中中性弱化，选中品牌色（无缩放，仅颜色 / 不透明度过渡）。 */

@@ -112,7 +112,7 @@
 }
 
 .ep-search-row.is-active {
-  background: color-mix(in srgb, var(--brand) 12%, var(--pane));
+  background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane));
 }
 
 .ep-search-row-main {

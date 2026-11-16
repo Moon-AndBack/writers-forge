@@ -116,7 +116,7 @@ src/
 - **MUST** 标题栏 / 状态栏的控件在材质态使用 `--chrome-*` 令牌；每个控件必须同时具备「薄雾底 + 1px 描边环」或「图标自身足够对比」之一。
 - **MUST NOT** 中栏 sage / honey 纸色面、`.tb-brand-mark`、任何浮层（Modal / Select 面板 / Tooltip / 状态栏弹层）使用半透明填充。
 - **MUST** 关闭材质（`data-material='none'`）时以上令牌回退为原不透明值，外观与改动前一致。
-- **MUST** 固定态活动栏的轻微磨砂仍作为既有例外保留（§9 #11）；其余材质态透明只允许走 `--surface-pane`（含面板浮卡的 `--surface-pane-float` 与书架 / 欢迎页 / 只读内容块的 `--surface-pane-card`）/ `--chrome-*` 三条已登记路径（§9 #31 / #32 / #34）。
+- **MUST** 固定态活动栏的轻微磨砂仍作为既有例外保留（§9 #11）；其余材质态透明只允许走 `--surface-pane`（含面板浮卡的 `--surface-pane-float` 与书架 / 欢迎页 / 只读内容块的 `--surface-pane-card`）/ `--chrome-*` 三条已登记路径（§9 #31 / #32 / #34）；右栏胶囊的 tone 混色见 §9 #39。
 - **SHOULD** 语义色只表达状态：`--ok` / `--warn` / `--danger` 不作品牌强调；`--brand` 可被系统强调色覆盖，不作固定插画色。
 
 ### 8.2 表面层级
