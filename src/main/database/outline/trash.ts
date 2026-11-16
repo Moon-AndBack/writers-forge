@@ -3,7 +3,12 @@ import { coerceVolumeKind, toVolume } from '../chapterMappers'
 import { VOLUME_COLUMNS } from '../chapterTypes'
 import type { VolumeDbRow } from '../chapterTypes'
 import { OUTLINE_ITEM_COLUMNS, toOutlineItem } from './types'
-import type { DeletedOutlineContent, OutlineItemDbRow, OutlinePurgeCounts } from './types'
+import type {
+  DeletedOutlineContent,
+  DeletedOutlineItemRow,
+  OutlineItemDbRow,
+  OutlinePurgeCounts
+} from './types'
 import {
   nextOutlineItemSortOrder,
   nextVolumeSortOrder,
@@ -103,8 +108,11 @@ export function listDeletedOutline(bookId: string): DeletedOutlineContent {
          ORDER BY (volume_id IS NULL) DESC, volume_id, sort_order, id`
       )
       .all(bookId) as DeletedItemJoinRow[]
-  ).map((row) => ({
+  ).map((row): DeletedOutlineItemRow => ({
     ...toOutlineItem(row),
+    // 回收站详情展示正文：查询取完整列，此处显式带上并收紧为必填（`DeletedOutlineItemRow`）。
+    text: row.text ?? '',
+    contentJson: row.contentJson ?? null,
     volumeTitle: row.volumeTitle,
     // 挂卷条目的父卷已被查询过滤为存在且为大纲可见 kind；null 仅对应独立条目。
     volumeKind: row.volumeKind === null ? null : coerceVolumeKind(row.volumeKind),

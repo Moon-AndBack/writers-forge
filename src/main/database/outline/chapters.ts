@@ -2,7 +2,13 @@ import Database from 'better-sqlite3'
 import { getDb } from '../index'
 import { NOW } from '../chapterGroups'
 import { createVolume } from '../volumes'
-import { OUTLINE_ITEM_COLUMNS, OUTLINE_VISIBLE_VOLUME_KINDS, toOutlineItem } from './types'
+import {
+  OUTLINE_ITEM_COLUMNS,
+  OUTLINE_ITEM_LIST_COLUMNS,
+  OUTLINE_VISIBLE_VOLUME_KINDS,
+  toOutlineItem,
+  toOutlineItemSummary
+} from './types'
 import type { OutlineItemDbRow, OutlineItemRow } from './types'
 import type { VolumeRow } from '../chapterTypes'
 import { nextOutlineItemSortOrder, renumberOutlineItemsInGroup } from './shared'
@@ -36,14 +42,17 @@ const VISIBLE_KINDS_SQL = OUTLINE_VISIBLE_VOLUME_KINDS.map((kind) => `'${kind}'`
  * 含义：置顶独立区（`volume_id IS NULL`）在前；其后按卷 / 分组 id 归拢，组内按 `sort_order, id`。
  * **归拢键天然是 `volume_id`** —— 分组即卷，无需旧实现的 correlated 子查询按 `parent_id` 归拢。
  * 卷纲行（`scope='volume'`）已被过滤，不进入条目列表。
+ *
+ * **列表投影**：只取元信息（`OUTLINE_ITEM_LIST_COLUMNS`，不含 `text` / `content_json`）——
+ * 列表无正文实时消费方（右栏预览 / 中栏编辑均按 id 经 `outline:getContent` 读取）。
  */
 export function listOutlineItems(bookId: string): OutlineItemRow[] {
   const statement: Database.Statement<[string], OutlineItemDbRow> = getDb().prepare(
-    `SELECT ${OUTLINE_ITEM_COLUMNS} FROM outline_items
+    `SELECT ${OUTLINE_ITEM_LIST_COLUMNS} FROM outline_items
      WHERE book_id = ? AND scope = 'entry' AND deleted_at IS NULL
      ORDER BY (volume_id IS NULL) DESC, volume_id, sort_order, id`
   )
-  return statement.all(bookId).map(toOutlineItem)
+  return statement.all(bookId).map(toOutlineItemSummary)
 }
 
 /** 按 id 读回领域对象（供创建 / 重命名后返回）；不存在返回 undefined。 */

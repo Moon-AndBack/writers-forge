@@ -45,8 +45,10 @@ export const OUTLINE_SCOPES: readonly OutlineScope[] = ['entry', 'volume']
  * 大纲条目行。
  * - `volumeId`：`null` = 独立条目（`kind='standalone'`）；数字 = 所属卷 / 分组（`kind='entry'`）；
  * - `scope`：`entry` 普通条目 / `volume` 卷级大纲正文行（卷纲）；
- * - `text`：完整纯文本摘要（**含标点**；标点仅在字数统计口径排除）；
- * - `contentJson`：整条正文块级 JSON（`null` = 空正文）。
+ * - `text` / `contentJson`：正文列（`text` 为完整纯文本摘要，**含标点**；标点仅在字数统计
+ *   口径排除；`contentJson` 为整条正文块级 JSON，`null` = 空正文）。**仅完整行携带**：
+ *   列表查询走投影列（`OUTLINE_ITEM_LIST_COLUMNS`），二者缺省，正文按 id 经
+ *   `outline:getContent` 按需读取。
  */
 export interface OutlineItemRow {
   id: number
@@ -56,14 +58,17 @@ export interface OutlineItemRow {
   scope: OutlineScope
   title: string
   sortOrder: number
-  text: string
-  contentJson: string | null
+  text?: string
+  contentJson?: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null
 }
 
-/** `outline_items` 原生 DB 行（snake_case；`kind` / `scope` 为原样字符串）。 */
+/**
+ * `outline_items` 原生 DB 行（snake_case；`kind` / `scope` 为原样字符串）。
+ * 列表投影查询结果同构，仅 `text` / `contentJson` 缺省。
+ */
 export interface OutlineItemDbRow {
   id: number
   bookId: string
@@ -72,16 +77,24 @@ export interface OutlineItemDbRow {
   scope: string
   title: string
   sortOrder: number
-  text: string
-  contentJson: string | null
+  text?: string
+  contentJson?: string | null
   createdAt: string
   updatedAt: string
   deletedAt: string | null
 }
 
-/** 条目列 SQL 片段（AS 别名对齐 `OutlineItemDbRow`）。 */
+/** 条目完整列 SQL 片段（AS 别名对齐 `OutlineItemDbRow`；含正文列，供完整行读取）。 */
 export const OUTLINE_ITEM_COLUMNS =
   'id, book_id AS bookId, volume_id AS volumeId, kind, scope, title, sort_order AS sortOrder, text, content_json AS contentJson, created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt'
+
+/**
+ * 条目列表投影列：去掉 `text` / `content_json`。
+ * 列表（左栏树 / 分组 / 预览条目名）只用元信息，正文无实时消费方，改按 id 经
+ * `outline:getContent` 读取。
+ */
+export const OUTLINE_ITEM_LIST_COLUMNS =
+  'id, book_id AS bookId, volume_id AS volumeId, kind, scope, title, sort_order AS sortOrder, created_at AS createdAt, updated_at AS updatedAt, deleted_at AS deletedAt'
 
 /** 归一化条目判别（仅 `standalone` 合法，其余回退 `entry`）。 */
 export function coerceOutlineKind(value: unknown): OutlineKind {
@@ -93,8 +106,8 @@ export function coerceOutlineScope(value: unknown): OutlineScope {
   return value === 'volume' ? 'volume' : 'entry'
 }
 
-/** DB 行 → 领域对象（`kind` / `scope` 经归一化，确保渲染层无需再判非法值）。 */
-export function toOutlineItem(row: OutlineItemDbRow): OutlineItemRow {
+/** DB 行 → 领域对象公共部分（`kind` / `scope` 经归一化；不含正文列）。 */
+function toOutlineItemBase(row: OutlineItemDbRow): OutlineItemRow {
   return {
     id: row.id,
     bookId: row.bookId,
@@ -103,12 +116,20 @@ export function toOutlineItem(row: OutlineItemDbRow): OutlineItemRow {
     scope: coerceOutlineScope(row.scope),
     title: row.title,
     sortOrder: row.sortOrder,
-    text: row.text,
-    contentJson: row.contentJson,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt
   }
+}
+
+/** DB 完整行 → 领域对象（含正文列）。 */
+export function toOutlineItem(row: OutlineItemDbRow): OutlineItemRow {
+  return { ...toOutlineItemBase(row), text: row.text, contentJson: row.contentJson }
+}
+
+/** DB 列表投影行 → 领域对象；**不写正文键**，避免下游误判正文已随列表加载。 */
+export function toOutlineItemSummary(row: OutlineItemDbRow): OutlineItemRow {
+  return toOutlineItemBase(row)
 }
 
 /** 大纲侧是否可见某卷 kind（`normal` + `group`）。 */
@@ -121,8 +142,11 @@ export function isOutlineVisibleVolumeKind(kind: VolumeKind): boolean {
 /**
  * 回收站中的条目行：`volumeTitle` 为其**原归属**卷名（供渲染「某某卷下的某某条目」）。
  * 父卷状态字段与章节域 `DeletedChapterRow` 对齐，供 UI 判定条目的归属是否可还原。
+ * 回收站详情需展示正文，故此处将 `text` / `contentJson` 收紧为必填（查询取完整列）。
  */
 export interface DeletedOutlineItemRow extends OutlineItemRow {
+  text: string
+  contentJson: string | null
   volumeTitle: string | null
   /** 原归属卷 kind；独立条目为 `null`（父卷缺失的条目已由查询过滤）。 */
   volumeKind: VolumeKind | null
