@@ -1,8 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { IconButton } from '../../../components/ui'
-import { ChevronIcon, PencilIcon, PlusIcon } from '../icons'
-import { TrashIcon } from '../../../components/icons'
 import { useConfirm } from '../chapters/useConfirm'
 import {
   useForeshadowDeleteImpact,
@@ -10,6 +7,7 @@ import {
 } from '../foreshadow/useForeshadowDeleteImpact'
 import type { VolumeRow } from '../chapters/chapterTree'
 import { useVolumeDeleteImpact } from '../volumes/useVolumeDeleteImpact'
+import VolumeGroupRow from '../volumes/VolumeGroupRow'
 import type { TreeExpansion } from '../useTreeExpansion'
 import {
   outlineItemLabel,
@@ -191,109 +189,54 @@ export default function OutlineNonVolumeList({
         const volume = entry.volume
         const renaming = groupRenamingId === volume.id
         const groupName = outlineItemLabel({ title: volume.title }, t('unnamedGroup'))
+        // 分组行点击三态切换：非编辑目标 → 打开编辑器并展开该分组；
+        // 编辑中且展开 → 仅收起；编辑中但收起 → 仅展开（不触碰 selection，零刷新）。
+        const handleGroupRowClick = (): void => {
+          const isActive = activeSelection?.kind === 'group' && activeSelection.id === volume.id
+          if (!isActive) {
+            onOpenTarget({ kind: 'group', id: volume.id })
+            expansion.open(entry.key)
+          } else if (open) {
+            expansion.toggle(entry.key)
+          } else {
+            expansion.open(entry.key)
+          }
+        }
         return (
-          <div
+          <VolumeGroupRow
             key={entry.key}
-            className={`nonvol-group${open ? ' is-open' : ''}${
+            className={`nonvol-group${
               activeSelection?.kind === 'group' && activeSelection.id === volume.id
                 ? ' is-active'
                 : ''
             }`}
-          >
-            <div
-              className="vol-head nonvol-group-head"
-              onClick={() => {
-                // 分组行点击三态切换：非编辑目标 → 打开编辑器并展开该分组；
-                // 编辑中且展开 → 仅收起；编辑中但收起 → 仅展开（不触碰 selection，零刷新）。
-                const isActive =
-                  activeSelection?.kind === 'group' && activeSelection.id === volume.id
-                if (!isActive) {
-                  onOpenTarget({ kind: 'group', id: volume.id })
+            headClassName="nonvol-group-head"
+            prefix=""
+            name={groupName}
+            nameClassName={`nonvol-group-name${volume.title.trim() === '' ? ' is-empty' : ''}`}
+            count={entry.items.length}
+            expanded={open}
+            onActivate={handleGroupRowClick}
+            toggleButton={{ label: groupName, onToggle: () => expansion.toggle(entry.key) }}
+            actions={{
+              add: {
+                label: t('newChapterInGroup'),
+                // 新建条目落在本分组：先展开，避免收起态下新建后看不见。
+                onClick: () => {
                   expansion.open(entry.key)
-                } else if (open) {
-                  expansion.toggle(entry.key)
-                } else {
-                  expansion.open(entry.key)
+                  onCreateEntryInGroup(volume.id)
                 }
-              }}
-            >
-              <button
-                type="button"
-                className="nonvol-group-arrow"
-                aria-label={groupName}
-                aria-expanded={open}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  expansion.toggle(entry.key)
-                }}
-              >
-                <ChevronIcon className="vol-arrow" />
-              </button>
-              {renaming ? (
-                <input
-                  className="vol-rename"
-                  type="text"
-                  value={draftName}
-                  autoFocus
-                  spellCheck={false}
-                  aria-label={t('groupNameAria')}
-                  onClick={(event) => event.stopPropagation()}
-                  onChange={(event) => setDraftName(event.target.value)}
-                  onBlur={() => settleRenameGroup(volume, true)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault()
-                      settleRenameGroup(volume, true)
-                    } else if (event.key === 'Escape') {
-                      event.preventDefault()
-                      settleRenameGroup(volume, false)
-                    }
-                  }}
-                />
-              ) : (
-                /* 分组名：纯展示（改名仅由铅笔按钮触发；点击行冒泡 = 打开编辑器）。 */
-                <span
-                  className={`nonvol-group-name${volume.title.trim() === '' ? ' is-empty' : ''}`}
-                >
-                  {groupName}
-                </span>
-              )}
-              <span className="vol-count">{entry.items.length}</span>
-              <span className="vol-actions" onClick={(event) => event.stopPropagation()}>
-                <IconButton
-                  size="sm"
-                  className="row-act"
-                  label={t('newChapterInGroup')}
-                  tooltipPlacement="top"
-                  onClick={() => {
-                    // 新建条目落在本分组：先展开，避免收起态下新建后看不见。
-                    expansion.open(entry.key)
-                    onCreateEntryInGroup(volume.id)
-                  }}
-                >
-                  <PlusIcon width={14} />
-                </IconButton>
-                <IconButton
-                  size="sm"
-                  className="row-act"
-                  label={t('rename')}
-                  tooltipPlacement="top"
-                  onClick={() => beginRenameGroup(volume)}
-                >
-                  <PencilIcon />
-                </IconButton>
-                <IconButton
-                  size="sm"
-                  className="row-act"
-                  tone="danger"
-                  label={t('deleteGroup')}
-                  tooltipPlacement="top"
-                  onClick={() => requestDeleteGroup(volume)}
-                >
-                  <TrashIcon />
-                </IconButton>
-              </span>
-            </div>
+              },
+              rename: { label: t('rename'), onClick: () => beginRenameGroup(volume) },
+              delete: { label: t('deleteGroup'), onClick: () => requestDeleteGroup(volume) }
+            }}
+            renaming={renaming}
+            draftName={draftName}
+            onDraftNameChange={setDraftName}
+            renameAriaLabel={t('groupNameAria')}
+            onCommitRename={() => settleRenameGroup(volume, true)}
+            onCancelRename={() => settleRenameGroup(volume, false)}
+          >
             {open ? (
               <div className="nonvol-children">
                 {entry.items.map((child) => (
@@ -314,7 +257,7 @@ export default function OutlineNonVolumeList({
                 ))}
               </div>
             ) : null}
-          </div>
+          </VolumeGroupRow>
         )
       })}
       {confirm.node}

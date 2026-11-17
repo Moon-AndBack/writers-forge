@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { IconButton } from '../../../components/ui'
 import { EmptyState } from '../../../components/EmptyState'
 import { LoadErrorState } from '../../../components/LoadErrorState'
-import { ChevronIcon, DocIcon, PencilIcon, PlusIcon } from '../icons'
-import { TrashIcon } from '../../../components/icons'
+import { DocIcon } from '../icons'
 import { useConfirm } from '../chapters/useConfirm'
 import {
   useForeshadowDeleteImpact,
@@ -13,6 +11,7 @@ import {
 import { volumeNameLabel, type VolumeRow } from '../chapters/chapterTree'
 import { useChapterLabels } from '../chapters/useChapterLabels'
 import { useVolumeDeleteImpact } from '../volumes/useVolumeDeleteImpact'
+import VolumeGroupRow from '../volumes/VolumeGroupRow'
 import { useTreeExpansion } from '../useTreeExpansion'
 import { resolveDropLineId } from '../useSortableDrag'
 import {
@@ -293,122 +292,44 @@ export default function OutlinePanel({
                   }
                 }
                 return (
-                  <div
+                  <VolumeGroupRow
                     key={group.key}
-                    className={`vol${open ? ' is-open' : ''}${
+                    className={`vol${
                       activeSelection?.kind === 'volume' && activeSelection.id === volume.id
                         ? ' is-active'
                         : ''
                     }`}
-                  >
-                    <div
-                      className="vol-head"
-                      role="button"
-                      tabIndex={0}
-                      aria-expanded={open}
-                      onClick={(event) => {
-                        // 鼠标点击后移除行焦点：本行（tabIndex=0）与行内操作按钮都在
-                        // .vol-head 内，点击后焦点残留会让 :focus-within 持续命中，
-                        // 鼠标移出后按钮组 / 计数隐藏、卷名让位均不恢复。
-                        // 用 detail>0 只对鼠标点击 blur——键盘 Enter/Space 合成的
-                        // click（detail===0）不 blur，保留键盘可达性。
-                        if (event.detail > 0) event.currentTarget.blur()
-                        handleVolRowClick()
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault()
-                          handleVolRowClick()
+                    prefix={volPrefix}
+                    name={volName}
+                    count={group.chapters.length}
+                    expanded={open}
+                    onActivate={handleVolRowClick}
+                    toggleButton={{
+                      label: t('expandVolumeAria'),
+                      onToggle: () => toggle(group.key)
+                    }}
+                    actions={{
+                      add: {
+                        label: t('newChapter'),
+                        // 新建条目落在本卷：先展开，避免收起态下新建后看不见。
+                        onClick: () => {
+                          openKey(group.key)
+                          onCreateChapter(volume.id)
                         }
-                      }}
-                    >
-                      {/* 裸 chevron 包成按钮：仅折叠切换（点击不冒泡），行点击走三态逻辑。 */}
-                      <button
-                        type="button"
-                        className="nonvol-group-arrow"
-                        aria-label={t('expandVolumeAria')}
-                        aria-expanded={open}
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          toggle(group.key)
-                        }}
-                      >
-                        <ChevronIcon className="vol-arrow" />
-                      </button>
-                      {renaming ? (
-                        <input
-                          className="vol-rename"
-                          type="text"
-                          value={draftName}
-                          autoFocus
-                          spellCheck={false}
-                          aria-label={t('volumeNameAria')}
-                          onClick={(event) => event.stopPropagation()}
-                          onChange={(event) => setDraftName(event.target.value)}
-                          onBlur={() => settleRename(volume, true)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter') {
-                              event.preventDefault()
-                              settleRename(volume, true)
-                            } else if (event.key === 'Escape') {
-                              event.preventDefault()
-                              settleRename(volume, false)
-                            }
-                          }}
-                        />
-                      ) : (
-                        /* 卷名段（前缀「卷X」+ ● + 名段）：与章节页同源同口径，纯展示，
-                         点击冒泡到 .vol-head 触发折叠；改名仅由行内 hover 铅笔按钮进入内联重命名。 */
-                        <>
-                          {volPrefix !== '' && <span className="vol-prefix">{volPrefix}</span>}
-                          {volPrefix !== '' && (
-                            <span className="vol-sep" aria-hidden="true">
-                              ●
-                            </span>
-                          )}
-                          {volName !== '' && <span className="vol-name">{volName}</span>}
-                        </>
-                      )}
-                      <span className="vol-count">{group.chapters.length}</span>
-
-                      {/* 行内 hover 操作：新建条目 + 重命名 + 删除卷。 */}
-                      <span className="vol-actions" onClick={(event) => event.stopPropagation()}>
-                        <IconButton
-                          size="sm"
-                          className="row-act"
-                          label={t('newChapter')}
-                          tooltipPlacement="top"
-                          onClick={(event) => {
-                            if (event.detail > 0) event.currentTarget.blur()
-                            // 新建条目落在本卷：先展开，避免收起态下新建后看不见。
-                            openKey(group.key)
-                            onCreateChapter(volume.id)
-                          }}
-                        >
-                          <PlusIcon width={14} />
-                        </IconButton>
-                        <IconButton
-                          size="sm"
-                          className="row-act"
-                          label={t('rename')}
-                          tooltipPlacement="top"
-                          onClick={() => beginRename(volume)}
-                        >
-                          <PencilIcon />
-                        </IconButton>
-                        <IconButton
-                          size="sm"
-                          className="row-act"
-                          tone="danger"
-                          label={t('deleteVolume')}
-                          tooltipPlacement="top"
-                          onClick={() => requestDeleteVolume(volume)}
-                        >
-                          <TrashIcon />
-                        </IconButton>
-                      </span>
-                    </div>
-
+                      },
+                      rename: { label: t('rename'), onClick: () => beginRename(volume) },
+                      delete: {
+                        label: t('deleteVolume'),
+                        onClick: () => requestDeleteVolume(volume)
+                      }
+                    }}
+                    renaming={renaming}
+                    draftName={draftName}
+                    onDraftNameChange={setDraftName}
+                    renameAriaLabel={t('volumeNameAria')}
+                    onCommitRename={() => settleRename(volume, true)}
+                    onCancelRename={() => settleRename(volume, false)}
+                  >
                     <div className="chapters">
                       <div className="chapters-inner">
                         <div className="outline-chapters-list">
@@ -444,7 +365,7 @@ export default function OutlinePanel({
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </VolumeGroupRow>
                 )
               })}
             </div>

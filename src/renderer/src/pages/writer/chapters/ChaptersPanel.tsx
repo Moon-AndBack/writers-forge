@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconButton } from '../../../components/ui'
-import { TrashIcon } from '../../../components/icons'
 import { EmptyState } from '../../../components/EmptyState'
 import { LoadErrorState } from '../../../components/LoadErrorState'
-import { ChevronIcon, PencilIcon, PlusIcon, SpecialChapterIcon, SpecialVolumeIcon } from '../icons'
+import { SpecialChapterIcon, SpecialVolumeIcon } from '../icons'
 import { useTreeExpansion } from '../useTreeExpansion'
 import {
   groupChapters,
@@ -25,6 +24,7 @@ import {
   withDeleteImpactWarning
 } from '../foreshadow/useForeshadowDeleteImpact'
 import { useVolumeDeleteImpact } from '../volumes/useVolumeDeleteImpact'
+import VolumeGroupRow from '../volumes/VolumeGroupRow'
 import type { CreateChapterInput } from './useChapterTree'
 
 /** 跨卷拖拽悬停收起卷的自动展开延迟（ms）。 */
@@ -285,130 +285,57 @@ export default function ChaptersPanel({
     const full = isVolumeFull(volume.id)
     const dropTarget = drag.dropContainerKey === group.key
     return (
-      <div
+      <VolumeGroupRow
         key={group.key}
-        data-volume-id={volume.id}
-        className={`vol${open ? ' is-open' : ''}${volume.kind === 'custom' ? ' is-special' : ' is-plain'}${unfiled ? ' is-unfiled' : ''}`}
-      >
-        <div
-          className={`vol-head${dropTarget ? ' is-drop-target' : ''}`}
-          role="button"
-          tabIndex={0}
-          aria-expanded={open}
-          onClick={(event) => {
-            // 鼠标点击后移除行焦点：本行（tabIndex=0）与行内操作按钮都在
-            // .vol-head 内，点击后焦点残留会让 :focus-within 持续命中，
-            // 鼠标移出后按钮组 / 计数隐藏、卷名让位均不恢复。
-            // 用 detail>0 只对鼠标点击 blur——键盘 Enter/Space 合成的
-            // click（detail===0）不 blur，保留键盘可达性。
-            if (event.detail > 0) event.currentTarget.blur()
-            if (renaming) return
-            fold.toggle(group.key)
-          }}
-          onKeyDown={(event) => {
-            if (renaming) return
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault()
-              fold.toggle(group.key)
-            }
-          }}
-        >
-          <ChevronIcon className="vol-arrow" />
-          {renaming ? (
-            <input
-              className="vol-rename"
-              type="text"
-              value={draftName}
-              autoFocus
-              spellCheck={false}
-              aria-label={
-                volume.kind === 'custom' ? t('specialVolumeNameAria') : t('customVolumeNameAria')
-              }
-              onClick={(event) => event.stopPropagation()}
-              onChange={(event) => setDraftName(event.target.value)}
-              onBlur={() => settleRename(volume, true)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault()
-                  settleRename(volume, true)
-                } else if (event.key === 'Escape') {
-                  event.preventDefault()
-                  settleRename(volume, false)
-                }
-              }}
-            />
-          ) : (
-            <>
-              {/* 卷名段（前缀「卷X」+ ● + 名段）：纯展示，点击冒泡到 .vol-head 触发折叠；
-                改名仅由行内 hover「重命名」铅笔按钮进入内联重命名。 */}
-              {volPrefix !== '' && <span className="vol-prefix">{volPrefix}</span>}
-              {/* 卷行分隔点：与章行「●」分隔符一致（纯装饰，斜体前缀段与正体名段之间）。 */}
-              {volPrefix !== '' && (
-                <span className="vol-sep" aria-hidden="true">
-                  ●
-                </span>
-              )}
-              {volName !== '' && <span className="vol-name">{volName}</span>}
-            </>
-          )}
-          <span className="vol-count">{group.chapters.length}</span>
-
-          {/* 行内 hover 操作：新建章 + 新建特殊章（正文卷）/ 重命名 / 删除。
-              系统「未分卷」卡不提供任何操作（不可建章 / 重命名 / 删除），整组不渲染。 */}
-          {!unfiled && (
-            <span className="vol-actions" onClick={(event) => event.stopPropagation()}>
-              <IconButton
-                size="sm"
-                className="row-act"
-                label={full ? t('volumeFull') : t('newChapter')}
-                tooltipPlacement="top"
-                disabled={full}
-                onClick={(event) => {
-                  // 鼠标点击后 blur：本按钮无弹窗接焦，焦点残留会让
-                  // .vol-head:focus-within 持续命中（移出后按钮组不隐藏）。
-                  // detail>0 限定鼠标；键盘触发不 blur 保持可达性。
-                  if (event.detail > 0) event.currentTarget.blur()
+        className={`vol${volume.kind === 'custom' ? ' is-special' : ' is-plain'}${unfiled ? ' is-unfiled' : ''}`}
+        headClassName={dropTarget ? 'is-drop-target' : undefined}
+        dataVolumeId={volume.id}
+        prefix={volPrefix}
+        name={volName}
+        count={group.chapters.length}
+        expanded={open}
+        onActivate={() => fold.toggle(group.key)}
+        actions={
+          unfiled
+            ? undefined
+            : {
+                add: {
+                  label: full ? t('volumeFull') : t('newChapter'),
+                  disabled: full,
                   // 新建章落在本卷：先展开，避免收起态下新建后看不见。
-                  openVolume(group.key)
-                  onCreateChapter({ volumeId: volume.id })
-                }}
-              >
-                <PlusIcon width={14} />
-              </IconButton>
-              {volume.kind !== 'custom' && (
-                <IconButton
-                  size="sm"
-                  className="row-act"
-                  label={t('newSpecialChapter')}
-                  tooltipPlacement="top"
-                  onClick={() => setSpecialChapterVolume(volume)}
-                >
-                  <SpecialChapterIcon width={14} />
-                </IconButton>
-              )}
-              <IconButton
-                size="sm"
-                className="row-act"
-                label={t('rename')}
-                tooltipPlacement="top"
-                onClick={() => beginRename(volume)}
-              >
-                <PencilIcon />
-              </IconButton>
-              <IconButton
-                size="sm"
-                className="row-act"
-                tone="danger"
-                label={t('deleteVolume')}
-                tooltipPlacement="top"
-                onClick={() => requestDeleteVolume(volume, labels.volumeLabel(volume))}
-              >
-                <TrashIcon />
-              </IconButton>
-            </span>
-          )}
-        </div>
-
+                  onClick: () => {
+                    openVolume(group.key)
+                    onCreateChapter({ volumeId: volume.id })
+                  }
+                },
+                extra:
+                  volume.kind !== 'custom' ? (
+                    <IconButton
+                      size="sm"
+                      className="row-act"
+                      label={t('newSpecialChapter')}
+                      tooltipPlacement="top"
+                      onClick={() => setSpecialChapterVolume(volume)}
+                    >
+                      <SpecialChapterIcon width={14} />
+                    </IconButton>
+                  ) : undefined,
+                rename: { label: t('rename'), onClick: () => beginRename(volume) },
+                delete: {
+                  label: t('deleteVolume'),
+                  onClick: () => requestDeleteVolume(volume, labels.volumeLabel(volume))
+                }
+              }
+        }
+        renaming={renaming}
+        draftName={draftName}
+        onDraftNameChange={setDraftName}
+        renameAriaLabel={
+          volume.kind === 'custom' ? t('specialVolumeNameAria') : t('customVolumeNameAria')
+        }
+        onCommitRename={() => settleRename(volume, true)}
+        onCancelRename={() => settleRename(volume, false)}
+      >
         <div className="chapters" onTransitionEnd={(event) => fold.onFoldEnd(group.key, event)}>
           <div className="chapters-inner">
             {fold.isMounted(group.key) ? (
@@ -424,7 +351,7 @@ export default function ChaptersPanel({
             ) : null}
           </div>
         </div>
-      </div>
+      </VolumeGroupRow>
     )
   }
 
