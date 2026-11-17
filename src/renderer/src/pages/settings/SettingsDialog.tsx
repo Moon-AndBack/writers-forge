@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Modal, useToast } from '../../components/ui'
-import { useConfirm } from '../writer/chapters/useConfirm'
+import { useConfirm } from '@renderer/components/ui/useConfirm'
 import AiSection from './AiSection'
 import AppearanceSection from './AppearanceSection'
 import DataSection from './DataSection'

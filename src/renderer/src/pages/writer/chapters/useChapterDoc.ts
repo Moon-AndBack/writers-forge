@@ -3,7 +3,7 @@ import type { Editor } from '@tiptap/core'
 import { createLogger } from '@renderer/lib/log'
 import { useContentSwap } from '../../../components/editor/useContentSwap'
 import { FIRST_APPEARANCES_INVALIDATE_EVENT } from '../dossier/useFirstAppearances'
-import { useAutoSaveEnabled } from '../useAutoSaveEnabled'
+import { useAutoSaveEnabled } from '@renderer/shell/settings/useAutoSaveEnabled'
 import { docToParagraphs, paragraphsToDocJSON } from './docParagraphs'
 import type { DocParagraph } from './docParagraphs'
 

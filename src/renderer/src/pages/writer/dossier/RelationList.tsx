@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Input, Select, Tag } from '../../../components/ui'
-import ConfirmDialog from '../ConfirmDialog'
+import ConfirmDialog from '@renderer/components/ui/ConfirmDialog'
 import type { DossierRelationPatch, WorldRefRow } from './dossierTree'
 import { isRelationPrefixSuppressed } from './relationChip'
 import { useRelationLabels } from './useRelationLabels'

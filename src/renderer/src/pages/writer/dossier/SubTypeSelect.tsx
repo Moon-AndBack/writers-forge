@@ -4,7 +4,7 @@ import { Button, Input, Select } from '../../../components/ui'
 import { createLogger } from '@renderer/lib/log'
 import type { WorldEntityType } from '../../../../../preload/types/worldEntity'
 import type { WorldSubtypeRow } from '../../../../../preload/types/worldSubtype'
-import ConfirmDialog from '../ConfirmDialog'
+import ConfirmDialog from '@renderer/components/ui/ConfirmDialog'
 
 /** 子类分类数据访问失败 / 建类失败的本地日志（转发主进程落盘）。 */
 const log = createLogger('dossier')

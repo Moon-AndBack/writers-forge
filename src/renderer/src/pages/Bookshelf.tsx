@@ -13,8 +13,8 @@ import {
 } from './bookshelf/BookFormDialog'
 import { useBookshelfData } from './bookshelf/useBookshelfData'
 import { useShelfSnap } from './bookshelf/useShelfSnap'
-import { useConfirm } from './writer/chapters/useConfirm'
-import { useSettingsValue } from './settings/useSettingsValue'
+import { useConfirm } from '@renderer/components/ui/useConfirm'
+import { useSettingsValue } from '@renderer/shell/settings/useSettingsValue'
 import { PEN_NAME_SETTING_KEY, decodePenName } from './settings/penName'
 import {
   filterBooks,

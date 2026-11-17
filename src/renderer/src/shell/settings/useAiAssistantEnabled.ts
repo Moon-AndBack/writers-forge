@@ -1,4 +1,4 @@
-import { useSettingsValue } from '../settings/useSettingsValue'
+import { useSettingsValue } from './useSettingsValue'
 
 /**
  * settings 键：AI 助手总开关（布尔，缺省开启）。

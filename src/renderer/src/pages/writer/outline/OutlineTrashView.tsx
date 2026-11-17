@@ -7,7 +7,7 @@ import type {
   TrashSelection
 } from '../../../components/trash/TrashListView'
 import { useTrashData } from '../useTrashData'
-import { useConfirm } from '../chapters/useConfirm'
+import { useConfirm } from '@renderer/components/ui/useConfirm'
 import { useChapterLabels } from '../chapters/useChapterLabels'
 import {
   useForeshadowDeleteImpact,

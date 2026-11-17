@@ -23,7 +23,7 @@ import {
   decodeCloudBackupProvider,
   type CloudBackupProviderId
 } from './cloudBackupProvider'
-import { useSettingsValue } from './useSettingsValue'
+import { useSettingsValue } from '@renderer/shell/settings/useSettingsValue'
 import { ERROR_KEYS, NOTICE_KEYS, PHASE_KEYS, formatBytes } from './onedriveSectionSupport'
 import { useOneDriveBackup } from './useOneDriveBackup'
 import OneDriveRemoteBackups from './OneDriveRemoteBackups'

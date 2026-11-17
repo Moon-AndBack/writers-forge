@@ -18,7 +18,7 @@ import SpecialChapterDialog from './SpecialChapterDialog'
 import { useChapterDrag } from './useChapterDrag'
 import { useChapterFold } from './useChapterFold'
 import { useChapterLabels } from './useChapterLabels'
-import { useConfirm } from './useConfirm'
+import { useConfirm } from '@renderer/components/ui/useConfirm'
 import {
   useForeshadowDeleteImpact,
   withDeleteImpactWarning

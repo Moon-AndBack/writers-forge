@@ -13,7 +13,7 @@ import {
 import SectionCard from './SectionCard'
 import SettingRow from './SettingRow'
 import { settingRowDescriptionId } from './settingRowIds'
-import { useSettingsValue } from './useSettingsValue'
+import { useSettingsValue } from '@renderer/shell/settings/useSettingsValue'
 
 /**
  * 通用设置 · 外观与主题组。

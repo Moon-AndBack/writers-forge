@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Button, Input, Modal, Segmented, Select } from '../ui'
-import { useConfirm } from '../../pages/writer/chapters/useConfirm'
+import { useConfirm } from '../ui/useConfirm'
 import '../../styles/components/clean-words.css'
 import { CleanWordAddForm } from './CleanWordAddForm'
 import { CleanWordsTable } from './CleanWordsTable'

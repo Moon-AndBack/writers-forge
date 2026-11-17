@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { ConfirmDialog } from '../ConfirmDialog'
+import { ConfirmDialog } from './ConfirmDialog'
 
 interface PendingConfirm {
   title: string

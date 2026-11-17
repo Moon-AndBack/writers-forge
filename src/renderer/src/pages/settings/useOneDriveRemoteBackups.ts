@@ -22,7 +22,7 @@ import type {
   RemoteBackupItem
 } from '../../../../preload/types/onedrive'
 import { useFlushAllBeforeClose } from '../../shell/beforeCloseFlush'
-import type { ConfirmController } from '../writer/chapters/useConfirm'
+import type { ConfirmController } from '@renderer/components/ui/useConfirm'
 
 /** 远端列表三态；`idle` 用于未登录 / 已登出。 */
 export type RemoteBackupStatus = 'idle' | 'loading' | 'ready' | 'error'

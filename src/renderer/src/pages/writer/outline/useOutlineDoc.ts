@@ -4,7 +4,7 @@ import type { Content } from '@tiptap/core'
 import { createLogger } from '@renderer/lib/log'
 import { sanitizeOutlineContent } from '@renderer/components/editor/imageNode'
 import { useContentSwap, type ContentSwapPhase } from '@renderer/components/editor/useContentSwap'
-import { useAutoSaveEnabled } from '../useAutoSaveEnabled'
+import { useAutoSaveEnabled } from '@renderer/shell/settings/useAutoSaveEnabled'
 
 /** 大纲正文链路日志（转发至主进程落盘）。 */
 const log = createLogger('outline')

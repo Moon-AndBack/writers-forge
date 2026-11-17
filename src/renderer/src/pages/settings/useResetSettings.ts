@@ -29,9 +29,9 @@ import {
   AUTO_SAVE_DEFAULT,
   AUTO_SAVE_SETTING_KEY,
   decodeAutoSave
-} from '../writer/useAutoSaveEnabled'
+} from '@renderer/shell/settings/useAutoSaveEnabled'
 import { DEFAULT_DEFAULT_VIEW, DEFAULT_VIEW_SETTING_KEY, resolveDefaultView } from './defaultView'
-import { useSettingsValue } from './useSettingsValue'
+import { useSettingsValue } from '@renderer/shell/settings/useSettingsValue'
 
 /**
  * 可重置项白名单与各自默认值（设置弹窗「重置为默认」的唯一真源）。

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Button, Modal } from '../../components/ui'
+import { Button } from './Button'
+import { Modal } from './Modal'
 
 export interface ConfirmDialogProps {
   /** 是否显示。 */

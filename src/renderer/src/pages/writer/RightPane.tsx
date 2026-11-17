@@ -6,7 +6,7 @@ import type { WriterModule } from '../../shell/activityBar'
 import type { ChapterRow, VolumeRow } from './chapters/chapterTree'
 import { useChapterLabels } from './chapters/useChapterLabels'
 import { formatChapterPlace } from '../../../../shared/place'
-import ConfirmDialog from './ConfirmDialog'
+import ConfirmDialog from '@renderer/components/ui/ConfirmDialog'
 import DossierDetail from './dossier/DossierDetail'
 import type { DossierBundle } from './dossier/dossierTree'
 import ForeshadowPanel from './foreshadow/ForeshadowPanel'
@@ -31,7 +31,7 @@ import {
 } from './right/rightPaneTabSets'
 import type { TimelineEntry } from './timeline/timelineOrigin'
 import type { TimelineOriginPatch } from './timeline/useTimelineWorkspace'
-import { useAiAssistantEnabled } from './useAiAssistantEnabled'
+import { useAiAssistantEnabled } from '@renderer/shell/settings/useAiAssistantEnabled'
 
 /** 调用方未传保存入口时的占位 ref（仅保证必填契约，编辑器写入无副作用）。 */
 const EMPTY_SAVE_REF: RefObject<(() => void | Promise<boolean>) | null> = { current: null }

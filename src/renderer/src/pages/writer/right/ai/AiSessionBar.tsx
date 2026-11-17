@@ -11,7 +11,7 @@ import {
   useToast
 } from '../../../../components/ui'
 import type { DropdownItem } from '../../../../components/ui'
-import { useConfirm } from '../../chapters/useConfirm'
+import { useConfirm } from '@renderer/components/ui/useConfirm'
 import type { AiChatSessionRow } from '../../../../../../preload/types/ai'
 
 export interface AiSessionBarProps {

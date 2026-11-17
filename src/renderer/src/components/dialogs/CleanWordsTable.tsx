@@ -5,7 +5,7 @@ import { Button, IconButton, Switch, Tag } from '../ui'
 import { SearchIcon, TrashIcon } from '../icons'
 import { EmptyState } from '../EmptyState'
 import { LoadErrorState } from '../LoadErrorState'
-import { useConfirm } from '../../pages/writer/chapters/useConfirm'
+import { useConfirm } from '../ui/useConfirm'
 import type { CleanWordRow } from '../../../../preload/types/cleanWords'
 import { CATEGORY_LABEL_KEYS } from './cleanWordsMeta'
 

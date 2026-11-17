@@ -1,4 +1,4 @@
-import { useSettingsValue } from '../settings/useSettingsValue'
+import { useSettingsValue } from './useSettingsValue'
 
 /** settings 键：自动保存开关（布尔，缺省开启）。 */
 export const AUTO_SAVE_SETTING_KEY = 'autoSave'

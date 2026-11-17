@@ -23,12 +23,12 @@ import AiCompressionRow from './AiCompressionRow'
 import AiTestRow from './AiTestRow'
 import { UNKNOWN_ERROR, type TestState } from './aiSectionSupport'
 import { useAiSettingsConfig } from './useAiSettingsConfig'
-import { useSettingsValue } from './useSettingsValue'
+import { useSettingsValue } from '@renderer/shell/settings/useSettingsValue'
 import {
   AI_ASSISTANT_DEFAULT,
   AI_ASSISTANT_SETTING_KEY,
   decodeAiAssistant
-} from '../writer/useAiAssistantEnabled'
+} from '@renderer/shell/settings/useAiAssistantEnabled'
 
 export default function AiSection() {
   const { t } = useTranslation('ai')

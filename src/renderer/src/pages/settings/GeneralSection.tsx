@@ -5,7 +5,7 @@ import SectionCard from './SectionCard'
 import SettingRow from './SettingRow'
 import { settingRowDescriptionId } from './settingRowIds'
 import { useLocale } from '../../i18n/context'
-import { useSettingsValue } from './useSettingsValue'
+import { useSettingsValue } from '@renderer/shell/settings/useSettingsValue'
 import { DEFAULT_VIEW_OPTIONS, resolveDefaultView, type DefaultView } from './defaultView'
 import {
   PEN_NAME_MAX_LENGTH,
@@ -18,7 +18,7 @@ import {
   AUTO_SAVE_DEFAULT,
   AUTO_SAVE_SETTING_KEY,
   decodeAutoSave
-} from '../writer/useAutoSaveEnabled'
+} from '@renderer/shell/settings/useAutoSaveEnabled'
 
 /** 界面语言档位（值写入 settings 键 `locale`；label 走 i18n，语言自称保留原文）。 */
 const LOCALE_OPTIONS = [

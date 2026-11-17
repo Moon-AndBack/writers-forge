@@ -6,7 +6,7 @@ import { IconButton, Select } from '../../../components/ui'
 import { PencilIcon } from '../icons'
 import { TrashIcon } from '../../../components/icons'
 import type { TimelineEntry } from '../timeline/timelineOrigin'
-import { useConfirm } from '../chapters/useConfirm'
+import { useConfirm } from '@renderer/components/ui/useConfirm'
 import PlotLineDialog, { type PlotLineDialogInput } from './PlotLineDialog'
 import {
   getPlotLineColorValue,

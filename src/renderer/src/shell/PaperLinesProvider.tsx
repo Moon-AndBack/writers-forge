@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
-import { useSettingsValue } from '../pages/settings/useSettingsValue'
+import { useSettingsValue } from './settings/useSettingsValue'
 import {
   PAPER_LINES_DEFAULT,
   PAPER_LINES_SETTING_KEY,

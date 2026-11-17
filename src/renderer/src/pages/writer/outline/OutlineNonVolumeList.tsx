@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useConfirm } from '../chapters/useConfirm'
+import { useConfirm } from '@renderer/components/ui/useConfirm'
 import {
   useForeshadowDeleteImpact,
   withDeleteImpactWarning

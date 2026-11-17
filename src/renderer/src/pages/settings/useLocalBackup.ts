@@ -18,7 +18,7 @@ import { useTranslation } from 'react-i18next'
 import type { BackupErrorCode, BackupItem, BackupRestoreResult } from '../../../../main/backup'
 import { useToast } from '../../components/ui'
 import { useFlushAllBeforeClose } from '../../shell/beforeCloseFlush'
-import { useConfirm } from '../writer/chapters/useConfirm'
+import { useConfirm } from '@renderer/components/ui/useConfirm'
 
 /** 列表三态：loading 必须先于 error / empty 判断。 */
 export type LocalBackupStatus = 'loading' | 'ready' | 'error'

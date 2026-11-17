@@ -5,7 +5,7 @@ import { LoadErrorState } from '../../../components/LoadErrorState'
 import { IconButton, useToast } from '../../../components/ui'
 import { TrashIcon } from '../../../components/icons'
 import { PencilIcon } from '../icons'
-import { useConfirm } from '../chapters/useConfirm'
+import { useConfirm } from '@renderer/components/ui/useConfirm'
 import type { TimelineEntry } from './timelineOrigin'
 
 export interface TimelinePanelProps {

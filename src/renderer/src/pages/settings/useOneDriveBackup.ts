@@ -20,7 +20,7 @@ import type {
   OneDriveStatus
 } from '../../../../preload/types/onedrive'
 import { useToast } from '../../components/ui'
-import { useConfirm } from '../writer/chapters/useConfirm'
+import { useConfirm } from '@renderer/components/ui/useConfirm'
 import { formatBytes, type OneDriveNotice } from './onedriveSectionSupport'
 import { useOneDriveRemoteBackups, type OneDriveRemoteController } from './useOneDriveRemoteBackups'
 
