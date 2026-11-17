@@ -1,14 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Editor } from '@tiptap/core'
-import { createLogger } from '@renderer/lib/log'
-import { useContentSwap } from '../../../components/editor/useContentSwap'
+import type { SaveStatus } from '@renderer/components/editor/useRichTextAutoSave'
+import { useRichTextAutoSave } from '@renderer/components/editor/useRichTextAutoSave'
 import { FIRST_APPEARANCES_INVALIDATE_EVENT } from '../dossier/useFirstAppearances'
-import { useAutoSaveEnabled } from '@renderer/shell/settings/useAutoSaveEnabled'
 import { docToParagraphs, paragraphsToDocJSON } from './docParagraphs'
 import type { DocParagraph } from './docParagraphs'
-
-/** 章节文档链路日志（转发至主进程落盘）。 */
-const log = createLogger('useChapterDoc')
 
 /**
  * 章节正文链路：
@@ -16,8 +11,9 @@ const log = createLogger('useChapterDoc')
  * 读：`chapterId` 变化 → `chapters:getParagraphs` → 建 doc；
  * 写：doc 变更 → 防抖 800ms → `docToParagraphs` → `chapters:saveParagraphs`，失败 warn
  *     并静默重试一次；切换章节前 flush 立即落盘，避免丢字。
- *     防抖保存受设置 `autoSave` 控制（见 `useAutoSaveEnabled`）：关闭时编辑只置脏、
- *     不排定时器，由保存按钮 / 切章 / 切模块 / 关窗 flush 落库。
+ *
+ * 状态机（防抖 / 快照比对 / 重试 / flush / 归属与序号守卫）与大纲共用
+ * `useRichTextAutoSave`，此处只提供章节域的段落映射与保存载荷。
  *
  * `chapterId` 来源：章节树行 `ChapterRow.id`（正文直接归属章节，`documents` 表已删除）。
  * 字数展示走 `docWordLimit.docCharCount` 的编辑器块级缓存（与输入拦截同源），本链路不再
@@ -26,20 +22,49 @@ const log = createLogger('useChapterDoc')
 
 export interface ChapterDocState {
   /** 加载 / 保存状态指示（状态栏展示）。 */
-  status: 'loading' | 'ready' | 'saving' | 'error'
+  status: SaveStatus
   /** 是否存在尚未落盘的改动（状态栏「未保存」显示用，不参与保存机制）。 */
   dirty: boolean
   /** 最近一次成功落盘时间（ISO 字符串），供编辑头「最后编辑」相对时间展示。 */
   lastSavedAt: string | null
 }
 
-/** 保存防抖毫秒数。 */
-const SAVE_DEBOUNCE_MS = 800
-
 interface UseChapterDocOptions {
   /** 章节 id；null 表示无选中章（不加载 / 不保存）。 */
   chapterId: number | null
   editor: Editor | null
+}
+
+/** 读：段落行 → 段落数组（idx 升序；空章兜底一个空段）。 */
+async function loadChapter(id: number, editor: Editor) {
+  const rows = await window.api.chapters.getParagraphs(id)
+  const paragraphs: DocParagraph[] =
+    rows.length > 0
+      ? [...rows]
+          .sort((a, b) => a.idx - b.idx)
+          .map((row) => ({ text: row.text, contentJson: row.contentJson }))
+      : [{ text: '', contentJson: null }]
+  return {
+    content: paragraphsToDocJSON(paragraphs, { withContentJson: true, schema: editor.schema }),
+    snapshot: JSON.stringify(paragraphs)
+  }
+}
+
+/** 采集：编辑器顶层块 → 段落数组（保存载荷与快照同源）。 */
+function captureChapter(editor: Editor) {
+  const paragraphs = docToParagraphs(editor, { withContentJson: true })
+  return { payload: paragraphs, snapshot: JSON.stringify(paragraphs) }
+}
+
+/** 写：整章段落全量重写；`{ ok: false }` 交给共享状态机静默重试一次。 */
+async function saveChapter(id: number, paragraphs: DocParagraph[]): Promise<boolean> {
+  const result = await window.api.chapters.saveParagraphs(id, paragraphs)
+  return result.ok
+}
+
+/** 章节正文落库后广播首次登场失效（主进程按内容版本增量重扫，渲染层后台重取）。 */
+function invalidateFirstAppearances(): void {
+  window.dispatchEvent(new Event(FIRST_APPEARANCES_INVALIDATE_EVENT))
 }
 
 /**
@@ -50,242 +75,13 @@ interface UseChapterDocOptions {
  * 并在卸载 / 切章时 flush 挂起的保存。`flush` 供外部（保存按钮 / 快捷键）调用。
  */
 export function useChapterDoc({ chapterId, editor }: UseChapterDocOptions) {
-  const autoSaveEnabled = useAutoSaveEnabled()
-  const [status, setStatus] = useState<ChapterDocState['status']>('loading')
-  // 是否有未落盘变更（与 dirtyRef 同步的展示态，供状态栏消费）
-  const [dirty, setDirty] = useState(false)
-  // 最近一次成功落盘时间（ISO），供编辑头展示
-  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
-  // 正文整体更换后的淡入相位（`.editor-scroll` 的 data-swap-phase；章节 / 大纲共用逻辑）
-  const { swapPhase, markContentSwapped } = useContentSwap()
-
-  // 当前章节 id（null = 无选中 / 未加载）
-  const chapterIdRef = useRef<number | null>(null)
-  // 挂起的保存定时器
-  const saveTimerRef = useRef<number | null>(null)
-  // 是否有未落盘变更
-  const dirtyRef = useRef(false)
-  // 最近一次保存的文本快照（JSON 序列化；避免 doc 变更但 texts 未变时重复写库）
-  const lastSavedRef = useRef<string | null>(null)
-  // 编辑器内**实际装载**的内容 id（读链路 setContent / reload 完成后写入）。
-  // 与 chapterIdRef 区分：后者在加载开始即指向新章，而编辑器此时仍是旧章内容。
-  const loadedContentIdRef = useRef<number | null>(null)
-  // 保存序号：每次 saveNow 递增，回包只有最新序号可生效（旧回包丢弃）。
-  const saveSeqRef = useRef(0)
-
-  const saveNow = useCallback(async (): Promise<void> => {
-    const chapterId = chapterIdRef.current
-    if (!chapterId || !editor || !editor.isInitialized) return
-    // 归属守卫：编辑器里实际装载的必须就是当前目标章；加载窗口内仍是旧章内容时跳过，
-    // 避免旧内容被写到新目标、覆盖新章原文。
-    if (loadedContentIdRef.current !== chapterId) {
-      log.warn('跳过保存：编辑器内容不属于当前章节', {
-        loadedContentId: loadedContentIdRef.current,
-        chapterId
-      })
-      return
-    }
-
-    const paragraphs = docToParagraphs(editor, { withContentJson: true })
-    const snapshot = JSON.stringify(paragraphs)
-    if (lastSavedRef.current !== null && snapshot === lastSavedRef.current) {
-      dirtyRef.current = false
-      setDirty(false)
-      return
-    }
-
-    // 保存序号：回包只有仍是「最新一次保存」（且归属未变）时才可生效。
-    saveSeqRef.current += 1
-    const seq = saveSeqRef.current
-    const isStale = (): boolean =>
-      saveSeqRef.current !== seq || loadedContentIdRef.current !== chapterId
-    // 成功落库后的收尾：仅最新回包更新快照 / 状态；仅当编辑器当前内容仍等于刚保存的
-    // 快照时才清 dirty（保存期间的新输入必须保持脏，等待下一轮保存落库）。
-    const acceptSaved = (): void => {
-      lastSavedRef.current = snapshot
-      setLastSavedAt(new Date().toISOString())
-      setStatus('ready')
-      if (JSON.stringify(docToParagraphs(editor, { withContentJson: true })) === snapshot) {
-        dirtyRef.current = false
-        setDirty(false)
-      }
-      // 正文已落库（快照相同会提前返回，不会走到这里）：广播首次登场失效，
-      // 主进程按内容版本增量重扫，渲染层后台重取。
-      window.dispatchEvent(new Event(FIRST_APPEARANCES_INVALIDATE_EVENT))
-    }
-
-    setStatus('saving')
-    try {
-      const result = await window.api.chapters.saveParagraphs(chapterId, paragraphs)
-      if (result.ok) {
-        if (isStale()) {
-          log.info('丢弃过期保存回包', { seq, chapterId })
-          return
-        }
-        acceptSaved()
-      } else {
-        // 静默重试一次
-        const retry = await window.api.chapters.saveParagraphs(chapterId, paragraphs)
-        if (retry.ok) {
-          if (isStale()) {
-            log.info('丢弃过期保存回包（重试）', { seq, chapterId })
-            return
-          }
-          acceptSaved()
-        } else {
-          if (isStale()) return
-          log.warn('段落保存失败（含一次重试）')
-          setStatus('error')
-        }
-      }
-    } catch (error) {
-      if (isStale()) return
-      log.warn('段落保存异常', error)
-      setStatus('error')
-    }
-  }, [editor])
-
-  // flush：切换章节前立即落盘（可 await，供替换前的串行化调用）
-  const flush = useCallback(async (): Promise<void> => {
-    if (saveTimerRef.current !== null) {
-      window.clearTimeout(saveTimerRef.current)
-      saveTimerRef.current = null
-    }
-    if (dirtyRef.current) await saveNow()
-  }, [saveNow])
-
-  // 重载：丢弃编辑器当前内容，从库重读该文档段落并重建 doc（用于「替换命中当前章」后同步）。
-  // 调用方应先 flush 再 reload；setContent 以 emitUpdate:false 写入，不触发防抖保存。
-  // **不触发淡入**（不调 markContentSwapped）：替换后紧接重读，同一内容原地同步而非
-  // 「换到新内容」——全量淡入会把用户刚替换 / 正在定位的命中处压到 opacity 0，
-  // 连续替换时还会逐次闪烁，故保持瞬变。
-  const reload = useCallback(async (): Promise<void> => {
-    const chapterId = chapterIdRef.current
-    if (!chapterId || !editor || !editor.isInitialized) return
-    try {
-      const rows = await window.api.chapters.getParagraphs(chapterId)
-      const paragraphs: DocParagraph[] =
-        rows.length > 0
-          ? [...rows]
-              .sort((a, b) => a.idx - b.idx)
-              .map((row) => ({ text: row.text, contentJson: row.contentJson }))
-          : [{ text: '', contentJson: null }]
-      // 重载即开启新一轮：更早发起的保存回包一律丢弃（避免旧快照回写 / 误清脏）。
-      saveSeqRef.current += 1
-      loadedContentIdRef.current = chapterId
-      editor.commands.setContent(
-        paragraphsToDocJSON(paragraphs, { withContentJson: true, schema: editor.schema }),
-        { emitUpdate: false }
-      )
-      lastSavedRef.current = JSON.stringify(paragraphs)
-      dirtyRef.current = false
-      setDirty(false)
-      setStatus('ready')
-    } catch (error) {
-      log.warn('段落重载失败', error)
-      setStatus('error')
-    }
-  }, [editor])
-
-  // 读链路：chapterId 变化 → 读段落 → 建 doc
-  useEffect(() => {
-    if (!editor || !editor.isInitialized) return undefined
-    let cancelled = false
-
-    // 切章前 flush 上一章的挂起保存
-    void flush()
-
-    chapterIdRef.current = null
-    loadedContentIdRef.current = null
-    lastSavedRef.current = null
-    dirtyRef.current = false
-
-    if (chapterId === null) {
-      // 延迟到微任务再读写 state，避免在 effect 内同步 setState（react-hooks/set-state-in-effect）。
-      void Promise.resolve().then(() => {
-        if (cancelled || !editor.isInitialized) return
-        editor.commands.setContent(
-          { type: 'doc', content: [{ type: 'paragraph' }] },
-          { emitUpdate: false }
-        )
-        setDirty(false)
-        setStatus('ready')
-        // 排在同批 setState 之后：flushSync 一次性提交（相位 + 状态），仅一次渲染。
-        markContentSwapped()
-      })
-      return () => {
-        cancelled = true
-      }
-    }
-
-    void (async () => {
-      setStatus('loading')
-      setDirty(false)
-      chapterIdRef.current = chapterId
-      try {
-        const rows = await window.api.chapters.getParagraphs(chapterId)
-        if (cancelled) return
-        const paragraphs: DocParagraph[] =
-          rows.length > 0
-            ? [...rows]
-                .sort((a, b) => a.idx - b.idx)
-                .map((row) => ({ text: row.text, contentJson: row.contentJson }))
-            : [{ text: '', contentJson: null }]
-        editor.commands.setContent(
-          paragraphsToDocJSON(paragraphs, { withContentJson: true, schema: editor.schema }),
-          { emitUpdate: false }
-        )
-        // 内容已真正装入编辑器：此刻起才允许把编辑器内容保存到该章。
-        loadedContentIdRef.current = chapterId
-        lastSavedRef.current = JSON.stringify(paragraphs)
-        setStatus('ready')
-        // 切章内容提交：翻转相位 → 正文区淡入（见 useContentSwap；排在同批 setState 之后）。
-        markContentSwapped()
-      } catch (error) {
-        log.warn('段落读取失败', error)
-        setStatus('error')
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-    // flush 依赖 editor，且 flush 引用稳定（useCallback [saveNow]），不会频繁重建；
-    // markContentSwapped 同样引用稳定（useContentSwap 内 useCallback []），入依赖仅为满足 exhaustive-deps
-  }, [editor, chapterId, flush, markContentSwapped])
-
-  // 写链路：doc 变更 → 防抖 800ms 保存（`autoSave` 关闭时只置脏、不排定时器）
-  const onUpdate = useCallback((): void => {
-    dirtyRef.current = true
-    setDirty(true)
-    if (saveTimerRef.current !== null) {
-      window.clearTimeout(saveTimerRef.current)
-      saveTimerRef.current = null
-    }
-    if (!autoSaveEnabled) return
-    saveTimerRef.current = window.setTimeout(() => {
-      saveTimerRef.current = null
-      void saveNow()
-    }, SAVE_DEBOUNCE_MS)
-  }, [saveNow, autoSaveEnabled])
-
-  // 运行中关闭自动保存：清掉已排队的防抖任务（改动仍保留 dirty，等手动 / 安全网 flush）。
-  useEffect(() => {
-    if (autoSaveEnabled || saveTimerRef.current === null) return
-    window.clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = null
-  }, [autoSaveEnabled])
-
-  // 卸载兜底：flush 挂起保存
-  useEffect(() => {
-    return () => {
-      if (saveTimerRef.current !== null) {
-        window.clearTimeout(saveTimerRef.current)
-        saveTimerRef.current = null
-      }
-      if (dirtyRef.current) void saveNow()
-    }
-  }, [saveNow])
-
-  return { status, dirty, lastSavedAt, onUpdate, flush, reload, swapPhase }
+  return useRichTextAutoSave<DocParagraph[]>({
+    contentId: chapterId,
+    editor,
+    load: loadChapter,
+    save: saveChapter,
+    capture: captureChapter,
+    onSaved: invalidateFirstAppearances,
+    label: '章节正文'
+  })
 }
