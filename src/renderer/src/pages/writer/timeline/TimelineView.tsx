@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LoadErrorState } from '../../../components/LoadErrorState'
 import type { RichTextBodyValue } from '../../../components/editor/useRichTextBodyEditor'
@@ -28,6 +28,8 @@ import { useEntityHover } from '../entities/useEntityHover'
 
 /** 显式「已批量匹配且无结果」的恒等空数组：避免卡内因 `undefined` 回落到逐卡匹配。 */
 const NO_ENTITIES: readonly PlotBodyEntity[] = []
+/** 只读卡片占位回调（模块级常量，保证传参引用稳定、不击穿卡片 `memo`）。 */
+const NOOP = (): void => undefined
 
 export interface TimelineViewProps {
   /** 书籍 id（路由参数）；按书读起点键，无书时用裸键兜底。 */
@@ -162,6 +164,13 @@ export default function TimelineView({
   )
   // 胶囊悬停实体卡（事件委托挂在每张卡自己的胶囊容器上，浮窗单例经 portal 挂 body）。
   const entityHover = useEntityHover()
+  // 卡片回调保持稳定引用：`SceneCard` 已 `memo`，内联箭头会击穿记忆化。
+  const handleSelectScene = useCallback(
+    (id: number): void => {
+      onSelectScene?.(id)
+    },
+    [onSelectScene]
+  )
   // 时间线根引用 + 内容列可用宽：既作卡内胶囊溢出重测的布局签名，也作「视图可见」判据
   //（`.ep-view` 非活动态 `display: none`，此时 clientWidth = 0）。隐藏时不做批量匹配，
   // 切到可见后宽度签名 0 → N 变化，胶囊溢出随之重测，避免隐藏期把「全部可见」当结论。
@@ -247,10 +256,10 @@ export default function TimelineView({
                         bookId={bookId ?? ''}
                         bodyText={scene.description}
                         entities={sceneEntities.get(scene.id) ?? NO_ENTITIES}
-                        onSelect={(id) => onSelectScene?.(id)}
-                        onEditNode={() => undefined}
+                        onSelect={handleSelectScene}
+                        onEditNode={NOOP}
                         charHover={entityHover}
-                        onDeleteScene={() => undefined}
+                        onDeleteScene={NOOP}
                         readonly
                         line={lineById.get(scene.lineId) ?? null}
                       />

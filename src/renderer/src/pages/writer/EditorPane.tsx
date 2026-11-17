@@ -41,6 +41,9 @@ import InspirationView from './inspiration/InspirationView'
 import type { InspirationBundle } from './inspiration/inspirationTree'
 import type { ForeshadowLabelResolver } from '../../components/editor/useForeshadowMarks'
 
+/** 剧情回调缺省兜底：模块级常量，避免每次渲染新建函数击穿 `PlotTimeline` 卡片记忆化。 */
+const NOOP = (): void => undefined
+
 export interface EditorPaneProps {
   /** 当前激活模块。 */
   module: WriterModule
@@ -389,10 +392,10 @@ function EditorPaneComponent({
           line={plotLine}
           scenes={plotScenes}
           activeSceneId={activePlotSceneId}
-          onSelectScene={onSelectPlotScene ?? (() => undefined)}
-          onAddScene={onAddPlotScene ?? (() => undefined)}
-          onUpdateScene={onUpdatePlotScene ?? (() => undefined)}
-          onDeleteScene={onDeletePlotScene ?? (() => undefined)}
+          onSelectScene={onSelectPlotScene ?? NOOP}
+          onAddScene={onAddPlotScene ?? NOOP}
+          onUpdateScene={onUpdatePlotScene ?? NOOP}
+          onDeleteScene={onDeletePlotScene ?? NOOP}
           bookId={bookId}
           activeTimelineName={activeTimelineName}
           activeTimelineId={activeTimelineId}

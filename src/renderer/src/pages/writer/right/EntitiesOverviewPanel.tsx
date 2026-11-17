@@ -20,8 +20,8 @@
  *   触发关系胶囊容量重测（与伏笔总览同口径）；
  * - **三态**：共享 `ReadonlyOverviewList`（loading → error → empty → content）。
  */
-import { useMemo, useState } from 'react'
-import type { ReactElement } from 'react'
+import { useCallback, useMemo, useState } from 'react'
+import type { MouseEvent as ReactMouseEvent, ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import { readGridCardWidth } from '../../../components/cardGridMetrics'
 import { SearchInput, Select } from '../../../components/ui'
@@ -98,6 +98,21 @@ export function EntitiesOverviewPanel({
   const layoutKey = useStableMeasure(gridRef, filteredRows.length > 0, readGridCardWidth)
   // 实体悬停卡：列表与详情共用一个控制器 + 一个 `HoverCard`。
   const entityHover = useEntityHover()
+  // 卡片回调保持稳定引用：`DossierCard` 已 `memo`，内联箭头会击穿记忆化。
+  const handleSelect = useCallback(
+    (id: number): void => {
+      // 切换视图前收掉可能残留的实体悬停卡（列表即将 hidden）。
+      entityHover.close()
+      select(id)
+    },
+    [entityHover, select]
+  )
+  const handleChipEnter = useCallback(
+    (event: ReactMouseEvent<HTMLElement>, peerId: number): void => {
+      entityHover.showFor(event.currentTarget, peerId)
+    },
+    [entityHover]
+  )
 
   return (
     <>
@@ -160,12 +175,8 @@ export function EntitiesOverviewPanel({
                   active={false}
                   compact
                   layoutKey={layoutKey}
-                  onSelect={(id) => {
-                    // 切换视图前收掉可能残留的实体悬停卡（列表即将 hidden）。
-                    entityHover.close()
-                    select(id)
-                  }}
-                  onChipEnter={(event, peerId) => entityHover.showFor(event.currentTarget, peerId)}
+                  onSelect={handleSelect}
+                  onChipEnter={handleChipEnter}
                   onChipLeave={entityHover.onMouseLeave}
                 />
               ))}

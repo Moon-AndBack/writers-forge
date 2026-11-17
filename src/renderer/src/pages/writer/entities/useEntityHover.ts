@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ENTITY_HOVER_HIDE_DELAY } from '../../../components/popoverTiming'
 import type { HoverAnchor } from './HoverCard'
 
@@ -13,8 +13,17 @@ import type { HoverAnchor } from './HoverCard'
  * 悬停卡自身需接 `cancelHide` / `onMouseLeave`，否则鼠标移入卡片会被隐藏计时关掉。
  */
 export function useEntityHover() {
-  const [anchor, setAnchor] = useState<HoverAnchor | null>(null)
+  // 锚点真源放 ref：state 只负责触发重渲染，返回对象保持恒定引用，卡片（其入参类型
+  // `EntityHoverControl` 已收窄掉 `anchor`）的 `memo` 不会被悬停改锚点击穿。
+  const [, setAnchor] = useState<HoverAnchor | null>(null)
+  const anchorRef = useRef<HoverAnchor | null>(null)
   const hideTimerRef = useRef<number | null>(null)
+
+  /** 同步写锚点：ref 供返回对象的 getter 读取，state 驱动重渲染（不在渲染期写 ref）。 */
+  const commitAnchor = useCallback((next: HoverAnchor | null): void => {
+    anchorRef.current = next
+    setAnchor(next)
+  }, [])
 
   /** 清掉挂起的隐藏计时（`null` 视为空闲）。 */
   const clearHideTimer = useCallback((): void => {
@@ -33,9 +42,9 @@ export function useEntityHover() {
       if (!Number.isInteger(entityId)) return
       // 把命中的 span 本体一并交给悬停卡：同实体在多面板 / 多处高亮时按此精确锚定，
       // 避免 `HoverCard` 全局查询「最近 span」选错（`rect` 仍作滚动失效后的快照兜底）。
-      setAnchor({ rect: span.getBoundingClientRect(), entityId, anchorEl: span })
+      commitAnchor({ rect: span.getBoundingClientRect(), entityId, anchorEl: span })
     },
-    [clearHideTimer]
+    [clearHideTimer, commitAnchor]
   )
 
   /**
@@ -46,18 +55,18 @@ export function useEntityHover() {
     (el: HTMLElement, entityId: number): void => {
       clearHideTimer()
       if (!Number.isInteger(entityId) || entityId <= 0) return
-      setAnchor({ rect: el.getBoundingClientRect(), entityId, anchorEl: el })
+      commitAnchor({ rect: el.getBoundingClientRect(), entityId, anchorEl: el })
     },
-    [clearHideTimer]
+    [clearHideTimer, commitAnchor]
   )
 
   const scheduleHide = useCallback((): void => {
     if (hideTimerRef.current !== null) window.clearTimeout(hideTimerRef.current)
     hideTimerRef.current = window.setTimeout(() => {
       hideTimerRef.current = null
-      setAnchor(null)
+      commitAnchor(null)
     }, ENTITY_HOVER_HIDE_DELAY)
-  }, [])
+  }, [commitAnchor])
 
   /** 取消挂起的隐藏（鼠标从锚点移入悬停卡时调用，避免卡片被隐藏计时关掉）。 */
   const cancelHide = useCallback((): void => {
@@ -71,14 +80,21 @@ export function useEntityHover() {
     }
   }, [])
 
-  const close = useCallback((): void => setAnchor(null), [])
+  const close = useCallback((): void => commitAnchor(null), [commitAnchor])
 
-  return {
-    anchor,
-    onMouseOver: handleOver,
-    onMouseLeave: scheduleHide,
-    close,
-    showFor,
-    cancelHide
-  }
+  // 回调均为稳定引用；`anchor` 用 getter 读 ref，故整个控制器对象恒定，可直接作为
+  // 卡片的 `memo` 依赖（悬停只改浮卡锚点，不牵连同网格卡片）。
+  return useMemo(
+    () => ({
+      get anchor(): HoverAnchor | null {
+        return anchorRef.current
+      },
+      onMouseOver: handleOver,
+      onMouseLeave: scheduleHide,
+      close,
+      showFor,
+      cancelHide
+    }),
+    [handleOver, scheduleHide, close, showFor, cancelHide]
+  )
 }

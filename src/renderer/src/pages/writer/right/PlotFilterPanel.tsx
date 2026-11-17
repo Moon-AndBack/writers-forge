@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Select } from '../../../components/ui'
 import { POPOVER_HIDE_DELAY, POPOVER_SHOW_DELAY } from '../../../components/popoverTiming'
 import { HoverCard } from '../entities/HoverCard'
 import { useEntityHover } from '../entities/useEntityHover'
-import { SceneCard } from '../plot/SceneCard'
+import { SceneCard, type EntityHoverControl } from '../plot/SceneCard'
 import {
   groupScenesByYear,
   plotLineLabel,
@@ -22,6 +22,8 @@ import { PlotSceneHoverCard, type PlotHoverAnchor } from './PlotSceneHoverCard'
 
 /** 剧情线下拉的「全部」哨兵值（剧情线 id 均不会等于它）；时间线是独立轴，无「全部」项。 */
 const ALL_LINES_VALUE = 'all'
+/** 只读卡片占位回调（模块级常量，保证传参引用稳定、不击穿卡片 `memo`）。 */
+const NOOP = (): void => undefined
 /** 悬停显示延迟（ms）：取通用浮层显示延迟。 */
 const HOVER_SHOW_DELAY = POPOVER_SHOW_DELAY
 /** 移出隐藏延迟（ms）：取通用浮层隐藏延迟。 */
@@ -249,29 +251,17 @@ export function PlotFilterPanel({
   /** 单张只读场景卡（外层行负责时间列 / 圆点；单线与全线两分支共用）。
    * `line` 仅在跨线聚合（全线模式）传入，单线模式保持裸标题零视觉回归。 */
   const renderSceneCard = (scene: PlotSceneRow, line: PlotLineRow | null): ReactElement => (
-    <SceneCard
+    <PlotSceneCardItem
       key={scene.id}
       scene={scene}
+      line={line}
       active={scene.id === activeSceneId}
       layoutKey={layoutKey}
       bookId={bookId}
-      bodyText={scene.description}
-      line={line}
-      onSelect={setSelectedSceneId}
-      onEditNode={() => undefined}
+      eraLabels={eraLabels}
       charHover={charHover}
-      onDeleteScene={() => undefined}
-      readonly
-      onHoverStart={(el, target) => {
-        // 胶囊区（壳的胶囊容器）让给实体信息卡，避免同时浮出正文浮窗。
-        if (target.closest('.wf-entity-card__chips') !== null) return
-        handleHover({
-          scene,
-          el,
-          title: plotSceneTitle(scene, tPlot('unnamedScene')),
-          timeLabel: plotSceneTime(scene, tPlot('undatedScene'), eraLabels)
-        })
-      }}
+      onSelect={setSelectedSceneId}
+      onHover={handleHover}
       onLeave={handleLeave}
     />
   )
@@ -359,5 +349,64 @@ export function PlotFilterPanel({
     </div>
   )
 }
+
+/** 单张只读场景卡（独立 `memo` 边界）：父层悬停 / 锚点变化重渲染时，只有自身 props
+ * 变化的卡才重渲染；`onHoverStart` 闭包收在卡内，不再随父层每次渲染新建。 */
+const PlotSceneCardItem = memo(function PlotSceneCardItem({
+  scene,
+  line,
+  active,
+  layoutKey,
+  bookId,
+  eraLabels,
+  charHover,
+  onSelect,
+  onHover,
+  onLeave
+}: {
+  scene: PlotSceneRow
+  /** 来源剧情线（全线模式传入；单线模式为 null）。 */
+  line: PlotLineRow | null
+  active: boolean
+  layoutKey: number
+  bookId: string
+  eraLabels: PlotEraLabels
+  charHover: EntityHoverControl
+  onSelect: (id: number) => void
+  onHover: (payload: SceneHoverPayload) => void
+  onLeave: () => void
+}): ReactElement {
+  const { t } = useTranslation('plot')
+  const handleHoverStart = useCallback(
+    (el: HTMLElement, target: HTMLElement): void => {
+      // 胶囊区（壳的胶囊容器）让给实体信息卡，避免同时浮出正文浮窗。
+      if (target.closest('.wf-entity-card__chips') !== null) return
+      onHover({
+        scene,
+        el,
+        title: plotSceneTitle(scene, t('unnamedScene')),
+        timeLabel: plotSceneTime(scene, t('undatedScene'), eraLabels)
+      })
+    },
+    [scene, onHover, t, eraLabels]
+  )
+  return (
+    <SceneCard
+      scene={scene}
+      active={active}
+      layoutKey={layoutKey}
+      bookId={bookId}
+      bodyText={scene.description}
+      line={line}
+      onSelect={onSelect}
+      onEditNode={NOOP}
+      charHover={charHover}
+      onDeleteScene={NOOP}
+      readonly
+      onHoverStart={handleHoverStart}
+      onLeave={onLeave}
+    />
+  )
+})
 
 export default PlotFilterPanel

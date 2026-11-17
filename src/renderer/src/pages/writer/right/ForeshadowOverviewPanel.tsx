@@ -23,7 +23,7 @@
  * - 全书无伏笔时显示空态；首次加载且无数据时显示通用加载文案；读取失败且无数据时
  *   显示通用失败态（可重试），与灵感总览一致。
  */
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import { readGridCardWidth } from '../../../components/cardGridMetrics'
@@ -80,6 +80,15 @@ export function ForeshadowOverviewPanel({
   const layoutKey = useStableMeasure(gridRef, rows.length > 0, readGridCardWidth)
   // 实体悬停卡：所有分组共用一个控制器 + 一个 `HoverCard`，胶囊经事件委托定位。
   const entityHover = useEntityHover()
+  // 卡片回调保持稳定引用：`ForeshadowItem` 已 `memo`，内联箭头会击穿记忆化。
+  const handleSelect = useCallback(
+    (id: number): void => {
+      // 切换视图前收掉可能残留的实体悬停卡（列表即将 hidden）。
+      entityHover.close()
+      select(id)
+    },
+    [entityHover, select]
+  )
 
   return (
     <>
@@ -116,11 +125,7 @@ export function ForeshadowOverviewPanel({
                       entities={entityMatches.get(row.id) ?? EMPTY_ENTITIES}
                       layoutKey={layoutKey}
                       entityHover={entityHover}
-                      onSelect={(id) => {
-                        // 切换视图前收掉可能残留的实体悬停卡（列表即将 hidden）。
-                        entityHover.close()
-                        select(id)
-                      }}
+                      onSelect={handleSelect}
                     />
                   ))}
                 </div>
