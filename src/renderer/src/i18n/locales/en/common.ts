@@ -15,10 +15,6 @@ const common = {
   chipPlaceholder: 'Type and press Enter to add',
   removeTag: 'Remove {{tag}}',
   suggestionsLabel: 'Common tags',
-  stepperLabel: 'Value',
-  stepperDecrease: 'Decrease {{label}}',
-  stepperEdit: 'Edit {{label}}',
-  stepperIncrease: 'Increase {{label}}',
   save: 'Save',
   saving: 'Saving…',
   saveDirty: 'Save (unsaved changes)',
@@ -152,8 +148,7 @@ const common = {
   },
   loadMore: 'Load more',
   restoreDefaultWidth: 'Double-click to restore default width',
-  restoreDefaultSplit: 'Drag to resize the panes; double-click to restore the default split',
-  comingSoon: 'Coming soon'
+  restoreDefaultSplit: 'Drag to resize the panes; double-click to restore the default split'
 } satisfies ZhCNResources['common']
 
 export default common

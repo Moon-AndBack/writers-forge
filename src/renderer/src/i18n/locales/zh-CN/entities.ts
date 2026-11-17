@@ -14,7 +14,6 @@ const entities = {
     power_system: '境界体系'
   },
   aliases: '别名',
-  tags: '标签',
   relations: '关联',
   /** 悬停卡「首次登场」位置行（仅匹配章节正文）。 */
   firstAppearance: '首次登场',

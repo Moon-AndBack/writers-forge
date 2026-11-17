@@ -3,7 +3,7 @@ import type { ReactElement } from 'react'
 /**
  * 写作页内联 SVG 图标（18/15px，随 currentColor 着色）。
  * 路径逐条对齐 template/index.html 写作视图内的图标：
- * 加号（新建卷 / 新建章节）、卷展开箭头、图片 / 文档（素材卡）。
+ * 加号（新建卷 / 新建章节）、卷展开箭头、文档（大纲）。
  *
  * `PencilIcon` 已上移至共享层 `components/icons`（设置页备份列表也用），
  * 此处转出以保持写作页内既有导入路径不变。
@@ -43,16 +43,6 @@ export function ChevronIcon({
       {...stroke}
     >
       <polyline points="9 18 15 12 9 6" />
-    </svg>
-  )
-}
-
-export function ImageIcon({ width = 34 }: { width?: number }): ReactElement {
-  return (
-    <svg viewBox="0 0 24 24" strokeWidth="1.6" width={width} height={width} {...stroke}>
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <circle cx="8.5" cy="8.5" r="1.5" />
-      <path d="m21 15-5-5L5 21" />
     </svg>
   )
 }

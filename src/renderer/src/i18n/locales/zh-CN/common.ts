@@ -10,10 +10,6 @@ const common = {
   chipPlaceholder: '输入后回车添加',
   removeTag: '移除 {{tag}}',
   suggestionsLabel: '常用标签',
-  stepperLabel: '数值',
-  stepperDecrease: '{{label}}减少',
-  stepperEdit: '编辑{{label}}',
-  stepperIncrease: '{{label}}增加',
   save: '保存',
   saving: '保存中…',
   saveDirty: '保存（有未保存改动）',
@@ -163,8 +159,7 @@ const common = {
   },
   loadMore: '加载更多',
   restoreDefaultWidth: '双击恢复默认宽度',
-  restoreDefaultSplit: '拖动调整上下两栏高度，双击恢复默认比例',
-  comingSoon: '即将推出'
+  restoreDefaultSplit: '拖动调整上下两栏高度，双击恢复默认比例'
 }
 
 export default common

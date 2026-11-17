@@ -14,7 +14,6 @@ const entities = {
     power_system: 'Power system'
   },
   aliases: 'Aliases',
-  tags: 'Tags',
   relations: 'Relations',
   firstAppearance: 'First appearance',
   firstAppearanceNone: 'Not yet appeared',
