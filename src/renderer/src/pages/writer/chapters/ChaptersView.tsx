@@ -2,14 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Editor } from '@tiptap/core'
-import { EditorContent, useEditor } from '@tiptap/react'
-import { TextSelection } from '@tiptap/pm/state'
+import { useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { DocWordLimit, docCharCount } from '../docWordLimit'
-import DocCharCount from '../DocCharCount'
+import { DocWordLimit } from '../docWordLimit'
 import { EntityHighlight } from '../entities/entityHighlight'
 import { HoverCard } from '../entities/HoverCard'
-import { SaveStatus, type ChapterSaveState } from './SaveStatus'
+import type { ChapterSaveState } from './SaveStatus'
 import ChapterActivityActions from './ChapterActivityActions'
 import ChaptersSearchView from './ChaptersSearchView'
 import CleanWordHoverLayer from './CleanWordHoverLayer'
@@ -25,15 +23,16 @@ import {
   type ForeshadowLabelResolver
 } from '../../../components/editor/useForeshadowMarks'
 import { useDocPlaceholder } from '../useDocPlaceholder'
-import { useChapterSearch, type ChapterSearchHit } from './useChapterSearch'
+import { useChapterSearch } from './useChapterSearch'
 import { useChapterSelectionMenu } from './useChapterSelectionMenu'
 import { useChapterDoc } from './useChapterDoc'
 import { useSyncFlushHandler } from '../../../shell/beforeCloseFlush'
 import { useEntityHover } from '../entities/useEntityHover'
-import ChapterEditorHead from './ChapterEditorHead'
+import ChapterEditorPane from './ChapterEditorPane'
 import { useRichTextEditor } from '../../../components/editor/richTextEditorContext'
 import { useChapterName } from './useChapterName'
 import { useChapterCopy } from './useChapterCopy'
+import { useChapterLocate } from './useChapterLocate'
 import {
   formatRelativeTime,
   type ChapterRow,
@@ -248,60 +247,8 @@ export default function ChaptersView({
 
   /* ---------- 搜索 / 替换浮窗（右上侧） ---------- */
   const [searchOpen, setSearchOpen] = useState(false)
-  // 定位重试定时器（跨章跳转后目标章 doc 仍在异步加载时的有限重试）。
-  const locateTimerRef = useRef<number | null>(null)
-
-  // 在编辑器内定位命中：按段落 idx 求 ProseMirror 绝对 pos，选中命中范围并滚动入视。
-  const locateHit = useCallback(
-    (hit: ChapterSearchHit): void => {
-      if (!editor || !editor.isInitialized) return
-      if (hit.paragraphIdx < 0 || hit.paragraphIdx >= editor.state.doc.childCount) return
-      const node = editor.state.doc.child(hit.paragraphIdx)
-      if (node.type.name !== 'paragraph') return
-      if (hit.end > node.nodeSize - 2) return
-      // 段落绝对起点：doc 起点 1 + 前置段落 nodeSize 之和；再 +1 越过段落开标记得文本起点。
-      let from = 1
-      for (let i = 0; i < hit.paragraphIdx; i += 1) {
-        from += editor.state.doc.child(i).nodeSize
-      }
-      const start = from + 1 + hit.start
-      const end = from + 1 + hit.end
-      const { tr } = editor.state
-      tr.setSelection(TextSelection.create(tr.doc, start, end))
-      tr.scrollIntoView()
-      editor.view.dispatch(tr)
-      editor.view.focus()
-    },
-    [editor]
-  )
-
-  // 定位（带有限重试）：仅当编辑器当前文档与命中同一 document 且已加载完成时才定位，
-  // 否则短延时重试（跨章跳转后目标章 doc 仍在异步加载 / 旧章内容尚未替换）。
-  const scheduleLocate = useCallback(
-    (hit: ChapterSearchHit): void => {
-      const attempt = (tries: number): void => {
-        if (!editor || !editor.isInitialized) return
-        if (chapterId !== hit.chapterId || docStatus === 'loading') {
-          if (tries > 0) locateTimerRef.current = window.setTimeout(() => attempt(tries - 1), 120)
-          return
-        }
-        locateHit(hit)
-        if (tries > 0 && editor.state.doc.childCount <= hit.paragraphIdx) {
-          locateTimerRef.current = window.setTimeout(() => attempt(tries - 1), 120)
-        }
-      }
-      attempt(10)
-    },
-    [editor, locateHit, chapterId, docStatus]
-  )
-
-  // 卸载清理定位定时器。
-  useEffect(
-    () => () => {
-      if (locateTimerRef.current !== null) window.clearTimeout(locateTimerRef.current)
-    },
-    []
-  )
+  // 定位（带 120ms 有限重试，跨章跳转后等待目标章 doc 载入）：实现见 useChapterLocate。
+  const scheduleLocate = useChapterLocate({ editor, chapterId, docStatus })
 
   const search = useChapterSearch({
     bookId: safeBookId,
@@ -446,42 +393,25 @@ export default function ChaptersView({
         onClose={closeSearch}
         chapters={chapters}
       />
-      {/* 标题 / 信息头部：置于滚动区之外，始终固定显示，仅正文滚动。
-          标题行右侧承载「复制全文」胶囊；元信息行为「最后编辑 + 状态」胶囊（见 ChapterEditorHead / DocMeta）。 */}
-      <ChapterEditorHead
+      <ChapterEditorPane
         chapterId={chapterId}
         name={name}
         lastEdited={editedLabel !== '' ? t('editor.lastEdited', { time: editedLabel }) : ''}
         chapterStatus={chapterStatus}
+        isDone={isDone}
         onToggleStatus={() => {
           if (chapterId === null) return
           onStatusChange(chapterId, isDone ? 'draft' : 'done')
         }}
         onCopyAll={copyAll}
         copyDisabled={!canCopy}
+        editor={editor}
+        isEmpty={isEmpty}
+        docBodyStyle={docBodyStyle}
+        phase={phase}
+        swapPhase={swapPhase}
+        saveState={saveState}
       />
-      {/* 正文滚动区：无外边框（聚焦框已移除），仅正文滚动；标题/元信息在滚动区之外固定。
-          data-swap-phase 交替两档别名关键帧 → 切章后正文淡入重播（useContentSwap；null = 首次载入不挂属性、不淡入）。 */}
-      <div className="editor-scroll" data-swap-phase={swapPhase ?? undefined}>
-        <div className="editor-inner">
-          {/* Tiptap 渲染为 .doc-body > .ProseMirror > p（阶段② DOM 层级）。
-              空态时追加 .is-empty 并经 CSS 变量传入当前诗句，由 CSS 伪元素渲染光标处占位提示；
-              data-placeholder-phase 交替驱动两段同名不同名的淡入动画，实现轮换时柔和淡入。
-              定稿只读时追加 .is-readonly 轻提示（见 writer-editor.css）。 */}
-          <EditorContent
-            editor={editor}
-            className={`doc-body${isEmpty ? ' is-empty' : ''}${isDone ? ' is-readonly' : ''}`}
-            style={docBodyStyle}
-            data-placeholder-phase={phase}
-          />
-        </div>
-      </div>
-      <div className="editor-foot">
-        {/* 左侧保存状态（数据来自 useChapterDoc 的 status + dirty，只读展示）。 */}
-        <SaveStatus state={saveState} />
-        {/* 单篇正文有效字数 / 上限：读数与输入拦截同源（`docCharCount` 读块级缓存）。 */}
-        <DocCharCount count={docCharCount(editor)} scope="chapter" />
-      </div>
       {/* 伏笔标记悬停提示（自绘浮层，替代原生 title；pointer-events: none 不挡鼠标）。 */}
       <MarkHoverTip tip={markTip} />
       <CleanWordHoverLayer editor={editor} />
