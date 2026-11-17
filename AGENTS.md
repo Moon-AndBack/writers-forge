@@ -132,7 +132,7 @@ src/
 - **MUST** 字号统一为 5 档语义令牌，取自 `theme.css` 的 `--fs-*`：`--fs-micro` 10（Badge / 徽标 / 关闭图标 / 元信息提示）、`--fs-body` 12（界面基准：输入 / 按钮 / 紧凑正文）、`--fs-title` 14（卡片 / 详情 / 弹窗标题）。展示档 `--fs-display` 20 / `--fs-display-lg` 26 仅限已登记位置；正文用 `calc(18px * var(--doc-zoom))`。
 - **MUST** 界面 CSS 不得再写 `font-size` 数值字面量，只能引用 `--fs-*` 令牌。封面装饰首字 34 / 56 为已登记例外（按卡片比例，不属界面字阶）。新字号需求先复用 5 档，确需新增时同步更新 `design-language.md` 与 `theme.css`。
 - **MUST** 正文容器（编辑器 / 右栏大纲 / 实体右栏详情正文 / 回收站详情）使用 `--doc-font` + `calc(18px * var(--doc-zoom))` + `--doc-line` + `--doc-letter`；右栏只读通用底座用 `--doc-font` + `--fs-body` / 1.75（不跟随正文缩放）。
-- **MUST** 文本层级：`--text` 主文本；`--text-dim` 次级 / 只读正文；`--text-mute` 元信息 / 占位 / 禁用提示。不得用 `opacity` 代替 `--text-mute`。
+- **MUST** 文本层级：`--text` 主文本；`--text-dim` 次级 / 只读正文；`--text-mute` 元信息 / 占位 / 禁用提示。不得用 `opacity` 代替 `--text-mute`。`--text-mute` 只用于可跳过阅读的内容（实测 3.06–3.45:1，未达 AA 4.5:1，已记录为接受的权衡，见 `docs/ui/design-language.md` §2.3）。
 - **SHOULD** 字重只用 400 / 500 / 600 / 700：400 正文；500 控件标签 / 分段项；600 卡片标题 / 选中行主名 / 小节标签；700 页面标题 / 大数字 / 强调。
 
 ### 8.4 控件与间距
@@ -151,9 +151,9 @@ src/
 - **MUST** 选中态统一公式：`background: color-mix(in srgb, var(--brand) var(--select-tint), var(--pane))`（行位于 `--soft-solid` 卡内时混 `--soft-solid`；比例由 `theme.css` 四主题定义，light / dark / sage 18%、honey 24%）；主名 `color: var(--brand)` + `font-weight: 600`；状态点转 `--brand`。
 - **MUST** 选中行 hover 回落 `--soft-hover-solid`（卡内用 `--control-on-soft`），不得在品牌底上叠加第二层品牌色。
 - **MUST** 禁止整行加粗、左侧色条、下划线等第二套选中语言；禁止只换文字色不换底（或反之）的不完整选中态。
-- **MUST** 选中态不得以描边 / 光环作为选中标识；区分只能靠底色、文字色、字重与图标。
+- **MUST** 选中态不得以描边 / 光环作为选中标识；区分只能靠底色、文字色、字重与图标。选中行名（`--brand` on 品牌底）四主题仅 2.17–4.40:1，品牌文字不得作为唯一选中标识，必须同时保留品牌底 + 600 字重（`docs/ui/design-language.md` §2.3）。
 - **MUST** 行操作按钮 22×22，绝对定位右缘，`visibility` + `opacity` 在 `:hover` / `:focus-within` 浮现；主名用 `margin-right` 让位（现有 48 / 52 / 72 / 95），不得用 `padding` 让位。
-- **MUST** 行 hover 仅过渡背景色，时长用 `--dur-fast`。
+- **MUST** 行 hover 仅过渡背景色；新增行规则用 `--dur-fast`，修改既有行规则沿用原时长（§8.8）。
 
 ### 8.6 状态呈现
 
@@ -174,7 +174,8 @@ src/
 - **MUST** 卡片（书籍卡、主题卡及今后新增的卡片类组件）在鼠标移入 / hover 时**不得**使用位移或缩放（`transform: translate / scale / rotate` 等）；hover 反馈仅允许**颜色 / 描边 / 阴影**变化。
 - **MUST** 卡片 hover 统一采用**边缘光晕**：`0 0 0 1px color-mix(in srgb, var(--brand) 45%, transparent)` + `0 0 24px -6px color-mix(in srgb, var(--brand) 50%, transparent)` + `var(--sh-sm)` + `var(--panel-ring)`；选中不叠加环与光晕，只靠品牌底与标题色。
 - **MUST** 卡片 hover 的 `transition` 只过渡 `box-shadow` / `border-color` / `background` / `color` 等属性，不得包含 `transform`。
-- **MUST** 动效时长只用 `--dur-fast` / `--dur-slow`（反馈 / 位移与进场），缓动只用 `--ease` / `--ease-out`；禁止裸 `0.1s` / `0.2s` / `180ms` 等字面量。
+- **MUST** 新增代码的动效时长必须引用 `--dur-fast` / `--dur-slow`（反馈 / 位移与进场），缓动只用 `--ease` / `--ease-out`；不得写新的 `0.1s` / `0.15s` / `0.18s` / `0.2s` / `180ms` 等字面量。
+- **已知债务**：存量约 140 处为字面量（`0.1s` / `0.15s` / `0.18s` / `0.2s` 等），实际 hover 多为 150–180ms，与 `--dur-fast`（120ms）不一致。收敛前，修改既有规则时**沿用该规则原本的时长**，不要顺手换成令牌（会改变观感）。
 - **MUST** 功能性 `transform`（Modal 进出场、折叠箭头、Switch 滑块、按钮按压）允许，但必须包在 `@media (prefers-reduced-motion: reduce)` 的关闭分支内。
 - **SHOULD** 入场位移统一 8px（`wf-enter-up` / `wf-exit-down`），不得另造 6px / 10px 等位移量。
 

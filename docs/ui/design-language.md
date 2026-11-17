@@ -78,8 +78,38 @@
 - **MUST** 界面字号只允许 §2.1 的 5 档令牌（`--fs-micro` / `--fs-body` / `--fs-title` / `--fs-display` / `--fs-display-lg`）；**界面 CSS 不得再写 `font-size` 数值字面量**，也不得新增 16px 或其他中间档。封面装饰首字 34 为已登记例外（§9）。
 - **MUST** 正文容器（编辑器、右栏大纲、时间线右栏的起点编辑器与场景详情正文、实体右栏详情正文、回收站详情）使用 `--doc-font` + `calc(18px * var(--doc-zoom))` + `--doc-line` + `--doc-letter`；右栏只读通用底座（如伏笔详情）用 `--doc-font` + `--fs-body` / 1.75，不得把两档混用。
 - **MUST** 文本层级：`--text` 主文本；`--text-dim` 次级文本 / 只读正文；`--text-mute` 元信息 / 占位 / 禁用提示。不得用 `opacity` 代替 `--text-mute`。
+- **MUST** 普通文本对比度目标为 WCAG AA 4.5:1；当前 `--text-mute` 与品牌文字在部分主题未达标，**该要求本身不撤销**，偏差、使用边界与处理决定见 §2.3。
 - **MUST** 字重只允许 400 / 500 / 600 / 700：400 正文；500 控件标签、分段项；600 卡片标题、选中行主名、小节标签；700 页面标题、大数字、强调。
 - **SHOULD** 同一层级标题只用一档字号 + 一档字重；不得靠「字号 + 字重 + 字色」三变量叠加制造层级。
+
+### 2.3 对比度现状（已接受的权衡）
+
+> 口径：令牌取色后与所在底色直接计算相对对比度，未计材质态壁纸叠加；AA 指 WCAG 2.2 普通文本 **4.5:1**。下表为**当前未达标项**的如实记录，不是规范放宽。
+
+| 场景                                              | 实测对比度    | AA 4.5:1 |
+| ------------------------------------------------- | ------------- | -------- |
+| `--text-mute` on `--pane`（light / dark）         | 3.45:1        | 未达标   |
+| `--text-mute` on `--soft-solid`（light / dark）   | 3.06:1        | 未达标   |
+| `--text-mute`（sage：`--pane` / `--soft-solid`）  | 3.39 / 3.04:1 | 未达标   |
+| `--text-mute`（honey：`--pane` / `--soft-solid`） | 3.45 / 3.11:1 | 未达标   |
+| `--brand` 作文字（light）                         | 5.72:1        | 达标     |
+| `--brand` 作文字（dark）                          | 4.96:1        | 达标     |
+| `--brand` 作文字（sage）                          | 3.32:1        | 未达标   |
+| `--brand` 作文字（honey）                         | 2.68:1        | 未达标   |
+| 选中行名（`--brand` on 品牌底，light）            | 4.40:1        | 未达标   |
+| 选中行名（dark）                                  | 3.84:1        | 未达标   |
+| 选中行名（sage）                                  | 2.74:1        | 未达标   |
+| 选中行名（honey）                                 | 2.17:1        | 未达标   |
+
+使用边界：
+
+- `--text-mute` 仅用于元信息 / 占位 / 禁用提示这类**可跳过阅读**的内容，不得承载正文、字段值、操作结果等需要读取才能获得的信息；需要阅读的次级文本用 `--text-dim`。
+- `--brand` 作文字在 sage / honey 下低于 AA；选中行名不得作为**唯一**的选中标识，必须同时保留品牌底、600 字重与状态点（§4.2）。
+- 不得用加大字号或加粗来弥补颜色对比：界面字号只有 5 档（§2.1），加粗也不改变前景 / 底色关系。
+
+这是**已接受的权衡**：保持四套主题（尤其 sage / honey 护眼纸色）的视觉一致性优先于普通文本 4.5:1，不是遗漏。决定为**按现状记录、不调整令牌值**，也不把 sage / honey 的纸面或品牌色替换成 light 值来凑对比度。
+
+若将来做无障碍专项，已知改进点：提升 `--text-mute` 至 ≥4.5:1（四主题）；为 sage / honey 的品牌文字与四主题的选中行名提供加深 / 加暗的专用派生色，或选中行名改用 `--text` + 品牌底；同时复核材质态 `--surface-pane` / `--surface-pane-card` 上的复合对比度。
 
 ---
 
@@ -154,7 +184,7 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 32 
 | 数据行       | 8px × 10px | 10  | `--r-lg` | `--soft-hover-solid`；软底卡内用 `--control-on-soft` |
 | 树形回收站行 | 9px × 10px | 10  | `--r-lg` | `--control-on-soft`（分栏卡内）                      |
 
-代表位置：`styles/writer-side-chapters.css:31-38`、`styles/writer-outline.css:20-27`、`styles/writer-trash.css:66-80`、`styles/writer-trash-tree.css`。现状中 `.chapter` / `.outline-chapter` 仍写裸 `0.1s`，属 §10 债务；目标统一 `--dur-fast`。
+代表位置：`styles/writer-side-chapters.css:31-38`、`styles/writer-outline.css:20-27`、`styles/writer-trash.css:66-80`、`styles/writer-trash-tree.css`。现状中 `.chapter` / `.outline-chapter` 仍写裸 `0.1s`，属 §10 #5 债务；新增行规则用 `--dur-fast`，修改既有行规则沿用原时长（§7.2）。
 
 ### 4.2 选中态公式
 
@@ -188,6 +218,7 @@ chrome 是界面框架（标题栏、活动栏、状态栏），不受控件 32 
 
 - **MUST** 选中只能靠底色 + 品牌文字 / 600 字重 + 图标表达，**不得**以描边、内描边环、外发光等「环」语言作为选中标识；环只保留给 hover 光晕与 `:focus-visible` 焦点环。
 - `--select-tint` 定义在 `theme.css` 四主题块（light / dark / sage 18%、honey 24%）。honey 品牌色与纸面明度最接近，需更高混入比例；AI 携带按钮、格式工具条按钮、活动栏筛选 chip 三处非行选中态同口径消费。
+- **已知对比度偏差**：选中行名（`--brand` on 品牌底）四主题实测 2.17–4.40:1，未达 AA 4.5:1（§2.3）。因此品牌文字不得作为**唯一**选中标识：品牌底、600 字重与状态点必须同时保留；不得删掉底色或字重后仅留品牌文字。
 
 已验证位置：`writer-side-chapters.css:65-67`、`writer-outline.css:46-48,231-234`、`writer-trash.css:198-200,221-223,236-238,388-390`、`writer-plot-lines.css:39-41`、`writer-search.css:114-116`、`settings.css:94-97`；卡片类选中见 `styles/components/surface.css:90-97`（品牌底 + 品牌标题，不叠加环与光晕）。
 
@@ -343,6 +374,8 @@ box-shadow:
 
 - **MUST** 卡片 hover 只过渡 `box-shadow` / `border-color` / `background` / `color`，不得包含 `transform`。
 - **MUST** 卡片 hover 不得使用位移或缩放（`translate / scale / rotate`）。
+- **MUST** 新增代码的动效时长必须引用 `--dur-fast` / `--dur-slow`，不得写新字面量。
+- **已知债务**：存量约 140 处为字面量（`0.1s` / `0.15s` / `0.18s` / `0.2s` 等），实际 hover 多为 150–180ms，与 `--dur-fast`（120ms）不一致；收敛前，修改既有规则时**沿用该规则原本的时长**，不要顺手换成令牌（会改变观感，快 20–33%）。见 §10 #5。
 - **MUST** 功能性 `transform` 允许，但仅限：Modal 进出场（`translateY(8px) scale(0.98)`）、折叠箭头（`rotate(90deg)`）、Switch 滑块（`translateX`）、按钮按压（`translateY(1px)`）、拖拽把手定位、Segmented 滑动指示器（`translate` 平移 + `width` / `height`，时长 `--dur-slow`、缓动 `--ease`）。
 - **MUST** 所有动效必须包在 `@media (prefers-reduced-motion: reduce)` 的关闭分支内（全局兜底见 `styles/base.css:113`，组件级见 `modal.css:70-76`、`segmented.css:128-135`）。
 - **SHOULD** 入场位移统一 8px（`wf-enter-up` / `wf-exit-down`，`styles/components/motion.css:13-34`）；不得另造 6px / 10px 等位移量。
@@ -445,21 +478,22 @@ background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 
 
 ## 10. 历史债务表
 
-| #   | 债务                                           | 现状                                                                                                                             | 目标                                     | 证据                                                                  |
-| --- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------- |
-| 1   | 控件高度多档并存（已收敛）                     | 已统一为单档 32（2026-11-14）                                                                                                    | 保持统一，新增控件走 `--control-h-md`    | 见 §3.3 各行                                                          |
-| 2   | 局部控件高度魔法值（已清理）                   | `--cw-control-h` / `--ai-ctl-h` 已删除；活动栏筛选浮层改走 `--control-h-md`                                                      | 禁止新增                                 | `styles/theme.css:36-38`                                              |
-| 3   | 16px 中间档                                    | 当前 0 处                                                                                                                        | 保持禁止                                 | 2026-11-09 grep；正文 16→18 见 `73a968d`                              |
-| 4   | 字号半档密集（已收敛）                         | 已统一为 5 档语义令牌（10 / 12 / 14 / 20 / 26）；界面 CSS 无字号字面量（封面首字 34 除外）                                       | 保持 5 档；新增先复用令牌                | 本文 §2.1；2026-11-13 grep                                            |
-| 5   | 裸时长                                         | `0.1s`×42、`0.15s`×43、`0.18s`×27、`0.2s`×15、`0.22s`×11、`0.25s`×1、`0.32s`×8、`0.4s`×1、`180ms`×10（含令牌定义与注释）         | 全部收敛到 `--dur-*` / `--ease*`         | 2026-11-09 grep                                                       |
-| 6   | z-index 字面量                                 | 仅 970/971/972/1105 令牌化；60/100/101/900/940/990/1000/1040/1100 仍为字面量                                                     | 收敛到 `--z-*`（见 §6.2）                | 本文 §6.2                                                             |
-| 7   | 三态顺序相反                                   | `TrashListView` error → loading；`CleanWordsTable` loading → error                                                               | 统一 loading → error → empty             | `TrashListView.tsx:237-242`、`CleanWordsTable.tsx:69-74`              |
-| 8   | 死代码 `.wf-listitem` / `.list-item`（已清理） | 已删除无 TSX 调用点的规则（2026-11-10）                                                                                          | 保持无死代码                             | 本批提交                                                              |
-| 9   | 已移除组件的残留 CSS                           | Accordion / Avatar / Checkbox / Divider / Drawer / Radio 的 CSS 仍在，组件层无 TSX 调用点；Stepper 已删除（2026-11-13）          | 分批清理；清理前不得被新代码引用         | `surface.css`、`display-extras.css`、`overlay.css`、`form.css`        |
-| 10  | 加载态无统一组件                               | 7 个 `xx-loading` 类并存（entity-card / foreshadow / inspiration / timeline / trash / ctp / cw）                                 | 上提共享 loading 组件                    | 上述 7 个样式文件                                                     |
-| 11  | `docs/ui/components.md` 陈旧                   | 2026-11-17 已按当前代码重算为 25 项（23 组件 + 2 钩子），补入 `ActionSeparator` / `PlaceLine`                                    | 保持与 `index.ts` 同步，新增组件同批更新 | 本轮文档 diff                                                         |
-| 12  | `docs/ui/design-tokens.md` 陈旧                | 原称「令牌只在 theme.css」「唯一硬编码色是 shell.css」「z-index 全部令牌」                                                       | 本批已修正                               | 本批文档 diff                                                         |
-| 13  | `--pill-bg-*` 与 `--chrome-*` 并存属过渡态     | `--chrome-*` 默认值镜像 `--pill-bg-solid` / `--pill-bg-hover-solid` / `--soft-*-solid`，两套命名并行；材质态只有 chrome 组转薄雾 | 材质态消费稳定后收敛为单一语义组         | `styles/theme.css`（`--chrome-*` 段）、`styles/statusbar-widgets.css` |
+| #   | 债务                                                           | 现状                                                                                                                                                       | 目标                                                                             | 证据                                                                  |
+| --- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 1   | 控件高度多档并存（已收敛）                                     | 已统一为单档 32（2026-11-14）                                                                                                                              | 保持统一，新增控件走 `--control-h-md`                                            | 见 §3.3 各行                                                          |
+| 2   | 局部控件高度魔法值（已清理）                                   | `--cw-control-h` / `--ai-ctl-h` 已删除；活动栏筛选浮层改走 `--control-h-md`                                                                                | 禁止新增                                                                         | `styles/theme.css:36-38`                                              |
+| 3   | 16px 中间档                                                    | 当前 0 处                                                                                                                                                  | 保持禁止                                                                         | 2026-11-09 grep；正文 16→18 见 `73a968d`                              |
+| 4   | 字号半档密集（已收敛）                                         | 已统一为 5 档语义令牌（10 / 12 / 14 / 20 / 26）；界面 CSS 无字号字面量（封面首字 34 除外）                                                                 | 保持 5 档；新增先复用令牌                                                        | 本文 §2.1；2026-11-13 grep                                            |
+| 5   | 裸时长（已决定：存量沿用原值）                                 | 约 140 处字面量（`0.1s` / `0.15s` / `0.18s` / `0.2s` / `0.22s` 为主，另有 `180ms`）；实际 hover 多为 150–180ms，`--dur-fast` 为 120ms，直接替换会快 20–33% | 新增零字面量；存量按「修改处沿用原值」处理，不设批量替换                         | 本文 §7.2；2026-11-17 grep                                            |
+| 6   | z-index 字面量                                                 | 仅 970/971/972/1105 令牌化；60/100/101/900/940/990/1000/1040/1100 仍为字面量                                                                               | 收敛到 `--z-*`（见 §6.2）                                                        | 本文 §6.2                                                             |
+| 7   | 三态顺序相反                                                   | `TrashListView` error → loading；`CleanWordsTable` loading → error                                                                                         | 统一 loading → error → empty                                                     | `TrashListView.tsx:237-242`、`CleanWordsTable.tsx:69-74`              |
+| 8   | 死代码 `.wf-listitem` / `.list-item`（已清理）                 | 已删除无 TSX 调用点的规则（2026-11-10）                                                                                                                    | 保持无死代码                                                                     | 本批提交                                                              |
+| 9   | 已移除组件的残留 CSS                                           | Accordion / Avatar / Checkbox / Divider / Drawer / Radio 的 CSS 仍在，组件层无 TSX 调用点；Stepper 已删除（2026-11-13）                                    | 分批清理；清理前不得被新代码引用                                                 | `surface.css`、`display-extras.css`、`overlay.css`、`form.css`        |
+| 10  | 加载态无统一组件                                               | 7 个 `xx-loading` 类并存（entity-card / foreshadow / inspiration / timeline / trash / ctp / cw）                                                           | 上提共享 loading 组件                                                            | 上述 7 个样式文件                                                     |
+| 11  | `docs/ui/components.md` 陈旧                                   | 2026-11-17 已按当前代码重算为 25 项（23 组件 + 2 钩子），补入 `ActionSeparator` / `PlaceLine`                                                              | 保持与 `index.ts` 同步，新增组件同批更新                                         | 本轮文档 diff                                                         |
+| 12  | `docs/ui/design-tokens.md` 陈旧                                | 原称「令牌只在 theme.css」「唯一硬编码色是 shell.css」「z-index 全部令牌」                                                                                 | 本批已修正                                                                       | 本批文档 diff                                                         |
+| 13  | `--pill-bg-*` 与 `--chrome-*` 并存属过渡态                     | `--chrome-*` 默认值镜像 `--pill-bg-solid` / `--pill-bg-hover-solid` / `--soft-*-solid`，两套命名并行；材质态只有 chrome 组转薄雾                           | 材质态消费稳定后收敛为单一语义组                                                 | `styles/theme.css`（`--chrome-*` 段）、`styles/statusbar-widgets.css` |
+| 14  | 文本 / 选中行对比度未达 AA（已决定：按现状记录，不做令牌调整） | `--text-mute` 3.06–3.45:1；`--brand` 作文字 sage 3.32 / honey 2.68；选中行名四主题 2.17–4.40:1                                                             | 保留 AA 4.5:1 要求；`--text-mute` 仅用于可跳过阅读的元信息；无障碍专项再统一提升 | 本文 §2.3                                                             |
 
 ---
 
