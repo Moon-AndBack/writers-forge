@@ -5,6 +5,7 @@
  * 透传）。本模块**不发起 IPC**，只做：
  * - **类型镜像**：渲染层与主进程分离、无法 `import` 主进程模块，此处镜像
  *   `src/main/database/plot.ts` 的行类型（对齐 `outline/outlineTree.ts` 的镜像约定）；
+ * - **共享常量**：线类型 / 色板 / time origin 解析直接引用 `src/shared/plot.ts`（单一真源）；
  * - **分组排序**：`scenesOfLine` 按 `lineId` 归拢场景（绝对年优先、未定年沉底，
  *   同年 `sortOrder, id` 升序）；`groupScenesByYear` 全书跨线按绝对年聚合
  *   （同年一排，未定年组沉底）；
@@ -15,6 +16,8 @@
  * 出场实体**不落库**：由渲染层据正文经 `entities.match` 匹配生成胶囊
  * （见 `usePlotBodyEntities`），故本模块无 `characters` 字段 / 解析函数。
  */
+
+import { PLOT_LINE_COLORS, PLOT_TIME_ERAS } from '../../../../../shared/plot'
 
 /** 剧情线行（镜像主进程 `PlotLineRow`）。`deletedAt` 非 null 表示已软删除；
  * `lineType` 为 8 型 key（默认 `'main'`），`lineColor` 为 16 色 key（默认首 key）。 */
@@ -31,61 +34,25 @@ export interface PlotLineRow {
   deletedAt: string | null
 }
 
-/** 剧情线类型 8 项 key（镜像主进程；中文名由 `plot` ns 提供：主线 / 支线 / 感情 / 暗线 / 副线 / 成长 / 世界 / 悬念）。 */
-export type PlotLineType =
-  'main' | 'branch' | 'romance' | 'hidden' | 'sub' | 'growth' | 'world' | 'suspense'
-export const PLOT_LINE_TYPES: readonly PlotLineType[] = [
-  'main',
-  'branch',
-  'romance',
-  'hidden',
-  'sub',
-  'growth',
-  'world',
-  'suspense'
-]
-export const DEFAULT_PLOT_LINE_TYPE: PlotLineType = 'main'
-/** 归一化线类型：命中 8 型白名单才透传，其余回退 `'main'`（与主进程同口径）。 */
-export function normalizePlotLineType(value: unknown): PlotLineType {
-  return typeof value === 'string' && (PLOT_LINE_TYPES as readonly string[]).includes(value)
-    ? (value as PlotLineType)
-    : DEFAULT_PLOT_LINE_TYPE
-}
+/**
+ * 剧情线类型 / 色板 / time origin 解析的**单一真源**在 `src/shared/plot.ts`
+ * （主进程 `database/plotShared` 与渲染层共用）。此处按本模块既有公开面重导出，
+ * 页面导入路径零改动；`getPlotLineColorValue` 为渲染层展示专用辅助，留在本模块。
+ */
+export {
+  DEFAULT_PLOT_LINE_COLOR,
+  DEFAULT_PLOT_LINE_TYPE,
+  PLOT_LINE_COLORS,
+  PLOT_LINE_TYPES,
+  normalizePlotLineColor,
+  normalizePlotLineType,
+  parseTimelineOrigin
+} from '../../../../../shared/plot'
+export type { PlotLineColorOption, PlotLineType } from '../../../../../shared/plot'
 
-/** 剧情线颜色选项（镜像主进程：稳定 key + 色值；前 8 复用封面 `ring`，后 8 新增）。 */
-export interface PlotLineColorOption {
-  key: string
-  label: string
-  value: string
-}
-export const PLOT_LINE_COLORS: readonly PlotLineColorOption[] = [
-  { key: 'purple', label: '紫罗兰', value: '#5b4de8' },
-  { key: 'blue', label: '天青', value: '#2f9ae0' },
-  { key: 'green', label: '松林', value: '#0f7b4f' },
-  { key: 'orange', label: '琥珀', value: '#9d5d00' },
-  { key: 'violet', label: '暮紫', value: '#5c3a8a' },
-  { key: 'teal', label: '湖绿', value: '#0f7b7b' },
-  { key: 'rose', label: '绯红', value: '#c42b1c' },
-  { key: 'slate', label: '石板', value: '#475069' },
-  { key: 'pink', label: '樱粉', value: '#e64980' },
-  { key: 'coral', label: '珊瑚', value: '#f76707' },
-  { key: 'gold', label: '鎏金', value: '#eab308' },
-  { key: 'lime', label: '荧绿', value: '#74b816' },
-  { key: 'cyan', label: '晴空', value: '#15aabf' },
-  { key: 'indigo', label: '靛蓝', value: '#748ffc' },
-  { key: 'brown', label: '赭石', value: '#8c5a2b' },
-  { key: 'gray', label: '雾灰', value: '#868e96' }
-]
-export const DEFAULT_PLOT_LINE_COLOR = PLOT_LINE_COLORS[0].key
 /** 线颜色 key → 色值；未知 key 回退首色（与封面 `getCoverGradient` 同口径）。 */
 export function getPlotLineColorValue(key: string): string {
   return (PLOT_LINE_COLORS.find((option) => option.key === key) ?? PLOT_LINE_COLORS[0]).value
-}
-/** 归一化线颜色：命中 16 色 key 才透传，其余回退首 key（与主进程同口径）。 */
-export function normalizePlotLineColor(value: unknown): string {
-  return typeof value === 'string' && PLOT_LINE_COLORS.some((option) => option.key === value)
-    ? value
-    : DEFAULT_PLOT_LINE_COLOR
 }
 
 /**
@@ -181,9 +148,6 @@ export interface PlotEraLabels {
   /** 年份单位（如 zh-CN「年」；en 为空串）。 */
   yearUnit: string
 }
-
-/** 结构化时间纪元白名单（'' = 未设置；bc 纪前 / zero 元年 / ad 纪后，与主进程同口径）。 */
-const PLOT_TIME_ERAS: readonly string[] = ['bc', 'zero', 'ad']
 
 /**
  * 场景时间显示名：结构化（纪元 / 年 + 描述）优先，皆空时回退 `timeText` 原文，再空回占位。
@@ -301,8 +265,6 @@ export function groupScenesByYear(scenes: readonly PlotSceneRow[]): PlotYearGrou
  * 年组时间列标签：绝对年 → 纪元文案（调用方经 `PlotEraLabels` 提供），
  * null（未定年组）回 `undatedLabel`（调用方经 `t('undatedScene')` 提供，不硬编码）。
  */
-export { parseTimelineOrigin } from './timelineOriginParse'
-
 export function plotYearLabel(
   absoluteYear: number | null,
   eraLabels: PlotEraLabels,
