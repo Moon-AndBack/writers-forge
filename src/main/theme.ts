@@ -2,6 +2,12 @@ import { BrowserWindow, nativeTheme, systemPreferences } from 'electron'
 import { getSetting } from './database/settings'
 import { logger } from './logger'
 import { reapplyWindowMaterialForTheme } from './windowMaterial'
+import { DEFAULT_THEME, isThemeId, THEME_SETTING_KEY } from '../shared/theme'
+import type { ResolvedThemeId, ThemeId } from '../shared/theme'
+
+/** 主题档位的单一真源在 `src/shared/theme.ts`（与渲染层共用），此处原样重导出。 */
+export { isThemeId, THEME_SETTING_KEY }
+export type { ResolvedThemeId, ThemeId }
 
 /** 主题域日志 scope。 */
 const log = logger.scope('theme')
@@ -71,26 +77,6 @@ export function getSystemShouldUseDarkColors(): boolean {
 }
 
 /**
- * 应用主题档位（与渲染层 `theme/themes.ts` 的 `ThemeId` 同步维护）。
- *
- * 主进程不得 import 渲染层模块：此处独立声明并校验，修改档位时两侧同步。
- */
-export type ThemeId = 'system' | 'light' | 'dark' | 'sage' | 'honey'
-
-/** 实际生效主题：`system` 解析后的结果（与 theme.css 的 data-theme 取值一致）。 */
-export type ResolvedThemeId = Exclude<ThemeId, 'system'>
-
-const THEME_IDS: readonly ThemeId[] = ['system', 'light', 'dark', 'sage', 'honey']
-
-/** settings 表持久化键名（存用户选择本身，含 `system`；与渲染层常量同步）。 */
-export const THEME_SETTING_KEY = 'theme'
-
-/** 类型守卫：仅接受五档合法主题。 */
-export function isThemeId(value: unknown): value is ThemeId {
-  return typeof value === 'string' && (THEME_IDS as readonly string[]).includes(value)
-}
-
-/**
  * 应用主题 → `nativeTheme.themeSource`。
  *
  * sage / honey 没有独立的 DWM 明暗，统一按浅色映射 `'light'`；`system` 原样交给
@@ -118,7 +104,7 @@ export function readInitialThemeId(): ThemeId {
     // 数据库尚未就绪等异常：预期回退默认档位，不阻断启动。
     log.warn('读取持久化主题失败，回退跟随系统', error)
   }
-  return 'system'
+  return DEFAULT_THEME
 }
 
 /**

@@ -160,25 +160,10 @@ export function paragraphsToDocJSON(
 }
 
 /**
- * 不计入字数的字符（Unicode 类别，`u` 标志下逐字符匹配）：
- * `\p{P}` 标点 / `\p{S}` 符号（含 emoji）/ `\p{Z}` 空白 / `\p{C}` 控制符。
- * ⚠️ 与主进程 `database/wordCount.ts` 的 `NON_COUNTABLE_CHAR` **两处须同步**
- * （20 万字单篇上限与全书字数口径唯一真源）。
- */
-const NON_COUNTABLE_CHAR = /[\p{P}\p{S}\p{Z}\p{C}]/u
-
-/**
  * 正文**有效字数**（排除标点 / 符号 / 空白 / 控制符，逐码点统计）。
  *
- * 与主进程 `countEffectiveChars`、渲染层 `docWordLimit` 的拦截判定**同口径**——
- * 脚注显示的字数、单篇上限依据、全书字数统计三者一致。基于 `text`，与块级 JSON 无关。
+ * 口径真源在 `src/shared/wordCount.ts`（与主进程共用）；此处按渲染层既有名称
+ * `countCharacters` 重导出，`docWordLimit` / 回收站详情等调用点零改动。
+ * 基于 `text`，与块级 JSON 无关。
  */
-export function countCharacters(texts: readonly string[]): number {
-  let count = 0
-  for (const text of texts) {
-    for (const ch of text) {
-      if (!NON_COUNTABLE_CHAR.test(ch)) count += 1
-    }
-  }
-  return count
-}
+export { countEffectiveChars as countCharacters } from '../../../../../shared/wordCount'

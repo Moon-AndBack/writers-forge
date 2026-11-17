@@ -5,13 +5,22 @@
  *
  * `system`（跟随系统）是用户可选项，但**不写入** `data-theme`：
  * ThemeProvider 会依据系统明暗把它解析为 `light` / `dark` 后再写入。
+ *
+ * 档位 id / 守卫 / 设置键的单一真源在 `src/shared/theme.ts`（与主进程共用），
+ * 此处原样重导出，渲染层既有导入路径零改动。
  */
-export const THEME_IDS = ['system', 'light', 'dark', 'sage', 'honey'] as const
 
-export type ThemeId = (typeof THEME_IDS)[number]
+import {
+  DEFAULT_THEME,
+  THEME_IDS,
+  THEME_SETTING_KEY,
+  isThemeId,
+  type ResolvedThemeId,
+  type ThemeId
+} from '../../../shared/theme'
 
-/** 实际生效主题：`system` 解析后的结果，与 styles/theme.css 的 data-theme 取值一致。 */
-export type ResolvedThemeId = Exclude<ThemeId, 'system'>
+export { DEFAULT_THEME, THEME_IDS, THEME_SETTING_KEY, isThemeId }
+export type { ResolvedThemeId, ThemeId }
 
 export interface ThemeMeta {
   /** 与 `document.documentElement.dataset.theme` 对应的值（仅 light/dark/sage/honey） */
@@ -27,12 +36,3 @@ export const THEMES: readonly ThemeMeta[] = [
   { id: 'sage', labelKey: 'sage' },
   { id: 'honey', labelKey: 'honey' }
 ]
-
-export const DEFAULT_THEME: ThemeId = 'system'
-
-/** settings 表持久化键名（存用户选择本身，含 `system`） */
-export const THEME_SETTING_KEY = 'theme'
-
-export function isThemeId(value: unknown): value is ThemeId {
-  return typeof value === 'string' && (THEME_IDS as readonly string[]).includes(value)
-}

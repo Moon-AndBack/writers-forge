@@ -11,9 +11,22 @@
  */
 
 import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
+import {
+  DEFAULT_TIMELINE_ID,
+  isStoredOrigin,
+  timelineActiveKey,
+  timelineListKey,
+  timelineOriginKey
+} from '../../../../../shared/timeline'
 
-/** 默认时间线 id。 */
-export const DEFAULT_TIMELINE_ID = 'default'
+/** 键与默认 id 的单一真源在 `src/shared/timeline.ts`（与主进程共用），此处原样重导出。 */
+export {
+  DEFAULT_TIMELINE_ID,
+  isStoredOrigin,
+  timelineActiveKey,
+  timelineListKey,
+  timelineOriginKey
+}
 
 /**
  * 时间线条目（渲染层）。主进程 `TimelineEntry` 只读 `id` / `name` / `origin`；
@@ -33,29 +46,6 @@ export interface TimelineEntry {
   description: string
   /** 起点描述富文本（Tiptap JSON 串）；老数据缺失 → 读侧经 `resolveEntryDescriptionJson` 兜底。 */
   descriptionJson?: string
-}
-
-/** 按书列表 settings 键。 */
-export function timelineListKey(bookId?: string): string {
-  const id = (bookId ?? '').trim()
-  return id === '' ? 'timeline:list' : `timeline:list:${id}`
-}
-
-/** 按书选中 id settings 键。 */
-export function timelineActiveKey(bookId?: string): string {
-  const id = (bookId ?? '').trim()
-  return id === '' ? 'timeline:active' : `timeline:active:${id}`
-}
-
-/** 老起点 settings 键（migration 兼容，新代码不再写入）。 */
-export function timelineOriginKey(bookId?: string): string {
-  const id = (bookId ?? '').trim()
-  return id === '' ? 'timeline:origin' : `timeline:origin:${id}`
-}
-
-/** settings 存值是否有效（非空字符串）。 */
-export function isStoredOrigin(value: string | null): value is string {
-  return typeof value === 'string' && value.trim() !== ''
 }
 
 /** 解析列表 JSON；非法 / 空 → []。 */

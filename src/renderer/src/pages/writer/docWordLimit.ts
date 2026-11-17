@@ -4,6 +4,10 @@ import type { EditorState, Transaction } from '@tiptap/pm/state'
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import type { Editor as TiptapEditor } from '@tiptap/core'
 import { countCharacters } from './chapters/docParagraphs'
+import { MAX_DOC_CHARS } from '../../../../shared/wordCount'
+
+/** 单篇正文字数上限的单一真源在 `src/shared/wordCount.ts`（与主进程共用），此处原样重导出。 */
+export { MAX_DOC_CHARS }
 
 /**
  * 单篇正文字数上限 · **输入时阻止**（渲染层核心）。
@@ -44,13 +48,10 @@ import { countCharacters } from './chapters/docParagraphs'
  * （拦截阈值取 **> 上限**，即允许刚好填到 200,000）。
  */
 
-/** 单篇正文有效字数上限（与主进程 `ipc/docLimit.MAX_DOC_CHARS` 同值，跨进程须同步）。 */
-export const MAX_DOC_CHARS = 200_000
-
 /** 预警阈值比例：达到上限的 90% 即在脚注变色并提示「接近上限」。 */
 export const DOC_LIMIT_WARN_RATIO = 0.9
 
-/** 达到预警阈值的有效字数（`200_000 * 0.9` = 180,000）。 */
+/** 达到预警阈值的有效字数（`MAX_DOC_CHARS * 0.9` = 180,000）。 */
 export const DOC_LIMIT_WARN_CHARS = Math.floor(MAX_DOC_CHARS * DOC_LIMIT_WARN_RATIO)
 
 /**

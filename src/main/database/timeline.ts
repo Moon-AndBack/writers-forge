@@ -2,6 +2,16 @@ import { getDb } from './index'
 import { getSetting, setSetting, deleteSetting } from './settings'
 import { listBooks } from './books'
 import { DEFAULT_TIMELINE_ORIGIN } from './books'
+import {
+  DEFAULT_TIMELINE_ID,
+  isStoredOrigin,
+  timelineActiveKey,
+  timelineListKey,
+  timelineOriginKey
+} from '../../shared/timeline'
+
+/** 键与默认 id 的单一真源在 `src/shared/timeline.ts`（与渲染层共用），此处原样重导出。 */
+export { DEFAULT_TIMELINE_ID, timelineActiveKey, timelineListKey, timelineOriginKey }
 
 /** 时间线（多起点 / 多 origin 集合）数据层 helper。
  *
@@ -12,9 +22,6 @@ import { DEFAULT_TIMELINE_ORIGIN } from './books'
  *
  * 老键 `timeline:origin:<bookId>` 仅用于 migration：首次运行时迁入新列表（id='default'）并删除老键。
  */
-
-/** 默认时间线 id。 */
-export const DEFAULT_TIMELINE_ID = 'default'
 
 /** 默认时间线名称：空串（展示层以 i18n `timeline.defaultName` 兜底）。 */
 export const DEFAULT_TIMELINE_NAME = ''
@@ -32,29 +39,9 @@ export interface TimelineEntry {
   descriptionJson?: string
 }
 
-/** 按书列表 settings 键。 */
-export function timelineListKey(bookId: string): string {
-  return `timeline:list:${bookId}`
-}
-
-/** 按书选中 id settings 键。 */
-export function timelineActiveKey(bookId: string): string {
-  return `timeline:active:${bookId}`
-}
-
-/** 老起点 settings 键（仅 migration / 清理使用）。 */
-export function timelineOriginKey(bookId: string): string {
-  return `timeline:origin:${bookId}`
-}
-
 /** 全局 migration 守卫键。 */
 export function timelineMigratedGuardKey(): string {
   return 'timeline:migrated:v1'
-}
-
-/** settings 存值是否有效（非空字符串）。 */
-function isStoredOrigin(value: string | null): value is string {
-  return typeof value === 'string' && value.trim() !== ''
 }
 
 /** 归一化单条目：非法元素丢弃。 */

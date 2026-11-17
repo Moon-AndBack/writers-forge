@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { logger } from '../logger'
 import { isValidRichTextJson } from '../database/richText'
+import { RICH_TEXT_JSON_MAX_CHARS } from '../../shared/wordCount'
 import {
   MAX_INSPIRATION_TAGS,
   MAX_INSPIRATION_TAG_CHARS,
@@ -46,23 +47,17 @@ const MAX_TITLE_CHARS = 200
 const MAX_CONTENT_CHARS = 50_000
 
 /**
- * 正文富文本 JSON 串长度上限（字符数）：对齐 `ipc/foreshadows.ts` 的
- * `DESCRIPTION_JSON_MAX_CHARS = 200_000`（≈ 单篇正文上限 `MAX_DOC_CHARS` 的 JSON 体量，
- * 块级 Tiptap JSON 约为纯文本的 2–3 倍）。
+ * 消毒富文本正文入参：`undefined`（未提供）/ `null`（清空）原样返回；字符串须为**合法
+ * JSON** 且在 `RICH_TEXT_JSON_MAX_CHARS`（字符数，真源 `src/shared/wordCount.ts`，
+ * 与伏笔描述同一上限）以内，否则返回 `undefined` —— 由调用方**整包拒绝**（不静默丢字段）。
+ * 空串按 `isValidRichTextJson` 规则视为合法（= 清空）。
  *
  * 与伏笔描述「超长丢弃该字段」不同：灵感正文是**唯一真源**，丢弃字段等于静默丢内容，
  * 故超限 / 畸形**整包拒绝**（调用方回 null，保留库中原有正文）。
  */
-const CONTENT_JSON_MAX_CHARS = 200_000
-
-/**
- * 消毒富文本正文入参：`undefined`（未提供）/ `null`（清空）原样返回；字符串须为**合法
- * JSON** 且不超长，否则返回 `undefined` —— 由调用方**整包拒绝**（不静默丢字段）。
- * 空串按 `isValidRichTextJson` 规则视为合法（= 清空）。
- */
 function sanitizeContentJson(value: unknown): string | null | undefined {
   if (value === undefined || value === null) return value
-  if (typeof value !== 'string' || value.length > CONTENT_JSON_MAX_CHARS) return undefined
+  if (typeof value !== 'string' || value.length > RICH_TEXT_JSON_MAX_CHARS) return undefined
   return isValidRichTextJson(value) ? value : undefined
 }
 

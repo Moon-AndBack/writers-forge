@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { logger } from '../logger'
 import { isValidRichTextJson } from '../database/richText'
+import { RICH_TEXT_JSON_MAX_CHARS } from '../../shared/wordCount'
 import {
   attachForeshadowAnchor,
   createForeshadow,
@@ -71,22 +72,14 @@ function isOptionalPositiveInt(value: unknown): value is number | null | undefin
 }
 
 /**
- * 伏笔富文本描述 JSON 串长度上限（字符数）。
- *
- * 依据：对齐 `ipc/docLimit.ts` 的单篇正文上限 `MAX_DOC_CHARS = 200_000`（有效字数）；
- * 块级 Tiptap JSON 因节点 / 属性冗余，体量约为纯文本的 2–3 倍，20 万字符（≈200KB）
- * 足以覆盖上限内正文。超长视为异常入参，丢弃该字段而非整包拒绝。
- */
-const DESCRIPTION_JSON_MAX_CHARS = 200_000
-
-/**
  * 消毒富文本描述入参：`undefined`（未提供）/ `null`（清空）原样返回；字符串须为**合法
- * JSON** 且不超长，否则返回 `undefined` —— 由调用方**丢弃该字段**（不报错、不整包拒绝，
- * 保留纯文本 `description` 兼容路径）。空串按 `isValidRichTextJson` 规则视为合法（= 清空）。
+ * JSON** 且在 `RICH_TEXT_JSON_MAX_CHARS`（字符数，真源 `src/shared/wordCount.ts`）以内，
+ * 否则返回 `undefined` —— 由调用方**丢弃该字段**（不报错、不整包拒绝，保留纯文本
+ * `description` 兼容路径）。空串按 `isValidRichTextJson` 规则视为合法（= 清空）。
  */
 function sanitizeDescriptionJson(value: unknown): string | null | undefined {
   if (value === undefined || value === null) return value
-  if (typeof value !== 'string' || value.length > DESCRIPTION_JSON_MAX_CHARS) return undefined
+  if (typeof value !== 'string' || value.length > RICH_TEXT_JSON_MAX_CHARS) return undefined
   return isValidRichTextJson(value) ? value : undefined
 }
 

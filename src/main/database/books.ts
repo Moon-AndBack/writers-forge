@@ -4,6 +4,8 @@ import { logger } from '../logger'
 import { getDb } from './index'
 import { ensurePresetSubtypes } from './worldSubtypes'
 import { deleteSetting, setSetting } from './settings'
+import { DEFAULT_COVER_COLOR } from '../../shared/coverColors'
+import { DEFAULT_TIMELINE_ID, timelineActiveKey, timelineListKey } from '../../shared/timeline'
 
 /** 书籍域日志 scope。 */
 const log = logger.scope('books')
@@ -32,76 +34,6 @@ export type BookLength = 'long' | 'medium' | 'short'
 
 /** 书籍篇幅可选值。 */
 export const BOOK_LENGTHS: readonly BookLength[] = ['long', 'medium', 'short']
-
-/** 封面色预设：有序 key + 对应渐变值。 */
-export interface CoverColorOption {
-  /** 稳定 key，持久化到 books.coverColor */
-  key: string
-  /** 中文展示名 */
-  label: string
-  /** CSS background-image 值（预设渐变） */
-  value: string
-  /** 纯色环 / 强调色，供渲染层选中态使用 */
-  ring: string
-}
-
-/**
- * 封面色预设（8 组，有序）。前 6 组沿用 template/index.html 的 .cover-swatch
- * 渐变（其中 red 归入 rose 键），新增 teal / slate 两组，值与渲染层现有字面量保持一致。
- */
-export const COVER_COLORS: readonly CoverColorOption[] = [
-  {
-    key: 'purple',
-    label: '紫罗兰',
-    value: 'linear-gradient(135deg, #5b4de8, #7d8cf5)',
-    ring: '#5b4de8'
-  },
-  {
-    key: 'blue',
-    label: '天青',
-    value: 'linear-gradient(135deg, #2f9ae0, #5fc0ec)',
-    ring: '#2f9ae0'
-  },
-  {
-    key: 'green',
-    label: '松林',
-    value: 'linear-gradient(135deg, #0f7b4f, #4ccfa4)',
-    ring: '#0f7b4f'
-  },
-  {
-    key: 'orange',
-    label: '琥珀',
-    value: 'linear-gradient(135deg, #9d5d00, #f2b357)',
-    ring: '#9d5d00'
-  },
-  {
-    key: 'violet',
-    label: '暮紫',
-    value: 'linear-gradient(135deg, #5c3a8a, #a86ad4)',
-    ring: '#5c3a8a'
-  },
-  {
-    key: 'teal',
-    label: '湖绿',
-    value: 'linear-gradient(135deg, #0f7b7b, #4ccfc4)',
-    ring: '#0f7b7b'
-  },
-  {
-    key: 'rose',
-    label: '绯红',
-    value: 'linear-gradient(135deg, #c42b1c, #ff7a6a)',
-    ring: '#c42b1c'
-  },
-  {
-    key: 'slate',
-    label: '石板',
-    value: 'linear-gradient(135deg, #475069, #94a0bd)',
-    ring: '#475069'
-  }
-]
-
-/** 默认封面色 key（预设第一组）。 */
-const DEFAULT_COVER_COLOR = COVER_COLORS[0].key
 
 /**
  * 时间线起点默认值：空串（中文默认名 / 默认起点不下沉到数据层，由展示层 i18n 兜底）。
@@ -318,10 +250,10 @@ export function createBook(input: CreateBookInput): BookRow {
 
     // 新书即有默认时间线：列表 + 选中 id（settings JSON），不再写老键 `timeline:origin:<id>`。
     setSetting(
-      `timeline:list:${id}`,
-      JSON.stringify([{ id: 'default', name: '', origin: DEFAULT_TIMELINE_ORIGIN }])
+      timelineListKey(id),
+      JSON.stringify([{ id: DEFAULT_TIMELINE_ID, name: '', origin: DEFAULT_TIMELINE_ORIGIN }])
     )
-    setSetting(`timeline:active:${id}`, 'default')
+    setSetting(timelineActiveKey(id), DEFAULT_TIMELINE_ID)
     const created = getBook(id)
     if (!created) {
       throw new Error('Failed to read back created book')
@@ -367,8 +299,8 @@ export function deleteBook(id: string): boolean {
   return db.transaction((): boolean => {
     const result = db.prepare('DELETE FROM books WHERE id = ?').run(id)
     // settings 键无 FK：清该书时间线列表 / 选中键，避免 books 行删除后留下孤儿键。
-    deleteSetting(`timeline:list:${id}`)
-    deleteSetting(`timeline:active:${id}`)
+    deleteSetting(timelineListKey(id))
+    deleteSetting(timelineActiveKey(id))
     // 统一设定库 demo 播种标记同属 settings（无 FK）：删书时一并清掉，
     // 否则同 id 的书重建后（如教学书重灌）会因残留标记而跳过 demo 播种。
     deleteSetting(`worldEntities:seeded:${id}`)
