@@ -2,8 +2,9 @@
 
 /* ============================================================
    表单类通用组件样式（前缀 wf-）
-   视觉来源：template/index.html 的
-     .field-input / .field-textarea（底色 soft、r-xs、聚焦品牌环）
+   视觉规则见 docs/ui/design-language.md（L4 控件 / 控件高度 32 / 焦点环）。
+   覆盖范围：
+     .field-input / .field-textarea（底色 soft、聚焦品牌环）
      .field-seg / .field-chips（同一圆角与过渡语言）
      .st-popup / .st-popup-item（下拉面板的浮层与选项样式）
    颜色一律引用 styles/theme.css 令牌，并用 color-mix 从

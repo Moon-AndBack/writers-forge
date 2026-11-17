@@ -1,8 +1,8 @@
 /* ============================================================
    分段控件样式（本域额外控件）
-   来源：template/index.html 中三处同构实现——
-        .shelf-tabs/.shelf-tab（筛选切换）、.mini-seg button、
-        .field-seg button（表单单选）。
+   视觉规则见 docs/ui/design-language.md（圆角两档 / 控件高度 32）。
+   原型参考三处同构实现：.shelf-tabs/.shelf-tab（筛选切换）、
+        .mini-seg button、.field-seg button（表单单选）。
    命名：根类 .wf-seg；项 .wf-seg__item；激活 .is-active。
    颜色一律取 theme.css 令牌。
    尺寸：外框高 32（sm 同为 32），横向轨道内衬 3px / 2px；纵向内衬

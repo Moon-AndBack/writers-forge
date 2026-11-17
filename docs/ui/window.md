@@ -13,26 +13,26 @@
 
 ## 1. 窗口创建参数
 
-主窗口由 `createMainWindow()` 创建，`BrowserWindow` 选项集中在 `src/main/window.ts:74-99`。
+主窗口由 `createMainWindow()` 创建，`BrowserWindow` 选项集中在 `src/main/window.ts` 的 `new BrowserWindow({ … })` 块（当前 162-186 行）。
 
-| 参数                     | 取值                                                                 | 说明                                                                                     | 出处                                      |
-| ------------------------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `width` / `height`       | 持久化值，缺省 902 × 764                                             | 外框尺寸，单位 DIP                                                                       | `window.ts:75-76`、`windowState.ts:22-23` |
-| `minWidth` / `minHeight` | 902 × 764                                                            | 与默认尺寸相同，窗口不可再缩小                                                           | `window.ts:77-78`                         |
-| `backgroundColor`        | 材质生效 `#00000000`；否则 `#f3f3f3`                                 | `#AARRGGBB` 的 alpha 仅在 `transparent: true` 时生效；本项目未开启，材质可见性以实机为准 | `window.ts:165`                           |
-| `backgroundMaterial`     | `resolveDwmMaterial(resolveMaterial())` 结果                         | `acrylic` / `mica` / `tabbed` / `none`（`tabbed` 仅浅色 mica 的内部映射）                | `window.ts:150-151,173`                   |
-| `icon`                   | 开发态 `build/icon.png`；打包态 `resources/icon.png`                 | 路径由 `app.isPackaged` 分支决定；窗口图标只用 256（Windows 图标尺寸上限，无 4K）        | `window.ts:147-151,159`                   |
-| `titleBarStyle`          | `'hidden'`                                                           | 隐藏系统标题栏，渲染层自绘                                                               | `window.ts:86`                            |
-| `titleBarOverlay`        | `color: '#00000000'`、`symbolColor: '#5c5c5c'`、`height: 42`         | 仅保留右上角系统按钮（WCO）                                                              | `window.ts:87-91`                         |
-| `show`                   | `false`                                                              | 等 `ready-to-show` 再 `show()`，避免白屏闪烁                                             | `window.ts:79,110-113`                    |
-| `autoHideMenuBar`        | `true`                                                               | 隐藏菜单栏                                                                               | `window.ts:92`                            |
-| `webPreferences`         | `contextIsolation: true`、`sandbox: false`、`nodeIntegration: false` | preload 为 `../preload/index.js`                                                         | `window.ts:93-98`                         |
+| 参数                     | 取值                                                                 | 说明                                                                                     | 出处                                        |
+| ------------------------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `width` / `height`       | 持久化值，缺省 902 × 764                                             | 外框尺寸，单位 DIP                                                                       | `window.ts:163-164`、`windowState.ts:22-23` |
+| `minWidth` / `minHeight` | 902 × 764                                                            | 与默认尺寸相同，窗口不可再缩小                                                           | `window.ts:165-166`                         |
+| `backgroundColor`        | 材质生效 `#00000000`；否则 `#f3f3f3`                                 | `#AARRGGBB` 的 alpha 仅在 `transparent: true` 时生效；本项目未开启，材质可见性以实机为准 | `window.ts:172`                             |
+| `backgroundMaterial`     | `resolveDwmMaterial(resolveMaterial())` 结果                         | `acrylic` / `mica` / `tabbed` / `none`（`tabbed` 仅浅色 mica 的内部映射）                | `window.ts:151,173`                         |
+| `icon`                   | 开发态 `build/icon.png`；打包态 `resources/icon.png`                 | 路径由 `app.isPackaged` 分支决定；窗口图标只用 256（Windows 图标尺寸上限，无 4K）        | `window.ts:158-160,168`                     |
+| `titleBarStyle`          | `'hidden'`                                                           | 隐藏系统标题栏，渲染层自绘                                                               | `window.ts:174`                             |
+| `titleBarOverlay`        | `color: '#00000000'`、`symbolColor: '#5c5c5c'`、`height: 42`         | 仅保留右上角系统按钮（WCO）                                                              | `window.ts:175-179`                         |
+| `show`                   | `false`                                                              | 等 `ready-to-show` 再 `show()`，避免白屏闪烁                                             | `window.ts:167,204-207`                     |
+| `autoHideMenuBar`        | `true`                                                               | 隐藏菜单栏                                                                               | `window.ts:180`                             |
+| `webPreferences`         | `contextIsolation: true`、`sandbox: false`、`nodeIntegration: false` | preload 为 `../preload/index.js`                                                         | `window.ts:181-186`                         |
 
 其他行为：
 
-- 外链交给系统浏览器，应用内禁止新开窗口（`window.ts:116-119`）。
-- 导航守卫只放行应用自身来源（`window.ts:126`）。
-- 开发态加载 `ELECTRON_RENDERER_URL`；打包态 `loadFile('../renderer/index.html')`（`window.ts:123-135`）。
+- 外链交给系统浏览器，应用内禁止新开窗口（`window.ts:210-213`）。
+- 导航守卫只放行应用自身来源（`window.ts:220`）。
+- 开发态加载 `ELECTRON_RENDERER_URL`；打包态 `loadFile('../renderer/index.html')`（`window.ts:222-229`）。
 
 ## 2. 默认尺寸推导
 
@@ -102,7 +102,7 @@
 
 1. 建窗前读 settings 键并归一化：`readInitialWindowMaterial()`（`windowMaterial.ts:92-101`）。
 2. `resolveMaterial()` 结合平台能力算出真实可生效值（`windowMaterial.ts:104-106`）。
-3. 云母再经 `resolveDwmMaterial()` 按应用明暗解析为 `tabbed` / `mica`，结果用于 `backgroundMaterial`；`backgroundColor` 仍按生效值决定：非 `none` 时 `#00000000`，`none` 时 `#f3f3f3`（`window.ts:150-151,172-173`；常量在 `windowMaterial.ts:48,51`）。
+3. 云母再经 `resolveDwmMaterial()` 按应用明暗解析为 `tabbed` / `mica`，结果用于 `backgroundMaterial`；`backgroundColor` 仍按生效值决定：非 `none` 时 `#00000000`，`none` 时 `#f3f3f3`（`window.ts:151,172-173`；常量在 `windowMaterial.ts:48,51`）。
 4. 建窗后 `rememberInitialWindowMaterial()` 登记初始选择与实际 DWM 值，供主题明暗变化时比较（`window.ts:190`、`windowMaterial.ts:126-129`）。
 5. 渲染层 `main.tsx` 预取同一键、校验后作为 `WindowMaterialProvider` 的 `initialMaterial`，避免异步读取造成闪屏（`src/renderer/src/main.tsx:72-75,100`）。
 
@@ -111,7 +111,7 @@
 - IPC `window:setMaterial`：入参经 `normalizeWindowMaterial()` 校验（三档均合法，旧值 `tabbed` 迁移为 `mica`），非法返回 `null`，否则调用 `applyWindowMaterial()` 并返回**实际生效**的用户选择（`src/main/ipc/window.ts:67-78`）。
 - IPC `window:materialSupported`：返回当前系统是否支持窗口材质，渲染层据此禁用三档选择（`src/main/ipc/window.ts:82`）。
 - `applyWindowMaterial()` 内部：`resolveDwmMaterial()` 解析实际 DWM 材质 → 与窗口当前值不同才 `setBackgroundMaterial()` → 同步 `setBackgroundColor()`（`windowMaterial.ts:156-175`）。返回值为用户可见档位，不会是 `tabbed`。
-- preload 暴露为 `window.api.windowMaterial.set / materialSupported`（`src/preload/index.ts:421-427`）。
+- preload 暴露为 `window.api.windowMaterial.set / materialSupported`（`src/preload/index.ts:419-425`）。
 
 ### 4.5 渲染层投影
 
@@ -146,7 +146,7 @@ DWM 材质（云母 / 亚克力）的明暗在 Windows 上由系统主题决定�
 
 - 映射实现在 `themeIdToNativeThemeSource()`（`src/main/theme.ts:99-110`）；sage / honey 没有独立的 DWM 明暗，统一按浅色映射，`system` 原样交给 Electron 跟随系统，不在应用层二次解析。
 - **启动**：`src/main/index.ts:65` 在 `getDb()` 之后、`registerIpc()` 与 `createMainWindow()` 之前调用 `applyThemeSource(readInitialThemeId())`，保证窗口创建时第一帧 DWM 明暗已正确。持久化值缺失 / 非法回退 `system`（`theme.ts:113-122`）。
-- **运行时**：IPC `theme:apply`（`src/main/ipc/theme.ts:16-22`）经 `isThemeId` 校验，非法返回 `null`；合法时调用 `applyThemeSource()`，随后对发起窗口调用 `reapplyWindowMaterialForTheme()`，再返回 `{ resolvedTheme, shouldUseDarkColors }`。preload 暴露为 `window.api.systemTheme.apply`（`src/preload/index.ts:438-448`）。
+- **运行时**：IPC `theme:apply`（`src/main/ipc/theme.ts:16-22`）经 `isThemeId` 校验，非法返回 `null`；合法时调用 `applyThemeSource()`，随后对发起窗口调用 `reapplyWindowMaterialForTheme()`，再返回 `{ resolvedTheme, shouldUseDarkColors }`。preload 暴露为 `window.api.systemTheme.apply`（`src/preload/index.ts:441-446`）。
 - **系统明暗被动变化**：`setupThemeWatchers()` 的 `nativeTheme.on('updated')`（`theme.ts:154-170`）对每个窗口调用 `reapplyWindowMaterialForTheme()`，覆盖「跟随系统」时系统在运行中切换明暗、导致 `mica` 需要在 Mica Alt / 标准 Mica 之间切换的场景。
 - **重新应用的条件与幂等**：仅当前用户选择为 `mica`，且 `resolveDwmMaterial()` 解析出的 DWM 材质与该窗口已记录的实际材质**不同**时才调用 `setBackgroundMaterial()`；相同则直接返回（`windowMaterial.ts:138-145,163`）。因此系统强调色等无关 `updated` 事件不会触发原生材质重绘，主题切换重复下发相同值也不会闪烁。
 - `applyThemeSource()` 仅 Windows 写 `themeSource`；非 Windows 保持系统设置，只返回当前 `shouldUseDarkColors`。赋值前比较当前值，相同则跳过；异常记录 warning 并回退 `'light'`（`theme.ts:132-145`）。
@@ -156,13 +156,13 @@ DWM 材质（云母 / 亚克力）的明暗在 Windows 上由系统主题决定�
 
 ## 5. 自绘标题栏与 WCO
 
-- `titleBarStyle: 'hidden'` 隐藏系统标题栏，右上角保留窗口控制按钮（WCO），高度 **42**（`window.ts:86-91`）。
-- 初始符号色 `#5c5c5c`；背景保持全透明，让自绘标题栏与 DWM 材质透出（`window.ts:88-89`；`useTitleBarOverlay.ts:5-8`）。材质态标题栏内的控件底由 `--chrome-*` 薄雾承担，标题栏本体仍不铺整条底色（`material.css`（chrome 控件段））。
+- `titleBarStyle: 'hidden'` 隐藏系统标题栏，右上角保留窗口控制按钮（WCO），高度 **42**（`window.ts:174-179`）。
+- 初始符号色 `#5c5c5c`；背景保持全透明，让自绘标题栏与 DWM 材质透出（`window.ts:176-177`；`useTitleBarOverlay.ts:5-8`）。材质态标题栏内的控件底由 `--chrome-*` 薄雾承担，标题栏本体仍不铺整条底色（`material.css`（chrome 控件段））。
 - CSS `.titlebar` 高度同为 42px（`styles/shell.css:86-91`），三处（主进程 overlay / 渲染层常量 / CSS）必须一致。
 - 主题切换或系统明暗变化后，由 `useTitleBarOverlay()` 读取 `--text-dim` 作为新的 `symbolColor`，读取失败回退 `#5c5c5c`（`useTitleBarOverlay.ts:11-18,40-57`）。
 - 同步延迟一帧（`requestAnimationFrame`），确保取到新主题下的令牌值（`useTitleBarOverlay.ts:47-54`）。
-- IPC `window:titlebar:set-overlay` 仅 Windows 生效；非 Windows 直接返回 `false`，参数非法或窗口缺失同样返回 `false`（`src/main/ipc/window.ts:41-58`）。
-- preload 暴露为 `window.api.titleBar.setOverlay`（`src/preload/index.ts:341-344`）。
+- IPC `window:titlebar:set-overlay` 仅 Windows 生效；非 Windows 直接返回 `false`，参数非法或窗口缺失同样返回 `false`（`src/main/ipc/window.ts:45-62`）。
+- preload 暴露为 `window.api.titleBar.setOverlay`（`src/preload/index.ts:415-418`）。
 
 ## 6. 宽度磁吸
 
@@ -214,34 +214,34 @@ DWM 材质（云母 / 亚克力）的明暗在 Windows 上由系统主题决定�
 | `window:snap:status` | 读取当前吸附状态                         | `src/main/ipc/snap.ts:38-41` |
 | `window:bounds:get`  | 返回窗口外宽（DIP），供渲染层算 overhead | `src/main/ipc/snap.ts:44-47` |
 
-preload 对应 `window.api.windowSnap`（`src/preload/index.ts:352-361`）。配置校验拒绝 NaN / Infinity / 负值 / 非整数列数（`resizeSnap.ts:71-98`）。
+preload 对应 `window.api.windowSnap`（`src/preload/index.ts:426-435`）。配置校验拒绝 NaN / Infinity / 负值 / 非整数列数（`resizeSnap.ts:71-98`）。
 
 ## 7. 高度约束
 
 垂直方向由两段固定 chrome 夹住内容区，二者都是硬编码高度，改动需三处同步（主进程 overlay、CSS、推导注释）：
 
-| 区段                | 高度  | 出处                                     |
-| ------------------- | ----- | ---------------------------------------- |
-| 标题栏 `.titlebar`  | 42 px | `styles/shell.css:86-91`；`window.ts:90` |
-| 状态栏 `.statusbar` | 36 px | `styles/statusbar.css:17-22`             |
+| 区段                | 高度  | 出处                                      |
+| ------------------- | ----- | ----------------------------------------- |
+| 标题栏 `.titlebar`  | 42 px | `styles/shell.css:86-91`；`window.ts:178` |
+| 状态栏 `.statusbar` | 36 px | `styles/statusbar.css:17-22`              |
 
 - 默认高度 764 已包含 42 + 36（`windowState.ts:18-20`）。
-- 最小高度同为 764（`window.ts:78`），因此内容区高度下限 = 764 − 42 − 36 − 页面 padding / 工具条。
+- 最小高度同为 764（`window.ts:166`），因此内容区高度下限 = 764 − 42 − 36 − 页面 padding / 工具条。
 - 磁吸只改宽度，不参与高度计算。
 
 ## 8. DevTools 快捷键
 
-- **仅开发态注册**：判定依据是 `ELECTRON_RENDERER_URL` 是否存在，打包态不注册，避免暴露入口（`window.ts:121-130`）。
-- 支持按键（`window.ts:24-32,39-51`）：
+- **仅开发态注册**：判定依据是 `ELECTRON_RENDERER_URL` 是否存在，打包态不注册，避免暴露入口（`window.ts:217-229`）。
+- 支持按键（`window.ts:29-37,44-56`）：
   - 通用：`F12`；
   - Windows / Linux：`Ctrl + Shift + I`；
   - macOS：`Cmd + Option + I`（`meta + alt`，且不带 `control`）。
-- 命中后 `preventDefault()`；已打开则关闭，未打开则以 `mode: 'detach'` 打开（`window.ts:44-49`）。
+- 命中后 `preventDefault()`；已打开则关闭，未打开则以 `mode: 'detach'` 打开（`window.ts:49-54`）。
 
 ## 9. 常见误区
 
 - **`mica` 是唯一会“变身”的材质**。用户可见合法值为 `acrylic` / `mica` / `none`；`acrylic` 实时模糊背后内容，`mica` 采样桌面壁纸（不模糊）。云母的实际 DWM 档位由 `resolveDwmMaterial()` 按应用明暗决定：浅色（light / sage / honey）用 `tabbed`（Mica Alt，着色更强），深色用标准 `mica`；`tabbed` 不对用户暴露。两种材质门槛同为 Windows 11 22H2+（`windowMaterial.ts:15,65-69,115-118`）。
-- **不要写 `transparent: true`**。材质开启时设置 `backgroundColor: '#00000000'`；但 Electron 文档说明 `#AARRGGBB` 的 alpha 仅在 `transparent: true` 时生效，本项目因它在 Windows 上的副作用（无法缩放、无阴影、Snap / 窗口按钮异常）未开启，因此材质在客户区的实际可见性以实机为准，不依赖 alpha 生效（`window.ts:169-174`）。
+- **不要写 `transparent: true`**。材质开启时设置 `backgroundColor: '#00000000'`；但 Electron 文档说明 `#AARRGGBB` 的 alpha 仅在 `transparent: true` 时生效，本项目因它在 Windows 上的副作用（无法缩放、无阴影、Snap / 窗口按钮异常）未开启，因此材质在客户区的实际可见性以实机为准，不依赖 alpha 生效（`window.ts:169-172`）。
 - **材质生效时禁止给背景再叠加 `backdrop-filter`**。DWM 已在系统层完成材质处理，渲染层再模糊会二次处理、破坏透明链路并增加掉帧；材质态只允许改 `background` 颜色 / 透明度，且已无暗色提亮层，见 `material.css:28-43`。
 - **`material.ts` 已改名 `windowMaterial.ts`**（主进程与渲染层各一份），旧路径与旧文档引用均已失效。
 - **不存在 `window:material:*` 通道**。实际通道是 `window:setMaterial`、`window:materialSupported`、`window:titlebar:set-overlay`（`src/main/ipc/window.ts:45,67,82`）。
@@ -252,4 +252,4 @@ preload 对应 `window.api.windowSnap`（`src/preload/index.ts:352-361`）。配
 
 ---
 
-最后核对：2026-11-15
+最后核对：2026-11-17

@@ -1,6 +1,6 @@
 /* ============================================================
    通用组件样式：浮层 / 导航（下拉菜单、侧边抽屉）
-   设计语言参照 template/index.html：
+   视觉规则见 docs/ui/design-language.md §6 / §7。
    - 菜单：.st-popup / .st-popup-item / .check（--pane + --sh-sm + --r-lg）
    - 抽屉：.book-drawer + .drawer-mask（--pane + --sh-sm + --overlay-mask + blur(2px)）
    颜色全部取自 theme.css 令牌；品牌色半透明底用 color-mix 从变量派生，

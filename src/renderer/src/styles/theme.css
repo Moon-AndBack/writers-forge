@@ -1,8 +1,8 @@
 /* ============================================================
    主题令牌（设计契约）
-   来源：template/index.html 的 :root / html.dark / html.sage / html.honey
+   规则与档位见 docs/ui/design-language.md；取值与用法见 docs/ui/design-tokens.md
    切换：document.documentElement.dataset.theme = 'light' | 'dark' | 'sage' | 'honey'
-   变量名沿用模板原始命名（仅把 --desk-3 的混合大小写规范为小写）。
+   （--desk-3 已统一为小写命名）
    ============================================================ */
 
 /* ---------- 主题无关令牌 ---------- */

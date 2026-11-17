@@ -1,8 +1,8 @@
 /* ============================================================
    书籍页（书架视图）
    ------------------------------------------------------------------
-   视觉对齐 template/index.html 的 .bookshelf-view / .shelf-toolbar /
-   .book-grid / .book-card 一组规则，但按当前需求裁剪：
+   视觉规则见 docs/ui/design-language.md（书架卡 / 选中态 / 材质态透明）；
+   覆盖 .bookshelf-view / .shelf-toolbar / .book-grid / .book-card，按当前需求裁剪：
    - 不含 .shelf-hero（统计已移入外壳状态栏）；
    - 不含 .add-book-card（新建书籍卡）。
    颜色一律取 theme.css 令牌或用 color-mix 推导，兼容 light / dark /

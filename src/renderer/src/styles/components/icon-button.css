@@ -1,6 +1,7 @@
 /* ============================================================
    图标按钮通用组件样式
-   来源：template/index.html 的圆形图标触发件（.drawer-close / .mini-btn 等）。
+   视觉规则见 docs/ui/design-language.md（图标按钮 / 焦点环）。
+   原型参考圆形图标触发件（.drawer-close / .mini-btn 等）。
    命名：根类 .wf-iconbtn；变体 --ghost / --solid；色调 --default / --danger；
         尺寸 --sm（md 为默认，不输出类）。
    颜色一律取 theme.css 令牌；hover 反馈用 --soft-hover-solid（中性）或 --danger

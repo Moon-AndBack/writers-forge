@@ -1,7 +1,7 @@
 /* ============================================================
    写作视图 — 左栏（章节树 / 列表）
    ------------------------------------------------------------------
-   对应 template/index.html 的 .vol* / .chapter / .add-chapter 组。
+   视觉规则见 docs/ui/design-language.md（列表行 / 选中态 / 行操作）。
    半透明底（--soft / rgba 品牌底）统一改不透明：--soft-solid /
    color-mix(in srgb, var(--brand) N%, var(--pane))。
 

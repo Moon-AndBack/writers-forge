@@ -1,8 +1,8 @@
 /* ============================================================
    状态栏小部件（PinButton / TypographyControls / ZoomControls）
    ------------------------------------------------------------------
-   1:1 对齐 template/index.html 的 .st-side-btn / .st-pill-* /
-   .st-popup* / .st-zoom*（原型 CSS L710–771），并遵循本项目
+   视觉规则见 docs/ui/design-language.md（状态栏 chrome 域 / 浮层档位），
+   并遵循本项目
    「组件填充默认不透明」约定：胶囊 / 外壳 / 图钉的底色统一取
    chrome 令牌族（--chrome-*），其**默认值**逐项等于改前的
    --pill-bg-solid / --pill-bg-hover-solid / --soft-press-solid /

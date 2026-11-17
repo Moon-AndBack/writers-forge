@@ -1,11 +1,11 @@
 # 通用 UI 组件库
 
-> 本文档描述 `src/renderer/src/components/ui/` 下的 **23 项**通用 UI（21 个组件 + 2 个钩子），
+> 本文档描述 `src/renderer/src/components/ui/` 下的 **25 项**通用 UI（23 个组件 + 2 个钩子），
 > 是渲染层组件选型与用法的一手参考。所有 props 类型、默认值、类名均来自源码与本目录 CSS，
 > 不包含 `components/editor/` 等业务域组件。
 >
-> 本页已于 2026-11-09 按 `index.ts` 与目录清单校正：删除已不存在的 8 个组件详解，
-> 补入 `EntityStyleCard` / `Splitter`；目录另有 `useSplitter.ts`（Splitter 内部 hook，不进 barrel）。
+> 本页已于 2026-11-17 按 `index.ts` 与目录清单校正：补入 `ActionSeparator` / `PlaceLine`，
+> 计数与行数按当前代码重算；目录另有 `useSplitter.ts`（Splitter 内部 hook，不进 barrel）。
 
 **适用范围**：所有渲染层页面 / 组件（`pages/`、`shell/`、`diagnostics/` 等）。
 
@@ -26,16 +26,17 @@
 ```
 src/renderer/src/components/ui/
   index.ts                 # barrel 聚合出口（只转发具名导出）
-  Badge.tsx  Button.tsx  Card.tsx  ChipInput.tsx  ColorSwatchPicker.tsx
-  Combobox.tsx  Dropdown.tsx  EntityStyleCard.tsx  FormField.tsx  IconButton.tsx
-  Input.tsx  Modal.tsx  Progress.tsx  SearchInput.tsx  Segmented.tsx  Select.tsx
-  Splitter.tsx  Switch.tsx  Tag.tsx  Textarea.tsx  Toast.tsx  Tooltip.tsx
-  Window.tsx  useSplitter.ts
+  ActionSeparator.tsx  Badge.tsx  Button.tsx  Card.tsx  ChipInput.tsx
+  ColorSwatchPicker.tsx  Combobox.tsx  Dropdown.tsx  EntityStyleCard.tsx
+  FormField.tsx  IconButton.tsx  Input.tsx  Modal.tsx  PlaceLine.tsx
+  Progress.tsx  SearchInput.tsx  Segmented.tsx  Select.tsx  Splitter.tsx
+  Switch.tsx  Tag.tsx  Textarea.tsx  Toast.tsx  Tooltip.tsx  Window.tsx
+  useSplitter.ts
 ```
 
-- 目录内共 **25 个文件**：23 个实现模块 + `index.ts` + `useSplitter.ts`。
-- 23 个实现模块对应 **23 项导出**：21 个组件 + 2 个钩子（`useToast` / `useTooltip`）。
-- `useSplitter.ts` 是 `Splitter` 的内部拖拽 hook，不由 barrel 转发，不计入 23 项。
+- 目录内共 **27 个文件**：25 个实现模块 + `index.ts` + `useSplitter.ts`。
+- 25 个实现模块对应 **25 项导出**：23 个组件 + 2 个钩子（`useToast` / `useTooltip`）。
+- `useSplitter.ts` 是 `Splitter` 的内部拖拽 hook，不由 barrel 转发，不计入 25 项。
 - 一个文件即一个组件（或钩子），不把多个组件堆进同一文件。
 
 ### 1.2 barrel 导出（`index.ts`）
@@ -43,8 +44,8 @@ src/renderer/src/components/ui/
 `index.ts` 用 `export *` 逐个转发实现模块的**具名导出**（组件 + 其 props 类型）：
 
 ```ts
-export * from './Badge'
-// … 共 23 行
+export * from './ActionSeparator'
+// … 共 25 行
 ```
 
 因此推荐的统一导入方式是**从桶文件按需取具名导出**：
@@ -56,8 +57,8 @@ import type { DropdownItem } from '../../components/ui'
 
 需要同时取类型时，值导入与类型导入分两行（`verbatimModuleSyntax` 口径）。
 
-> **桶文件注释口径**：`index.ts` 顶部写「已核对 23 个组件的 props 类型名互不冲突」，
-> 数字 23 与实际模块数一致；严格分类为 21 个组件 + 2 个钩子。本页按 23 项口径计数。
+> **桶文件注释口径**：`index.ts` 顶部写「已核对 25 个组件的 props 类型名互不冲突」，
+> 数字 25 与实际模块数一致；严格分类为 23 个组件 + 2 个钩子。本页按 25 项口径计数。
 > `useSplitter` 不在桶文件中，需要时从 `./useSplitter` 直接引入。
 
 `export *` 的副作用与边界：
@@ -68,7 +69,7 @@ import type { DropdownItem } from '../../components/ui'
 
 ### 1.3 默认导出与具名导出的差异（重要）
 
-23 项中 **18 项有 `export default`，5 项只有具名导出**：
+25 项中 **20 项有 `export default`，5 项只有具名导出**：
 
 | 无默认导出（只能具名引入） | 文件           |
 | -------------------------- | -------------- |
@@ -80,17 +81,17 @@ import type { DropdownItem } from '../../components/ui'
 
 对这 5 个写 `import Input from './Input'` 会直接报错（模块无默认导出）。
 
-**统一规则：一律用具名导入。** 具名导入对 23 项全部有效，且与桶文件一致，不必记忆差异：
+**统一规则：一律用具名导入。** 具名导入对 25 项全部有效，且与桶文件一致，不必记忆差异：
 
 ```tsx
 import { Input, Select } from '@renderer/components/ui' // ✅ 全部可用
 import Input from './Input' // ❌ Input 无默认导出
 ```
 
-其余 18 项的默认导出仅为兼容历史调用点存在，新代码不再使用。
+其余 20 项的默认导出仅为兼容历史调用点存在，新代码不再使用。
 
 > 两个钩子文件也带默认导出（`Toast.tsx` 默认导出 `useToast`、`Tooltip.tsx` 默认导出
-> `useTooltip`），但它们属于上述 18 项之内，同样不推荐默认导入。
+> `useTooltip`），但它们属于上述 20 项之内，同样不推荐默认导入。
 
 ### 1.4 样式自动引入
 
@@ -104,24 +105,25 @@ import '../../styles/components/button.css'
 
 | 样式文件             | 行数 | 服务的组件                                                                                                                  |
 | -------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------- |
-| `button.css`         | 183  | Button                                                                                                                      |
-| `icon-button.css`    | 82   | IconButton                                                                                                                  |
-| `surface.css`        | 379  | Card / Tag / Badge / Progress（首行 `@import './modal.css'`；另含已移除 Avatar / Divider 的残留规则）                       |
-| `modal.css`          | 86   | Modal（经 `surface.css` 转发引入）                                                                                          |
-| `overlay.css`        | 256  | Dropdown（另含已移除 Drawer 的残留规则）                                                                                    |
-| `form.css`           | 408  | Input / Textarea / Switch / Select / Combobox（首行 `@import './form-select.css'`；另含已移除 Checkbox / Radio 的残留规则） |
-| `form-select.css`    | 180  | Select / Combobox（经 `form.css` 转发引入）                                                                                 |
-| `form-extras.css`    | 370  | SearchInput / ChipInput / FormField                                                                                         |
-| `display-extras.css` | 223  | ColorSwatchPicker（另含已移除 Accordion 的残留规则）                                                                        |
-| `segmented.css`      | 105  | Segmented                                                                                                                   |
-| `toast.css`          | 52   | useToast                                                                                                                    |
-| `tooltip.css`        | 93   | useTooltip                                                                                                                  |
-| `window.css`         | 114  | Window（Modal 面板复用其结构）                                                                                              |
-| `entity-card.css`    | 129  | EntityStyleCard（由 `styles/index.css` 全局引入，组件自身不 import）                                                        |
+| `button.css`         | 203  | Button                                                                                                                      |
+| `icon-button.css`    | 97   | IconButton                                                                                                                  |
+| `surface.css`        | 468  | Card / Tag / Badge / Progress（首行 `@import './modal.css'`；另含已移除 Avatar / Divider 的残留规则）                       |
+| `modal.css`          | 97   | Modal（经 `surface.css` 转发引入）                                                                                          |
+| `overlay.css`        | 290  | Dropdown（另含已移除 Drawer 的残留规则）                                                                                    |
+| `form.css`           | 463  | Input / Textarea / Switch / Select / Combobox（首行 `@import './form-select.css'`；另含已移除 Checkbox / Radio 的残留规则） |
+| `form-select.css`    | 199  | Select / Combobox（经 `form.css` 转发引入）                                                                                 |
+| `form-extras.css`    | 379  | SearchInput / ChipInput / FormField                                                                                         |
+| `display-extras.css` | 178  | ColorSwatchPicker（另含已移除 Accordion 的残留规则）                                                                        |
+| `segmented.css`      | 155  | Segmented                                                                                                                   |
+| `toast.css`          | 57   | useToast                                                                                                                    |
+| `tooltip.css`        | 104  | useTooltip                                                                                                                  |
+| `window.css`         | 128  | Window（Modal 面板复用其结构）                                                                                              |
+| `entity-card.css`    | 142  | EntityStyleCard（由 `styles/index.css` 全局引入，组件自身不 import）                                                        |
+| `place-line.css`     | 74   | PlaceLine（由 `styles/index.css` 全局引入，组件自身不 import）                                                              |
 
-`styles/components/` 目录共 **26 个 CSS**（含 `editor-format.css` 等业务域样式，
-不由 `components/ui/` 引入），合计约 3,845 行。`Splitter` 的样式在 `styles/writer.css`（由
-`pages/Writer.tsx:34` 引入），不在 `components/`；在写作页之外复用时需先把样式迁到组件层。
+`styles/components/` 目录共 **31 个 CSS**（含 `editor-format.css` 等业务域样式，
+不由 `components/ui/` 引入），合计 4,779 行。`Splitter` 的样式在 `styles/writer.css`（由
+`pages/Writer.tsx` 引入），不在 `components/`；在写作页之外复用时需先把样式迁到组件层。
 
 层叠顺序由「谁先 import」决定：`surface.css` 主动 `@import './modal.css'`、`form.css` 主动
 `@import './form-select.css'`，是为了让被拆出的样式仍保持原有的先后次序（同特异性覆盖规则依赖于此）。
@@ -186,6 +188,7 @@ import { Button } from '@renderer/components/ui'
 
 | 组件 / 钩子       | 导入名              | 一句话用途                                | 默认导出           |
 | ----------------- | ------------------- | ----------------------------------------- | ------------------ |
+| ActionSeparator   | `ActionSeparator`   | 横排控件组内的 2px 竖分隔线（纯装饰）     | ✅                 |
 | Badge             | `Badge`             | 状态标签 / 计数徽标                       | ✅                 |
 | Button            | `Button`            | 通用按钮（4 变体 3 尺寸，支持 loading）   | ✅                 |
 | Card              | `Card`              | 面板容器，含标题区 / 页脚                 | ✅                 |
@@ -197,6 +200,7 @@ import { Button } from '@renderer/components/ui'
 | IconButton        | `IconButton`        | 圆形图标按钮（自带 tooltip）              | ✅                 |
 | Input             | `Input`             | 单行文本输入                              | ❌ 仅具名          |
 | Modal             | `Modal`             | 模态弹窗（焦点陷阱 / 嵌套栈）             | ✅                 |
+| PlaceLine         | `PlaceLine`         | 单行「标签 + 截断值」位置行               | ✅                 |
 | Progress          | `Progress`          | 进度条                                    | ✅                 |
 | SearchInput       | `SearchInput`       | 搜索框（前置图标 + 清除按钮）             | ✅                 |
 | Segmented         | `Segmented<T>`      | 分段控件 / 标签切换                       | ✅                 |
@@ -210,7 +214,7 @@ import { Button } from '@renderer/components/ui'
 | EntityStyleCard   | `EntityStyleCard`   | 实体样式卡壳（剧情 / 伏笔 / 设定共用）    | ✅                 |
 | Splitter          | `Splitter`          | 分栏拖拽分隔条（8px，键盘可达）           | ✅                 |
 
-统计口径：**23 项 = 21 个组件 + 2 个钩子**；有默认导出 **18 项**，**无默认导出 5 项**
+统计口径：**25 项 = 23 个组件 + 2 个钩子**；有默认导出 **20 项**，**无默认导出 5 项**
 （Combobox / Input / Select / Switch / Textarea）。`useSplitter` 是 `Splitter` 的内部 hook，不计入本表。
 
 ---
@@ -1114,9 +1118,54 @@ return (
 />
 ```
 
+### 3.24 ActionSeparator
+
+**用途**：横排控件组内的竖分隔线。以 2px 宽、16px 高的实线分隔按钮组，左右各留 4px 外边距；
+标题栏模块操作组（`.tb-module-actions`）与富文本工具栏（`RichTextToolbar`）共用。
+
+**Props**：无。
+
+**关键类名**：`.tb-sep`（样式在 `styles/titlebar.css`，由 `TitleBar` 导入）。
+
+**键盘与无障碍**：`<span aria-hidden="true">`，纯装饰，不承载语义、不可聚焦；不要用它替代
+§8.1 的渐隐分隔线或其它实线分隔。
+
+**示例**
+
+```tsx
+<ActionSeparator />
+```
+
+### 3.25 PlaceLine
+
+**用途**：单行「位置」行——左侧固定标签 + 右侧单行截断值。伏笔埋点 / 回收位置、实体首次登场等共用；
+`pill` 变体把整行包进透明底细描边胶囊，仅供首次登场使用。
+
+**Props**
+
+| 名称      | 类型                 | 默认值      | 说明                                                  |
+| --------- | -------------------- | ----------- | ----------------------------------------------------- |
+| `label`   | `string`             | 必填        | 左侧固定标签                                          |
+| `value`   | `string`             | 必填        | 右侧值（单行截断，完整文本始终保留在 DOM）            |
+| `title`   | `string`             | `undefined` | tooltip 文本；缺省取 `value`，传空串可关闭 tooltip    |
+| `tone`    | `'normal' / 'muted'` | `'normal'`  | `muted` 为占位 / 未登场弱化色，不弹 tooltip           |
+| `variant` | `'plain' / 'pill'`   | `'plain'`   | `plain` 默认单行；`pill` 透明底细描边胶囊（首次登场） |
+
+**关键类名**：`.wf-place-line`、`.wf-place-line--pill`、`.wf-place-line__label`、
+`.wf-place-line__value`（`is-muted`）。
+
+**键盘与无障碍**：纯展示行，无焦点、无 role；值文本在 DOM 中始终完整（省略号只是视觉裁剪），
+tooltip 经 `anchorProps` 的 `aria-describedby` 关联到值元素；`muted` 不产生浮层。
+
+**示例**
+
+```tsx
+<PlaceLine label={t('foreshadow.position')} value={position} variant="pill" />
+```
+
 ## 4. 钩子形态：Toast 与 Tooltip
 
-23 项里有 2 项不是组件，而是**返回「节点 + 控制器」的钩子**：`useToast` 与 `useTooltip`。
+25 项里有 2 项不是组件，而是**返回「节点 + 控制器」的钩子**：`useToast` 与 `useTooltip`。
 这也是全库唯一偏离「组件 + props」形态的地方（`useTooltip` 自 `IconButton` 内复用，
 `useToast` 与 `pages/writer/chapters/useConfirm` 的命令式风格保持一致）。
 
@@ -1264,8 +1313,8 @@ const { anchorRef, anchorProps, tooltip } = useTooltip<HTMLButtonElement>({
 
 ### 6.1 待办 / 已知偏差
 
-- `components/ui/index.ts` 顶部注释写「已核对 23 个组件」，与实际 23 个模块数一致；严格口径为
-  21 个组件 + 2 个钩子，无需再改数字。
+- `components/ui/index.ts` 顶部注释写「已核对 25 个组件」，与实际 25 个模块数一致；严格口径为
+  23 个组件 + 2 个钩子，无需再改数字。
 - `Card interactive` 只提供视觉，不提供按钮语义，需调用方补齐。
 - 已移除的 Accordion / Avatar / Checkbox / Divider / Drawer / Radio 仍有
   CSS 残留（`surface.css`、`display-extras.css`、`overlay.css`、`form.css`），
@@ -1274,4 +1323,4 @@ const { anchorRef, anchorProps, tooltip } = useTooltip<HTMLButtonElement>({
 
 ---
 
-最后核对：2026-11-13
+最后核对：2026-11-17

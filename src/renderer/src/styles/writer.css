@@ -1,8 +1,8 @@
 /* ============================================================
    写作视图（writer-view）— 布局骨架
    ------------------------------------------------------------------
-   1:1 移植 template/index.html 的三栏规则（.writer-view/.workspace/
-   .splitter/.sidepane/.editor-pane/.rightpane/面板切换/断点）。
+   视觉规则见 docs/ui/design-language.md（三栏 / 分栏 / 选中态）；
+   覆盖 .writer-view/.workspace/.splitter/.sidepane/.editor-pane/.rightpane/面板切换/断点。
    按栏拆分的面板细节见 @import 的三个子文件。
    遵循本项目「组件填充不透明」约定：底色取 --pane / --soft*-solid，
    color-mix(... transparent) 仅用于阴影 / 描边；不使用 backdrop-filter。

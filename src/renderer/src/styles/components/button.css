@@ -1,8 +1,8 @@
 /* ============================================================
    按钮类通用组件样式
-   来源：template/index.html 的 .btn / .btn.primary / .btn.ghost、
-        .tb-tool / .act-btn / .eb-tool / .mini-btn（图标按钮）、
-        .st-side-btn / .st-pill-btn / .drawer-close 等。
+   视觉规则见 docs/ui/design-language.md（控件高度 / 圆角 / 焦点环）。
+   原型参考 .btn / .tb-tool / .act-btn / .eb-tool / .mini-btn（图标按钮）、
+   .st-side-btn / .st-pill-btn / .drawer-close 等。
    命名：根类 .wf-btn；变体 --primary/--secondary/--ghost/--danger；
         尺寸 --sm/--lg（md 为默认，不输出类）；图标按钮 --icon。
    颜色一律取 theme.css 令牌；品牌浅底 / 光晕用 color-mix 由 --brand

@@ -1,6 +1,7 @@
 /* ============================================================
    表单扩展类通用组件样式（前缀 wf-）
-   视觉来源：template/index.html 的
+   视觉规则见 docs/ui/design-language.md（控件高度 / 表单行 / 状态三态）。
+   覆盖范围：
      .shelf-search（搜索框：前置图标 + :focus-within 品牌环）
      .field-chips / .field-chip / .field-chip-add（可增删标签）
      .st-zoom / .st-zoom-btn / .st-zoom-val（− / 值 / + 步进器）

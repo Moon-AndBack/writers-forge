@@ -1,7 +1,7 @@
 /* ============================================================
    窗口框架（Window）——标题区 / 内容区 / 底部操作区
    被 `Modal` 与欢迎页共用，保证浮层与引导卡片外观一致。
-   设计语言参照 template/index.html（--pane + --r-lg + 浮层阴影 + 描边环）。
+   设计规则见 docs/ui/design-language.md（浮层 / 弹窗 / 渐隐分隔线）。
    颜色一律取 theme.css 令牌（含 color-mix），兼容 light / dark / sage / honey。
    前缀 wf-：根 .wf-window；尺寸变体 --sm/--md/--lg/--xl；元素 __head/__title/__close/__body/__footer。
    ============================================================ */
