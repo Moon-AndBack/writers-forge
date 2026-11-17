@@ -15,6 +15,7 @@
  * - `compact`：右栏窄栏用——收窄内衬 / 字号，正文摘要由 3 行降为 2 行
  *   （样式见 `writer-inspiration-overview.css`）。
  */
+import { memo } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TrashIcon } from '../../../components/icons'
@@ -33,7 +34,8 @@ export interface InspirationCardProps {
   onDelete?: (id: number) => void
 }
 
-export default function InspirationCard({
+/** 灵感卡：以 `memo` 包裹——父层删除确认 / 筛选 UI 等状态变化不牵连同网格的其它卡（props 均引用稳定）。 */
+export default memo(function InspirationCard({
   row,
   active,
   readonly = false,
@@ -119,4 +121,4 @@ export default function InspirationCard({
       }}
     />
   )
-}
+})

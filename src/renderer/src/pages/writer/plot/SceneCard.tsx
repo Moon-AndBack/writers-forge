@@ -1,4 +1,4 @@
-import { useRef, type ReactElement, type ReactNode } from 'react'
+import { memo, useRef, type ReactElement, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TrashIcon } from '../../../components/icons'
 import { EntityStyleCard, IconButton } from '../../../components/ui'
@@ -16,6 +16,10 @@ import { plotSceneTitle, type PlotLineRow, type PlotSceneRow } from './plotTree'
 import { PlotSceneHeading } from './PlotSceneHeading'
 import { usePlotBodyEntities, type PlotBodyEntity } from './usePlotBodyEntities'
 
+/** 卡片只消费悬停控制器的回调（锚点 `anchor` 由列表层 `HoverCard` 读取）：收窄掉 `anchor`
+ * 后父层可传稳定引用，悬停改锚点重渲染父层时不会击穿卡片记忆化。 */
+export type EntityHoverControl = Omit<ReturnType<typeof useEntityHover>, 'anchor'>
+
 interface SceneCardProps {
   scene: PlotSceneRow
   active: boolean
@@ -28,8 +32,8 @@ interface SceneCardProps {
   onSelect: (id: number) => void
   /** 打开节点弹窗（改该场景时间 / 标题）。 */
   onEditNode: (scene: PlotSceneRow) => void
-  /** 胶囊悬停委托（壳的胶囊容器级 `onMouseOver` / `onMouseLeave`）。 */
-  charHover: ReturnType<typeof useEntityHover>
+  /** 胶囊悬停委托（壳的胶囊容器级 `onMouseOver` / `onMouseLeave`；只收回调，不含锚点）。 */
+  charHover: EntityHoverControl
   /** 删除该场景节点（经卡内删除按钮二次确认后调用）。 */
   onDeleteScene: (id: number) => void
   /** 只读模式（章节右栏剧情页签）：隐藏卡内编辑 / 删除按钮，点击仍只选中。 */
@@ -56,7 +60,7 @@ interface SceneCardProps {
  * 悬停「＋N」浮窗列出被收口的实体（复用实体域的 `EntityCardMorePopup`），
  * 胶囊带 `data-entity-id` 以支持悬停实体信息卡，着色统一走全局胶囊层
  * （`chip-pill.css` 形态 + `.chip-m-*` 模块基色 + `.chip-p-*` 预设分类色，与档案卡同口径）。 */
-export function SceneCard({
+export const SceneCard = memo(function SceneCard({
   scene,
   active,
   layoutKey,
@@ -246,7 +250,7 @@ export function SceneCard({
       />
     </SceneCardFrame>
   )
-}
+})
 
 /** 卡片外层容器：默认保留 `.plot-scene-wrap`（剧情线视图卡独占一行）；
  * `bare` 时只输出卡片本体，供时间线一排放多卡（去掉 `flex: 0 0 100%` 的舞台包裹）。 */

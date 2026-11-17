@@ -11,7 +11,7 @@ import PlotActivityActions from './PlotActivityActions'
 import PlotLineDialog, { type PlotLineDialogInput } from './PlotLineDialog'
 import { usePlotEditor } from './plotEditorContext'
 import SceneNodeDialog, { type SceneNodeDialogInput } from './SceneNodeDialog'
-import { SceneCard } from './SceneCard'
+import { SceneCard, type EntityHoverControl } from './SceneCard'
 import {
   getPlotLineColorValue,
   normalizePlotLineColor,
@@ -80,9 +80,18 @@ export default function PlotTimeline({
 }: PlotTimelineProps) {
   const { t } = useTranslation('plot')
   // 卡内删除按钮的二次确认（集中一个弹窗实例，避免每卡各挂一个 Modal）。
-  const confirm = useConfirm()
+  // 拆出 `request`（稳定引用）与弹窗节点：整包 `confirm` 每次渲染都是新对象，
+  // 直接进回调依赖会击穿卡片记忆化。
+  const { request: requestConfirm, node: confirmNode } = useConfirm()
   // 胶囊悬停实体信息卡（事件委托在壳的胶囊容器，弹窗经 portal 挂 body）。
   const hover = useEntityHover()
+  // 卡片只消费悬停控制器的回调（锚点由本层 `HoverCard` 读）：包成稳定引用，
+  // 悬停改锚点重渲染本层时卡片 props 不变，`memo(SceneCard)` 不被打穿。
+  const { onMouseOver, onMouseLeave, close, showFor, cancelHide } = hover
+  const cardHover = useMemo(
+    () => ({ onMouseOver, onMouseLeave, close, showFor, cancelHide }),
+    [onMouseOver, onMouseLeave, close, showFor, cancelHide]
+  )
   // 中栏根引用 + 内容列可用宽（仅作布局签名，变化时触发卡内胶囊重测）。
   const timelineRef = useRef<HTMLDivElement>(null)
   const layoutKey = useSceneContentWidth(timelineRef, line !== null)
@@ -165,7 +174,7 @@ export default function PlotTimeline({
   // 卡内删除按钮：二次确认后软删除该节点（文案复用 `dialog.deleteScene.*`）。
   const requestDeleteScene = useCallback(
     (id: number): void => {
-      confirm.request(
+      requestConfirm(
         {
           title: t('dialog.deleteScene.title'),
           message: t('dialog.deleteScene.message'),
@@ -174,7 +183,7 @@ export default function PlotTimeline({
         () => onDeleteScene(id)
       )
     },
-    [confirm, onDeleteScene, t]
+    [requestConfirm, onDeleteScene, t]
   )
 
   return (
@@ -209,7 +218,7 @@ export default function PlotTimeline({
         />
       )}
       {/* 卡内删除确认弹窗节点（集中挂载；由卡内「垃圾桶」按钮触发）。 */}
-      {confirm.node}
+      {confirmNode}
       {/* 胶囊悬停实体信息卡（数据走 `entities.get`，经 LRU 缓存）。 */}
       <HoverCard
         anchor={hover.anchor}
@@ -242,7 +251,7 @@ export default function PlotTimeline({
                     }
                     onSelect={onSelectScene}
                     onEditNode={setNodeTarget}
-                    charHover={hover}
+                    charHover={cardHover}
                     onDeleteScene={requestDeleteScene}
                   />
                 ))
@@ -289,8 +298,8 @@ interface SceneRowProps {
   onSelect: (id: number) => void
   /** 打开节点弹窗（改该场景时间 / 标题）。 */
   onEditNode: (scene: PlotSceneRow) => void
-  /** 胶囊悬停委托（壳的胶囊容器级 `onMouseOver` / `onMouseLeave` + 信息卡锚点）。 */
-  charHover: ReturnType<typeof useEntityHover>
+  /** 胶囊悬停委托（壳的胶囊容器级 `onMouseOver` / `onMouseLeave`；只收回调，不含锚点）。 */
+  charHover: EntityHoverControl
   /** 删除该场景节点（经卡内删除按钮二次确认后调用）。 */
   onDeleteScene: (id: number) => void
 }

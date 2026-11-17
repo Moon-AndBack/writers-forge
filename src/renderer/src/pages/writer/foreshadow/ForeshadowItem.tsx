@@ -25,7 +25,7 @@
  * - `compact`：右栏窄栏用——收窄内衬 / 字号，描述由 4 行降为 2 行
  *   （样式见 `writer-foreshadow.css`）。
  */
-import { useRef } from 'react'
+import { memo, useRef } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { deriveForeshadowStatus } from '../../../../../shared/foreshadowStatus'
@@ -54,6 +54,10 @@ import type { ForeshadowEntityChip } from './useForeshadowEntityMatches'
 /** 「+N」计数胶囊的语义类：`useChipOverflow` 的 `moreSelector` 靠它把计数槽排除在容量测量外。 */
 const MORE_CHIP_CLASS = 'foreshadow-item__entity-more'
 
+/** 卡片只消费悬停控制器的回调（锚点 `anchor` 由列表层 `HoverCard` 读取）：收窄掉 `anchor`
+ * 后父层可传稳定引用，悬停改锚点重渲染父层时不会击穿卡片记忆化。 */
+type EntityHoverControl = Omit<ReturnType<typeof useEntityHover>, 'anchor'>
+
 export interface ForeshadowItemProps {
   row: ForeshadowRow
   active: boolean
@@ -67,8 +71,8 @@ export interface ForeshadowItemProps {
   entities: readonly ForeshadowEntityChip[]
   /** 布局签名（单卡内容可用宽，px）：变化时触发实体胶囊容量重测。 */
   layoutKey: number
-  /** 列表层共用的实体悬停控制器（悬停卡由列表层渲染；卡内仅「+N」浮窗使用）。 */
-  entityHover: ReturnType<typeof useEntityHover>
+  /** 列表层共用的实体悬停控制器（悬停卡由列表层渲染；卡内仅「+N」浮窗使用；只收回调，不含锚点）。 */
+  entityHover: EntityHoverControl
   /** 只读变体：不渲染删除按钮；可交互性由 `onSelect` 是否存在决定（章节右栏总览用）。 */
   readonly?: boolean
   /** 紧凑变体：收窄内衬 / 字号与描述行数（右栏窄栏用）。 */
@@ -78,7 +82,7 @@ export interface ForeshadowItemProps {
   onDelete?: (id: number) => void
 }
 
-export default function ForeshadowItem({
+export default memo(function ForeshadowItem({
   row,
   active,
   chapters,
@@ -289,4 +293,4 @@ export default function ForeshadowItem({
       }
     />
   )
-}
+})

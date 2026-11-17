@@ -7,7 +7,7 @@
  * - 选中 / 详情编辑在右栏（`ForeshadowPanel`），中栏只做列表；
  * - 删除入口只在卡片上（二次确认在本视图持有 `deleteId`），右栏详情不再重复提供。
  */
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { readGridCardWidth } from '../../../components/cardGridMetrics'
 import { useStableMeasure } from '../../../components/useStableMeasure'
@@ -61,6 +61,13 @@ export default function ForeshadowView({
   const layoutKey = useStableMeasure(gridRef, bundle.rows.length > 0, readGridCardWidth)
   // 实体悬停卡：整张网格只挂一个 `HoverCard`，胶囊经事件委托（`closest`）定位。
   const entityHover = useEntityHover()
+  // 卡片只消费悬停控制器的回调（锚点由本层 `HoverCard` 读）：包成稳定引用，
+  // 悬停改锚点重渲染本层时卡片 props 不变，`memo(ForeshadowItem)` 不被打穿。
+  const { onMouseOver, onMouseLeave, close, showFor, cancelHide } = entityHover
+  const cardEntityHover = useMemo(
+    () => ({ onMouseOver, onMouseLeave, close, showFor, cancelHide }),
+    [onMouseOver, onMouseLeave, close, showFor, cancelHide]
+  )
 
   // 待删除行按 id 从当前列表派生：行已被删除 / 列表刷新后自动失效，不会悬空。
   const deleteRow =
@@ -127,7 +134,7 @@ export default function ForeshadowView({
                   outlineItems={outlineItems}
                   entities={entityMatches.get(row.id) ?? EMPTY_ENTITIES}
                   layoutKey={layoutKey}
-                  entityHover={entityHover}
+                  entityHover={cardEntityHover}
                   onSelect={bundle.onSelect}
                   onDelete={setDeleteId}
                 />

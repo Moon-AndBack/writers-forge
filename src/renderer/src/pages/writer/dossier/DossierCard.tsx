@@ -8,7 +8,7 @@
  * - hover / 开合事件一律经 props 上抛（关系胶囊 → 第一层详情卡由 `DossierView` 渲染，
  *   「+N」浮窗内胶囊 → 第二层详情卡同样由 `DossierView` 渲染）。
  */
-import { useEffect, useRef } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import type { MouseEvent as ReactMouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LinkIcon, TrashIcon } from '../../../components/icons'
@@ -67,8 +67,9 @@ export interface DossierCardProps {
   onPopupControl?: (rowId: number, control: OverflowPopupControl | null) => void
 }
 
-/** 单条设定卡：名称 + 子类型标签（有值才显示）+ 别名标签 + 正文前 4 行（逐段缩进）+ 关系标签；选中态落卡自身（无位移 / 缩放）。 */
-export function DossierCard({
+/** 单条设定卡：名称 + 子类型标签（有值才显示）+ 别名标签 + 正文前 4 行（逐段缩进）+ 关系标签；选中态落卡自身（无位移 / 缩放）。
+ * 以 `memo` 包裹：父层悬停 / 弹窗开关等重渲染不牵连同网格的其它卡（props 均引用稳定）。 */
+export const DossierCard = memo(function DossierCard({
   row,
   bookId,
   active,
@@ -297,6 +298,6 @@ export function DossierCard({
       }
     />
   )
-}
+})
 
 export default DossierCard
