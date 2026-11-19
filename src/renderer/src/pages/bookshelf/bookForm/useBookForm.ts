@@ -4,7 +4,7 @@
  * 职责（自 `BookFormDialog.tsx` 迁入，逻辑不变）：
  * - 文本字段（书名 / 简介）与封面（色 / 图 blob / 移除标记）state；
  * - 「关闭 → 打开」沿上按初值预填（避免打开期间被父组件新对象引用反复覆盖）；
- * - 封面 blob URL 生命周期（替换 / 清空 / 卸载即 revoke）与文件读取；
+ * - 封面 blob URL 生命周期（替换 / 清空 / 卸载即 revoke）与文件读取（含缩略图生成）；
  * - 编辑模式经 `books.cover.get` 载入已有封面图；
  * - 分类树数据拉取（`categories:list`，无 API / 失败回退空表）；
  * - 分类多选 / 切频道清空（用户拍板：一本书只属一个频道体系）；
@@ -15,6 +15,8 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
+import { THUMB_MAX_EDGE, makeThumbFromBlob } from '@renderer/lib/imageThumb'
+import type { ThumbPayload } from '@renderer/lib/imageThumb'
 import { DEFAULT_COVER_COLOR } from '../bookMeta'
 import type { CategoryRow } from '../../../../../main/database/categories'
 import type {
@@ -25,6 +27,22 @@ import type {
   BookLength,
   BookStatus
 } from './types'
+
+/**
+ * 表单内封面载荷：原始二进制 + 可选缩略图（`makeThumbFromBlob` 生成；跳过 / 失败时缺省）。
+ * `BookCoverFile` 是共享的提交 / 主进程契约类型，缩略图只在本域透传，故用扩展类型承载。
+ */
+export interface BookCoverFileWithThumb extends BookCoverFile {
+  thumb?: ThumbPayload
+}
+
+/**
+ * 从 `BookFormValues.coverFile` 取缩略图（对外类型仍是 `BookCoverFile`，缩略图随对象透传）：
+ * `useBookForm` 写入，`Bookshelf` 提交 `books.cover.set` 时读取。
+ */
+export function coverThumbOf(file: BookCoverFile | null): ThumbPayload | null {
+  return (file as BookCoverFileWithThumb | null)?.thumb ?? null
+}
 
 /** hook 入参：`BookFormDialog` 的 props 中与本域相关的部分。 */
 export interface UseBookFormParams {
@@ -93,11 +111,13 @@ export function useBookForm({
   const [lengthType, setLengthType] = useState<BookLength | null>(initialValues?.lengthType ?? null)
   const [selectedIds, setSelectedIds] = useState<number[]>(initialValues?.categories ?? [])
   const [coverColor, setCoverColor] = useState(initialValues?.coverColor ?? DEFAULT_COVER_COLOR)
-  const [coverFile, setCoverFile] = useState<BookCoverFile | null>(null)
+  const [coverFile, setCoverFile] = useState<BookCoverFileWithThumb | null>(null)
   const [removeCover, setRemoveCover] = useState(false)
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
   const [touched, setTouched] = useState(false)
   const fileRef = useRef<HTMLInputElement | null>(null)
+  /** 选图代次：异步生成缩略图期间若又选 / 移除了封面，旧结果作废。 */
+  const pickToken = useRef(0)
 
   // Blob URL 生命周期：URL 一旦被替换 / 清空 / 组件卸载即 revoke，避免内存泄漏。
   // 相比手动在读写两处 revoke，交给 effect 只需追踪「当前 URL」，逻辑更集中。
@@ -221,18 +241,35 @@ export function useBookForm({
     // 重置 input，允许再次选择同一文件
     event.target.value = ''
     if (!file) return
+    // 立即用原图预览（选图即有反馈），缩略图就绪后再换成小图预览。
     setCoverUrl(URL.createObjectURL(file))
     setRemoveCover(false)
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result
-      if (!(result instanceof ArrayBuffer)) return
-      setCoverFile({ mime: file.type || 'image/png', data: new Uint8Array(result) })
-    }
-    reader.readAsArrayBuffer(file)
+    const token = ++pickToken.current
+    void (async () => {
+      try {
+        // 原图字节与缩略图并行准备（缩略图失败 / 跳过为 null，不影响提交）。
+        const [buffer, thumb] = await Promise.all([
+          file.arrayBuffer(),
+          makeThumbFromBlob(file, THUMB_MAX_EDGE.cover)
+        ])
+        // 期间又选 / 移除了封面：丢弃本次结果（旧 URL 由 coverUrl effect 负责 revoke）。
+        if (token !== pickToken.current) return
+        const next: BookCoverFileWithThumb = {
+          mime: file.type || 'image/png',
+          data: new Uint8Array(buffer)
+        }
+        if (thumb) next.thumb = thumb
+        setCoverFile(next)
+        // 预览优先用缩略图（体积比原图小一个数量级）。
+        if (thumb) setCoverUrl(URL.createObjectURL(new Blob([thumb.data], { type: thumb.mime })))
+      } catch {
+        /* 读取失败：保持无封面图（既有静默口径） */
+      }
+    })()
   }
 
   const handleRemoveCover = (): void => {
+    pickToken.current += 1
     setCoverUrl(null)
     setCoverFile(null)
     setRemoveCover(true)
@@ -241,6 +278,7 @@ export function useBookForm({
 
   // 统一关闭路径：先复位封面 URL，再通知外部关闭，保证再次打开无残留。
   const handleClose = (): void => {
+    pickToken.current += 1
     setCoverUrl(null)
     setCoverFile(null)
     setTouched(false)

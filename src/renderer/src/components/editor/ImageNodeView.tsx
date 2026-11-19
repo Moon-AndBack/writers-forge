@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ReactElement } from 'react'
+import type { ReactElement, SyntheticEvent } from 'react'
 import { NodeViewWrapper } from '@tiptap/react'
 import type { ReactNodeViewProps } from '@tiptap/react'
 import { useTranslation } from 'react-i18next'
 import { getCachedImage, setCachedImage } from '@renderer/lib/imageBlobCache'
+import { THUMB_MAX_EDGE, makeThumbFromImage } from '@renderer/lib/imageThumb'
 import { isImagePlaceholder } from './imageNode'
 
 /**
@@ -18,17 +19,51 @@ function bytesOf(data: Uint8Array): Uint8Array<ArrayBuffer> {
   return copy
 }
 
+/** 上传图的显示载荷：当前该用的 Blob URL + 是否原图 + 原图宽高（排版预留）。 */
+interface UploadDisplay {
+  forId: number
+  url: string | null
+  failed: boolean
+  /** 当前 Blob 是否为原图（`kind='original'`）：决定 `onLoad` 是否回填缩略图。 */
+  original: boolean
+  /** 原图像素宽高（命中缩略图时由 IPC 带回；原图在 `onLoad` 后补上）。 */
+  width: number | null
+  height: number | null
+}
+
+/** 缺图（悬空 id / 拉取失败）载荷（`forId` 由调用处补）。 */
+const MISSING: Omit<UploadDisplay, 'forId'> = {
+  url: null,
+  failed: true,
+  original: false,
+  width: null,
+  height: null
+}
+
+/**
+ * 缓存 Blob → 原图尺寸。`images:getDisplay` 只在 IPC 时返回宽高（命中缩略图时）；
+ * 缓存命中后靠它恢复 `aspect-ratio` 预留，重挂载（切章 / 重开）不跳行高。
+ */
+const blobSizes = new WeakMap<Blob, { width: number; height: number }>()
+
 /**
  * 大纲正文「图片」节点视图（Tiptap 3 `ReactNodeViewRenderer`）。
  *
  * 职责：把节点 `attrs` 渲染为 `<img>`，并在**上传图**（`imageId` 非空）场景按 id
- * 经 `images:get` 拉取二进制 → `Blob` → `URL.createObjectURL` 补水 `src`。
+ * 经 `images:getDisplay` 拉取二进制 → `Blob` → `URL.createObjectURL` 补水 `src`。
+ *
+ * 显示与回填：
+ * - `kind='thumb'`：主进程已有缩略图，直接用（宽高随 payload 返回，用于 `aspect-ratio`）；
+ * - `kind='original'`：先显示原图，`onLoad` 后按长边 1280 生成 WebP 缩略图并经
+ *   `images:setThumb` 写库（fire-and-forget，失败静默、不重试）——老图无需迁移，
+ *   首次显示即自动补齐；成功后再把缓存换成缩略图，本会话后续挂载不再重复编码。
  *
  * 加载策略（打开章节不再一次请求全部图片）：
  * - **视口门控**：Tiptap 为文档中所有图片建 NodeView，挂载即拉取会让整个章节的图片全部走
  *   IPC；这里用 `IntersectionObserver`（`rootMargin: 400px`）只在接近视口时才拉取。
  *   `loading="lazy"` 只延迟解码、不延迟 IPC，故仅作第二道保险。
- * - **Blob 缓存**：按 `image:<id>` 命中 `imageBlobCache` 时直接复用，切章 / 重挂载不重复拉取。
+ * - **Blob 缓存**：按 `image:<id>` 命中 `imageBlobCache` 时直接复用（缓存的是**当前该用的
+ *   那份 Blob**：通常是缩略图，回填失败时是原图），切章 / 重挂载不重复拉取。
  *
  * 生命周期（本批最易漏点）：
  * - object URL 在 **effect 内创建**，其返回的清理函数在**卸载 / `imageId` 变化**时
@@ -55,11 +90,7 @@ export function ImageNodeView({ node, selected }: ReactNodeViewProps): ReactElem
     () => typeof IntersectionObserver === 'undefined'
   )
   // 上传图补水结果（按 id 记录）。
-  const [upload, setUpload] = useState<{
-    forId: number
-    url: string | null
-    failed: boolean
-  } | null>(null)
+  const [upload, setUpload] = useState<UploadDisplay | null>(null)
   // 加载失败的真实 src（按 src 记录；src 一变即自然失效，无需同步 reset）。
   const [errorSrc, setErrorSrc] = useState<string | null>(null)
 
@@ -89,29 +120,39 @@ export function ImageNodeView({ node, selected }: ReactNodeViewProps): ReactElem
     let cancelled = false
     let objectUrl: string | null = null
     const cacheKey = `image:${imageId}`
-    const attach = (blob: Blob): void => {
+    const attach = (
+      blob: Blob,
+      original: boolean,
+      width: number | null,
+      height: number | null
+    ): void => {
       objectUrl = URL.createObjectURL(blob)
-      setUpload({ forId: imageId, url: objectUrl, failed: false })
+      setUpload({ forId: imageId, url: objectUrl, failed: false, original, width, height })
     }
 
     const cached = getCachedImage(cacheKey)
     if (cached) {
-      attach(cached)
+      // 缓存命中 = 本会话已读过这张图：原图首载时已回填（失败也不重试），不再重复编码。
+      const size = blobSizes.get(cached)
+      attach(cached, false, size?.width ?? null, size?.height ?? null)
     } else {
       void window.api.images
-        .get(imageId)
+        .getDisplay(imageId)
         .then((payload) => {
           if (cancelled) return
           if (!payload) {
-            setUpload({ forId: imageId, url: null, failed: true })
+            setUpload({ forId: imageId, ...MISSING })
             return
           }
           const blob = new Blob([bytesOf(payload.data)], { type: payload.mime })
           setCachedImage(cacheKey, blob)
-          attach(blob)
+          const width = payload.width ?? null
+          const height = payload.height ?? null
+          if (width !== null && height !== null) blobSizes.set(blob, { width, height })
+          attach(blob, payload.kind === 'original', width, height)
         })
         .catch(() => {
-          if (!cancelled) setUpload({ forId: imageId, url: null, failed: true })
+          if (!cancelled) setUpload({ forId: imageId, ...MISSING })
         })
     }
 
@@ -120,6 +161,43 @@ export function ImageNodeView({ node, selected }: ReactNodeViewProps): ReactElem
       if (objectUrl !== null) URL.revokeObjectURL(objectUrl)
     }
   }, [imageId, isExternal, nearViewport])
+
+  /**
+   * `<img>` 解码完成：补原图宽高（原图首载才有），并视情况回填缩略图。
+   *
+   * 回填只在「当前显示的是原图」时触发；生成 / 写库失败一律静默——原图已经正常显示，
+   * 下次启动仍会按 `kind='original'` 再试一次（本会话内不重试）。
+   */
+  const handleImageLoad = (event: SyntheticEvent<HTMLImageElement>): void => {
+    if (imageId === null || upload === null || upload.forId !== imageId) return
+    const el = event.currentTarget
+    const naturalWidth = el.naturalWidth
+    const naturalHeight = el.naturalHeight
+    if (upload.width === null && naturalWidth > 0 && naturalHeight > 0) {
+      setUpload((prev) =>
+        prev !== null && prev.forId === imageId && prev.width === null
+          ? { ...prev, width: naturalWidth, height: naturalHeight }
+          : prev
+      )
+    }
+    if (!upload.original) return
+
+    const id = imageId
+    const cacheKey = `image:${id}`
+    void (async () => {
+      try {
+        const thumb = await makeThumbFromImage(el, THUMB_MAX_EDGE.image)
+        if (!thumb) return
+        await window.api.images.setThumb(id, thumb)
+        const blob = new Blob([thumb.data], { type: thumb.mime })
+        blobSizes.set(blob, { width: thumb.width, height: thumb.height })
+        // 换成缩略图缓存：本会话后续挂载直接复用；写库失败则保留原图缓存，下次启动再试。
+        setCachedImage(cacheKey, blob)
+      } catch {
+        /* 回填失败静默：不影响已显示的原图 */
+      }
+    })()
+  }
 
   // 解析应渲染的 src 与缺图态（渲染期派生，无副作用）。
   let src: string | null = null
@@ -133,6 +211,11 @@ export function ImageNodeView({ node, selected }: ReactNodeViewProps): ReactElem
     else missing = true
   }
   const broken = src !== null && errorSrc === src
+  // 有原图宽高就预留版位（属性 + 行内 `aspect-ratio`）：解码前后行高不跳。
+  const size =
+    upload !== null && upload.forId === imageId && upload.width !== null && upload.height !== null
+      ? { width: upload.width, height: upload.height }
+      : null
 
   const className = `wf-editor-image-node node-image${selected ? ' is-selected' : ''}`
 
@@ -146,6 +229,10 @@ export function ImageNodeView({ node, selected }: ReactNodeViewProps): ReactElem
           draggable={false}
           loading="lazy"
           decoding="async"
+          width={size?.width}
+          height={size?.height}
+          style={size ? { aspectRatio: `${size.width} / ${size.height}` } : undefined}
+          onLoad={handleImageLoad}
           onError={() => setErrorSrc(src)}
         />
       ) : missing || broken ? (

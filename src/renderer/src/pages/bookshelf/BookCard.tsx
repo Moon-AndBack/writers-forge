@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import type { KeyboardEvent, MouseEvent } from 'react'
+import type { KeyboardEvent, MouseEvent, SyntheticEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/cn'
 import { getCachedImage, invalidateCachedImage, setCachedImage } from '@renderer/lib/imageBlobCache'
+import { THUMB_MAX_EDGE, makeThumbFromImage } from '@renderer/lib/imageThumb'
 import { CheckIcon } from '../../components/icons'
 import { Badge, IconButton, Progress, Tag } from '../../components/ui'
 import type { BadgeTone } from '../../components/ui'
@@ -96,10 +97,11 @@ function PencilIcon() {
  * 标题 / 笔名·章节·字数 + 进度条 + 分类标签。整卡可点击进入，hover 呈主题色
  * 边缘光晕，支持选中态。
  *
- * - 封面：若该书在数据库中存有封面图（blob），经 `books.cover.get` 载入并显示
+ * - 封面：若该书在数据库中存有封面图（blob），经 `books.cover.getDisplay` 载入并显示
  *   （`Uint8Array` → `Blob` → `URL.createObjectURL`，卸载 / 切换时 revoke）；命中
  *   `imageBlobCache`（`cover:<bookId>`）时复用 Blob、不再 IPC；否则回退「封面字 +
- *   `coverColor` 对应渐变」。
+ *   `coverColor` 对应渐变」。`kind='original'`（老封面尚无缩略图）时在 `onLoad` 后按
+ *   长边 640 生成缩略图并经 `books.cover.setThumb` 回填，失败静默。
  * - 展示控件收敛到组件库：状态胶囊 `Badge`、编辑 / 删除 `IconButton`、进度
  *   `Progress`、分类 `Tag`；卡片容器因「封面块 + 正文」结构保留自绘 `.book-card`。
  */
@@ -116,6 +118,8 @@ export function BookCard({
 }: BookCardProps) {
   const { t } = useTranslation('bookshelf')
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
+  // 当前封面 blob 是否为原图（`kind='original'`）：只有原图才在 `onLoad` 后回填缩略图。
+  const [coverNeedsThumb, setCoverNeedsThumb] = useState(false)
   const coverColor = book.coverColor
   const bookId = book.id
 
@@ -131,22 +135,24 @@ export function BookCard({
     let active = true
     let created: string | null = null
 
-    const attach = (blob: Blob): void => {
+    const attach = (blob: Blob, needsThumb: boolean): void => {
       created = URL.createObjectURL(blob)
       setCoverUrl(created)
+      setCoverNeedsThumb(needsThumb)
     }
 
     const cached = coverVersion > 0 ? null : getCachedImage(cacheKey)
     if (cached) {
-      attach(cached)
+      // 缓存命中 = 本会话已读过封面：原图首载时已回填（失败也不重试），不再重复编码。
+      attach(cached, false)
     } else {
       api
-        .get(bookId)
+        .getDisplay(bookId)
         .then((payload) => {
           if (!active || !payload) return
           const blob = new Blob([new Uint8Array(payload.data)], { type: payload.mime })
           setCachedImage(cacheKey, blob)
-          attach(blob)
+          attach(blob, payload.kind === 'original')
         })
         .catch(() => {
           /* 读取失败静默忽略 */
@@ -157,8 +163,30 @@ export function BookCard({
       active = false
       if (created) URL.revokeObjectURL(created)
       setCoverUrl(null)
+      setCoverNeedsThumb(false)
     }
   }, [bookId, coverVersion])
+
+  /**
+   * 封面原图首次显示后回填缩略图（长边 640）：`books.cover.setThumb` 幂等写库，
+   * 失败静默、不重试；成功后把缓存换成缩略图，本会话后续挂载不再重复编码。
+   */
+  const handleCoverLoad = (event: SyntheticEvent<HTMLImageElement>): void => {
+    const api = window.api?.books?.cover
+    if (!api || !coverNeedsThumb) return
+    const img = event.currentTarget
+    const cacheKey = `cover:${bookId}`
+    void (async () => {
+      try {
+        const thumb = await makeThumbFromImage(img, THUMB_MAX_EDGE.cover)
+        if (!thumb) return
+        await api.setThumb(bookId, thumb)
+        setCachedImage(cacheKey, new Blob([thumb.data], { type: thumb.mime }))
+      } catch {
+        /* 回填失败静默：封面原图已正常显示 */
+      }
+    })()
+  }
 
   // 整卡激活：优先「打开」（进入写作页），否则回退「选中」。
   const handleActivate = (): void => {
@@ -201,7 +229,14 @@ export function BookCard({
         style={coverUrl ? undefined : { backgroundImage: getCoverGradient(coverColor) }}
       >
         {coverUrl ? (
-          <img className="book-cover__img" src={coverUrl} alt="" loading="lazy" decoding="async" />
+          <img
+            className="book-cover__img"
+            src={coverUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            onLoad={handleCoverLoad}
+          />
         ) : (
           <span className="book-cover__title" aria-hidden="true">
             {book.title.trim() || t('card.coverCharFallback')}

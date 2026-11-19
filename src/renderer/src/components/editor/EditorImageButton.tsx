@@ -3,6 +3,7 @@ import type { ChangeEvent, ReactNode } from 'react'
 import type { Editor } from '@tiptap/core'
 import { useEditorState } from '@tiptap/react'
 import { useTranslation } from 'react-i18next'
+import { THUMB_MAX_EDGE, makeThumbFromBlob } from '@renderer/lib/imageThumb'
 import { useToast } from '../ui'
 import { ImageIcon } from '../icons'
 import { FormatButton, FormatPopover } from './FormatPopover'
@@ -27,7 +28,8 @@ import type { ImageBlockReason, ImageInsertState } from './imageNode'
  * - **位置约束**（见 `readImageInsertState`）：仅普通段落（含引用块内段落）可插图；
  *   表格 / 代码块 / 标题 / 列表一律置灰，tooltip **分别给原因**（经 `disabledReason`）。
  * - **本地文件**：`<input type="file">` → 渲染层预校验（mime 白名单 + ≤ 20 MB）→
- *   `File.arrayBuffer()` → `Uint8Array` → `window.api.images.create(bookId, mime, data)`
+ *   `File.arrayBuffer()` → `Uint8Array`；同时按长边 1280 生成 WebP 缩略图（失败 / 跳过为
+ *   `undefined`）→ `window.api.images.create(bookId, mime, data, thumb)` 一次落库
  *   → 取 `id` 插入节点（`src` 写稳定占位串 `wf-image://<id>`，**不落 blob**）。
  * - **外链 URL**：校验 http / https → 插入节点（`imageId: null`，不入库二进制）。
  * - `bookId` 为空 / undefined 时整入口禁用（图片按书隔离，缺书无法入库）。
@@ -123,8 +125,17 @@ function ImagePanelBody({ editor, bookId, onDone }: ImagePanelBodyProps): ReactN
       setBusy(true)
       void (async () => {
         try {
-          const buffer = await file.arrayBuffer()
-          const row = await window.api.images.create(bookId, file.type, new Uint8Array(buffer))
+          // 缩略图与原图并行准备：缩略图失败 / 跳过时为 null，按缺省参数提交（不影响上传）。
+          const [buffer, thumb] = await Promise.all([
+            file.arrayBuffer(),
+            makeThumbFromBlob(file, THUMB_MAX_EDGE.image)
+          ])
+          const row = await window.api.images.create(
+            bookId,
+            file.type,
+            new Uint8Array(buffer),
+            thumb ?? undefined
+          )
           if (!row) {
             notify(t('format.image.uploadFailed'))
             return

@@ -11,6 +11,7 @@ import {
   type BookFormInitialValues,
   type BookFormValues
 } from './bookshelf/BookFormDialog'
+import { coverThumbOf } from './bookshelf/bookForm/useBookForm'
 import { useBookshelfData } from './bookshelf/useBookshelfData'
 import { useShelfSnap } from './bookshelf/useShelfSnap'
 import { useConfirm } from '@renderer/components/ui/useConfirm'
@@ -201,7 +202,12 @@ export default function Bookshelf() {
       .then(async (created) => {
         if (created && values.coverFile) {
           try {
-            await booksApi.cover.set(created.id, values.coverFile.mime, values.coverFile.data)
+            await booksApi.cover.set(
+              created.id,
+              values.coverFile.mime,
+              values.coverFile.data,
+              coverThumbOf(values.coverFile) ?? undefined
+            )
             setCoverVersion((version) => version + 1)
           } catch {
             toast.show(t('dialog.bookCoverFailedToast'))
@@ -255,7 +261,12 @@ export default function Bookshelf() {
         let coverChanged = false
         try {
           if (values.coverFile) {
-            await booksApi.cover.set(id, values.coverFile.mime, values.coverFile.data)
+            await booksApi.cover.set(
+              id,
+              values.coverFile.mime,
+              values.coverFile.data,
+              coverThumbOf(values.coverFile) ?? undefined
+            )
             coverChanged = true
           } else if (values.removeCover) {
             await booksApi.cover.delete(id)
