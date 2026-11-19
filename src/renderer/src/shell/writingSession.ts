@@ -12,6 +12,8 @@ import { useEffect, useSyncExternalStore } from 'react'
  * - 本次启动出现过正增量后 `visible` 置真，之后不再隐藏（删字 / 切页都不隐藏）。
  * - 速度 = 净增字数 ÷ 活跃时长（字 / 时），四舍五入。空闲时不重算，
  *   故速度不会随停留时间滑落；下次正文事务才刷新。
+ * - 总时长 = 首次码字至今的墙钟时长；空闲时长 = `max(0, 总时长 - 活跃时长)`。
+ *   后两者随时间增长，故详情浮层打开时用 `getLiveSnapshot()` 现算（无常驻定时器）。
  *
  * 订阅口径与 `proofreadHits` 一致：`getSnapshot` 返回稳定引用，内容变化才换对象。
  */
@@ -23,6 +25,12 @@ export interface WritingSessionSnapshot {
   chars: number
   /** 每小时码字速度（活跃时长不足 1s 或净增为负时为 0）。 */
   speed: number
+  /** 累计活跃时长（毫秒；停笔 / 失焦间隔已按阈值剔除）。 */
+  activeMs: number
+  /** 累计空闲时长（毫秒）：`max(0, totalMs - activeMs)`。 */
+  idleMs: number
+  /** 首次码字至今的总时长（毫秒；尚未码字时为 0）。 */
+  totalMs: number
 }
 
 /** 正文停笔阈值：间隔超过 5s 时只按 5s 计入活跃时长。 */
@@ -36,12 +44,21 @@ const MIN_ACTIVE_MS = 1_000
 /** AI 回插正文的事务标记（`applyToEditor` 写入，tracker 据此跳过）。 */
 export const AI_APPLY_META = 'aiApply'
 
-let snapshot: WritingSessionSnapshot = { visible: false, chars: 0, speed: 0 }
+let snapshot: WritingSessionSnapshot = {
+  visible: false,
+  chars: 0,
+  speed: 0,
+  activeMs: 0,
+  idleMs: 0,
+  totalMs: 0
+}
 const listeners = new Set<() => void>()
 
 let chars = 0
 let activeMs = 0
 let visible = false
+/** 首次码字时间戳；0 = 本次启动尚未写过（总时长 / 空闲时长的起点）。 */
+let firstEditAt = 0
 /** 上一次计入的正文事务时间戳；0 = 本次启动尚未写过。 */
 let lastEditAt = 0
 /** 最近一次全局输入（键鼠 / 滚轮 / 焦点）时间戳。 */
@@ -54,10 +71,25 @@ function computeSpeed(): number {
   return Math.round(chars / (activeMs / 3_600_000))
 }
 
+/** 首次码字至今的墙钟时长（毫秒）；尚未码字为 0。 */
+function computeTotalMs(now: number): number {
+  return firstEditAt === 0 ? 0 : Math.max(0, now - firstEditAt)
+}
+
 function publish(): void {
   const speed = computeSpeed()
-  if (snapshot.visible === visible && snapshot.chars === chars && snapshot.speed === speed) return
-  snapshot = { visible, chars, speed }
+  const totalMs = computeTotalMs(Date.now())
+  const idleMs = Math.max(0, totalMs - activeMs)
+  if (
+    snapshot.visible === visible &&
+    snapshot.chars === chars &&
+    snapshot.speed === speed &&
+    snapshot.activeMs === activeMs &&
+    snapshot.totalMs === totalMs
+  ) {
+    return
+  }
+  snapshot = { visible, chars, speed, activeMs, idleMs, totalMs }
   for (const listener of listeners) listener()
 }
 
@@ -77,6 +109,7 @@ export function recordChapterEdit(delta: number): void {
   if (!Number.isFinite(delta) || delta === 0) return
 
   const now = Date.now()
+  if (lastEditAt === 0) firstEditAt = now
   let gap = 0
   if (lastEditAt !== 0) {
     const sinceEdit = Math.max(0, now - lastEditAt)
@@ -105,6 +138,25 @@ function subscribe(listener: () => void): () => void {
 /** 读取当前快照（稳定引用：内容不变即同一对象）。 */
 function getSnapshot(): WritingSessionSnapshot {
   return snapshot
+}
+
+/**
+ * 读取实时快照（详情浮层打开时调用一次）：`totalMs` / `idleMs` 按 `Date.now()` 现算。
+ *
+ * 订阅快照只在正文事务时发布，`totalMs` / `idleMs` 会随时间继续增长；
+ * 这里按需现算即可，不引入常驻定时器，也不影响 `useSyncExternalStore` 的稳定引用。
+ */
+export function getLiveSnapshot(): WritingSessionSnapshot {
+  const totalMs = computeTotalMs(Date.now())
+  const active = Math.min(activeMs, totalMs)
+  return {
+    visible,
+    chars,
+    speed: computeSpeed(),
+    activeMs: active,
+    idleMs: Math.max(0, totalMs - active),
+    totalMs
+  }
 }
 
 /** 码字统计快照 hook（状态栏胶囊用）。 */

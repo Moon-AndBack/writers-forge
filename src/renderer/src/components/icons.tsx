@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 import type { ReactElement } from 'react'
-import { Check } from 'lucide'
+import { Check, Lock, LockOpen } from 'lucide'
 
 /**
  * 共享标题栏操作图标（保存 / 撤销 / 重做 / 搜索 / 回收站 / 还原，stroke 1.9，随 currentColor 着色）。
@@ -437,22 +437,43 @@ export function ImageIcon(): ReactElement {
 
 /* ---------- 状态标记 ---------- */
 
-/**
- * 勾选（Lucide `Check` 的 `IconNode` 数据源，不另画路径）：用于卡片选中徽标。
- * 笔画取 3——按 24 视口换算，10–11px 下有效笔画约 1.3px，小尺寸仍清晰不糊。
- */
-export function CheckIcon(): ReactElement {
+/** 内联渲染 Lucide `IconNode` 数据源（不手绘路径）；默认笔画 1.9 与标题栏图标一致。 */
+function LucideIcon({
+  nodes,
+  strokeWidth = 1.9
+}: {
+  nodes: typeof Check
+  strokeWidth?: number
+}): ReactElement {
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="3"
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      {Check.map(([tag, attrs], index) => createElement(tag, { key: `${tag}-${index}`, ...attrs }))}
+      {nodes.map(([tag, attrs], index) => createElement(tag, { key: `${tag}-${index}`, ...attrs }))}
     </svg>
   )
+}
+
+/**
+ * 勾选（Lucide `Check` 的 `IconNode` 数据源，不另画路径）：用于卡片选中徽标。
+ * 笔画取 3——按 24 视口换算，10–11px 下有效笔画约 1.3px，小尺寸仍清晰不糊。
+ */
+export function CheckIcon(): ReactElement {
+  return <LucideIcon nodes={Check} strokeWidth={3} />
+}
+
+/** 锁（Lucide `Lock` 数据源）：码字详情弹层「已锁定常驻」。 */
+export function LockIcon(): ReactElement {
+  return <LucideIcon nodes={Lock} />
+}
+
+/** 开锁（Lucide `LockOpen` 数据源）：码字详情弹层「未锁定」。 */
+export function UnlockIcon(): ReactElement {
+  return <LucideIcon nodes={LockOpen} />
 }

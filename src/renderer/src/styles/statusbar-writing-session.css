@@ -1,0 +1,146 @@
+/* ============================================================
+   本次码字详情浮层（.st-session-pop）
+   ------------------------------------------------------------------
+   状态栏「本次码字」胶囊的向上弹层：复用 statusbar-widgets.css 的
+   .st-popup 面板底色 / 圆角 / 阴影与「向上展开」定位
+   （bottom: calc(100% + 8px)、right: 0），本文件只负责内容排版、
+   标题区渐隐分隔线、锁定拖动把手 / 锁按钮与材质态毛玻璃。
+   拆分原因：statusbar-widgets.css 已达 500 行硬上限。
+   视觉规则见 docs/ui/design-language.md（§8.9 渐隐分隔线 / §9 #41 材质态例外）；
+   颜色 / 字号 / 时长 / 缓动全部取 theme.css 令牌。
+   ============================================================ */
+
+.st-session-pop {
+  display: grid;
+  gap: 8px;
+  min-width: 196px;
+  padding: 12px;
+}
+
+.st-session-head {
+  /* 与 .wf-window 同口径：本地派生窗口内渐隐线颜色（该令牌原本只定义在 .wf-window 上，
+     本浮层不在 Window 框架内，故在同一作用域按相同公式补一份）。 */
+  --wf-window-fade-line: color-mix(in srgb, var(--text) 6%, transparent);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 6px;
+}
+
+/* 标题区与内容区之间的左右渐隐分隔线（几何与 .wf-window__footer::before 一致）。 */
+.st-session-head::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--wf-window-fade-line) 20%,
+    var(--wf-window-fade-line) 80%,
+    transparent
+  );
+}
+
+/* 锁定后浮层切到 fixed，标题区成为拖动把手：grab / grabbing + 禁止选中文字。 */
+.st-session-pop.is-locked .st-session-head {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.st-session-pop.is-dragging .st-session-head {
+  cursor: grabbing;
+}
+
+/* 解锁复位：过渡只在本类存在时生效（拖动 / 常态无过渡，避免跟手延迟）。
+   时长 / 缓动走令牌；减动效由 base.css 全局把 transition-duration 压到 0.01ms
+   （transitionend 仍会派发），等价于瞬移。 */
+.st-session-pop.is-resetting {
+  transition:
+    left var(--dur-slow) var(--ease-out),
+    top var(--dur-slow) var(--ease-out);
+}
+
+.st-session-title {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* 锁按钮：24×24 圆形图标按钮（状态栏 chrome 档，满足 24×24 热区），
+   锁定时品牌色浅底 + 品牌图标。 */
+.st-session-lock {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  color: var(--text-dim);
+  background: transparent;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast);
+}
+
+.st-session-lock:hover {
+  color: var(--text);
+  background: var(--soft-hover-solid);
+}
+
+.st-session-lock[aria-pressed='true'] {
+  color: var(--brand);
+  background: var(--chrome-active-soft);
+}
+
+.st-session-lock[aria-pressed='true']:hover {
+  color: var(--brand);
+  background: var(--chrome-active);
+}
+
+.st-session-lock:focus-visible,
+.st-session-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand) 60%, transparent);
+  outline-offset: 1px;
+}
+
+.st-session-lock svg {
+  width: 14px;
+  height: 14px;
+}
+
+.st-session-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.st-session-label {
+  font-size: var(--fs-micro);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.st-session-value {
+  font-family: var(--mono);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* 例外：材质态下本浮层为半透明毛玻璃（docs/ui/design-language.md §9 #41）。
+   仅限 .st-session-pop；必须同时保留 backdrop-filter（纯半透明会让页面文字透出）。
+   非材质态不命中本规则，回退 .st-popup 的不透明 --pane。 */
+:root:is([data-material='acrylic'], [data-material='mica']) .st-session-pop {
+  background: color-mix(in srgb, var(--pane) 88%, transparent);
+  backdrop-filter: blur(12px) saturate(1.05);
+  -webkit-backdrop-filter: blur(12px) saturate(1.05);
+}

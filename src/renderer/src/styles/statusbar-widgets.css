@@ -9,7 +9,8 @@
    --soft-hover-solid / 品牌 12–18% 混 --pane → 非材质态零变化；
    材质态由 material.css 换成 --text 派生薄雾 + 1px 描边环，
    让状态栏也透出窗口材质（本文件不再出现 --pill-bg-* 直接消费）。
-   状态栏弹层（.st-popup）**不**消费 --chrome-*，始终保持不透明。
+   状态栏弹层（.st-popup）**不**消费 --chrome-*，默认保持不透明
+   （唯一例外：材质态「本次码字详情浮层」的半透明毛玻璃，见 §9 #41）。
    激活浅底为 --chrome-active-soft（品牌 12% 混 --pane，不透明，
    与 .act-btn.is-active 同范式），四主题自动适配。
    仅使用 theme.css 令牌。

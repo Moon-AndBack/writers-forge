@@ -19,7 +19,20 @@ const status = {
   writingSession: {
     summary: 'Session <b>{{chars}}</b> chars · <b>{{speed}}</b>/hr',
     charsOnly: 'Session <b>{{chars}}</b> chars',
-    title: 'Net chapter characters written this session; speed excludes idle time'
+    title: 'Net chapter characters written this session; speed excludes idle time',
+    detailTitle: 'Session details',
+    chars: 'This session',
+    charsValue: '{{chars}} chars',
+    speed: 'Typing speed',
+    speedValue: '{{speed}} chars/hr',
+    activeTime: 'Writing time',
+    idleTime: 'Idle time',
+    hoursMinutes: '{{hours}} hr {{minutes}} min',
+    minutesSeconds: '{{minutes}} min {{seconds}} sec',
+    seconds: '{{seconds}} sec',
+    openAria: 'View session writing details',
+    lock: 'Keep open',
+    unlock: 'Stop keeping open'
   }
 } satisfies ZhCNResources['status']
 
