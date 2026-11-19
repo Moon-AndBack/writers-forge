@@ -1,12 +1,14 @@
 import { ipcMain } from 'electron'
 import { logger } from '../logger'
 import { isValidRichTextJson } from '../database/richText'
+import { MAX_DOC_CHARS, docEffectiveChars } from './docLimit'
 import {
   createOutlineGroup,
   createOutlineItem,
   createOutlineVolume,
   deleteOutlineItem,
   deleteOutlineVolume,
+  deriveOutlineText,
   getOutlineContent,
   getOutlineVolumeContent,
   listDeletedOutline,
@@ -97,8 +99,9 @@ function isValidContentJson(value: unknown): value is string | null {
  * - outline:getContent     (itemId: number)                     → OutlineContentPayload | null（条目 / 卷纲通用）
  * - outline:getVolumeOutline (volumeId: number)                 → OutlineContentPayload | null（按卷 id 取卷纲行）
  * - outline:listVolumeContentRefs (bookId: string)              → OutlineVolumeContentRefRow[]（未删卷纲行轻量引用）
- * - outline:saveContent    (itemId: number, contentJson: string | null, text: string) → boolean
- *     （contentJson 非空须为合法 JSON；行不存在 / 已软删 → false）
+ * - outline:saveContent    (itemId: number, contentJson: string | null, text?: string) → boolean
+ *     （contentJson 非空须为合法 JSON；`text` 为兼容旧调用方保留但**一律忽略**——
+ *       纯文本由主进程从 contentJson 派生；超过单篇有效字数上限 / 行不存在 / 已软删 → false）
  * - outline:listDeleted    (bookId: string)                     → DeletedOutlineContent（软删卷 / 未删收拢卷 + 软删条目）
  * - outline:restore        (id: number)                         → boolean（还原条目；父卷须存在且未删）
  * - outline:restoreVolume  (id: number)                         → boolean（还原卷及其下软删条目）
@@ -196,15 +199,30 @@ export function registerOutlineIpc(): void {
   ipcMain.handle(
     'outline:saveContent',
     (_event, itemId: unknown, contentJson: unknown, text: unknown) => {
-      if (!isPositiveInt(itemId) || !isValidContentJson(contentJson) || typeof text !== 'string') {
+      // `text` 仅作兼容保留：旧 renderer 仍可能传，但主进程一律忽略并由 contentJson 派生。
+      if (!isPositiveInt(itemId) || !isValidContentJson(contentJson)) {
         log.warn('outline:saveContent 入参非法', {
           itemId,
-          textLength: typeof text === 'string' ? text.length : typeof text
+          contentJsonLength:
+            typeof contentJson === 'string' ? contentJson.length : typeof contentJson,
+          legacyTextType: typeof text
+        })
+        return false
+      }
+      // 纯文本单一真源：与迁移 / 种子同口径（`derivePlainText`，块级之间 `\n` 分隔）。
+      const derivedText = contentJson === null ? '' : deriveOutlineText(contentJson)
+      // 单篇有效字数上限：与 chapters:saveParagraphs 同一常量与统计工具。
+      const effectiveChars = docEffectiveChars([derivedText])
+      if (effectiveChars > MAX_DOC_CHARS) {
+        log.warn('outline:saveContent 超出单篇上限', {
+          itemId,
+          effectiveChars,
+          limit: MAX_DOC_CHARS
         })
         return false
       }
       return runWrite('outline:saveContent', { itemId }, () =>
-        saveOutlineContent(itemId, contentJson, text)
+        saveOutlineContent(itemId, contentJson)
       )
     }
   )

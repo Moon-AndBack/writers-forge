@@ -16,8 +16,9 @@ import type { OutlineItemDbRow, OutlineItemRow } from './types'
  * - `listOutlineVolumeContentRefs`：按**书**取全部卷纲行的轻量引用（卷 id / 行 id / 最后编辑），
  *   供列表页一次拿齐「每卷是否有卷纲 + 载体行 id」，不再逐卷取整份正文。
  *
- * `text` 为**完整纯文本（含标点）**：它是搜索匹配的真源（带标点的原文片段须能命中），
- * 标点只在**字数统计**口径（`countEffectiveChars`）才排除，此处**不得裁剪**。
+ * `text` 为**完整纯文本（含标点，块级之间 `\n` 分隔）**：它是搜索匹配的真源
+ * （带标点的原文片段须能命中），标点只在**字数统计**口径（`countEffectiveChars`）才排除，
+ * 此处**不得裁剪**。`text` 一律由主进程从 `contentJson` 派生（单一真源）。
  */
 
 /** 正文载荷：`contentJson` = 块级 JSON（`null` = 空正文）；`text` = 派生纯文本摘要。
@@ -110,7 +111,7 @@ function isEmptyParagraphDoc(parsed: unknown): boolean {
  * - 非空须为**合法 JSON**（`schema/outlineItems.ts` 的 `CHECK json_valid` 守卫，提前抛错给出清晰信息）；
  * - 解析结果须为**文档节点**（`isRichDocNode`）：否则抛错，拒绝 `"null"` / `"[]"` /
  *   `"{}"` / `"true"` 等「合法 JSON 但非文档」的输入；
- * - **空正文**（`text === ''` 且顶层全为**空段落**）→ 归 `null`（保持「空正文 = NULL」不变式）。
+ * - **空正文**（派生纯文本为 `''` 且顶层全为**空段落**）→ 归 `null`（保持「空正文 = NULL」不变式）。
  */
 function normalizeContentJson(contentJson: string | null, text: string): string | null {
   if (contentJson === null) return null
@@ -132,15 +133,23 @@ function normalizeContentJson(contentJson: string | null, text: string): string 
 /**
  * 保存正文载荷：**同一事务**写 `content_json` + `text` + `updated_at`（条目 / 卷纲行通用，
  * 仅未软删行可写）。写入前归一化 `contentJson`（见 `normalizeContentJson`）。
+ *
+ * **单一真源**：`text` 一律由主进程从 `contentJson` 派生（`derivePlainText`，块级之间
+ * `\n` 分隔，与迁移 / 种子同口径）；第三参数仅为兼容既有调用方（教学种子 / 旧 renderer
+ * 载荷）保留，传入值**一律忽略**。
  * 行不存在 / 已软删 → false（不建行、不抛错）。
  */
 export function saveOutlineContent(
   itemId: number,
   contentJson: string | null,
-  text: string
+  legacyText?: string
 ): boolean {
+  // 兼容旧调用方：第三参数不再参与落库（text 只由 contentJson 派生）。
+  void legacyText
   const db = getDb()
-  const finalJson = normalizeContentJson(contentJson, text)
+  const derivedText = contentJson === null ? '' : derivePlainText(contentJson)
+  const finalJson = normalizeContentJson(contentJson, derivedText)
+  const text = finalJson === null ? '' : derivedText
   return db.transaction((): boolean => {
     const result = db
       .prepare(

@@ -11,7 +11,8 @@ import { sanitizeOutlineContent } from '@renderer/components/editor/imageNode'
  * 写：doc 变更 → 防抖 800ms → 整条 doc JSON（`editor.getJSON()`，**落库前经
  *     `sanitizeOutlineContent` 归一图片节点**：上传图 `src` 强制为稳定占位串
  *     `wf-image://<id>`、运行时 `blob:` 一律剥离，见 `components/editor/imageNode.ts`）
- *     + 纯文本摘要（`doc.textContent`）→ `outline:saveContent`，失败 warn 并静默重试一次；
+ *     → `outline:saveContent`，失败 warn 并静默重试一次；
+ *     纯文本摘要由主进程从该 JSON 派生（单一真源，块间 `\n`），本层不再计算 / 上传；
  *     切换条目 / 卸载前 flush 立即落盘，避免丢字。
  *
  * 状态机（防抖 / 快照比对 / 重试 / flush / 归属与序号守卫）与章节共用
@@ -57,10 +58,9 @@ export interface UseOutlineDocResult {
   swapPhase: ContentSwapPhase | null
 }
 
-/** 保存载荷：整条 doc JSON + 纯文本摘要（口径见 `captureOutline`）。 */
+/** 保存载荷：仅整条 doc JSON；纯文本摘要由主进程派生（见 `saveOutline`）。 */
 interface OutlinePayload {
   contentJson: string
-  text: string
 }
 
 /** 解析库内 `contentJson`：合法对象原样返回，非法 / 空 → 空文档（不抛错）。 */
@@ -79,23 +79,22 @@ function parseContentJson(contentJson: string | null): Content {
 async function loadOutline(id: number) {
   const payload = await window.api.outline.getContent(id)
   const contentJson = payload?.contentJson ?? null
-  const text = payload?.text ?? ''
   return {
     content: parseContentJson(contentJson),
-    snapshot: JSON.stringify({ contentJson, text })
+    snapshot: JSON.stringify({ contentJson })
   }
 }
 
-/** 采集：编辑器内容 → 归一后的整条 JSON + 纯文本（返回载荷与快照同源）。 */
+/** 采集：编辑器内容 → 归一后的整条 JSON（返回载荷与快照同源；纯文本交由主进程派生）。 */
 function captureOutline(editor: Editor) {
   const contentJson = JSON.stringify(sanitizeOutlineContent(editor.getJSON()))
-  const text = editor.state.doc.textContent
-  return { payload: { contentJson, text }, snapshot: JSON.stringify({ contentJson, text }) }
+  return { payload: { contentJson }, snapshot: JSON.stringify({ contentJson }) }
 }
 
 /** 写：整条覆盖落库；false 交给共享状态机静默重试一次。 */
 function saveOutline(id: number, payload: OutlinePayload): Promise<boolean> {
-  return window.api.outline.saveContent(id, payload.contentJson, payload.text)
+  // 第三参数仅为满足既有 preload 签名，主进程一律忽略并从 contentJson 派生纯文本。
+  return window.api.outline.saveContent(id, payload.contentJson, '')
 }
 
 /**

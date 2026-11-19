@@ -12,8 +12,10 @@ import { countEffectiveChars } from '../../shared/wordCount'
  * 跨行总和在行级 CHECK 中不可见；且本项目明确不在 DB 层放此约束。改由 **IPC 校验层
  * （渲染层输入拦截 + 此处保存兜底）** 承担双保险。
  *
- * **落地范围**：仅 `chapters:saveParagraphs` 与 `outline:saveContent` 两个写入通道
- * （本功能**不新增任何 IPC 通道**，故 `src/preload/**` 无需改动，返回值形态亦不变）。
+ * **落地范围**：`chapters:saveParagraphs` 与 `outline:saveContent` 两个写入通道。
+ * 章节按各段 `text` 合计；大纲按**主进程从 `contentJson` 派生的纯文本**（块间 `\n`）计，
+ * 两者均走 {@link docEffectiveChars}。两通道返回值形态不变（`{ ok: boolean }` / `boolean`），
+ * 故 `src/preload/**` 无需改动。
  */
 
 /** 单篇正文有效字数上限（有效字数口径：排除标点 / 符号 / 空白 / 控制符）。 */
