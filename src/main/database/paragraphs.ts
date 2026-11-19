@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3'
 import { getDb } from './index'
+import { countEffectiveChars } from './wordCount'
 
 /**
  * 段落行：`idx` 为块序（0 起），`text` 为该块纯文本摘要（搜索 / 字数真源），
@@ -55,12 +56,17 @@ export function getParagraphs(chapterId: number): ParagraphRow[] {
  *
  * `contentJson` 为块级 Tiptap JSON 串（渲染层序列化），NULL = 纯文本段；
  * 字数统计 / 搜索 / 当日增量均基于 `text`，与 contentJson 无关（text 不含任何格式语法）。
+ *
+ * **字数落列**：同一事务内把该章段落的有效字数写回 `chapters.word_count`
+ * （口径同 `stats.bookStatsAll` 旧实现：`countEffectiveChars`，排除标点 / 符号 / 空白 /
+ * 控制符），书架统计因此只需读列，不再扫描全库正文。
  */
 export function saveParagraphs(chapterId: number, paragraphs: readonly ParagraphInput[]): number {
   const db = getDb()
   const insert = db.prepare(
     'INSERT INTO paragraphs (chapter_id, idx, text, content_json) VALUES (?, ?, ?, ?)'
   )
+  const updateWordCount = db.prepare('UPDATE chapters SET word_count = ? WHERE id = ?')
 
   const write = db.transaction((list: readonly ParagraphInput[]): number => {
     db.prepare('DELETE FROM paragraphs WHERE chapter_id = ?').run(chapterId)
@@ -68,6 +74,8 @@ export function saveParagraphs(chapterId: number, paragraphs: readonly Paragraph
       const item = list[index]
       insert.run(chapterId, index, item.text, item.contentJson ?? null)
     }
+    // 与段落写入同事务：任一步失败整体回滚，列值不会偏离实际正文。
+    updateWordCount.run(countEffectiveChars(list.map((item) => item.text)), chapterId)
     return list.length
   })
 

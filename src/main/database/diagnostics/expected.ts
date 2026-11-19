@@ -132,6 +132,7 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
       'sort_order',
       'status',
       'pin',
+      'word_count',
       'created_at',
       'updated_at',
       'deleted_at'

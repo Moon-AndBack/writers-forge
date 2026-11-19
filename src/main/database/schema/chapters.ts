@@ -31,6 +31,10 @@ import type Database from 'better-sqlite3'
  * - **特殊章置顶 / 置底**：`pin TEXT CHECK (pin IS NULL OR pin IN ('top','bottom'))`，
  *   表级 `CHECK (kind = 'special' OR pin IS NULL)` 保证**仅特殊章可置顶**；
  * - `status` 两态（`draft` 草稿 / `done` 定稿），默认 `draft`；
+ * - **字数落列 `word_count`**：该章正文的有效字数（口径同 `shared/wordCount.ts`，排除标点 /
+ *   符号 / 空白 / 控制符），由 `paragraphs.ts` 的 `saveParagraphs` 在同一事务内维护；
+ *   书架统计只读本列，不再扫描全库正文。老库由 `ensureColumn` 幂等补列（默认 0），并由
+ *   `chapterWordCountMigration.ts` 一次性回填；软删章不清列，回收站还原后字数自然恢复；
  * - **软删除 / 回收站**：两表均有 `deleted_at TEXT`（NULL = 未删除）；
  * - 全部 `CREATE ... IF NOT EXISTS`，幂等；**不写任何一次性迁移**（用户手动删库，新库直建）。
  *   注：老库 `volumes` 表可能残留已废弃的 `has_outline` 列（SQLite 不支持 `DROP COLUMN`），
@@ -67,6 +71,7 @@ export function createChapterSchema(db: Database.Database): void {
       sort_order INTEGER NOT NULL DEFAULT 0 CHECK (sort_order >= 0),
       status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'done')),
       pin TEXT CHECK (pin IS NULL OR pin IN ('top', 'bottom')),
+      word_count INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       deleted_at TEXT,
@@ -75,6 +80,11 @@ export function createChapterSchema(db: Database.Database): void {
       FOREIGN KEY (book_id, volume_id) REFERENCES volumes(book_id, id) ON DELETE CASCADE
     )
   `)
+
+  // 老库（无 `word_count` 列）幂等补列：`CREATE TABLE IF NOT EXISTS` 不会给已存在的表加列。
+  // 存量章默认 0，由 `chapterWordCountMigration.ts` 一次性回填（守卫键 `chapters:wordCount:v1`），
+  // 之后由 `saveParagraphs` 增量维护。
+  ensureColumn(db, 'chapters', 'word_count', 'INTEGER NOT NULL DEFAULT 0')
 
   // 索引：卷列表（章节页 / 大纲页卷列表 + 回收站）；章按书 / 按卷 / 回收站 / 进度统计。
   db.exec(`

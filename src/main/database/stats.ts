@@ -31,12 +31,8 @@ export interface BookStats {
 interface BookAggRow {
   bookId: string
   chapters: number
-  done: number
-}
-
-interface TextRow {
-  bookId: string
-  text: string
+  done: number | null
+  words: number | null
 }
 
 /**
@@ -131,44 +127,31 @@ export function streakDays(): number {
 /**
  * 全部书的真实统计（**批量单次查询**，键为 `bookId`）。
  *
- * 性能：一次 `GROUP BY chapters` 取章数 / 定稿数，一次 join `paragraphs` 取全部正文文本，
- * 在内存按书聚合有效字数——避免「逐书 N 次查询 / N 次 IPC」。无章的书籍不出现在结果中，
+ * 性能：一次 `GROUP BY chapters` 同时取章数 / 定稿数 / 字数，**不 join `paragraphs`**。
+ * 字数读 `chapters.word_count`（章节保存时由 `saveParagraphs` 同事务增量维护，口径见
+ * `wordCount.ts`），避免把全库正文读进主进程内存逐字符统计；无章的书籍不出现在结果中，
  * 由调用方按缺省 0 处理。
  */
 export function bookStatsAll(): Record<string, BookStats> {
   const db = getDb()
 
-  const aggRows = db
+  const rows = db
     .prepare(
       `SELECT book_id AS bookId, COUNT(*) AS chapters,
-              SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS done
+              SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS done,
+              SUM(word_count) AS words
        FROM chapters WHERE deleted_at IS NULL GROUP BY book_id`
     )
     .all() as BookAggRow[]
 
-  const textRows = db
-    .prepare(
-      `SELECT c.book_id AS bookId, p.text AS text
-       FROM paragraphs p JOIN chapters c ON c.id = p.chapter_id
-       WHERE c.deleted_at IS NULL`
-    )
-    .all() as TextRow[]
-
-  const textsByBook = new Map<string, string[]>()
-  for (const row of textRows) {
-    const list = textsByBook.get(row.bookId)
-    if (list) list.push(row.text)
-    else textsByBook.set(row.bookId, [row.text])
-  }
-
   const result: Record<string, BookStats> = {}
-  for (const row of aggRows) {
+  for (const row of rows) {
     const chapters = row.chapters
     const done = row.done ?? 0
     result[row.bookId] = {
       chapters,
       done,
-      words: countEffectiveChars(textsByBook.get(row.bookId) ?? []),
+      words: row.words ?? 0,
       progress: chapters > 0 ? Math.round((done / chapters) * 100) : 0
     }
   }

@@ -5,6 +5,7 @@ import { logger } from '../logger'
 import { seedBooksIfEmpty } from './books'
 import { seedCategoriesOnce } from './categories'
 import { resetChapterDataOnce } from './chapterSeed'
+import { migrateChapterWordCounts } from './chapterWordCountMigration'
 import { seedGuideThreads } from './guideThreadSeed'
 import { ensureChipColors } from './chipColors'
 import {
@@ -269,6 +270,11 @@ export function getDb(): Database.Database {
     // 一次性章节数据重建（按 settings 标记幂等）：清空章节域 / 大纲域并重灌
     // 唯一教学书「Writer's Forge · 使用指南」（书行 + 卷章 + 卷纲 + 大纲 + 正文块级 JSON）。
     resetChapterDataOnce()
+    // 章节字数回填：老库新增 `chapters.word_count` 默认 0，一次性按段落重算（含软删章，
+    // 回收站还原后字数可直接恢复）。须在 `resetChapterDataOnce` 之后（教学书重灌正文经
+    // `saveParagraphs` 写入，列值已同步）、任何书架统计读取之前；幂等、守卫键
+    // `chapters:wordCount:v1`、单事务、失败回滚。
+    migrateChapterWordCounts(instance)
     // 关系语义码字典（全局、幂等）：第 7 批起关系类型从字典选择，须在**每次启动**补齐
     // 新增码（老库已播过 demo 种子，不能只依赖按书种子）。
     seedSemanticCodeDictionary()
