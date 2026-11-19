@@ -7,9 +7,9 @@
  *
  * - **列轨道实测**：根节点仍是原网格元素（保留类名与 CSS），内部另放一个零高「量尺」
  *   （同 class、同内容宽的绝对定位网格），其中只有一个按 `min(条目数, 64)` 跨列的 0 高项。
- *   量尺与根节点共用同一份网格 CSS，读量尺的 `gridTemplateColumns` 就是**实际卡片列宽**：
- *   书架 `auto-fit` 在条目数不足一整行时折叠空轨道、把剩余轨道拉宽到上限，量尺的跨列数
- *   正好复现这一折叠结果；`.wf-card-grid` 的 `auto-fill` 保留空轨道，量尺直接给出标准列宽。
+ *   量尺按 CSS 读容器的自然列数；`.wf-card-grid` 再按
+ *   `min(自然列数, 条目数, --wf-card-grid-max-columns)` 收敛成显式列（≥3 张撑满整行，
+ *   不足 3 张保持基准卡宽）；书架 `.book-grid` 不声明该变量，继续走自然 `auto-fit` 折列。
  * - **按行虚拟**（不是按列）：行高由该行最高卡片决定，虚拟项即一行；卡片在行内仍是
  *   网格子项，因此 `useChipOverflow` 的容器实测、`useStableMeasure` 的布局签名都不变。
  * - **滚动容器自动识别**：根节点自身可滚动（书架 `.book-grid`）就用自身；否则向上找最近的
@@ -55,7 +55,7 @@ export interface VirtualCardGridProps<T> {
 
 /** 根网格的实测布局：列宽、间距、内衬与对齐方式。 */
 interface GridMetrics {
-  /** 每列实际像素宽（长度即列数；`auto-fit` 折叠后为有效列数）。 */
+  /** 每列实际像素宽（长度即生效列数；已按条目数 / 列数上限收敛）。 */
   tracks: number[]
   rowGap: number
   columnGap: number
@@ -71,6 +71,9 @@ interface GridMetrics {
 
 /** 量尺最多跨多少列：显式轨道数远小于此，超出部分只是零宽隐式轨道。 */
 const MAX_RULER_SPAN = 64
+
+/** 卡片数达到该值时撑满整行；不足则按基准卡宽排列，右侧留白。 */
+const FILL_MIN_COUNT = 3
 
 /** 解析 px 值（`normal` 等非数值回退 0）。 */
 function px(value: string): number {
@@ -152,7 +155,7 @@ function readMetrics(
   const paddingLeft = px(style.paddingLeft)
   const rowGap = px(trackStyle.rowGap)
   const columnGap = px(trackStyle.columnGap)
-  const tracks = readTracks(trackStyle.gridTemplateColumns)
+  let tracks = readTracks(trackStyle.gridTemplateColumns)
   if (tracks.length === 0) {
     // 没有网格类（或轨道尚未解析）时按最小卡宽均分，保证组件独立可用。
     const contentWidth = Math.max(0, el.clientWidth - paddingLeft - paddingRight)
@@ -161,6 +164,20 @@ function readMetrics(
     const count = Math.max(1, Math.floor((contentWidth + gapValue) / (min + gapValue)))
     const width = Math.max(0, (contentWidth - gapValue * (count - 1)) / count)
     for (let index = 0; index < count; index += 1) tracks.push(width)
+  }
+  // 列数收敛：CSS 变量是「按数量撑满」网格的开关（书架 `.book-grid` 不声明，继续走
+  // `auto-fit` 固定卡宽）。列数取 min(自然列数, 条目数, 上限)：条目数 ≥3 时按该列数
+  // 等分整行；不足 3 张时卡宽封顶在基准宽，右侧留白而不是被拉宽。
+  const maxColumns = Number.parseInt(trackStyle.getPropertyValue('--wf-card-grid-max-columns'), 10)
+  if (tracks.length > 0 && Number.isFinite(maxColumns) && maxColumns > 0) {
+    const columns = Math.min(tracks.length, itemCount, maxColumns)
+    const contentWidth = Math.max(0, el.clientWidth - paddingLeft - paddingRight)
+    const available = contentWidth - columnGap * Math.max(columns - 1, 0)
+    const fillWidth = columns > 0 ? available / columns : 0
+    const sparseMax = px(trackStyle.getPropertyValue('--wf-card-grid-sparse-max'))
+    const width =
+      itemCount < FILL_MIN_COUNT && sparseMax > 0 ? Math.min(fillWidth, sparseMax) : fillWidth
+    tracks = columns > 0 ? Array.from({ length: columns }, () => Math.max(0, width)) : []
   }
   const centerVertically = style.alignContent.includes('center')
   return {
@@ -353,8 +370,8 @@ export function VirtualCardGrid<T>({
     metrics && metrics.centerVertically && contentHeight < viewportInner
       ? (viewportInner - contentHeight) / 2
       : 0
-  // 多行时最后一行仍用完整轨道集（空轨道保留），与首行严格对位；只有整张网格
-  // 不足一行时才按条目数裁轨道（复现 auto-fit 折叠后轨道被拉宽的既有行为）。
+  // 多行时最后一行仍用完整轨道集，与首行严格对位；单行时按行内条目数裁轨道
+  // （`.wf-card-grid` 的轨道已在 readMetrics 里按条目数收敛，这里兼容 `auto-fit` 书架）。
   const multiRow = rowCount > 1
   // 量尺跨列：条目数不足时复现 auto-fit 折叠后的实际列宽。
   const rulerSpan = Math.min(Math.max(items.length, 1), MAX_RULER_SPAN)
@@ -393,7 +410,12 @@ export function VirtualCardGrid<T>({
       onFocus={handleFocus}
       onBlur={handleBlur}
       className={className}
-      style={{ position: 'relative', height: paddingTop + contentHeight + paddingBottom }}
+      style={{
+        position: 'relative',
+        height: paddingTop + contentHeight + paddingBottom,
+        // 与行内像素轨道同步：外部 `readGridCardWidth` 读到真实卡宽，而非 CSS 自然列宽。
+        gridTemplateColumns: tracks.map((width) => `${width}px`).join(' ') || undefined
+      }}
     >
       {virtualRows.map((virtualRow) => {
         const startIndex = virtualRow.index * trackCount
@@ -449,7 +471,7 @@ export function VirtualCardGrid<T>({
       >
         <div style={{ gridColumn: `1 / span ${rulerSpan}`, height: 0, minHeight: 0 }} />
       </div>
-      {/* 零高占位：让根网格自身保留全部列轨道，供 `readGridCardWidth` 读到非零列宽。 */}
+      {/* 零高占位：空数据时也撑住根网格的轨道，供 `readGridCardWidth` 读到非零列宽。 */}
       <div aria-hidden="true" style={{ gridColumn: '1 / -1', height: 0, minHeight: 0 }} />
     </div>
   )
