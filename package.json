@@ -26,6 +26,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.14.26",
     "@tiptap/core": "^3.31.4",
     "@tiptap/extension-color": "^3.31.4",
     "@tiptap/extension-document": "^3.31.4",

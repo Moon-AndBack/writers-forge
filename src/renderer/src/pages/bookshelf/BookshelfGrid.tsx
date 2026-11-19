@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { LoadErrorState } from '../../components/LoadErrorState'
 import { EmptyState } from '../../components/EmptyState'
 import { Button } from '../../components/ui'
+import { VirtualCardGrid } from '../../components/VirtualCardGrid'
 import { BookCard } from './BookCard'
 import type { Book } from './data'
 
@@ -113,10 +114,16 @@ export function BookshelfGrid({
   }
 
   return (
-    <div className="book-grid" ref={gridRef}>
-      {books.map((book) => (
+    <VirtualCardGrid
+      className="book-grid"
+      gridRef={gridRef}
+      items={books}
+      getKey={(book) => book.id}
+      estimateHeight={400}
+      minCardWidth={200}
+      gap={14}
+      renderCard={(book) => (
         <BookCard
-          key={book.id}
           book={book}
           penName={penName}
           selected={book.id === selectedId}
@@ -127,8 +134,8 @@ export function BookshelfGrid({
           onEdit={onEdit}
           onDelete={onDelete}
         />
-      ))}
-    </div>
+      )}
+    />
   )
 }
 

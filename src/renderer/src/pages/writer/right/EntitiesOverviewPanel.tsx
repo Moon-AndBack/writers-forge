@@ -25,6 +25,7 @@ import type { MouseEvent as ReactMouseEvent, ReactElement } from 'react'
 import { useTranslation } from 'react-i18next'
 import { readGridCardWidth } from '../../../components/cardGridMetrics'
 import { SearchInput, Select } from '../../../components/ui'
+import { VirtualCardGrid } from '../../../components/VirtualCardGrid'
 import { useFilterQueryDraft } from '../../../components/useFilterQueryDraft'
 import { useStableMeasure } from '../../../components/useStableMeasure'
 import { DossierCard } from '../dossier/DossierCard'
@@ -161,15 +162,18 @@ export function EntitiesOverviewPanel({
           {filteredRows.length === 0 ? (
             <div className="rp-list-empty">{t('filter.noMatch')}</div>
           ) : (
-            <div
+            <VirtualCardGrid
               className="wf-card-grid entities-overview-grid"
-              ref={setGridNode}
-              onMouseOver={entityHover.onMouseOver}
-              onMouseLeave={entityHover.onMouseLeave}
-            >
-              {filteredRows.map((row) => (
+              gridRef={setGridNode}
+              gridProps={{
+                onMouseOver: entityHover.onMouseOver,
+                onMouseLeave: entityHover.onMouseLeave
+              }}
+              onScroll={entityHover.close}
+              items={filteredRows}
+              getKey={(row) => row.id}
+              renderCard={(row) => (
                 <DossierCard
-                  key={row.id}
                   row={row}
                   bookId={bookId}
                   active={false}
@@ -179,8 +183,8 @@ export function EntitiesOverviewPanel({
                   onChipEnter={handleChipEnter}
                   onChipLeave={entityHover.onMouseLeave}
                 />
-              ))}
-            </div>
+              )}
+            />
           )}
         </ReadonlyOverviewList>
 

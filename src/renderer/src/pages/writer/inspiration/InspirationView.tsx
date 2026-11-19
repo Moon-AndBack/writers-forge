@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
 import { LoadErrorState } from '../../../components/LoadErrorState'
 import { useToast } from '../../../components/ui'
+import { VirtualCardGrid } from '../../../components/VirtualCardGrid'
 import ConfirmDialog from '@renderer/components/ui/ConfirmDialog'
 import InspirationActivityActions from './InspirationActivityActions'
 import InspirationCard from './InspirationCard'
@@ -71,17 +72,19 @@ export default function InspirationView({ bundle }: InspirationViewProps) {
               description={hasFilter ? t('emptyFilteredDesc') : t('emptyDesc')}
             />
           ) : (
-            <div className="wf-card-grid inspiration-grid">
-              {bundle.rows.map((row) => (
+            <VirtualCardGrid
+              className="wf-card-grid inspiration-grid"
+              items={bundle.rows}
+              getKey={(row) => row.id}
+              renderCard={(row) => (
                 <InspirationCard
-                  key={row.id}
                   row={row}
                   active={row.id === bundle.activeId}
                   onSelect={bundle.onSelect}
                   onDelete={setDeleteId}
                 />
-              ))}
-            </div>
+              )}
+            />
           )}
         </div>
       </div>

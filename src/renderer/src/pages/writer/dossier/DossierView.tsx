@@ -9,6 +9,7 @@ import { useModuleLabel } from '../../../shell/activityBarModules'
 import type { DossierModule } from '../../../shell/activityBarModules'
 import { EmptyState } from '../../../components/EmptyState'
 import { LoadErrorState } from '../../../components/LoadErrorState'
+import { VirtualCardGrid } from '../../../components/VirtualCardGrid'
 import { HoverCard } from '../entities/HoverCard'
 import type { HoverAnchor } from '../entities/HoverCard'
 import ConfirmDialog from '@renderer/components/ui/ConfirmDialog'
@@ -190,6 +191,15 @@ export default function DossierView({ bundle }: DossierViewProps) {
     setNestedHover(null)
   }, [clearNestedTimers])
 
+  /**
+   * 滚动时同时收起两层悬停卡：虚拟化会卸载视口外的行，第二层的锚点胶囊（在行内「+N」
+   * 浮窗里）随卡片卸载后不会再有 mouseleave，只靠 `mouseleave` 会留下悬空的浮卡。
+   */
+  const closeHovers = useCallback((): void => {
+    closeChipHover()
+    closeNestedHover()
+  }, [closeChipHover, closeNestedHover])
+
   /** 登记 / 注销某行「+N」浮窗的控制器（`DossierCard` 挂载时上报、卸载时以 null 注销）。 */
   const handlePopupControl = useCallback(
     (rowId: number, control: OverflowPopupControl | null): void => {
@@ -328,14 +338,15 @@ export default function DossierView({ bundle }: DossierViewProps) {
               /* 有数据但被筛选条件全部滤掉：与「模块还没有条目」的空态文案区分。 */
               <EmptyState title={t('filter.emptyTitle')} description={t('filter.emptyDesc')} />
             ) : (
-              <div
+              <VirtualCardGrid
                 className="wf-card-grid dossier-grid"
-                ref={gridRef}
-                aria-label={t('gridAria', { module: moduleLabel })}
-              >
-                {visibleRows.map((row) => (
+                gridRef={gridRef}
+                gridProps={{ 'aria-label': t('gridAria', { module: moduleLabel }) }}
+                onScroll={closeHovers}
+                items={visibleRows}
+                getKey={(row) => row.id}
+                renderCard={(row) => (
                   <DossierCard
-                    key={row.id}
                     bookId={bookId}
                     row={row}
                     active={row.id === activeId}
@@ -351,8 +362,8 @@ export default function DossierView({ bundle }: DossierViewProps) {
                     onPopupOpen={closeChipHover}
                     onPopupControl={handlePopupControl}
                   />
-                ))}
-              </div>
+                )}
+              />
             )}
           </div>
         </div>

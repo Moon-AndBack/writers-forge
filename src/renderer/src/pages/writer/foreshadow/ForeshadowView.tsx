@@ -15,6 +15,7 @@ import ForeshadowCreateDialog from './ForeshadowCreateDialog'
 import { EmptyState } from '../../../components/EmptyState'
 import { LoadErrorState } from '../../../components/LoadErrorState'
 import { useToast } from '../../../components/ui'
+import { VirtualCardGrid } from '../../../components/VirtualCardGrid'
 import ConfirmDialog from '@renderer/components/ui/ConfirmDialog'
 import { HoverCard } from '../entities/HoverCard'
 import { useEntityHover } from '../entities/useEntityHover'
@@ -118,15 +119,18 @@ export default function ForeshadowView({
               description={bundle.hasFilter ? t('emptyFilteredDesc') : t('emptyDesc')}
             />
           ) : (
-            <div
+            <VirtualCardGrid
               className="wf-card-grid foreshadow-grid"
-              ref={gridRef}
-              onMouseOver={entityHover.onMouseOver}
-              onMouseLeave={entityHover.onMouseLeave}
-            >
-              {bundle.rows.map((row) => (
+              gridRef={gridRef}
+              gridProps={{
+                onMouseOver: entityHover.onMouseOver,
+                onMouseLeave: entityHover.onMouseLeave
+              }}
+              onScroll={entityHover.close}
+              items={bundle.rows}
+              getKey={(row) => row.id}
+              renderCard={(row) => (
                 <ForeshadowItem
-                  key={row.id}
                   row={row}
                   active={row.id === bundle.activeId}
                   chapters={chapters}
@@ -138,8 +142,8 @@ export default function ForeshadowView({
                   onSelect={bundle.onSelect}
                   onDelete={setDeleteId}
                 />
-              ))}
-            </div>
+              )}
+            />
           )}
         </div>
       </div>
