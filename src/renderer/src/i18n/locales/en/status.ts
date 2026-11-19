@@ -14,6 +14,7 @@ const status = {
   },
   zoomOut: 'Zoom out',
   zoomIn: 'Zoom in',
+  zoom: 'Page zoom',
   pinBar: 'Pin module bar (full height)',
   unpinBar: 'Unpin module bar (floating)',
   writingSession: {

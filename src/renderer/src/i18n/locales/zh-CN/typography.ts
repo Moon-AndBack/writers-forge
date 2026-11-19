@@ -1,5 +1,5 @@
 /**
- * 排版命名空间（`typography`）：状态栏排版胶囊的档位展示名与弹窗标签。
+ * 排版命名空间（`typography`）：状态栏排版胶囊的档位展示名、弹窗标签与功能标题。
  * 正文字体展示名（含 6 个字体品牌名）随语言切换；字体档位的 `value`（CSS 族名）
  * 仍为不译常量，保留在 typographyContext.ts 中。
  */
@@ -31,6 +31,12 @@ const typography = {
     line: '行距',
     letter: '字距',
     page: '页宽'
+  },
+  title: {
+    font: '字体调节',
+    line: '行距调节',
+    letter: '字距调节',
+    page: '页宽调节'
   }
 }
 

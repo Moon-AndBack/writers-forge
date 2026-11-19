@@ -193,6 +193,18 @@
     0 0 0 1px var(--line);
 }
 
+/* 弹窗首行功能标题：说明本面板调节的对象（与选项列表留 6px 间距）。
+   沿用 .st-session-title 的弹窗标题口径（--fs-body / 600），以次级文字色
+   与下方 400 字重的选项区分；不参与交互与选中。 */
+.st-popup-title {
+  padding: 2px 10px 6px;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--text-dim);
+  white-space: nowrap;
+  user-select: none;
+}
+
 .st-popup-item {
   display: flex;
   align-items: center;

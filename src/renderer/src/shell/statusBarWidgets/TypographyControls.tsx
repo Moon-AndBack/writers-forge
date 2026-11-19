@@ -67,6 +67,7 @@ export default function TypographyControls({
         <PopupSelect
           buttonLabel={fontLabel}
           popupLabel={t('label.font')}
+          title={t('title.font')}
           options={FONT_OPTIONS.map((option) => ({
             value: option.value,
             label: t(option.labelKey)
@@ -79,6 +80,7 @@ export default function TypographyControls({
         <PopupSelect
           buttonLabel={typography.line}
           popupLabel={t('label.line')}
+          title={t('title.line')}
           options={LINE_OPTIONS.map((line) => ({ label: line, value: line }))}
           value={typography.line}
           onChange={(line) => setTypography({ line })}
@@ -88,6 +90,7 @@ export default function TypographyControls({
         <PopupSelect
           buttonLabel={letterLabel}
           popupLabel={t('label.letter')}
+          title={t('title.letter')}
           options={LETTER_OPTIONS.map((option) => ({
             value: option.value,
             label: t(option.labelKey)
@@ -104,6 +107,7 @@ export default function TypographyControls({
         <PopupSelect
           buttonLabel={pageLabel}
           popupLabel={t('label.page')}
+          title={t('title.page')}
           options={PAGE_OPTIONS.map((option) => ({
             value: option.value,
             label: t(option.labelKey)

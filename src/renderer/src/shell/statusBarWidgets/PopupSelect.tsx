@@ -12,6 +12,8 @@ interface PopupSelectProps {
   buttonLabel: string
   /** 弹窗整体 aria-label（如「正文字体」） */
   popupLabel: string
+  /** 弹窗首行功能标题（如「字体调节」），说明本面板调节的对象 */
+  title: string
   options: readonly PopupSelectOption[]
   /** 当前选中值 */
   value: string
@@ -29,6 +31,7 @@ interface PopupSelectProps {
 export default function PopupSelect({
   buttonLabel,
   popupLabel,
+  title,
   options,
   value,
   onChange
@@ -72,6 +75,7 @@ export default function PopupSelect({
 
       {open ? (
         <div className="st-popup" role="dialog" aria-label={popupLabel}>
+          <div className="st-popup-title">{title}</div>
           {options.map((option) => {
             const selected = option.value === value
             return (

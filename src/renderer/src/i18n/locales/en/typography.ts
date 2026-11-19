@@ -34,6 +34,12 @@ const typography = {
     line: 'Line height',
     letter: 'Letter spacing',
     page: 'Page width'
+  },
+  title: {
+    font: 'Font',
+    line: 'Line height',
+    letter: 'Letter spacing',
+    page: 'Page width'
   }
 } satisfies ZhCNResources['typography']
 

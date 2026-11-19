@@ -27,6 +27,12 @@ export default function ZoomControls() {
     anchorProps: zoomInProps,
     tooltip: zoomInTooltip
   } = useTooltip<HTMLButtonElement>({ content: t('zoomIn'), placement: 'top' })
+  // 缩放没有弹窗（−/百分比/+ 步进），以百分比上的 tooltip 说明该组控件的作用。
+  const {
+    anchorRef: zoomValueRef,
+    anchorProps: zoomValueProps,
+    tooltip: zoomValueTooltip
+  } = useTooltip<HTMLSpanElement>({ content: t('zoom'), placement: 'top' })
 
   const step = (delta: number): void => {
     const next = ZOOM_OPTIONS[Math.min(Math.max(clamped + delta, 0), ZOOM_OPTIONS.length - 1)]
@@ -34,9 +40,10 @@ export default function ZoomControls() {
   }
 
   return (
-    <div className="st-zoom">
+    <div className="st-zoom" role="group" aria-label={t('zoom')}>
       {zoomOutTooltip}
       {zoomInTooltip}
+      {zoomValueTooltip}
       <button
         ref={zoomOutRef}
         type="button"
@@ -52,7 +59,9 @@ export default function ZoomControls() {
       >
         −
       </button>
-      <span className="st-zoom-val">{Math.round(Number(typography.zoom) * 100)}%</span>
+      <span ref={zoomValueRef} className="st-zoom-val" {...zoomValueProps}>
+        {Math.round(Number(typography.zoom) * 100)}%
+      </span>
       <button
         ref={zoomInRef}
         type="button"
