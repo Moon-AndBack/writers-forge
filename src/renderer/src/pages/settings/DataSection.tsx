@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState } from 'react'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, IconButton, Input, Tag } from '../../components/ui'
 import { EmptyState } from '../../components/EmptyState'
 import { LoadErrorState } from '../../components/LoadErrorState'
+import { useInlineRename } from '../../components/useInlineRename'
 import { PencilIcon, RestoreIcon, TrashIcon } from '../../components/icons'
 import { formatBytes } from '../../lib/formatBytes'
 import SectionCard from './SectionCard'
@@ -22,11 +23,14 @@ export default function DataSection() {
   const { t, i18n } = useTranslation('settings')
   const backup = useLocalBackup()
 
-  // 行内重命名态：正在改名的备份文件夹 + 草稿名。
-  const [renamingFolder, setRenamingFolder] = useState<string | null>(null)
-  const [draftName, setDraftName] = useState('')
-  // Enter / Escape 已结算后，避免随后的 blur 再次提交（双写）。
-  const renameSettled = useRef(true)
+  // 行内重命名：状态与 Enter / Esc / 失焦结算由共享 hook 持有。
+  const rename = useInlineRename<string>({
+    // 空名由主进程回退纯时间戳文件夹名；同值不写库。
+    onCommit: (folder, value, previous) => {
+      if (value === previous) return
+      void backup.actions.rename(folder, value)
+    }
+  })
 
   const dateFormatter = useMemo(
     () =>
@@ -40,20 +44,7 @@ export default function DataSection() {
   const busy = backup.busy !== 'none'
 
   const beginRename = (folder: string, name: string): void => {
-    renameSettled.current = false
-    setRenamingFolder(folder)
-    setDraftName(name)
-  }
-
-  const settleRename = (folder: string, originalName: string, commit: boolean): void => {
-    if (renameSettled.current) return
-    renameSettled.current = true
-    setRenamingFolder(null)
-    if (!commit) return
-
-    const next = draftName.trim()
-    if (next === originalName) return
-    void backup.actions.rename(folder, next)
+    rename.begin(folder, name)
   }
 
   return (
@@ -101,7 +92,7 @@ export default function DataSection() {
                 ? item.folder
                 : dateFormatter.format(date)
               const label = item.name.trim() !== '' ? item.name : timestamp
-              const renaming = renamingFolder === item.folder
+              const renaming = rename.renamingId === item.folder
               const kindLabel =
                 item.kind === 'pre-restore'
                   ? t('data.backups.kindPreRestore')
@@ -120,23 +111,9 @@ export default function DataSection() {
                       <Input
                         className="settings-backup__rename"
                         type="text"
-                        value={draftName}
-                        autoFocus
-                        spellCheck={false}
                         placeholder={t('data.backups.renamePlaceholder')}
                         aria-label={t('data.backups.renamePlaceholder')}
-                        onChange={(event) => setDraftName(event.target.value)}
-                        onBlur={() => settleRename(item.folder, item.name, true)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') {
-                            if (event.nativeEvent.isComposing) return
-                            event.preventDefault()
-                            settleRename(item.folder, item.name, true)
-                          } else if (event.key === 'Escape') {
-                            event.preventDefault()
-                            settleRename(item.folder, item.name, false)
-                          }
-                        }}
+                        {...rename.inputProps}
                       />
                     ) : (
                       <span className="settings-backup__name" title={label}>

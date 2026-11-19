@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { IconButton } from '../../../components/ui'
 import { EmptyState } from '../../../components/EmptyState'
 import { LoadErrorState } from '../../../components/LoadErrorState'
+import { useInlineRename } from '../../../components/useInlineRename'
 import { SpecialChapterIcon, SpecialVolumeIcon } from '../icons'
 import { useTreeExpansion } from '../useTreeExpansion'
 import {
@@ -102,11 +103,18 @@ export default function ChaptersPanel({
   const { isOpen, toggle: toggleVolume, open: openVolume, seedOnce } = useTreeExpansion(bookId)
   // 卷收起过渡结束后卸载章行；重挂载批次抑制进场动画（见 useChapterFold）。
   const fold = useChapterFold(isOpen, toggleVolume)
-  // 内联重命名态：正在改名的卷 id + 草稿名。
-  const [renamingId, setRenamingId] = useState<number | null>(null)
-  const [draftName, setDraftName] = useState('')
-  // 已结算标记：Enter / Escape 已提交或取消后，避免随后的 blur 再次提交（双写）。
-  const renameSettled = useRef(false)
+  // 内联重命名：状态与 Enter / Esc / 失焦结算由共享 hook 持有。
+  const rename = useInlineRename<number>({
+    // 提交语义：`normal` 名段可空（空串 = 清空）；`custom` 整名必填（空串视为取消）；
+    // 与原名相同不写库。
+    onCommit: (id, value, previous) => {
+      const volume = volumes.find((row) => row.id === id)
+      if (!volume) return
+      if (volume.kind === 'custom' && value === '') return
+      if (value === previous) return
+      onRenameVolume(id, value)
+    }
+  })
   // 「新建特殊章」弹窗：目标正文卷（null = 关闭）。
   const [specialChapterVolume, setSpecialChapterVolume] = useState<VolumeRow | null>(null)
   const confirm = useConfirm()
@@ -193,33 +201,9 @@ export default function ChaptersPanel({
   }, [activeVolumeKey, openVolume])
 
   // 开始编辑卷名段：`custom` = 整名（`title`）；`normal` = 名段（可空）。
-  const beginRename = useCallback((volume: VolumeRow): void => {
-    setRenamingId(volume.id)
-    setDraftName(volume.title)
-    renameSettled.current = false
-  }, [])
-
-  // 结算重命名：`normal` 名段可空（空串 = 清空）；`custom` 整名必填（空串视为取消）。
-  // 幂等（blur 不会二次提交）。
-  const settleRename = useCallback(
-    (volume: VolumeRow | null, commit: boolean): void => {
-      if (renameSettled.current) return
-      renameSettled.current = true
-      const next = draftName.trim()
-      setRenamingId(null)
-      if (!commit || !volume) return
-      if (volume.kind === 'custom') {
-        // 自定义卷整名必填（空串视为取消）。
-        if (next === '' || next === volume.title) return
-        onRenameVolume(volume.id, next)
-        return
-      }
-      // 正文卷：名段可空（空串 = 清空），无变化不写库。
-      if (next === volume.title) return
-      onRenameVolume(volume.id, next)
-    },
-    [draftName, onRenameVolume]
-  )
+  const beginRename = (volume: VolumeRow): void => {
+    rename.begin(volume.id, volume.title)
+  }
 
   const requestDeleteVolume = useCallback(
     (volume: VolumeRow, displayName: string): void => {
@@ -275,7 +259,7 @@ export default function ChaptersPanel({
     const open = isOpen(group.key)
     const volume = group.volume
     const unfiled = volume.isUnfiled
-    const renaming = !unfiled && renamingId === volume.id
+    const renaming = !unfiled && rename.renamingId === volume.id
     const volPrefix = !renaming ? labels.volumePrefixLabel(volume) : ''
     const volName = !renaming
       ? unfiled
@@ -328,13 +312,13 @@ export default function ChaptersPanel({
               }
         }
         renaming={renaming}
-        draftName={draftName}
-        onDraftNameChange={setDraftName}
+        draftName={rename.draft}
+        onDraftNameChange={rename.setDraft}
         renameAriaLabel={
           volume.kind === 'custom' ? t('specialVolumeNameAria') : t('customVolumeNameAria')
         }
-        onCommitRename={() => settleRename(volume, true)}
-        onCancelRename={() => settleRename(volume, false)}
+        onCommitRename={rename.commit}
+        onCancelRename={rename.cancel}
       >
         <div className="chapters" onTransitionEnd={(event) => fold.onFoldEnd(group.key, event)}>
           <div className="chapters-inner">

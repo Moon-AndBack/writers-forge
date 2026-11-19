@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
 import { LoadErrorState } from '../../../components/LoadErrorState'
+import { useInlineRename } from '../../../components/useInlineRename'
 import { IconButton, useToast } from '../../../components/ui'
 import { TrashIcon } from '../../../components/icons'
 import { PencilIcon } from '../icons'
@@ -42,31 +42,21 @@ export default function TimelinePanel({
 }: TimelinePanelProps) {
   const { t } = useTranslation('timeline')
   const { t: tCommon } = useTranslation('common')
-  // 行内重命名态：正在改名的条目 id + 草稿名（与章节卷改名同款交互）。
-  const [renamingId, setRenamingId] = useState<string | null>(null)
-  const [draftName, setDraftName] = useState('')
-  // 已结算标记：Enter / Escape 已提交或取消后，避免随后的 blur 再次提交（双写）。
-  const renameSettled = useRef(false)
+  // 行内重命名：状态与 Enter / Esc / 失焦结算由共享 hook 持有。
   const confirm = useConfirm()
   const { show: showToast, node: toastNode } = useToast()
+  const rename = useInlineRename<string>({
+    // 空名交给 workspace 回退默认名；同值不写库；失败 toast。
+    onCommit: (id, value, previous) => {
+      if (value === previous) return
+      void onRename(id, value).then((ok) => {
+        if (!ok) showToast(t('renameFailed'))
+      })
+    }
+  })
 
   const beginRename = (entry: TimelineEntry): void => {
-    setRenamingId(entry.id)
-    setDraftName(entry.name)
-    renameSettled.current = false
-  }
-
-  // 结算重命名：Enter / 失焦提交，Escape 取消；空名由 workspace 回退默认名。
-  const settleRename = (entry: TimelineEntry, commit: boolean): void => {
-    if (renameSettled.current) return
-    renameSettled.current = true
-    setRenamingId(null)
-    if (!commit) return
-    const next = draftName.trim()
-    if (next === entry.name) return
-    void onRename(entry.id, next).then((ok) => {
-      if (!ok) showToast(t('renameFailed'))
-    })
+    rename.begin(entry.id, entry.name)
   }
 
   const requestDelete = (entry: TimelineEntry): void => {
@@ -99,7 +89,7 @@ export default function TimelinePanel({
           <div className="timeline-list pane-region">
             {timelines.map((entry) => {
               const active = entry.id === activeId
-              const renaming = renamingId === entry.id
+              const renaming = rename.renamingId === entry.id
               // 删除禁用两式：至少保留一条；该时间线下仍有剧情线（需先删除或迁移，
               // 否则剧情线会因时间线消失而「凭空不见」）。workspace 同规则兜底。
               const plotLineCount = plotLineCounts.get(entry.id) ?? 0
@@ -135,22 +125,9 @@ export default function TimelinePanel({
                     <input
                       className="timeline-rename"
                       type="text"
-                      value={draftName}
-                      autoFocus
-                      spellCheck={false}
                       aria-label={t('rename')}
                       onClick={(event) => event.stopPropagation()}
-                      onChange={(event) => setDraftName(event.target.value)}
-                      onBlur={() => settleRename(entry, true)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          event.preventDefault()
-                          settleRename(entry, true)
-                        } else if (event.key === 'Escape') {
-                          event.preventDefault()
-                          settleRename(entry, false)
-                        }
-                      }}
+                      {...rename.inputProps}
                     />
                   ) : (
                     <span className="timeline-item-name">

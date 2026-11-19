@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
 import { LoadErrorState } from '../../../components/LoadErrorState'
+import { useInlineRename } from '../../../components/useInlineRename'
 import { DocIcon } from '../icons'
 import { useConfirm } from '@renderer/components/ui/useConfirm'
 import {
@@ -88,11 +89,14 @@ export default function OutlinePanel({
   // 卷 / 分组展开态（白名单，本面板统一持有）：默认全部收起，仅展开当前编辑项所属项。
   // 置顶区（分组容器）与卷区共用同一份状态，避免两套逻辑漂移。
   const { isOpen, toggle, open: openKey, openMany, seedOnce } = useTreeExpansion(bookId)
-  // 内联重命名态：正在改名的卷 id + 草稿名。
-  const [renamingId, setRenamingId] = useState<number | null>(null)
-  const [draftName, setDraftName] = useState('')
-  // 已结算标记：Enter / Escape 已提交或取消后，避免随后的 blur 再次提交（双写）。
-  const renameSettled = useRef(false)
+  // 内联重命名：状态与 Enter / Esc / 失焦结算由共享 hook 持有。
+  const rename = useInlineRename<number>({
+    // 卷 / 分组名段可空（空串 = 清空）；与原名相同不写库。
+    onCommit: (id, value, previous) => {
+      if (value === previous) return
+      onRenameVolume(id, value)
+    }
+  })
   const confirm = useConfirm()
   // 删除确认前的双埋点伏笔查询（软删：伏笔保留，仅此处锚点失效）。
   const { inspect: inspectForeshadowImpact } = useForeshadowDeleteImpact()
@@ -151,25 +155,9 @@ export default function OutlinePanel({
   )
 
   // 开始编辑卷名段（正文卷名段可空；分组容器名可空）。
-  const beginRename = useCallback((volume: VolumeRow): void => {
-    setRenamingId(volume.id)
-    setDraftName(volume.title)
-    renameSettled.current = false
-  }, [])
-
-  // 结算重命名（幂等：blur 不会二次提交）。名段可空（空串 = 清空）；无变化不写库。
-  const settleRename = useCallback(
-    (volume: VolumeRow | null, commit: boolean): void => {
-      if (renameSettled.current) return
-      renameSettled.current = true
-      const next = draftName.trim()
-      setRenamingId(null)
-      if (!commit || !volume) return
-      if (next === volume.title) return
-      onRenameVolume(volume.id, next)
-    },
-    [draftName, onRenameVolume]
-  )
+  const beginRename = (volume: VolumeRow): void => {
+    rename.begin(volume.id, volume.title)
+  }
 
   const requestDeleteVolume = useCallback(
     (volume: VolumeRow): void => {
@@ -261,7 +249,7 @@ export default function OutlinePanel({
               {tree.volumes.map((group) => {
                 const open = isOpen(group.key)
                 const volume = group.volume
-                const renaming = renamingId === volume.id
+                const renaming = rename.renamingId === volume.id
                 const volPrefix = !renaming ? labels.volumePrefixLabel(volume) : ''
                 const volName = !renaming ? volumeNameLabel(volume) : ''
                 // 拖拽落点占位线：仅被拖条目所在卷的分组需要渲染。
@@ -324,11 +312,11 @@ export default function OutlinePanel({
                       }
                     }}
                     renaming={renaming}
-                    draftName={draftName}
-                    onDraftNameChange={setDraftName}
+                    draftName={rename.draft}
+                    onDraftNameChange={rename.setDraft}
                     renameAriaLabel={t('volumeNameAria')}
-                    onCommitRename={() => settleRename(volume, true)}
-                    onCancelRename={() => settleRename(volume, false)}
+                    onCommitRename={rename.commit}
+                    onCancelRename={rename.cancel}
                   >
                     <div className="chapters">
                       <div className="chapters-inner">

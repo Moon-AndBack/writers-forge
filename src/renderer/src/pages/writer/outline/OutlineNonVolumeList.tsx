@@ -1,6 +1,7 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useConfirm } from '@renderer/components/ui/useConfirm'
+import { useInlineRename } from '../../../components/useInlineRename'
 import {
   useForeshadowDeleteImpact,
   withDeleteImpactWarning
@@ -62,56 +63,35 @@ export default function OutlineNonVolumeList({
   onCreateEntryInGroup
 }: OutlineNonVolumeListProps) {
   const { t } = useTranslation('outline')
-  // 内联改名态：条目 / 分组各持一套（id 空间不同，不可共用）。
-  const [itemRenamingId, setItemRenamingId] = useState<number | null>(null)
-  const [groupRenamingId, setGroupRenamingId] = useState<number | null>(null)
-  const [draftName, setDraftName] = useState('')
-  // 已结算标记：Enter / Escape 提交或取消后，避免随后的 blur 再次提交（双写）。
-  const itemSettled = useRef(false)
-  const groupSettled = useRef(false)
+  // 内联改名：条目 / 分组各持一套状态（id 空间不同，不可共用），
+  // 状态与 Enter / Esc / 失焦结算由共享 hook 持有。
+  const itemRename = useInlineRename<number>({
+    // 条目名可空；与 trim 后的原标题相同不写库。
+    onCommit: (id, value, previous) => {
+      if (value === previous.trim()) return
+      onRenameItem(id, value)
+    }
+  })
+  const groupRename = useInlineRename<number>({
+    // 分组名可空；与原标题相同不写库。
+    onCommit: (id, value, previous) => {
+      if (value === previous) return
+      onRenameGroup(id, value)
+    }
+  })
   const confirm = useConfirm()
   // 删除确认前的双埋点伏笔查询（软删：伏笔保留，仅此处锚点失效）。
   const { inspect: inspectForeshadowImpact } = useForeshadowDeleteImpact()
   // 删除分组前的条目数预检（查询失败回退静态文案，不阻断删除）。
   const { inspect: inspectVolumeDeleteImpact } = useVolumeDeleteImpact()
 
-  const beginRenameItem = useCallback((item: OutlineItemRow): void => {
-    setItemRenamingId(item.id)
-    setDraftName(item.title)
-    itemSettled.current = false
-  }, [])
+  const beginRenameItem = (item: OutlineItemRow): void => {
+    itemRename.begin(item.id, item.title)
+  }
 
-  const settleRenameItem = useCallback(
-    (item: OutlineItemRow, commit: boolean): void => {
-      if (itemSettled.current) return
-      itemSettled.current = true
-      const next = draftName.trim()
-      setItemRenamingId(null)
-      if (!commit) return
-      if (next === item.title.trim()) return
-      onRenameItem(item.id, next)
-    },
-    [draftName, onRenameItem]
-  )
-
-  const beginRenameGroup = useCallback((volume: VolumeRow): void => {
-    setGroupRenamingId(volume.id)
-    setDraftName(volume.title)
-    groupSettled.current = false
-  }, [])
-
-  const settleRenameGroup = useCallback(
-    (volume: VolumeRow, commit: boolean): void => {
-      if (groupSettled.current) return
-      groupSettled.current = true
-      const next = draftName.trim()
-      setGroupRenamingId(null)
-      if (!commit) return
-      if (next === volume.title) return
-      onRenameGroup(volume.id, next)
-    },
-    [draftName, onRenameGroup]
-  )
+  const beginRenameGroup = (volume: VolumeRow): void => {
+    groupRename.begin(volume.id, volume.title)
+  }
 
   const requestDeleteGroup = useCallback(
     (volume: VolumeRow): void => {
@@ -176,18 +156,18 @@ export default function OutlineNonVolumeList({
               active={activeSelection?.kind === 'entry' && item.id === activeSelection.id}
               onSelect={(id) => onOpenTarget({ kind: 'entry', id })}
               onDelete={(row) => requestDeleteEntry(row.id, row.title)}
-              renaming={itemRenamingId === item.id}
-              draftName={draftName}
-              onDraftNameChange={setDraftName}
+              renaming={itemRename.renamingId === item.id}
+              draftName={itemRename.draft}
+              onDraftNameChange={itemRename.setDraft}
               onBeginRename={beginRenameItem}
-              onCommitRename={(row) => settleRenameItem(row, true)}
-              onCancelRename={(row) => settleRenameItem(row, false)}
+              onCommitRename={itemRename.commit}
+              onCancelRename={itemRename.cancel}
             />
           )
         }
         const open = expansion.isOpen(entry.key)
         const volume = entry.volume
-        const renaming = groupRenamingId === volume.id
+        const renaming = groupRename.renamingId === volume.id
         const groupName = outlineItemLabel({ title: volume.title }, t('unnamedGroup'))
         // 分组行点击三态切换：非编辑目标 → 打开编辑器并展开该分组；
         // 编辑中且展开 → 仅收起；编辑中但收起 → 仅展开（不触碰 selection，零刷新）。
@@ -231,11 +211,11 @@ export default function OutlineNonVolumeList({
               delete: { label: t('deleteGroup'), onClick: () => requestDeleteGroup(volume) }
             }}
             renaming={renaming}
-            draftName={draftName}
-            onDraftNameChange={setDraftName}
+            draftName={groupRename.draft}
+            onDraftNameChange={groupRename.setDraft}
             renameAriaLabel={t('groupNameAria')}
-            onCommitRename={() => settleRenameGroup(volume, true)}
-            onCancelRename={() => settleRenameGroup(volume, false)}
+            onCommitRename={groupRename.commit}
+            onCancelRename={groupRename.cancel}
           >
             {open ? (
               <div className="nonvol-children">
@@ -247,12 +227,12 @@ export default function OutlineNonVolumeList({
                     nested
                     onSelect={(id) => onOpenTarget({ kind: 'entry', id })}
                     onDelete={(row) => requestDeleteEntry(row.id, row.title)}
-                    renaming={itemRenamingId === child.id}
-                    draftName={draftName}
-                    onDraftNameChange={setDraftName}
+                    renaming={itemRename.renamingId === child.id}
+                    draftName={itemRename.draft}
+                    onDraftNameChange={itemRename.setDraft}
                     onBeginRename={beginRenameItem}
-                    onCommitRename={(row) => settleRenameItem(row, true)}
-                    onCancelRename={(row) => settleRenameItem(row, false)}
+                    onCommitRename={itemRename.commit}
+                    onCancelRename={itemRename.cancel}
                   />
                 ))}
               </div>
