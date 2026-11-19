@@ -28,8 +28,8 @@ const RESET_AUTO_CLOSE_MS = 500
 /**
  * 状态栏「本次码字」胶囊：书架页与写作页共用（挂在外壳 `StatusBar` 内）。
  *
- * 数据来自 `shell/writingSession`（模块级 store）：首次出现正增量后才渲染，
- * 之后一直保留；净增字数为负时展示 0。不足 `SPEED_MIN_CHARS` 字只显示字数，
+ * 数据来自 `shell/writingSession`（模块级 store）：启动即常驻渲染（零值显示
+ * 「本次 0 字」），净增字数为负时展示 0。不足 `SPEED_MIN_CHARS` 字只显示字数，
  * 避免「首字 → 天文时速」的误导。
  *
  * 胶囊同时是详情浮层的触发器（`.st-popup` 向上展开，避免状态栏贴底被裁切）：
@@ -42,7 +42,7 @@ const RESET_AUTO_CLOSE_MS = 500
  */
 export default function WritingSessionStats() {
   const { t } = useTranslation('status')
-  const { visible, chars, speed } = useWritingSession()
+  const { chars, speed } = useWritingSession()
   const [detail, setDetail] = useState<WritingSessionSnapshot | null>(null)
   /** 点击打开（非锁定）：移出不关，点外部 / Esc 关。 */
   const [sticky, setSticky] = useState(false)
@@ -361,8 +361,6 @@ export default function WritingSessionStats() {
       event.currentTarget.releasePointerCapture(event.pointerId)
     }
   }
-
-  if (!visible) return null
 
   const value = Math.max(0, chars)
   const showSpeed = value >= SPEED_MIN_CHARS && speed > 0

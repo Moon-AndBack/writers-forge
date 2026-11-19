@@ -9,7 +9,7 @@ import { useEffect, useSyncExternalStore } from 'react'
  *   删除会扣减，展示时 clamp 到 0。
  * - 活跃时长只在正文事务时刻结算（无常驻定时器）：单次间隔最多计 5s；
  *   停笔超过 5s、全局无操作超过 60s、或窗口失焦 / 隐藏时按闲时处理。
- * - 本次启动出现过正增量后 `visible` 置真，之后不再隐藏（删字 / 切页都不隐藏）。
+ * - 状态栏胶囊自启动即常驻（书架页 / 写作页共用），零值显示 0 字；删字 / 切页都不隐藏。
  * - 速度 = 净增字数 ÷ 活跃时长（字 / 时），四舍五入。空闲时不重算，
  *   故速度不会随停留时间滑落；下次正文事务才刷新。
  * - 总时长 = 首次码字至今的墙钟时长；空闲时长 = `max(0, 总时长 - 活跃时长)`。
@@ -19,8 +19,6 @@ import { useEffect, useSyncExternalStore } from 'react'
  */
 
 export interface WritingSessionSnapshot {
-  /** 本次启动后是否出现过正的净增字数（出现后不再隐藏）。 */
-  visible: boolean
   /** 净增有效字（可能为负，展示方自行 clamp）。 */
   chars: number
   /** 每小时码字速度（活跃时长不足 1s 或净增为负时为 0）。 */
@@ -45,7 +43,6 @@ const MIN_ACTIVE_MS = 1_000
 export const AI_APPLY_META = 'aiApply'
 
 let snapshot: WritingSessionSnapshot = {
-  visible: false,
   chars: 0,
   speed: 0,
   activeMs: 0,
@@ -56,7 +53,6 @@ const listeners = new Set<() => void>()
 
 let chars = 0
 let activeMs = 0
-let visible = false
 /** 首次码字时间戳；0 = 本次启动尚未写过（总时长 / 空闲时长的起点）。 */
 let firstEditAt = 0
 /** 上一次计入的正文事务时间戳；0 = 本次启动尚未写过。 */
@@ -81,7 +77,6 @@ function publish(): void {
   const totalMs = computeTotalMs(Date.now())
   const idleMs = Math.max(0, totalMs - activeMs)
   if (
-    snapshot.visible === visible &&
     snapshot.chars === chars &&
     snapshot.speed === speed &&
     snapshot.activeMs === activeMs &&
@@ -89,7 +84,7 @@ function publish(): void {
   ) {
     return
   }
-  snapshot = { visible, chars, speed, activeMs, idleMs, totalMs }
+  snapshot = { chars, speed, activeMs, idleMs, totalMs }
   for (const listener of listeners) listener()
 }
 
@@ -118,7 +113,6 @@ export function recordChapterEdit(delta: number): void {
       lostFocus || idleSinceActivity || sinceEdit > IDLE_MS ? 0 : Math.min(sinceEdit, EDIT_PAUSE_MS)
   }
 
-  if (delta > 0) visible = true
   chars += delta
   activeMs += gap
   lastEditAt = now
@@ -150,7 +144,6 @@ export function getLiveSnapshot(): WritingSessionSnapshot {
   const totalMs = computeTotalMs(Date.now())
   const active = Math.min(activeMs, totalMs)
   return {
-    visible,
     chars,
     speed: computeSpeed(),
     activeMs: active,
