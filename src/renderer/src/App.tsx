@@ -299,7 +299,7 @@ export default function App({
                                 className={isWriter ? 'is-writer' : undefined}
                                 leading={isWriter ? <StatusBarLeading /> : undefined}
                               >
-                                {/* 本次码字胶囊：书架页与写作页共用，首次码字后才渲染。 */}
+                                {/* 本次码字胶囊：书架页与写作页共用，启动即显示（不依赖首次输入）。 */}
                                 <WritingSessionStats />
                                 <StatusBarWidgets />
                               </StatusBar>
