@@ -1,25 +1,16 @@
 /**
  * 通用「卡片网格 + 行级虚拟滚动」（AGENTS §9：多处网格共用一套实现）。
  *
- * 只渲染视口内的整行卡片，其余行由外层高度占位；列宽 / 间距 / 对齐全部**沿用调用方
- * 现有的网格 CSS**（`.wf-card-grid` / `.book-grid` / `.entities-overview-grid`），
- * 不在组件里另立一套尺寸口径：
- *
- * - **列轨道实测**：根节点仍是原网格元素（保留类名与 CSS），内部另放一个零高「量尺」
- *   （同 class、同内容宽的绝对定位网格），其中只有一个按 `min(条目数, 64)` 跨列的 0 高项。
- *   量尺按 CSS 读容器的自然列数；`.wf-card-grid` 再按
- *   `min(自然列数, 条目数, --wf-card-grid-max-columns)` 收敛成显式列（≥3 张撑满整行，
- *   不足 3 张保持基准卡宽）；书架 `.book-grid` 不声明该变量，继续走自然 `auto-fit` 折列。
- * - **按行虚拟**（不是按列）：行高由该行最高卡片决定，虚拟项即一行；卡片在行内仍是
- *   网格子项，因此 `useChipOverflow` 的容器实测、`useStableMeasure` 的布局签名都不变。
- * - **滚动容器自动识别**：根节点自身可滚动（书架 `.book-grid`）就用自身；否则向上找最近的
- *   `overflow-y: auto / scroll` 祖先（`.editor-scroll` / `.rp-card--list`），并用
- *   `scrollMargin` 对齐列表起点，**不改调用方的外层滚动结构**。
- * - **滚动即收浮卡**：跨过 `onScroll` 给调用方关闭依赖卡片 DOM 的悬停卡（虚拟化会卸载
- *   视口外卡片，旧锚点会变成悬空快照）。
- *
- * 行容器复制调用方类名，故 `.entities-overview-grid > .dossier-card` 这类直接子选择器
- * 仍然命中（卡片是行容器的直接子元素）。
+ * 只渲染视口内的整行卡片，其余行由外层高度占位；列宽 / 间距 / 对齐沿用调用方的网格
+ * CSS（`.wf-card-grid` / `.book-grid`），不在组件里另立尺寸口径：
+ * - 列轨道实测：根节点保留原网格类名，内部另放零高量尺读自然列数；`.wf-card-grid`
+ *   再按 `min(自然列数, 条目数, --wf-card-grid-max-columns)` 收敛成显式列。
+ * - 按行虚拟：行高由该行最高卡片决定，虚拟项即一行；卡片仍是行容器的直接子元素，
+ *   调用方的直接子选择器与容量实测都不变。
+ * - 滚动容器自动识别：根节点自身可滚动（书架）就用自身，否则向上找最近的纵向滚动
+ *   祖先，并用 `scrollMargin` 对齐列表起点，不改调用方的外层滚动结构。
+ * - 滚动即收浮卡：跨过 `onScroll` 通知调用方关闭依赖卡片 DOM 的悬停卡。
+ * - 换列补间：列数变化时按卡片 key 对齐前后矩形做 FLIP（见 cardGridFlip.ts）。
  */
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type {
@@ -32,6 +23,7 @@ import type {
 } from 'react'
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual'
 import type { Range } from '@tanstack/react-virtual'
+import { useColumnFlip } from './cardGridMetrics'
 
 export interface VirtualCardGridProps<T> {
   items: readonly T[]
@@ -124,11 +116,9 @@ function findScrollElement(el: HTMLElement): HTMLElement {
 }
 
 /**
- * 读取列 / 间距 / 内衬；无 CSS 轨道时按最小卡宽兜底。
- *
- * 列宽从**零高量尺**读（同一份类名、同一内容宽），而不是根节点：根节点的子行是绝对定位，
- * 不适合承担 `auto-fit`「空轨道折叠」的判定；量尺内只有一个按条目数跨列的常规网格项，
- * 折叠结果与改造前的自然网格一致。
+ * 读取列 / 间距 / 内衬；无 CSS 轨道时按最小卡宽兜底。列宽从零高量尺读（同一份类名、
+ * 同一内容宽）而不是根节点：根节点的子行是绝对定位，不适合承担 `auto-fit` 空轨道
+ * 折叠的判定；量尺内只有一个按条目数跨列的常规网格项，结果与自然网格一致。
  */
 function readMetrics(
   el: HTMLElement,
@@ -218,6 +208,9 @@ export function VirtualCardGrid<T>({
   const [playedKeys, setPlayedKeys] = useState<ReadonlySet<string | number>>(() => new Set())
   // 上一次提交仍在虚拟行里的卡片 key：用于判定本帧哪些卡片滚出了视口。
   const mountedKeysRef = useRef<ReadonlySet<string | number>>(new Set())
+  // 已提交的 items / getKey / 列数：给 FLIP 快照取 key，并保证只有列数变化才快照。
+  const latestRef = useRef({ items, getKey, trackCount: 0 })
+  const { capture, play } = useColumnFlip<T>()
 
   const handleFocus = useCallback((event: ReactFocusEvent<HTMLDivElement>): void => {
     const row = (event.target as HTMLElement).closest<HTMLElement>('[data-index]')
@@ -255,7 +248,8 @@ export function VirtualCardGrid<T>({
   useLayoutEffect(() => {
     const el = rootRef.current
     if (el === null) return
-    const read = (): void => {
+    // `captureFlip` 仅由 ResizeObserver 传入：条目 / 类名变化时旧矩形已不可得。
+    const read = (captureFlip: boolean): void => {
       const width = el.clientWidth
       if (width > 0 && lastWidthRef.current === 0) {
         // 从 display:none 恢复（右栏列表切详情）：浏览器恢复 scrollTop 时不一定派发
@@ -266,13 +260,17 @@ export function VirtualCardGrid<T>({
       lastWidthRef.current = width
       if (width === 0) return
       const next = readMetrics(el, rulerRef.current, scrollEl, items.length, minCardWidth, gap)
+      const latest = latestRef.current
+      if (captureFlip && latest.trackCount > 0 && next.tracks.length !== latest.trackCount) {
+        capture(el, latest.items, latest.getKey, latest.trackCount)
+      }
       setMetrics((prev) => (prev !== null && sameMetrics(prev, next) ? prev : next))
     }
-    read()
-    const observer = new ResizeObserver(read)
+    read(false)
+    const observer = new ResizeObserver(() => read(true))
     observer.observe(el)
     return () => observer.disconnect()
-  }, [className, items.length, scrollEl, minCardWidth, gap])
+  }, [className, items.length, scrollEl, minCardWidth, gap, capture])
 
   // 列表起点相对滚动内容原点的偏移（网格上方还有内衬 / 其它内容时）。
   useLayoutEffect(() => {
@@ -402,6 +400,26 @@ export function VirtualCardGrid<T>({
       return next
     })
   }, [virtualRows, trackCount, items, getKey])
+
+  // 换列补间：行容器已按新轨道重建，把仍在 DOM 的卡片从旧矩形补间到新矩形。行高刚被
+  // ref 回调重测，`getVirtualItems()` 拿到的是校正后的行 top（渲染时还是估算值）。
+  useLayoutEffect(() => {
+    latestRef.current = { items, getKey, trackCount }
+    const root = rootRef.current
+    if (root === null) return
+    play({
+      root,
+      items,
+      getKey,
+      trackCount,
+      rows: virtualizer.getVirtualItems(),
+      totalSize: virtualizer.getTotalSize(),
+      paddingTop,
+      scrollMargin,
+      viewportInner,
+      centerVertically: metrics?.centerVertically ?? false
+    })
+  })
 
   return (
     <div
