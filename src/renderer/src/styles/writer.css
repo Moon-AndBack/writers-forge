@@ -355,7 +355,8 @@ body.is-resizing .splitter {
      宽度反馈。代价：无滚动条的视图版心永久窄 12px（与章节视图一致）。
      例外：设定五域 / 伏笔 / 灵感按需占宽，见随后的 data-module 规则。 */
   scrollbar-gutter: stable;
-  /* 四边内衬统一 20px：滚动内容与中栏四缘等距（左右内衬与上下一致）。 */
+  /* 四边内衬统一 20px：滚动内容与中栏四缘等距，且是中栏横向留白的唯一来源
+     （版心 `.editor-inner` 不再额外加左右内衬）。 */
   padding: 20px;
 }
 

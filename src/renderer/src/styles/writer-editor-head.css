@@ -12,13 +12,13 @@
   text-align: left;
 }
 
-/* 头部内层：覆盖通用 .editor-inner 的版心约束
-   （max-width: var(--page-width) + margin 居中 + padding 0 40px），
-   使头部内容横跨头部整宽，上 / 左 / 右各留 40px（上边距与左右对齐）；
-   正文区仍走原 .editor-inner 版心。 */
+/* 头部内层：覆盖通用 .editor-inner 的版心约束（max-width / margin 居中 / 内衬），
+   使头部内容横跨头部整宽。左右内衬取 20px，与 `.editor-scroll` 的横向内衬一致：
+   窄窗（正文未被 --page-width 收口）时标题与正文左缘对齐；宽窗正文按版心居中，
+   头部仍与版心解耦。 */
 .editor-head .editor-inner {
   max-width: 100%;
-  padding: 38px 40px 0;
+  padding: 38px 20px 0;
 }
 
 /* 正文滚动区：flex 撑满中栏剩余高度，正文独立滚动。
@@ -35,13 +35,13 @@
 .editor-inner {
   max-width: var(--page-width);
   margin: 0 auto;
-  padding: 0 40px;
+  /* 中栏横向留白统一由 `.editor-scroll` 提供，版心只负责最大宽度与居中。 */
+  padding: 0;
   transition: max-width 0.25s var(--ease);
 }
 
 .editor-inner.is-full {
   max-width: 100%;
-  padding: 0 28px;
 }
 
 .doc-title {
