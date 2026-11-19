@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { KeyboardEvent, MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/cn'
+import { getCachedImage, invalidateCachedImage, setCachedImage } from '@renderer/lib/imageBlobCache'
 import { CheckIcon } from '../../components/icons'
 import { Badge, IconButton, Progress, Tag } from '../../components/ui'
 import type { BadgeTone } from '../../components/ui'
@@ -96,8 +97,9 @@ function PencilIcon() {
  * 边缘光晕，支持选中态。
  *
  * - 封面：若该书在数据库中存有封面图（blob），经 `books.cover.get` 载入并显示
- *   （`Uint8Array` → `Blob` → `URL.createObjectURL`，卸载 / 切换时 revoke）；
- *   否则回退「封面字 + `coverColor` 对应渐变」。
+ *   （`Uint8Array` → `Blob` → `URL.createObjectURL`，卸载 / 切换时 revoke）；命中
+ *   `imageBlobCache`（`cover:<bookId>`）时复用 Blob、不再 IPC；否则回退「封面字 +
+ *   `coverColor` 对应渐变」。
  * - 展示控件收敛到组件库：状态胶囊 `Badge`、编辑 / 删除 `IconButton`、进度
  *   `Progress`、分类 `Tag`；卡片容器因「封面块 + 正文」结构保留自绘 `.book-card`。
  */
@@ -118,24 +120,38 @@ export function BookCard({
   const bookId = book.id
 
   // 载入封面图 blob（无 API / 无记录时静默回退渐变）。
-  // coverVersion 参与依赖：封面图被写入 / 删除后由父组件自增，触发重新读取。
+  // 先查 Blob 缓存，命中不再 IPC（重新挂载 / 切页也复用）；coverVersion 参与依赖：
+  // 封面图被写入 / 删除后由父组件自增，此时失效缓存并重新读取。
   useEffect(() => {
     const api = window.api?.books?.cover
     if (!api) return undefined
 
+    const cacheKey = `cover:${bookId}`
+    if (coverVersion > 0) invalidateCachedImage(cacheKey)
     let active = true
     let created: string | null = null
-    api
-      .get(bookId)
-      .then((payload) => {
-        if (!active || !payload) return
-        const blob = new Blob([new Uint8Array(payload.data)], { type: payload.mime })
-        created = URL.createObjectURL(blob)
-        setCoverUrl(created)
-      })
-      .catch(() => {
-        /* 读取失败静默忽略 */
-      })
+
+    const attach = (blob: Blob): void => {
+      created = URL.createObjectURL(blob)
+      setCoverUrl(created)
+    }
+
+    const cached = coverVersion > 0 ? null : getCachedImage(cacheKey)
+    if (cached) {
+      attach(cached)
+    } else {
+      api
+        .get(bookId)
+        .then((payload) => {
+          if (!active || !payload) return
+          const blob = new Blob([new Uint8Array(payload.data)], { type: payload.mime })
+          setCachedImage(cacheKey, blob)
+          attach(blob)
+        })
+        .catch(() => {
+          /* 读取失败静默忽略 */
+        })
+    }
 
     return () => {
       active = false
@@ -185,7 +201,7 @@ export function BookCard({
         style={coverUrl ? undefined : { backgroundImage: getCoverGradient(coverColor) }}
       >
         {coverUrl ? (
-          <img className="book-cover__img" src={coverUrl} alt="" />
+          <img className="book-cover__img" src={coverUrl} alt="" loading="lazy" decoding="async" />
         ) : (
           <span className="book-cover__title" aria-hidden="true">
             {book.title.trim() || t('card.coverCharFallback')}
