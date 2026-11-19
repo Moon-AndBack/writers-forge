@@ -16,6 +16,19 @@ interface DragPosition {
 }
 
 /**
+ * 解锁复位的 hover 宽限（ms）。
+ *
+ * 复位动画把弹窗从拖动位置移回状态栏上方，指针相对弹窗的位置随之改变；
+ * 鼠标若因此落到弹窗外，浏览器会派发 `mouseleave`，但这是「被移走的弹窗甩出」
+ * 而非主动离开，不能当成关闭意图。复位期间与结束后这段时间内忽略该事件；
+ * 重新移入会立即结束宽限，此后的移出按主动离开处理。
+ *
+ * 取值依据：复位过渡为 `--dur-slow`（240ms），宽限取 300ms 略大于「甩出」窗口，
+ * 同时落在 200–400ms 的合理区间，不会明显拖慢日常移出关闭。
+ */
+const RESET_LEAVE_GRACE_MS = 300
+
+/**
  * 状态栏「本次码字」胶囊：书架页与写作页共用（挂在外壳 `StatusBar` 内）。
  *
  * 数据来自 `shell/writingSession`（模块级 store）：首次出现正增量后才渲染，
@@ -26,7 +39,8 @@ interface DragPosition {
  * - 悬停 260ms 打开 / 移出 120ms 关闭（`popoverTiming`）；
  * - 点击打开后为「粘住」态：移出仍显示，点外部 / Esc 关闭；
  * - 浮层内锁定后常驻：移出 / 点外部 / Esc 均不关闭，必须先点锁图标解锁；
- * - 锁定后浮层切到 `position: fixed`，标题区成为拖动把手；解锁复位回锚点并恢复 hover。
+ * - 锁定后浮层切到 `position: fixed`，标题区成为拖动把手；解锁复位回锚点并恢复 hover，
+ *   复位期间与结束后 300ms 内忽略 hover 移出（指针会被归位的弹窗「甩出」）。
  * 打开时用 `getLiveSnapshot()` 现算总时长 / 空闲时长，不引入常驻定时器。
  */
 export default function WritingSessionStats() {
@@ -53,6 +67,8 @@ export default function WritingSessionStats() {
   const draggingRef = useRef(false)
   /** 复位动画真源（同步取消：动画期间再次上锁不能被残留的 transitionend 拉回）。 */
   const resettingRef = useRef(false)
+  /** mouseleave 宽限截止时间（`performance.now()` 基准；0 = 无宽限）。 */
+  const leaveGraceUntilRef = useRef(0)
   const popupId = useId()
 
   const clearTimers = useCallback((): void => {
@@ -75,6 +91,7 @@ export default function WritingSessionStats() {
     setResetting(false)
     draggingRef.current = false
     resettingRef.current = false
+    leaveGraceUntilRef.current = 0
   }, [])
 
   /** 浮层根节点：既供内容组件挂载，也供拖动 / 边界测量读取。 */
@@ -168,6 +185,8 @@ export default function WritingSessionStats() {
   }, [locked, clampPosition])
 
   const handleMouseEnter = (): void => {
+    // 重新移入：解锁宽限立即失效，此后的移出按主动离开处理（日常 hover 手感不受影响）。
+    leaveGraceUntilRef.current = 0
     clearTimers()
     if (detail !== null) return
     showTimerRef.current = window.setTimeout(() => {
@@ -179,6 +198,8 @@ export default function WritingSessionStats() {
   const handleMouseLeave = (): void => {
     clearTimers()
     if (detail === null || sticky || locked) return
+    // 复位期间 / 刚归位的宽限期内，指针是被移动的弹窗「甩出」而非主动离开：不关。
+    if (resettingRef.current || performance.now() < leaveGraceUntilRef.current) return
     hideTimerRef.current = window.setTimeout(() => {
       hideTimerRef.current = null
       closeDetail()
@@ -227,6 +248,8 @@ export default function WritingSessionStats() {
         return
       }
       resettingRef.current = true
+      // 动画期间即进入宽限（覆盖整段 240ms 过渡）；transitionend 会再延长一段。
+      leaveGraceUntilRef.current = performance.now() + RESET_LEAVE_GRACE_MS
       setResetting(true)
       setPosition(target)
       return
@@ -237,6 +260,7 @@ export default function WritingSessionStats() {
     // 常态上锁则从当前锚点位置无缝切到 fixed，同一次事件内写入位置与锁定态。
     const rect = node.getBoundingClientRect()
     resettingRef.current = false
+    leaveGraceUntilRef.current = 0
     setResetting(false)
     setPosition({ left: rect.left, top: rect.top })
     setLocked(true)
@@ -253,6 +277,8 @@ export default function WritingSessionStats() {
     if (!resettingRef.current) return
     if (event.target !== event.currentTarget) return
     if (event.propertyName !== 'left' && event.propertyName !== 'top') return
+    // 归位后再留一段宽限：此时指针已被弹窗甩出，立即按移出处理会让弹窗刚复位就消失。
+    leaveGraceUntilRef.current = performance.now() + RESET_LEAVE_GRACE_MS
     resettingRef.current = false
     setResetting(false)
     setPosition(null)
