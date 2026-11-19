@@ -192,9 +192,9 @@ export const VOLUME_INTERFACE: SeedVolume = {
         seedParagraph(
           '解锁后浮层自动回到状态栏上方，带一段复位过渡；之后恢复成悬停展开、移出收起。'
         ),
-        seedRichParagraph([{ text: '材质下的样子', bold: true }]),
+        seedRichParagraph([{ text: '与材质无关', bold: true }]),
         seedParagraph(
-          '窗口材质开启（亚克力或云母）时，这枚详情浮层是半透明加毛玻璃，能隐约看到背后的内容；其它浮层仍是不透明。关闭材质后回到常规底色。'
+          '这枚详情浮层在所有材质下都保持不透明，与其它弹层一致：开启亚克力或云母不会让它变半透明，关闭材质后外观也不变。'
         ),
         seedRichParagraph([{ text: '注意', bold: true }]),
         seedBulletList([
