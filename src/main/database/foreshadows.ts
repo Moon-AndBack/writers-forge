@@ -296,8 +296,10 @@ export function updateForeshadow(id: number, patch: ForeshadowUpdatePatch): Fore
       sets.push('description_json = ?', 'description = ?')
       values.push(descriptionJson, descriptionJson === null ? '' : derivePlainText(descriptionJson))
     } else if (patch.description !== undefined) {
-      // 纯文本路径（旧接口）：只写摘要列，`description_json` 保持原值不动。
-      sets.push('description = ?')
+      // 纯文本路径（旧接口）：整体替换摘要列，并清空富文本真源——`description` 已被整体
+      // 替换，保留旧 JSON 会让读侧优先显示旧正文（与 `inspirations.updateInspiration`
+      // 的 `content_json = NULL` 同口径）。
+      sets.push('description = ?', 'description_json = NULL')
       values.push(patch.description)
     }
     if (patch.recoveryNote !== undefined) {

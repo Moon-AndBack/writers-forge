@@ -1,4 +1,5 @@
 import { getDb } from './index'
+import { derivePlainText, plainTextToDocJson } from './richText'
 import type { WorldAliasRow, WorldTagRow } from './worldEntityTypes'
 
 /**
@@ -73,20 +74,28 @@ export function getWorldText(entityId: number): WorldTextContent {
 /**
  * 写入实体正文（upsert，供 create / update 在事务内调用；不做存在性校验）。
  *
- * 两列**整体替换**：`body` 为派生纯文本摘要，`bodyJson` 为整条富文本 JSON；
- * 未提供的列按空串落库（调用方应成对传入，避免摘要与 JSON 不同步）。
+ * **补丁语义**：`body` 为派生纯文本摘要，`bodyJson` 为整条富文本 JSON；只给一列时
+ * 由另一列派生（`bodyJson` → `body` 用 `derivePlainText`，`body` → `bodyJson` 用
+ * `plainTextToDocJson`），不再把未提供的列写空。显式传入空串仍表示清空——派生的
+ * 另一列同样为空，保持两列同步。
  */
-export function writeWorldText(entityId: number, body: string, bodyJson = ''): void {
+export function writeWorldText(
+  entityId: number,
+  body: string | undefined,
+  bodyJson: string | undefined
+): void {
+  const resolvedBodyJson = bodyJson !== undefined ? bodyJson : plainTextToDocJson(body ?? '')
+  const resolvedBody = body !== undefined ? body : derivePlainText(resolvedBodyJson)
   getDb()
     .prepare(
       `INSERT INTO world_texts (entity_id, body, body_json) VALUES (?, ?, ?)
        ON CONFLICT(entity_id) DO UPDATE SET body = excluded.body, body_json = excluded.body_json`
     )
-    .run(entityId, body, bodyJson)
+    .run(entityId, resolvedBody, resolvedBodyJson)
 }
 
-/** 写入实体正文；实体不存在 / 已软删返回 false。 */
-export function saveWorldText(entityId: number, body: string, bodyJson = ''): boolean {
+/** 写入实体正文；实体不存在 / 已软删返回 false。`bodyJson` 缺省时由 `body` 派生。 */
+export function saveWorldText(entityId: number, body: string, bodyJson?: string): boolean {
   if (!isLiveEntity(entityId)) return false
   const db = getDb()
   db.transaction(() => {

@@ -1,6 +1,6 @@
 import { getDb } from '../index'
 import { NOW } from '../chapterGroups'
-import { derivePlainText, isEmptyRichDoc } from '../richText'
+import { derivePlainText, isEmptyRichDoc, isRichDocNode } from '../richText'
 import { OUTLINE_ITEM_COLUMNS, toOutlineItem } from './types'
 import type { OutlineItemDbRow, OutlineItemRow } from './types'
 
@@ -108,6 +108,8 @@ function isEmptyParagraphDoc(parsed: unknown): boolean {
  * 归一化待落库的 `contentJson`：
  * - `null` / 空白串 → `null`（清空正文）；
  * - 非空须为**合法 JSON**（`schema/outlineItems.ts` 的 `CHECK json_valid` 守卫，提前抛错给出清晰信息）；
+ * - 解析结果须为**文档节点**（`isRichDocNode`）：否则抛错，拒绝 `"null"` / `"[]"` /
+ *   `"{}"` / `"true"` 等「合法 JSON 但非文档」的输入；
  * - **空正文**（`text === ''` 且顶层全为**空段落**）→ 归 `null`（保持「空正文 = NULL」不变式）。
  */
 function normalizeContentJson(contentJson: string | null, text: string): string | null {
@@ -119,6 +121,9 @@ function normalizeContentJson(contentJson: string | null, text: string): string 
     parsed = JSON.parse(trimmed)
   } catch {
     throw new Error('saveOutlineContent: contentJson 非法 JSON')
+  }
+  if (!isRichDocNode(parsed)) {
+    throw new Error('saveOutlineContent: contentJson 非文档 JSON')
   }
   if (text === '' && isEmptyParagraphDoc(parsed)) return null
   return contentJson

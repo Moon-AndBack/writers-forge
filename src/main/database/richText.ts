@@ -42,6 +42,21 @@ function isEmptyParagraphNode(node: unknown): boolean {
 }
 
 /**
+ * 判定解析结果是否为**文档节点**：非 null 的普通对象、`type === 'doc'`，
+ * 且 `content` 存在时须为数组。
+ *
+ * 归一化入口据此拦截「合法 JSON 但不是文档」的输入（`"null"` / `"[]"` / `"{}"` /
+ * `"true"` 等）：这类值会被 {@link isEmptyRichDoc} 当作非空原样落库，而
+ * {@link derivePlainText} 派生空串，形成「JSON 非空、文本为空」的自相矛盾状态。
+ */
+export function isRichDocNode(parsed: unknown): boolean {
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return false
+  const { type, content } = parsed as { type?: unknown; content?: unknown }
+  if (type !== 'doc') return false
+  return content === undefined || Array.isArray(content)
+}
+
+/**
  * 判定「空正文」：解析出的 doc 顶层全为**空段落**（或无内容）。
  * 用于把编辑器空文档（`{type:'doc',content:[{type:'paragraph'}]}`）归一为 `NULL`。
  *
@@ -49,7 +64,7 @@ function isEmptyParagraphNode(node: unknown): boolean {
  * 「整条正文只插图不配字」时纯文本摘要为空串，若只按顶层块类型判定，会把这种正文
  * 误判为空正文并归一为 `NULL`，导致图片引用随保存被抹掉。
  *
- * 非法 JSON / 非对象 → 视为「非空」（保留原值，交由 JSON 校验拦截）。
+ * 非法 JSON / 非对象 → 视为「非空」（保留原值，交由归一化入口 `isRichDocNode` 拦截）。
  */
 export function isEmptyRichDoc(parsed: unknown): boolean {
   if (parsed === null || typeof parsed !== 'object') return false
@@ -64,6 +79,8 @@ export function isEmptyRichDoc(parsed: unknown): boolean {
  * 归一化待落库的富文本 JSON：
  * - `null` / 空白串 → `null`（清空正文）；
  * - 非空须为**合法 JSON**（非法提前抛错给出清晰信息，避免脏数据落库）；
+ * - 解析结果须为**文档节点**（{@link isRichDocNode}）：否则抛错，拒绝 `"null"` /
+ *   `"[]"` / `"{}"` / `"true"` 等「合法 JSON 但非文档」的输入；
  * - **空正文**（顶层全为空段落）→ 归 `null`（保持「空正文 = NULL」不变式）。
  */
 export function normalizeRichTextJson(contentJson: string | null): string | null {
@@ -75,6 +92,9 @@ export function normalizeRichTextJson(contentJson: string | null): string | null
     parsed = JSON.parse(trimmed)
   } catch {
     throw new Error('normalizeRichTextJson: contentJson 非法 JSON')
+  }
+  if (!isRichDocNode(parsed)) {
+    throw new Error('normalizeRichTextJson: contentJson 非文档 JSON')
   }
   if (isEmptyRichDoc(parsed)) return null
   return contentJson

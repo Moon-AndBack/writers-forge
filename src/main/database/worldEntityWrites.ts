@@ -168,7 +168,8 @@ export function createWorldEntity(input: CreateWorldEntityInput): WorldEntityDet
     if (input.aliases) replaceWorldAliases(id, input.aliases)
     if (input.tags) replaceWorldTags(id, input.tags)
     if (input.body !== undefined || input.bodyJson !== undefined) {
-      writeWorldText(id, input.body ?? '', input.bodyJson ?? '')
+      // 补丁语义：只给一列时由另一列派生（见 `writeWorldText`），不写空未提供的列。
+      writeWorldText(id, input.body, input.bodyJson)
     }
     return id
   })()
@@ -263,7 +264,8 @@ export function updateWorldEntity(
     if (patch.aliases !== undefined) replaceWorldAliases(id, patch.aliases)
     if (patch.tags !== undefined) replaceWorldTags(id, patch.tags)
     if (patch.body !== undefined || patch.bodyJson !== undefined) {
-      writeWorldText(id, patch.body ?? '', patch.bodyJson ?? '')
+      // 补丁语义：只给一列时由另一列派生（见 `writeWorldText`），不写空未提供的列。
+      writeWorldText(id, patch.body, patch.bodyJson)
     }
   })()
 

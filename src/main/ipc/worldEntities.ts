@@ -414,7 +414,10 @@ export function registerWorldEntitiesIpc(): void {
     (_event, id: unknown, body: unknown, bodyJson: unknown) => {
       if (!isPositiveInt(id) || !isTextWithinLimit(body)) return false
       if (bodyJson !== undefined && !isTextWithinLimit(bodyJson)) return false
-      return runWrite('worldEntity:saveText', { id }, () => saveWorldText(id, body, bodyJson ?? ''))
+      // 未传 `bodyJson` 时交由数据层由 `body` 派生，不再默认写空串清空富文本真源。
+      return runWrite('worldEntity:saveText', { id }, () =>
+        saveWorldText(id, body, bodyJson as string | undefined)
+      )
     }
   )
 
