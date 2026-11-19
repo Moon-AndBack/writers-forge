@@ -112,16 +112,38 @@ export default function WritingSessionStats() {
     popupRef.current = node
   }, [])
 
-  /** 把固定坐标限制在窗口可视区内（拖出边界 / 窗口缩小后回 clamp）。 */
-  const clampPosition = useCallback((left: number, top: number): DragPosition => {
-    const node = popupRef.current
-    const width = node?.offsetWidth ?? 0
-    const height = node?.offsetHeight ?? 0
+  /**
+   * 内容区上下沿（视口坐标）：上沿 = 标题栏底边，下沿 = 状态栏顶边。
+   *
+   * 按实际元素位置实测，而非把 CSS 高度（shell.css `.titlebar` 42px、
+   * statusbar.css `.statusbar` 36px）复制进 TS：窗口布局 / 高度调整时自动跟随。
+   * 元素缺失时回退到视口顶 / 底，等价于改动前的整视口边界。
+   */
+  const measureContentArea = useCallback((): { top: number; bottom: number } => {
+    const titlebar = document.querySelector('.titlebar')
+    const statusbar = document.querySelector('.statusbar')
     return {
-      left: Math.min(Math.max(0, left), Math.max(0, window.innerWidth - width)),
-      top: Math.min(Math.max(0, top), Math.max(0, window.innerHeight - height))
+      top: titlebar?.getBoundingClientRect().bottom ?? 0,
+      bottom: statusbar?.getBoundingClientRect().top ?? window.innerHeight
     }
   }, [])
+
+  /** 把固定坐标限制在窗口内容区内（避开标题栏 / 状态栏；拖出边界 / 窗口缩小后回 clamp）。 */
+  const clampPosition = useCallback(
+    (left: number, top: number): DragPosition => {
+      const node = popupRef.current
+      const width = node?.offsetWidth ?? 0
+      const height = node?.offsetHeight ?? 0
+      const area = measureContentArea()
+      return {
+        left: Math.min(Math.max(0, left), Math.max(0, window.innerWidth - width)),
+        // 可用高度不足弹窗高度（极端窄窗）时贴内容区上沿：标题区仍可见可拖，
+        // 宁可溢出内容区底部，也不让浮层整体没入标题栏。
+        top: Math.min(Math.max(area.top, top), Math.max(area.top, area.bottom - height))
+      }
+    },
+    [measureContentArea]
+  )
 
   /**
    * 读取弹层「跟随锚点」时的自然坐标：临时清空 fixed 内联定位，量完立即还原。
