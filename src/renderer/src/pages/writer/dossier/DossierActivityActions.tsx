@@ -1,12 +1,21 @@
+/**
+ * 设定档案五域标题栏动作：经模块级 action 插槽注册，由外壳标题栏按当前活动域渲染。
+ * 顺序：组首 ｜（势力：[卡片 / 架构] ｜）新建{模块名} ｜ 筛选行；组首线、两态与
+ * `leadingSeparator={false}` 的防双线由 `ModuleActivityActions` 统一处理。
+ *
+ * 势力的视图切换（`view`）编辑态与非编辑态**都保留**，否则点进正文后无法切视图；
+ * 切换器自带尾随竖线。编辑态为 `RichTextToolbar`（正文手动保存，无保存入口）。
+ *
+ * 注：竖线为纯装饰，教学书种子（`seedGuideBook/`）无需同步。
+ */
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { IconButton, Segmented } from '../../../components/ui'
+import { Segmented } from '../../../components/ui'
 import { useModuleLabel } from '../../../shell/activityBarModules'
 import { useSetActivityActions } from '../../../shell/activityActions'
 import { EditorActionSep } from '../../../components/editor/EditorActionGroup'
-import { RichTextToolbar } from '../../../components/editor/RichTextToolbar'
 import { useRichTextEditor } from '../../../components/editor/richTextEditorContext'
-import { PlusIcon } from '../icons'
+import ModuleActivityActions from '../ModuleActivityActions'
 import DossierFilterRow from './DossierFilterRow'
 import type { DossierModule } from './dossierTree'
 
@@ -25,36 +34,6 @@ export interface DossierActivityActionsProps {
   view?: DossierViewSwitch
 }
 
-/**
- * 设定档案五域标题栏操作按钮组：经模块级 action 插槽（`useSetActivityActions`）注册，
- * 由外壳标题栏在当前活动模块为该域时渲染（位置：返回书架图标右侧，与章节 / 剧情一致）。
- *
- * 动作组顺序（左 → 右；11 个写作模块统一以**组首竖线**开头，与左侧书名分隔）：
- * 组首 ｜（势力：[卡片 / 架构] ｜）新建{{模块名}} ｜ 标题栏筛选行（`DossierFilterRow`：
- * 分类下拉 + 搜索，境界体系只有搜索）。
- *
- * 势力模块的「卡片 / 架构」切换紧随组首竖线、排在所有动作之前（`view`），编辑态与非编辑态
- * **都保留**——否则点进正文后切换器消失，必须先失焦才能切视图。
- *
- * 按右栏正文编辑器的聚焦态（`useRichTextEditor('dossier').editing`，真源在
- * `Writer.tsx`、由 `DossierBodyEditor` 上报）**两态切换**：
- * - **未编辑**：「新建{{模块名}}」加号按钮（点击弹 `DossierCreateDialog` 落库）
- *   ＋竖分隔线＋标题栏筛选行；
- * - **聚焦编辑中**：富文本工具栏（`RichTextToolbar`，与剧情正文 / 大纲同一套组件）——
- *   撤销 · 重做 ｜ 行内格式 ｜ 标题 · 段落 · 表格 · 链接 · 图片 ｜ 清除格式。
- *   正文保存为手动保存（右栏底部「保存」按钮），工具栏不含保存入口。
- *   工具栏传 `leadingSeparator={false}`：组首线已由本节点给出、势力段控后亦有一条，
- *   否则编辑态会出现两条紧邻竖线。
- *
- * 注：竖线为纯装饰，不构成功能变更，教学书种子（`seedGuideBook/`）无需同步。
- *
- * 编辑器实例与聚焦态经通用注册表 `components/editor/richTextEditorContext` 中转：
- * `editor` 在右栏 `DossierBodyEditor` 内创建、本组件在中栏子树，二者需共同祖先
- * （`Writer.tsx` 的 `RichTextEditorProvider`）——与剧情线同一机制（§9）。
- *
- * ⚠️ 选区保持：`RichTextToolbar` 容器 `onMouseDown` 统一 `preventDefault`——否则点击任一
- * 按钮会先使正文失焦 → `editing` 转 false → 工具栏在 click 派发前卸载，命令无从执行。
- */
 export default function DossierActivityActions({
   module,
   onCreate,
@@ -66,7 +45,7 @@ export default function DossierActivityActions({
   const { editor, editing, bookId } = useRichTextEditor('dossier')
 
   const node = useMemo(() => {
-    /* 视图切换器：仅势力模块，紧随组首竖线、排在所有动作之前；后接竖分隔线。 */
+    /* 视图切换器：仅势力模块，紧随组首竖线、排在所有动作之前；自带尾随竖线。 */
     const viewSwitch =
       view !== undefined ? (
         <>
@@ -87,36 +66,15 @@ export default function DossierActivityActions({
       ) : null
 
     return (
-      <>
-        {/* 组首竖线：与左侧书名分隔；写作模块标题栏动作组统一以此线开头。 */}
-        <EditorActionSep />
-        {viewSwitch}
-        {editing ? (
-          /* 聚焦编辑：富文本工具栏（容器 onMouseDown 阻止默认，保正文选区 / 聚焦）；
-             组首线已由本节点给出，工具栏不再重复，避免编辑态出现双线。 */
-          <RichTextToolbar
-            editor={editor}
-            bookId={bookId}
-            className="tb-editor-actions"
-            leadingSeparator={false}
-          />
-        ) : (
-          /* 未编辑：「新建」加号 ｜ 筛选行（分类 + 搜索）；势力视图切换已在行首。 */
-          <>
-            <IconButton
-              className="tb-action"
-              label={t('createAction', { module: moduleLabel })}
-              tooltip={t('createAction', { module: moduleLabel })}
-              tooltipPlacement="bottom"
-              onClick={onCreate}
-            >
-              <PlusIcon />
-            </IconButton>
-            <EditorActionSep />
-            <DossierFilterRow module={module} />
-          </>
-        )}
-      </>
+      <ModuleActivityActions
+        createLabel={t('createAction', { module: moduleLabel })}
+        onCreate={onCreate}
+        leading={viewSwitch}
+        filterRow={<DossierFilterRow module={module} />}
+        editor={editor}
+        bookId={bookId}
+        editing={editing}
+      />
     )
   }, [editing, editor, bookId, module, onCreate, t, moduleLabel, view])
 
