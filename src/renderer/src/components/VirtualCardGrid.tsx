@@ -196,6 +196,11 @@ export function VirtualCardGrid<T>({
   // 焦点所在行：行滚出可视范围时仍保留挂载，避免键盘焦点随卸载掉回 body。
   const [focusPin, setFocusPin] = useState<{ index: number; key: string } | null>(null)
   const lastWidthRef = useRef(0)
+  // 已播放过进场动画的卡片 key：行滚出视口时登记，滚回视口时跳过重播。
+  // 卡片数量受单库数据量约束，集合随组件实例存续，不做清理 / 上限。
+  const [playedKeys, setPlayedKeys] = useState<ReadonlySet<string | number>>(() => new Set())
+  // 上一次提交仍在虚拟行里的卡片 key：用于判定本帧哪些卡片滚出了视口。
+  const mountedKeysRef = useRef<ReadonlySet<string | number>>(new Set())
 
   const handleFocus = useCallback((event: ReactFocusEvent<HTMLDivElement>): void => {
     const row = (event.target as HTMLElement).closest<HTMLElement>('[data-index]')
@@ -355,6 +360,32 @@ export function VirtualCardGrid<T>({
   const rulerSpan = Math.min(Math.max(items.length, 1), MAX_RULER_SPAN)
   const virtualRows = virtualizer.getVirtualItems()
 
+  // 进场记账：本帧仍渲染在虚拟行里的 key 视为「挂载中」；上一次存在、这一次消失的
+  // key 已播放过进场，记下来供滚回视口时抑制重播。只登记「离开」的 key，挂载期间
+  // 行属性不变，避免动画进行到一半被撤销。依赖里的数组 / 回调每次渲染都是新值，
+  // 实际等价于每次提交比对一遍可见行（可见行数量有限，开销可忽略）。
+  useLayoutEffect(() => {
+    const current = new Set<string | number>()
+    for (const row of virtualRows) {
+      const startIndex = row.index * trackCount
+      for (const item of items.slice(startIndex, startIndex + trackCount)) {
+        current.add(getKey(item))
+      }
+    }
+    const departed: (string | number)[] = []
+    for (const key of mountedKeysRef.current) {
+      if (!current.has(key)) departed.push(key)
+    }
+    mountedKeysRef.current = current
+    if (departed.length === 0) return
+    setPlayedKeys((prev) => {
+      if (departed.every((key) => prev.has(key))) return prev
+      const next = new Set(prev)
+      for (const key of departed) next.add(key)
+      return next
+    })
+  }, [virtualRows, trackCount, items, getKey])
+
   return (
     <div
       {...gridProps}
@@ -368,6 +399,10 @@ export function VirtualCardGrid<T>({
         const startIndex = virtualRow.index * trackCount
         const rowItems = items.slice(startIndex, startIndex + trackCount)
         const rowTracks = multiRow ? tracks : tracks.slice(0, rowItems.length)
+        // 本行卡片都播放过进场（从视口外滚回）→ 标 off，由卡片 CSS 跳过重播；
+        // 行内仍有首次出现的卡片时不标，保持原进场动画。
+        const enterOff =
+          rowItems.length > 0 && rowItems.every((item) => playedKeys.has(getKey(item)))
         const rowStyle: CSSProperties = {
           position: 'absolute',
           top: paddingTop + centerOffset + (virtualRow.start - scrollMargin),
@@ -385,6 +420,7 @@ export function VirtualCardGrid<T>({
             key={virtualRow.key}
             data-index={virtualRow.index}
             data-row-key={String(virtualRow.key)}
+            data-enter={enterOff ? 'off' : undefined}
             ref={virtualizer.measureElement}
             className={className}
             style={rowStyle}

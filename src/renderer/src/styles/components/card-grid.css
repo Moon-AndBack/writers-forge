@@ -20,3 +20,11 @@
   gap: 12px;
   justify-content: start;
 }
+
+/* 虚拟网格滚回视口：`VirtualCardGrid` 给已全部播放过进场的行容器标 `data-enter="off"`，
+   本行卡片跳过进场重播；首次出现 / 新建的卡片不标记，仍按各卡片的 `wf-enter-up` 进场
+   （记账见 components/VirtualCardGrid.tsx）。书籍卡不在 `.wf-card-grid` 内，一并覆盖。 */
+[data-enter='off'] > .wf-entity-card,
+[data-enter='off'] > .book-card {
+  animation: none;
+}

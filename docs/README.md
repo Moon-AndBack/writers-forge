@@ -35,6 +35,7 @@
 | [`specs/database/table-layers.md`](./specs/database/table-layers.md)   | 49 张表的分层规范                                                              |
 | [`specs/world-library.md`](./specs/world-library.md)                   | 五类实体统一设定库、23 条子类预设、4 个关系语义码                              |
 | [`integrations/ai-and-onedrive.md`](./integrations/ai-and-onedrive.md) | AI 服务商接入与 OneDrive 备份                                                  |
+| [`seed-changelog/README.md`](./seed-changelog/README.md)               | 教学书种子变更日志：v3 → v169 六个区间文件、维护规则与升版流程                 |
 
 ## 阅读路径
 
