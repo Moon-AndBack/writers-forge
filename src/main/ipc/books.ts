@@ -18,7 +18,9 @@ import type {
   UpdateBookPatch
 } from '../database/books'
 import { listCategories } from '../database/categories'
-import { deleteCover, getCover, setCover } from '../database/covers'
+import { deleteCover, getCover, getCoverDisplay, setCover, setCoverThumb } from '../database/covers'
+import type { CoverThumbInput } from '../database/covers'
+import { isThumbMime, MAX_THUMB_BYTES } from '../database/images'
 
 /** 书籍域日志 scope。 */
 const log = logger.scope('books')
@@ -174,6 +176,14 @@ function toBuffer(data: unknown): Buffer | null {
   return null
 }
 
+/** 封面缩略图入参 → `CoverThumbInput`；非法返回 null（mime webp / png、≤ 512 KB）。 */
+function readCoverThumb(input: unknown): CoverThumbInput | null {
+  if (!isRecord(input) || !isThumbMime(input.mime)) return null
+  const data = toBuffer(input.data)
+  if (!data || data.byteLength === 0 || data.byteLength > MAX_THUMB_BYTES) return null
+  return { mime: input.mime, data }
+}
+
 /** 书籍域 IPC：通道前缀 `books:` / `books:cover:`。 */
 export function registerBooksIpc(): void {
   ipcMain.handle('books:list', () => listBooks())
@@ -238,20 +248,59 @@ export function registerBooksIpc(): void {
     return { mime: cover.mime, data: new Uint8Array(cover.data) }
   })
 
-  ipcMain.handle('books:cover:set', (_event, bookId: unknown, mime: unknown, data: unknown) => {
-    if (typeof bookId !== 'string' || typeof mime !== 'string') return false
-    const buffer = toBuffer(data)
-    if (!buffer) {
-      log.warn('books:cover:set 封面数据非法', { bookId, mime })
+  ipcMain.handle('books:cover:getDisplay', (_event, bookId: unknown) => {
+    if (typeof bookId !== 'string') return null
+    const display = getCoverDisplay(bookId)
+    if (!display) return null
+    // 有缩略图返回缩略图，否则回退原图；`kind` 供渲染层判断是否回填。
+    return { ...display, data: new Uint8Array(display.data) }
+  })
+
+  ipcMain.handle(
+    'books:cover:set',
+    (_event, bookId: unknown, mime: unknown, data: unknown, thumb: unknown) => {
+      if (typeof bookId !== 'string' || typeof mime !== 'string') return false
+      const buffer = toBuffer(data)
+      if (!buffer) {
+        log.warn('books:cover:set 封面数据非法', { bookId, mime })
+        return false
+      }
+      const thumbInput = thumb === undefined ? undefined : readCoverThumb(thumb)
+      if (thumbInput === null) {
+        log.warn('books:cover:set 缩略图非法', { bookId, mime })
+        return false
+      }
+      try {
+        setCover(bookId, mime, buffer, thumbInput)
+        // 仅记录长度，不记录二进制内容。
+        log.debug('books:cover:set 成功', {
+          bookId,
+          mime,
+          bytes: buffer.byteLength,
+          thumbBytes: thumbInput?.data.byteLength
+        })
+        return true
+      } catch (error) {
+        log.error('books:cover:set 失败', { bookId, mime, bytes: buffer.byteLength, error })
+        throw error
+      }
+    }
+  )
+
+  ipcMain.handle('books:cover:setThumb', (_event, bookId: unknown, thumb: unknown) => {
+    if (typeof bookId !== 'string' || bookId === '') return false
+    const parsed = readCoverThumb(thumb)
+    if (!parsed) {
+      log.warn('books:cover:setThumb 缩略图非法', { bookId })
       return false
     }
     try {
-      setCover(bookId, mime, buffer)
-      // 仅记录长度，不记录二进制内容。
-      log.debug('books:cover:set 成功', { bookId, mime, bytes: buffer.byteLength })
-      return true
+      const ok = setCoverThumb(bookId, parsed)
+      if (ok) log.debug('books:cover:setThumb 成功', { bookId, bytes: parsed.data.byteLength })
+      else log.debug('books:cover:setThumb 已存在，跳过', { bookId })
+      return ok
     } catch (error) {
-      log.error('books:cover:set 失败', { bookId, mime, bytes: buffer.byteLength, error })
+      log.error('books:cover:setThumb 失败', { bookId, bytes: parsed.data.byteLength, error })
       throw error
     }
   })

@@ -123,6 +123,18 @@ export function getDb(): Database.Database {
       FOREIGN KEY (bookId) REFERENCES books(id) ON DELETE CASCADE
     )
   `)
+  // 封面缩略图缓存：主键 book_id 一对一挂书（不挂 book_covers——后者会被整行 UPSERT /
+  // 删除，改用书籍外键级联更稳）。宽高不入库：封面按容器裁切显示，无需原图尺寸。
+  instance.exec(`
+    CREATE TABLE IF NOT EXISTS book_cover_thumbs (
+      book_id TEXT PRIMARY KEY,
+      mime TEXT NOT NULL,
+      bytes INTEGER NOT NULL,
+      data BLOB NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+    )
+  `)
 
   // books 为空时灌入样例数据（幂等，且使用固定 id 便于与原型对齐）
   db = instance

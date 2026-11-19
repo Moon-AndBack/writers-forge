@@ -6,7 +6,7 @@
  *
  * ⚠️ **维护义务**：任何 DDL 改动（`database/index.ts` 与 `database/schema/*.ts`）**必须**
  * 同步本文件，否则自检会对正常的新库误报 `structure.*`。清单与 DDL 逐字对应：
- * - `settings` / `books` / `book_covers` → `database/index.ts`
+ * - `settings` / `books` / `book_covers` / `book_cover_thumbs` → `database/index.ts`
  * - `volumes` / `chapters` → `schema/chapters.ts`
  * - `paragraphs` → `schema/paragraphs.ts`
  * - `outline_items` → `schema/outlineItems.ts`
@@ -16,7 +16,7 @@
  * - `plot_lines` / `plot_scenes` / `plot_scene_world_entities` → `schema/plot.ts`
  * - `daily_stats` → `schema/dailyStats.ts`
  * - `categories` → `schema/categories.ts`
- * - `images` → `schema/images.ts`
+ * - `images` / `image_thumbs`（图片 + 缩略图缓存）→ `schema/images.ts`
  * - `chip_colors`（胶囊配色，全局、无外键）→ `schema/chipColors.ts`
  * - `ai_chat_sessions` / `ai_chat_messages`（AI 对话会话 / 多轮消息；会话按书归属，
  *   消息的 `chapter_id` 为纯来源标记）→ `schema/aiChat.ts`
@@ -101,6 +101,10 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
   {
     name: 'book_covers',
     columns: ['bookId', 'mime', 'data', 'updatedAt']
+  },
+  {
+    name: 'book_cover_thumbs',
+    columns: ['book_id', 'mime', 'bytes', 'data', 'created_at']
   },
   {
     name: 'volumes',
@@ -275,6 +279,10 @@ export const EXPECTED_TABLES: readonly ExpectedTable[] = [
   {
     name: 'images',
     columns: ['id', 'book_id', 'mime', 'bytes', 'data', 'created_at']
+  },
+  {
+    name: 'image_thumbs',
+    columns: ['image_id', 'mime', 'bytes', 'width', 'height', 'data', 'created_at']
   },
   // 胶囊配色（全局配置表，无外键）：见 `schema/chipColors.ts`
   {

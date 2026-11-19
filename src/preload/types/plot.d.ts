@@ -51,3 +51,17 @@ export interface CoverPayload {
   mime: string
   data: Uint8Array
 }
+
+/** 封面缩略图写入入参：`data` 跨 IPC 为 Uint8Array。 */
+export interface CoverThumbInput {
+  mime: string
+  data: Uint8Array
+}
+
+/** 封面取图结果：`kind='thumb'` 命中缩略图，`kind='original'` 为原图回退（待回填）。 */
+export interface CoverDisplayPayload {
+  kind: 'thumb' | 'original'
+  mime: string
+  bytes: number
+  data: Uint8Array
+}

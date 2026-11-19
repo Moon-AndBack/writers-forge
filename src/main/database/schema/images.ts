@@ -14,6 +14,10 @@ import type Database from 'better-sqlite3'
  * - **无软删除 / 无回收站**：图片是「被正文引用的资源」而非用户可见实体，
  *   删除走物理删除（本批暂无 GC，悬空 id 由正文渲染层容忍为缺图占位）；
  * - 幂等建表（`CREATE ... IF NOT EXISTS`），老库在 `getDb()` 首次打开时补齐，无数据回填。
+ *
+ * 另含 `image_thumbs`（取图用缩略图缓存）：主键 `image_id` 一对一挂原图，外键
+ * ON DELETE CASCADE（删图即删缩略图）；`width` / `height` 记录**原图**像素尺寸，
+ * 供渲染层在缩略图加载前先按真实比例排版。零迁移（幂等建表，老库首次打开自动补齐）。
  */
 export function createImagesSchema(db: Database.Database): void {
   db.exec(`
@@ -30,4 +34,17 @@ export function createImagesSchema(db: Database.Database): void {
 
   // 索引：按书取图片列表（回收 / 审计用）；正文按 id 逐张取，走主键。
   db.exec('CREATE INDEX IF NOT EXISTS idx_images_book ON images(book_id, id)')
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS image_thumbs (
+      image_id INTEGER PRIMARY KEY,
+      mime TEXT NOT NULL,
+      bytes INTEGER NOT NULL,
+      width INTEGER NOT NULL,
+      height INTEGER NOT NULL,
+      data BLOB NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE
+    )
+  `)
 }

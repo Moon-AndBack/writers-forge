@@ -37,7 +37,9 @@ import type {
   VolumeRow
 } from './database'
 import type {
+  CoverDisplayPayload,
   CoverPayload,
+  CoverThumbInput,
   CreatePlotLineOptions,
   CreatePlotSceneInput,
   PlotLineRow,
@@ -74,7 +76,7 @@ import type { CleanWordsApi } from './cleanWords'
 import type { OneDriveApi } from './onedrive'
 import type { BackupApi } from './backup'
 import type { AiApi } from './ai'
-import type { ImagePayload, ImageRow } from './images'
+import type { ImageDisplayPayload, ImagePayload, ImageRow, ImageThumbInput } from './images'
 import type {
   BookRefRow,
   CreateWorldEntityInput,
@@ -149,8 +151,17 @@ export interface Api {
     statsAll: () => Promise<Record<string, BookStats>>
     cover: {
       get: (bookId: string) => Promise<CoverPayload | null>
-      /** data 传 Uint8Array / ArrayBuffer，主进程存为 BLOB */
-      set: (bookId: string, mime: string, data: Uint8Array) => Promise<boolean>
+      /** 取封面：有缩略图返回缩略图，否则原图；`kind='original'` 即待回填信号 */
+      getDisplay: (bookId: string) => Promise<CoverDisplayPayload | null>
+      /** data 传 Uint8Array / ArrayBuffer，主进程存为 BLOB；thumb 可选，同事务写入 */
+      set: (
+        bookId: string,
+        mime: string,
+        data: Uint8Array,
+        thumb?: CoverThumbInput
+      ) => Promise<boolean>
+      /** 写入封面缩略图；已存在不覆盖（幂等），实际写入才为 true */
+      setThumb: (bookId: string, thumb: CoverThumbInput) => Promise<boolean>
       delete: (bookId: string) => Promise<boolean>
     }
   }
@@ -281,9 +292,18 @@ export interface Api {
   /** 图片域：大纲正文内嵌图片的二进制资源（按书隔离，删书级联删除） */
   images: {
     /** 写入一张图片（`bookId` = 归属书）；mime 白名单 / 20 MB 上限非法 → null */
-    create: (bookId: string, mime: string, data: Uint8Array) => Promise<ImageRow | null>
-    /** 按 id 取图片二进制（`data` 为 Uint8Array）；不存在 → null */
+    create: (
+      bookId: string,
+      mime: string,
+      data: Uint8Array,
+      thumb?: ImageThumbInput
+    ) => Promise<ImageRow | null>
+    /** 按 id 取图片**原图**二进制（`data` 为 Uint8Array）；不存在 → null */
     get: (id: number) => Promise<ImagePayload | null>
+    /** 取图：有缩略图返回缩略图，否则原图；`kind='original'` 即待回填信号 */
+    getDisplay: (id: number) => Promise<ImageDisplayPayload | null>
+    /** 写入缩略图；`INSERT OR IGNORE` 已存在不覆盖，实际写入才为 true */
+    setThumb: (id: number, thumb: ImageThumbInput) => Promise<boolean>
     /** 物理删除图片；不清理正文内引用（悬空 id 由正文按缺图占位容忍） */
     delete: (id: number) => Promise<boolean>
   }

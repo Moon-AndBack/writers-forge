@@ -65,8 +65,14 @@ import type { EntityMatch } from '../main/match/entityMatcher'
 import type { SnapConfig, SnapStatus } from '../main/resizeSnap'
 import type { ParagraphRow } from '../main/database/paragraphs'
 import type { BookStats } from '../main/database/stats'
-import type { ImagePayload, ImageRow } from './types/images'
-import type { CoverPayload, TitleBarOverlayOptions, WindowMaterial } from './types/plot'
+import type { ImageDisplayPayload, ImagePayload, ImageRow, ImageThumbInput } from './types/images'
+import type {
+  CoverDisplayPayload,
+  CoverPayload,
+  CoverThumbInput,
+  TitleBarOverlayOptions,
+  WindowMaterial
+} from './types/plot'
 import type { Api } from './types/window'
 import { worldEntityApi } from './api/worldEntity'
 import { worldSubtypeApi } from './api/worldSubtype'
@@ -114,9 +120,19 @@ const api = {
     cover: {
       get: (bookId: string): Promise<CoverPayload | null> =>
         ipcRenderer.invoke('books:cover:get', bookId),
-      /** data 传 Uint8Array / ArrayBuffer，主进程存为 BLOB */
-      set: (bookId: string, mime: string, data: Uint8Array): Promise<boolean> =>
-        ipcRenderer.invoke('books:cover:set', bookId, mime, data),
+      /** 取封面：有缩略图返回缩略图，否则原图；`kind='original'` 即待回填信号 */
+      getDisplay: (bookId: string): Promise<CoverDisplayPayload | null> =>
+        ipcRenderer.invoke('books:cover:getDisplay', bookId),
+      /** data 传 Uint8Array / ArrayBuffer，主进程存为 BLOB；thumb 可选，同事务写入 */
+      set: (
+        bookId: string,
+        mime: string,
+        data: Uint8Array,
+        thumb?: CoverThumbInput
+      ): Promise<boolean> => ipcRenderer.invoke('books:cover:set', bookId, mime, data, thumb),
+      /** 写入封面缩略图；已存在不覆盖（幂等），实际写入才为 true */
+      setThumb: (bookId: string, thumb: CoverThumbInput): Promise<boolean> =>
+        ipcRenderer.invoke('books:cover:setThumb', bookId, thumb),
       delete: (bookId: string): Promise<boolean> => ipcRenderer.invoke('books:cover:delete', bookId)
     }
   },
@@ -216,10 +232,20 @@ const api = {
   /** 图片域：大纲正文内嵌图片的二进制资源（按书隔离，删书级联删除） */
   images: {
     /** 写入一张图片（`bookId` = 归属书）；mime 白名单 / 20 MB 上限非法 → null */
-    create: (bookId: string, mime: string, data: Uint8Array): Promise<ImageRow | null> =>
-      ipcRenderer.invoke('images:create', bookId, mime, data),
-    /** 按 id 取图片二进制（`data` 为 Uint8Array）；不存在 → null */
+    create: (
+      bookId: string,
+      mime: string,
+      data: Uint8Array,
+      thumb?: ImageThumbInput
+    ): Promise<ImageRow | null> => ipcRenderer.invoke('images:create', bookId, mime, data, thumb),
+    /** 按 id 取图片**原图**二进制（`data` 为 Uint8Array）；不存在 → null */
     get: (id: number): Promise<ImagePayload | null> => ipcRenderer.invoke('images:get', id),
+    /** 取图：有缩略图返回缩略图，否则原图；`kind='original'` 即待回填信号 */
+    getDisplay: (id: number): Promise<ImageDisplayPayload | null> =>
+      ipcRenderer.invoke('images:getDisplay', id),
+    /** 写入缩略图；`INSERT OR IGNORE` 已存在不覆盖，实际写入才为 true */
+    setThumb: (id: number, thumb: ImageThumbInput): Promise<boolean> =>
+      ipcRenderer.invoke('images:setThumb', id, thumb),
     /** 物理删除图片；不清理正文内引用（悬空 id 由正文按缺图占位容忍） */
     delete: (id: number): Promise<boolean> => ipcRenderer.invoke('images:delete', id)
   },
