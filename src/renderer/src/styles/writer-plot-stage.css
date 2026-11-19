@@ -30,9 +30,10 @@
   margin-inline: auto;
 }
 
-/* 中栏滚动区全局为 `scrollbar-gutter: stable`，槽只占右侧 12px，使滚动内容盒的
-   中心比中栏中心左移 6px（上批观测到的 6px 偏差即此）。改为两侧各留一槽后内容盒
-   回到中栏正中，`margin-inline: auto` 的块中心才与中栏中心重合——卡片居中因此以
+/* 中栏滚动区全局为 `scrollbar-gutter: stable`（设定五域 / 伏笔 / 灵感按需占宽，
+   不影响本视图），槽只占右侧 12px，使滚动内容盒的中心比中栏中心左移 6px
+   （上批观测到的 6px 偏差即此）。改为两侧各留一槽后内容盒回到中栏正中，
+   `margin-inline: auto` 的块中心才与中栏中心重合——卡片居中因此以
    中栏为准，而不是以偏移过的滚动内容盒为准。 */
 .ep-view[data-view='plot'] .editor-scroll {
   scrollbar-gutter: stable both-edges;

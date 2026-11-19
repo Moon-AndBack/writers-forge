@@ -352,9 +352,26 @@ body.is-resizing .splitter {
   /* 常驻滚动条槽：内容高度跨过一屏时纵向滚动条的显隐会让内容宽 ±12px，
      在定值轨道网格的列数阈值附近可能再触发一次列数 / 居中位移。章节视图本就
      已单独启用（writer-editor-head.css），此处统一到全部模块视图，消除该类
-     宽度反馈。代价：无滚动条的视图版心永久窄 12px（与章节视图一致）。 */
+     宽度反馈。代价：无滚动条的视图版心永久窄 12px（与章节视图一致）。
+     例外：设定五域 / 伏笔 / 灵感按需占宽，见随后的 data-module 规则。 */
   scrollbar-gutter: stable;
   padding: 20px 0 44px;
+}
+
+/* 设定五域 / 伏笔 / 灵感按需占宽：无滚动条时不预留槽；章节 / 大纲 / 剧情 / 时间线
+   仍沿用上方 `stable`（正文与定值轨道网格对宽度变化敏感，避免列数 / 居中重排）。
+   代价：滚动条显隐瞬间内容盒宽 ±12px，居中内容横向位移 6px。 */
+.editor-pane:is(
+    [data-module='worldview'],
+    [data-module='characters'],
+    [data-module='factions'],
+    [data-module='power_system'],
+    [data-module='items'],
+    [data-module='foreshadow'],
+    [data-module='inspiration']
+  )
+  .editor-scroll {
+  scrollbar-gutter: auto;
 }
 
 /* 正文滚动区（章节视图）：上下对称留白 20px（> 14px 渐隐带），
