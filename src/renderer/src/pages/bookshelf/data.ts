@@ -60,14 +60,21 @@ export const STATUS_META: Record<BookStatus, StatusMeta> = {
   revising: { labelKey: 'status.revising' }
 }
 
-/** 书架统计（骨架：书数由数据推导，数值来自实时统计）。 */
+/**
+ * 书架统计（骨架：书数由数据推导，数值来自实时统计）。
+ *
+ * 数值为 `null` 表示**统计从未成功取到**（首读未返回 / IPC 失败），与「成功且真实为 0」
+ * 严格区分。三个字段同源（`stats:todayWords` / `stats:streakDays` / `stats:bookStatsAll`
+ * 经同一个 `Promise.all` 获取）：要么一起为数值，要么一起为 `null`。成功过一次后若刷新
+ * 失败，调用方保留上次的值，不回退 `null`。
+ */
 export interface ShelfStats {
-  /** 累计字数（全书真实有效字数） */
-  words: number
-  /** 今日写作字数 */
-  today: number
-  /** 连续写作天数 */
-  streak: number
+  /** 累计字数（全书真实有效字数）；`null` = 统计未取到 */
+  words: number | null
+  /** 今日写作字数；`null` = 统计未取到 */
+  today: number | null
+  /** 连续写作天数；`null` = 统计未取到 */
+  streak: number | null
 }
 
 /** 单本书真实统计（镜像主进程 BookStats，`api.stats.bookStatsAll` 的元素）。 */

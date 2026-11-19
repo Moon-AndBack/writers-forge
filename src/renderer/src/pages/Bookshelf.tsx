@@ -23,6 +23,7 @@ import {
   formatStatWords,
   mergeBookStats,
   sortBooks,
+  STATS_PLACEHOLDER,
   type Book,
   type ShelfFilter,
   type ShelfSort
@@ -285,8 +286,13 @@ export default function Bookshelf() {
 
   // 统计移入外壳状态栏：左侧书数（基于数据库行数），右侧累计字数 / 今日写作 / 连续写作。
   // 文案含 <b> 标记（数值加粗），经 `Trans` + `components={{ b: <b /> }}` 渲染以保留内联结构。
-  const statusSlots = useMemo(
-    () => ({
+  // 统计未取到（`null`）：累计字数模板无单位后缀，直接显示 `—` 与「0 万字」区分；
+  // 今日 / 连续模板内嵌单位（「— 字」/「— -day streak」），占位会与单位拼成病句，故整段隐藏。
+  // 曾成功取到则保留上次的值（数据层不回退 `null`），此处无需额外分支。
+  const statusSlots = useMemo(() => {
+    const totalWords =
+      shelfStats.words === null ? STATS_PLACEHOLDER : formatStatWords(t, shelfStats.words)
+    return {
       left: (
         <span className="st-item st-meta">
           <Trans
@@ -303,31 +309,34 @@ export default function Bookshelf() {
             <Trans
               i18nKey="status.totalWords"
               ns="bookshelf"
-              values={{ value: formatStatWords(t, shelfStats.words) }}
+              values={{ value: totalWords }}
               components={{ b: <b /> }}
             />
           </span>
-          <span className="st-item st-meta">
-            <Trans
-              i18nKey="status.todayWords"
-              ns="bookshelf"
-              values={{ value: formatNumber(shelfStats.today) }}
-              components={{ b: <b /> }}
-            />
-          </span>
-          <span className="st-item st-meta">
-            <Trans
-              i18nKey="status.streak"
-              ns="bookshelf"
-              count={shelfStats.streak}
-              components={{ b: <b /> }}
-            />
-          </span>
+          {shelfStats.today === null ? null : (
+            <span className="st-item st-meta">
+              <Trans
+                i18nKey="status.todayWords"
+                ns="bookshelf"
+                values={{ value: formatNumber(shelfStats.today) }}
+                components={{ b: <b /> }}
+              />
+            </span>
+          )}
+          {shelfStats.streak === null ? null : (
+            <span className="st-item st-meta">
+              <Trans
+                i18nKey="status.streak"
+                ns="bookshelf"
+                count={shelfStats.streak}
+                components={{ b: <b /> }}
+              />
+            </span>
+          )}
         </>
       )
-    }),
-    [bookList.length, shelfStats, t]
-  )
+    }
+  }, [bookList.length, shelfStats, t])
   useSetStatusBar(statusSlots)
 
   return (

@@ -13,7 +13,7 @@ export interface BookshelfData {
   loadError: boolean
   /** 各书实时统计（`stats.bookStatsAll`） */
   statsByBook: Record<string, BookStats>
-  /** 书架汇总统计（累计字数 / 今日写作 / 连续天数） */
+  /** 书架汇总统计（累计字数 / 今日写作 / 连续天数）；字段为 `null` = 从未取到，非 0 */
   shelfStats: ShelfStats
   /** 分类 ID → 名称映射（卡片标签展示用） */
   categoryNames: Map<number, string>
@@ -35,7 +35,12 @@ export function useBookshelfData(): BookshelfData {
   // 书架读取失败标记：区分「书架真的是空的」与「读取失败」（后者给出重试）。
   const [loadError, setLoadError] = useState(false)
   const [statsByBook, setStatsByBook] = useState<Record<string, BookStats>>({})
-  const [shelfStats, setShelfStats] = useState<ShelfStats>({ words: 0, today: 0, streak: 0 })
+  // 初始 `null`：统计尚未返回，状态栏据此显示占位而非 0（避免与空库混淆）。
+  const [shelfStats, setShelfStats] = useState<ShelfStats>({
+    words: null,
+    today: null,
+    streak: null
+  })
   // 分类 ID → 名称映射（来自 categories:list），供书籍卡片渲染分类标签。
   const [categoryNames, setCategoryNames] = useState<Map<number, string>>(new Map())
 
@@ -55,7 +60,8 @@ export function useBookshelfData(): BookshelfData {
       setShelfStats({ words: total, today, streak })
       setStatsByBook(byBook)
     } catch {
-      /* 统计读取失败静默忽略：保留现有值 */
+      /* 统计读取失败静默忽略：保留现有值。首次失败维持 `null`（状态栏显示占位），
+         成功过则继续显示上次的值，不回退为 0 / 占位。 */
     }
   }, [])
 
