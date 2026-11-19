@@ -16,17 +16,14 @@ interface DragPosition {
 }
 
 /**
- * 解锁复位的 hover 宽限（ms）。
+ * 解锁复位后的自动收起延时（ms）。
  *
- * 复位动画把弹窗从拖动位置移回状态栏上方，指针相对弹窗的位置随之改变；
- * 鼠标若因此落到弹窗外，浏览器会派发 `mouseleave`，但这是「被移走的弹窗甩出」
- * 而非主动离开，不能当成关闭意图。复位期间与结束后这段时间内忽略该事件；
- * 重新移入会立即结束宽限，此后的移出按主动离开处理。
- *
- * 取值依据：复位过渡为 `--dur-slow`（240ms），宽限取 300ms 略大于「甩出」窗口，
- * 同时落在 200–400ms 的合理区间，不会明显拖慢日常移出关闭。
+ * 复位动画把弹窗从拖动位置移回状态栏上方；解锁意味着回到「按需查看」，
+ * 归位后不应常驻，且指针通常已被移动的弹窗甩出。因此复位完成（过渡结束，
+ * 零位移取解锁瞬间）后开始计时，到点自动关闭；期间重新移入弹窗视为用户
+ * 仍想看，取消计时。取值 500ms：给「追回弹窗」留出余量，又不会长期滞留。
  */
-const RESET_LEAVE_GRACE_MS = 300
+const RESET_AUTO_CLOSE_MS = 500
 
 /**
  * 状态栏「本次码字」胶囊：书架页与写作页共用（挂在外壳 `StatusBar` 内）。
@@ -40,7 +37,7 @@ const RESET_LEAVE_GRACE_MS = 300
  * - 点击打开后为「粘住」态：移出仍显示，点外部 / Esc 关闭；
  * - 浮层内锁定后常驻：移出 / 点外部 / Esc 均不关闭，必须先点锁图标解锁；
  * - 锁定后浮层切到 `position: fixed`，标题区成为拖动把手；解锁复位回锚点并恢复 hover，
- *   复位期间与结束后 300ms 内忽略 hover 移出（指针会被归位的弹窗「甩出」）。
+ *   复位结束后 500ms 自动收起（期间重新移入弹窗则取消收起）。
  * 打开时用 `getLiveSnapshot()` 现算总时长 / 空闲时长，不引入常驻定时器。
  */
 export default function WritingSessionStats() {
@@ -67,9 +64,16 @@ export default function WritingSessionStats() {
   const draggingRef = useRef(false)
   /** 复位动画真源（同步取消：动画期间再次上锁不能被残留的 transitionend 拉回）。 */
   const resettingRef = useRef(false)
-  /** mouseleave 宽限截止时间（`performance.now()` 基准；0 = 无宽限）。 */
-  const leaveGraceUntilRef = useRef(0)
+  /** 复位后的自动收起计时（到点关闭详情；null = 无计时）。 */
+  const resetCloseTimerRef = useRef<number | null>(null)
   const popupId = useId()
+
+  const clearResetCloseTimer = useCallback((): void => {
+    if (resetCloseTimerRef.current !== null) {
+      window.clearTimeout(resetCloseTimerRef.current)
+      resetCloseTimerRef.current = null
+    }
+  }, [])
 
   const clearTimers = useCallback((): void => {
     if (showTimerRef.current !== null) {
@@ -91,8 +95,17 @@ export default function WritingSessionStats() {
     setResetting(false)
     draggingRef.current = false
     resettingRef.current = false
-    leaveGraceUntilRef.current = 0
-  }, [])
+    clearResetCloseTimer()
+  }, [clearResetCloseTimer])
+
+  /** 复位完成后延时自动收起；重复调度会覆盖上一次计时。 */
+  const scheduleResetClose = useCallback((): void => {
+    clearResetCloseTimer()
+    resetCloseTimerRef.current = window.setTimeout(() => {
+      resetCloseTimerRef.current = null
+      closeDetail()
+    }, RESET_AUTO_CLOSE_MS)
+  }, [clearResetCloseTimer, closeDetail])
 
   /** 浮层根节点：既供内容组件挂载，也供拖动 / 边界测量读取。 */
   const setPopupRef = useCallback((node: HTMLDivElement | null): void => {
@@ -147,8 +160,14 @@ export default function WritingSessionStats() {
     return { left: rect.left, top: rect.top }
   }, [])
 
-  // 卸载清理挂起的显示 / 隐藏计时（避免对已卸载组件 setState）。
-  useEffect(() => () => clearTimers(), [clearTimers])
+  // 卸载清理挂起的显示 / 隐藏 / 自动收起计时（避免对已卸载组件 setState）。
+  useEffect(
+    () => () => {
+      clearTimers()
+      clearResetCloseTimer()
+    },
+    [clearTimers, clearResetCloseTimer]
+  )
 
   // 打开期间：Esc / 点外部关闭；锁定态两者都不生效（唯一退出路径是先解锁）。
   useEffect(() => {
@@ -185,8 +204,8 @@ export default function WritingSessionStats() {
   }, [locked, clampPosition])
 
   const handleMouseEnter = (): void => {
-    // 重新移入：解锁宽限立即失效，此后的移出按主动离开处理（日常 hover 手感不受影响）。
-    leaveGraceUntilRef.current = 0
+    // 重新移入：取消复位后的自动收起（用户回来继续看），此后的移出按主动离开处理。
+    clearResetCloseTimer()
     clearTimers()
     if (detail !== null) return
     showTimerRef.current = window.setTimeout(() => {
@@ -198,8 +217,9 @@ export default function WritingSessionStats() {
   const handleMouseLeave = (): void => {
     clearTimers()
     if (detail === null || sticky || locked) return
-    // 复位期间 / 刚归位的宽限期内，指针是被移动的弹窗「甩出」而非主动离开：不关。
-    if (resettingRef.current || performance.now() < leaveGraceUntilRef.current) return
+    // 复位期间 / 等待自动收起的窗口内，指针是被移动的弹窗「甩出」而非主动离开：
+    // 不提前关闭，交给自动收起计时。
+    if (resettingRef.current || resetCloseTimerRef.current !== null) return
     hideTimerRef.current = window.setTimeout(() => {
       hideTimerRef.current = null
       closeDetail()
@@ -210,6 +230,8 @@ export default function WritingSessionStats() {
     // 锁定态没有「点胶囊关闭」路径：必须经锁图标解锁后再走正常关闭。
     if (locked) return
     clearTimers()
+    // 主动点击胶囊转为粘住 / 关闭：取消复位后的自动收起。
+    clearResetCloseTimer()
     if (detail === null) {
       setDetail(getLiveSnapshot())
       setSticky(true)
@@ -225,6 +247,8 @@ export default function WritingSessionStats() {
 
   const handleToggleLock = (): void => {
     clearTimers()
+    // 再次上锁 / 重新解锁都以本次操作为准，先撤掉上一次的自动收起计时。
+    clearResetCloseTimer()
     if (locked) {
       // 解锁：立即恢复 hover 模式；位置先平滑回到锚点，transitionend 后再回落绝对定位。
       // 起点取真实渲染坐标（拖动 / clamp 后的实际位置），终点取绝对定位的自然坐标。
@@ -245,11 +269,11 @@ export default function WritingSessionStats() {
         resettingRef.current = false
         setResetting(false)
         setPosition(null)
+        // 零位移没有过渡事件：解锁即视为复位完成，直接开始自动收起计时。
+        scheduleResetClose()
         return
       }
       resettingRef.current = true
-      // 动画期间即进入宽限（覆盖整段 240ms 过渡）；transitionend 会再延长一段。
-      leaveGraceUntilRef.current = performance.now() + RESET_LEAVE_GRACE_MS
       setResetting(true)
       setPosition(target)
       return
@@ -260,7 +284,6 @@ export default function WritingSessionStats() {
     // 常态上锁则从当前锚点位置无缝切到 fixed，同一次事件内写入位置与锁定态。
     const rect = node.getBoundingClientRect()
     resettingRef.current = false
-    leaveGraceUntilRef.current = 0
     setResetting(false)
     setPosition({ left: rect.left, top: rect.top })
     setLocked(true)
@@ -277,11 +300,11 @@ export default function WritingSessionStats() {
     if (!resettingRef.current) return
     if (event.target !== event.currentTarget) return
     if (event.propertyName !== 'left' && event.propertyName !== 'top') return
-    // 归位后再留一段宽限：此时指针已被弹窗甩出，立即按移出处理会让弹窗刚复位就消失。
-    leaveGraceUntilRef.current = performance.now() + RESET_LEAVE_GRACE_MS
+    // 归位完成：开始自动收起计时（期间重新移入会取消）。
     resettingRef.current = false
     setResetting(false)
     setPosition(null)
+    scheduleResetClose()
   }
 
   const handleDragPointerDown = (event: ReactPointerEvent<HTMLDivElement>): void => {
