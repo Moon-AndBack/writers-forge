@@ -33,6 +33,34 @@ export function plainTextToDocJson(text: string): string {
 }
 
 /**
+ * 解析富文本 JSON：合法则原样返回，否则用纯文本兜底包成文档，都为空则 null。
+ *
+ * 这是**读取侧兜底**（打开编辑器 / 右栏时用），与主进程 `normalizeRichTextJson` 语义不同：
+ * 后者是**写入侧校验 + 归一**（非法 JSON / 非 doc 结构抛错，空文档归 `null`）；
+ * 本函数**永不抛错**——老库脏数据不应让右栏 / 弹窗打不开，坏 JSON 直接落回派生纯文本。
+ *
+ * - `rawJson` 非空且为合法 JSON → 返回 `trim()` 后的原串（富文本真源，不校验 doc 结构）；
+ * - 否则（`null` / 空白 / 坏 JSON，即富文本化之前的老数据）→ `plainTextToDocJson(fallbackText)`；
+ * - 兜底也为空串 → `null`（空正文口径）。
+ */
+export function resolveDocJson(
+  rawJson: string | null | undefined,
+  fallbackText: string
+): string | null {
+  const raw = rawJson?.trim() ?? ''
+  if (raw !== '') {
+    try {
+      JSON.parse(raw)
+      return raw
+    } catch {
+      // 坏 JSON：落回纯文本兜底（见上方说明）。
+    }
+  }
+  const fallback = plainTextToDocJson(fallbackText)
+  return fallback === '' ? null : fallback
+}
+
+/**
  * 富文本正文 JSON → 「段落文本数组」：卡片 / 弹窗逐段渲染用（逐段 `text-indent` 的前提）。
  *
  * 背景：`world_texts.body` / `plot_scenes.description` 派生纯文本时块级之间已用 `\n` 分隔

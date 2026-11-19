@@ -11,7 +11,7 @@ import type {
   InspirationRow,
   InspirationUpdatePatch
 } from '../../../../../main/database/inspirations'
-import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
+import { resolveDocJson } from '../../../../../shared/richTextDoc'
 
 export type { InspirationRow, InspirationUpdatePatch }
 
@@ -42,24 +42,14 @@ export interface InspirationDraft {
  *
  * - `contentJson` 非空且**可解析** → 原样使用（富文本真源）；
  * - 否则（`NULL` / 空串 / 坏 JSON，即富文本化之前的老数据）→ 用共享工具
- *   `plainTextToDocJson(row.content)` 把派生纯文本按行包成合法文档；
+ *   `resolveDocJson` 把派生纯文本按行包成合法文档；
  * - 纯空白 / 空正文 → `null`（空正文口径，与主进程 `normalizeRichTextJson` 一致）。
  *
  * 坏 JSON 不抛错：右栏不应因老库脏数据打不开；兜底后的文档与编辑器空态判定同口径，
  * 保证「打开即净态」（草稿与解析基线相等）。口径同 `resolveForeshadowDescriptionJson`。
  */
 export function resolveInspirationContentJson(row: InspirationRow): string | null {
-  const raw = row.contentJson?.trim() ?? ''
-  if (raw !== '') {
-    try {
-      JSON.parse(raw)
-      return raw
-    } catch {
-      // 坏 JSON：落回纯文本摘要兜底（见上方说明）。
-    }
-  }
-  const fallback = plainTextToDocJson(row.content)
-  return fallback === '' ? null : fallback
+  return resolveDocJson(row.contentJson, row.content)
 }
 
 /** 按行值创建草稿（正文取富文本 JSON，老数据经读侧兜底；标签复制一份，避免直改行数组）。 */

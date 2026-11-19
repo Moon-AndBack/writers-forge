@@ -10,7 +10,7 @@
  * - 读不到（null / 空白 / 非法）一律回退调用方经 `t('originDefault')` 显示的默认值。
  */
 
-import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
+import { resolveDocJson } from '../../../../../shared/richTextDoc'
 import {
   DEFAULT_TIMELINE_ID,
   isStoredOrigin,
@@ -94,24 +94,14 @@ export function serializeTimelineList(list: TimelineEntry[]): string {
  * 读侧兜底：取条目的起点描述富文本（与 `resolveForeshadowDescriptionJson` 同口径）。
  *
  * - `descriptionJson` 非空且**可解析** → 原样使用（富文本真源）；
- * - 否则（老数据缺失 / 空串 / 坏 JSON）→ 用共享纯函数 `plainTextToDocJson(description)`
+ * - 否则（老数据缺失 / 空串 / 坏 JSON）→ 用共享工具 `resolveDocJson(descriptionJson, description)`
  *   把派生纯文本按行包成合法文档；
  * - 纯空白 / 空描述 → `null`（空正文口径，与 `ShortRichTextField.initialJson` 一致）。
  *
  * ⚠️ 右栏的 `initialJson` 与脏态基线**必须**都经本函数得到，否则老数据首帧会假 dirty。
  */
 export function resolveEntryDescriptionJson(entry: TimelineEntry): string | null {
-  const raw = entry.descriptionJson?.trim() ?? ''
-  if (raw !== '') {
-    try {
-      JSON.parse(raw)
-      return raw
-    } catch {
-      // 坏 JSON：落回纯文本摘要兜底（不因脏数据打不开右栏）。
-    }
-  }
-  const fallback = plainTextToDocJson(entry.description)
-  return fallback === '' ? null : fallback
+  return resolveDocJson(entry.descriptionJson, entry.description)
 }
 
 /** 从列表 + 选中 id 解析当前 active 条目（缺/非法 → 首条）。 */

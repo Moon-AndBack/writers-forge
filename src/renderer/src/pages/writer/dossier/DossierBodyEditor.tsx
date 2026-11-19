@@ -8,7 +8,7 @@ import {
   type RichTextBodyValue
 } from '../../../components/editor/useRichTextBodyEditor'
 import { useRichTextEditor } from '../../../components/editor/richTextEditorContext'
-import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
+import { resolveDocJson } from '../../../../../shared/richTextDoc'
 import { DocWordLimit } from '../docWordLimit'
 import { EntityHighlight } from '../entities/entityHighlight'
 import { HoverCard } from '../entities/HoverCard'
@@ -42,8 +42,8 @@ export interface DossierBodyEditorProps {
 /**
  * 设定档案右栏 · 正文富文本编辑器（五域共用，§9）。
  *
- * - **读写**：挂载时以 `bodyJson` 建 doc；老数据（`body_json = ''`）用共享层
- *   `plainTextToDocJson(body)` 兜底，保证「纯文本时代的正文」打开即有内容
+ * - **读写**：挂载时以 `bodyJson` 建 doc；老数据（空串 / 坏 JSON）用共享层
+ *   `resolveDocJson(bodyJson, body)` 兜底，保证「纯文本时代的正文」打开即有内容
  *   （历史上已由 `worldTextsBodyJsonBackfill` 回填，此处只兜底未回填 / 新增行）；
  * - **保存（批 B 手动）**：本组件**不再防抖自动保存**，也不在卸载时落库——每次
  *   `update` 只把归一值回传上层草稿；落库由 `DossierDetail` 的保存按钮统一提交
@@ -66,10 +66,9 @@ export default function DossierBodyEditor({
   // （`Writer.tsx` 的 `dossierEditing`），两态切换见 `DossierActivityActions`。
   const { registerEditor, reportEditing } = useRichTextEditor('dossier')
 
-  // 初始文档：库内 JSON 优先；空串（老数据）→ 纯文本按行包成段落；纯空白 → 空文档。
-  const [initialJson] = useState<string | null>(() =>
-    bodyJson.trim() !== '' ? bodyJson : plainTextToDocJson(body) || null
-  )
+  // 初始文档：库内 JSON 合法则原样使用；空串 / 坏 JSON（老数据）→ 纯文本按行包成段落；
+  // 纯空白 → 空文档（null）。走共享读侧兜底，坏 JSON 不再直接交给编辑器。
+  const [initialJson] = useState<string | null>(() => resolveDocJson(bodyJson, body))
 
   // ⚠️ EntityHighlight 的 `getBookId` 闭包**必须**捕获当前 `bookId`；`extensions` 经
   // `useMemo([bookId])` 恒等（仅切书重建）。
