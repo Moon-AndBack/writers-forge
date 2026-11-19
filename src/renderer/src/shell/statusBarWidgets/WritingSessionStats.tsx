@@ -99,6 +99,10 @@ export default function WritingSessionStats() {
    * 只在解锁事件里同步调用（同一事件内还原，不会产生可见闪烁），
    * 这样无需把 CSS 的 8px 间距 / 尺寸规则复制到 TS；返回原始坐标、不做边界 clamp，
    * 保证动画终点与回落到绝对定位后的实际位置完全一致。
+   *
+   * 还原后必须再强制一次样式重算：测量时浏览器已把「绝对定位 + left/top: auto」
+   * 记为过渡起点，而 `auto` 不能插值，会让随后的复位直接跳变；重算后起点回到
+   * 「固定定位 + 当前拖动坐标」，left/top 才能从数值过渡到数值。
    */
   const measureAnchorPosition = useCallback((): DragPosition | null => {
     const node = popupRef.current
@@ -121,6 +125,8 @@ export default function WritingSessionStats() {
     node.style.top = saved.top
     node.style.right = saved.right
     node.style.bottom = saved.bottom
+    // 强制同步重算，把还原后的固定定位（当前拖动坐标）确立为过渡起点。
+    node.getBoundingClientRect()
     return { left: rect.left, top: rect.top }
   }, [])
 
@@ -199,19 +205,22 @@ export default function WritingSessionStats() {
   const handleToggleLock = (): void => {
     clearTimers()
     if (locked) {
-      // 解锁：立即恢复 hover 模式；位置平滑回到锚点，transitionend 后回落到绝对定位。
+      // 解锁：立即恢复 hover 模式；位置先平滑回到锚点，transitionend 后再回落绝对定位。
+      // 起点取真实渲染坐标（拖动 / clamp 后的实际位置），终点取绝对定位的自然坐标。
+      const node = popupRef.current
+      const current = node === null ? null : node.getBoundingClientRect()
       const target = measureAnchorPosition()
-      const current = position
       setLocked(false)
       setSticky(false)
       setDragging(false)
       draggingRef.current = false
       if (
-        target === null ||
         current === null ||
+        target === null ||
         (Math.abs(target.left - current.left) < 0.5 && Math.abs(target.top - current.top) < 0.5)
       ) {
-        // 未拖动（动画终点即当前位置）或测量失败：无需过渡，直接复位。
+        // 零位移（锁定后没动过 / 又拖回原位）或测量失败：没有可过渡的距离，直接复位。
+        // 判定依据是真实坐标差而非「本次是否拖动过」——固定定位下只要有位移就会走动画。
         resettingRef.current = false
         setResetting(false)
         setPosition(null)
@@ -233,7 +242,13 @@ export default function WritingSessionStats() {
     setLocked(true)
   }
 
-  /** 复位过渡结束：位置已到锚点，撤掉 fixed 与过渡类，交还给绝对定位。 */
+  /**
+   * 复位过渡结束：位置已到锚点，撤掉 fixed 与过渡类，交还给绝对定位（同一位置，无视觉变化）。
+   *
+   * left / top 各派发一次 transitionend：只认第一次（两轴同时长、同时收尾），
+   * 立刻把 ref 置 false，第二次与子元素（锁按钮）的过渡事件都被上面的守卫忽略。
+   * 两轴坐标相同（零位移）时不会派发事件，那种情况已在解锁分支直接复位。
+   */
   const handleResetTransitionEnd = (event: ReactTransitionEvent<HTMLDivElement>): void => {
     if (!resettingRef.current) return
     if (event.target !== event.currentTarget) return

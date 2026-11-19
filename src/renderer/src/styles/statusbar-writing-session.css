@@ -58,6 +58,8 @@
 }
 
 /* 解锁复位：过渡只在本类存在时生效（拖动 / 常态无过渡，避免跟手延迟）。
+   过渡期间弹层必须保持 fixed + left/top 具体数值：left/top 为 auto 时不可插值，
+   一旦回落到绝对定位就会直接跳变（跨定位方式不能过渡）。
    时长 / 缓动走令牌；减动效由 base.css 全局把 transition-duration 压到 0.01ms
    （transitionend 仍会派发），等价于瞬移。 */
 .st-session-pop.is-resetting {
