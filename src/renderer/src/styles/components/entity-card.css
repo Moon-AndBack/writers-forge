@@ -78,8 +78,18 @@
 }
 
 .wf-entity-card__actions .wf-iconbtn {
+  position: relative;
   width: 22px;
   height: 22px;
+}
+
+/* 例外：热区外扩（docs/ui/design-language.md §9 #40）。视觉仍为 22×22，
+   伪元素四向外扩 1px 补到 24×24（WCAG 2.2 §2.5.8 基准，与 AI 刷新钮 #38 同口径）；
+   按钮间距 4px 足够，热区不侵入相邻按钮。 */
+.wf-entity-card__actions .wf-iconbtn::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
 }
 
 .wf-entity-card__actions .wf-iconbtn > svg {

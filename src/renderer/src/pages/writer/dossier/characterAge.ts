@@ -1,6 +1,6 @@
 import type { TFunction } from 'i18next'
 import type { CharacterAgeAnchor } from '../../../../../preload/types/worldEntity'
-import { plotYearLabel } from '../plot/plotTree'
+import { plotEraLabels, plotYearLabel } from '../plot/plotTree'
 
 /**
  * 角色年龄锚点 · 渲染层纯函数。
@@ -8,7 +8,7 @@ import { plotYearLabel } from '../plot/plotTree'
  * 数据层只存「某条时间线的绝对年 + 年龄」，本模块负责纪元 / 年份互转与展示文案：
  * - 绝对年口径与剧情场景一致：纪前为负、元年 0、纪后为正；
  * - 年龄口径为周岁／年差，负年龄只表示「尚未出生」；
- * - 年份标签复用 `plotYearLabel`，文案 key 仍取 `plot` ns，不复制常量字符串。
+ * - 年份标签复用 `plotYearLabel` + `plotEraLabels`，文案 key 仍取 `plot` ns，不复制常量字符串。
  */
 
 /** 纪元选择（`''` = 未设置）。 */
@@ -34,16 +34,7 @@ export function eraYearFromAbsolute(absoluteYear: number): {
 
 /** 绝对年 → 「纪前 N 年 / 元年 / 纪后 N 年」（文案 key 复用 `plot` ns）。 */
 export function formatAnchorYear(absoluteYear: number, t: TFunction<'plot'>): string {
-  return plotYearLabel(
-    absoluteYear,
-    {
-      bc: t('timeEra.bc'),
-      zero: t('timeEra.zero'),
-      ad: t('timeEra.ad'),
-      yearUnit: t('timeYearUnit')
-    },
-    ''
-  )
+  return plotYearLabel(absoluteYear, plotEraLabels(t), '')
 }
 
 /** 由锚点反推出生年（绝对年；可为负）。 */

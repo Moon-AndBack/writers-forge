@@ -342,6 +342,7 @@
 
 .book-actions .wf-iconbtn {
   /* 与行操作域同口径 22×22（封面操作不另立尺寸档）。 */
+  position: relative;
   width: 22px;
   height: 22px;
   color: #fff;
@@ -354,6 +355,15 @@
 .book-actions .wf-iconbtn > svg {
   width: 14px;
   height: 14px;
+}
+
+/* 例外：热区外扩（docs/ui/design-language.md §9 #40）。视觉仍为 22×22，
+   伪元素四向外扩 1px 补到 24×24（WCAG 2.2 §2.5.8 基准）；按钮间距 6px
+   足够，热区不侵入相邻按钮。 */
+.book-actions .wf-iconbtn::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
 }
 
 /* hover / 键盘聚焦：底色加深一档增强反馈（仅颜色变化，无描边环、无位移 /

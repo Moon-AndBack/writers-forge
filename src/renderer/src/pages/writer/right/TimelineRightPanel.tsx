@@ -2,7 +2,7 @@ import { Fragment, type ReactElement, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { EmptyState } from '../../../components/EmptyState'
 import { LoadErrorState } from '../../../components/LoadErrorState'
-import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
+import { resolveDocJson } from '../../../../../shared/richTextDoc'
 import { EntityReadonlyRichText } from '../entities/EntityReadonlyRichText'
 import { HoverCard } from '../entities/HoverCard'
 import { useEntityHover } from '../entities/useEntityHover'
@@ -38,16 +38,10 @@ function TimelineSceneDetail({
     )
   }
   const eraLabels = plotEraLabels(t)
-  // 正文以块级 JSON 为准；老数据 `descriptionJson` 为空（null / ''）时按派生纯文本兜底，
-  // 转换复用共享纯函数（§9），避免在组件里重复实现。
+  // 正文以块级 JSON 为准；空 / 坏 JSON 经共享只读兜底（`resolveDocJson`）落回派生纯文本，
+  // 不把非法 JSON 直接交给编辑器——与伏笔 / 灵感 / 时间线起点 / 设定库正文同口径（§9）。
   const bodyJson =
-    content === null
-      ? null
-      : typeof content.descriptionJson === 'string' && content.descriptionJson.trim() !== ''
-        ? content.descriptionJson
-        : content.description.trim() !== ''
-          ? plainTextToDocJson(content.description)
-          : null
+    content === null ? null : resolveDocJson(content.descriptionJson, content.description)
   return (
     // key 挂在 Fragment 上：切场景时卡头卡与内容卡一起重建，进场动画一起重播。
     <Fragment key={scene.id}>
