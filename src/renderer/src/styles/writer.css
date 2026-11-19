@@ -355,7 +355,8 @@ body.is-resizing .splitter {
      宽度反馈。代价：无滚动条的视图版心永久窄 12px（与章节视图一致）。
      例外：设定五域 / 伏笔 / 灵感按需占宽，见随后的 data-module 规则。 */
   scrollbar-gutter: stable;
-  padding: 20px 0 44px;
+  /* 四边内衬统一 20px：滚动内容与中栏四缘等距（左右内衬与上下一致）。 */
+  padding: 20px;
 }
 
 /* 设定五域 / 伏笔 / 灵感按需占宽：无滚动条时不预留槽；章节 / 大纲 / 剧情 / 时间线
@@ -372,13 +373,6 @@ body.is-resizing .splitter {
   )
   .editor-scroll {
   scrollbar-gutter: auto;
-}
-
-/* 正文滚动区（章节视图）：上下对称留白 20px（> 14px 渐隐带），
-   使首行 / 末行文字完全落在渐隐带之外、不被淡化；mask 仍贴滚动区上下缘生效。
-   其它 5 个模块视图沿用上方内边距（20px 0 44px）。 */
-.ep-view[data-view='chapters'] .editor-scroll {
-  padding: 20px 0;
 }
 
 /* 正文滚动区：上下缘渐隐（mask）——文字接近滚动区上 / 下缘时淡出。
