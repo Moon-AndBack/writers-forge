@@ -98,8 +98,9 @@
   overflow-y: auto;
 }
 
-/* 版心：与 `.editor-inner` / 剧情正文同口径（--page-width + margin auto 居中），
-   窄栏左右内衬按百分比退让，宽栏封顶 34px。正文排版复用全局 `.doc-body`。 */
+/* 版心：右栏正文始终全宽——`.rp-view` 把 --page-width 归为 100%
+   （见 writer-editor-doc.css），与剧情正文同口径；窄栏左右内衬按百分比
+   退让，宽栏封顶 34px。正文排版复用全局 `.doc-body`。 */
 .dossier-body-editor .doc-body {
   flex: 1 0 auto;
   display: flex;

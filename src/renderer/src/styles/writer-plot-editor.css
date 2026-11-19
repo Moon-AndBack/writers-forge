@@ -78,12 +78,13 @@
 }
 
 /* 富文本正文容器（Tiptap）：随字段撑高、内部滚动。容器本身透明无框
-   （滚动条贴右栏内缘），版心（`--page-width` 620px + 左右 40px 内衬，同
-   `.editor-inner` 口径）落在内层 `.doc-body` 上，并按右栏可用宽（450–850px）
-   退让：`clamp(14px, 6%, 40px)` 窄态收缩（450px 栏约 27px）、宽态封顶 40px；
-   `margin: 0 auto` 使宽栏下正文居中成版心。正文排版复用全局 `.doc-body` 口径
-   （见 writer-editor-doc.css），便于排版组统一生效；内部沿用「容器 → .doc-body
-   → .ProseMirror」逐层 flex 撑满，点击正文下方空白仍聚焦编辑器。 */
+   （滚动条贴右栏内缘），正文区落在内层 `.doc-body` 上并始终撑满右栏可用宽
+   （450–850px）：`.rp-view` 已把 `--page-width` 归为 100%（见
+   writer-editor-doc.css），不随状态栏页宽收口；左右内衬按
+   `clamp(14px, 6%, 40px)` 退让（450px 栏约 27px、宽栏封顶 40px）。正文排版
+   复用全局 `.doc-body` 口径（见 writer-editor-doc.css），便于排版组统一生效；
+   内部沿用「容器 → .doc-body → .ProseMirror」逐层 flex 撑满，点击正文下方
+   空白仍聚焦编辑器。 */
 .rp-view[data-view='plot'] .plot-body-editor {
   display: flex;
   flex-direction: column;
@@ -113,8 +114,9 @@
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  /* 版心：宽栏居中收口至 --page-width，窄栏吃满可用宽；上留白对齐 `.editor-scroll`
-     的 20px（首行不贴顶），左右内衬随栏宽退让（见上）。 */
+  /* 全宽：max-width 取 --page-width，而右栏根已将该令牌归为 100%（见上），
+     故始终吃满可用宽；上留白对齐 `.editor-scroll` 的 20px（首行不贴顶），
+     左右内衬随栏宽退让。 */
   width: 100%;
   max-width: var(--page-width);
   margin: 0 auto;

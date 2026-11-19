@@ -258,6 +258,18 @@
   outline: none;
 }
 
+/* ---------- 右栏正文：始终全宽，不跟随页宽设置 ----------
+   页宽（--page-width，状态栏「页宽」胶囊：520 / 620 / 760 / 100%）只服务
+   中栏版心（章节 / 大纲）；右栏不显示该设置，正文也不应被它收口。但剧情
+   （writer-plot-editor.css）与设定（writer-dossier-split.css）的 `.doc-body`
+   仍以 `max-width: var(--page-width)` 收口，620 / 760 档会把右栏正文压成窄版心。
+   故在右栏根 `.rp-view` 上把令牌归为 100%（`max-width` 失去约束、`width: 100%`
+   生效），剧情 / 设定 / 伏笔 / 灵感四处正文始终撑满右栏可用宽。
+   中栏 `.ep-view`（章节 / 大纲）不在此作用域，页宽配置不受影响。 */
+.rp-view {
+  --page-width: 100%;
+}
+
 .caret {
   display: inline-block;
   width: 2px;
