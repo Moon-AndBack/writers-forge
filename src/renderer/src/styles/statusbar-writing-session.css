@@ -4,9 +4,9 @@
    状态栏「本次码字」胶囊的向上弹层：复用 statusbar-widgets.css 的
    .st-popup 面板底色 / 圆角 / 阴影与「向上展开」定位
    （bottom: calc(100% + 8px)、right: 0），本文件只负责内容排版、
-   标题区渐隐分隔线、锁定拖动把手 / 锁按钮与材质态毛玻璃。
+   标题区渐隐分隔线、锁定拖动把手 / 锁按钮。
    拆分原因：statusbar-widgets.css 已达 500 行硬上限。
-   视觉规则见 docs/ui/design-language.md（§8.9 渐隐分隔线 / §9 #41 材质态例外）；
+   视觉规则见 docs/ui/design-language.md（§8.9 渐隐分隔线）；
    颜色 / 字号 / 时长 / 缓动全部取 theme.css 令牌。
    ============================================================ */
 
@@ -136,13 +136,4 @@
   font-weight: 600;
   color: var(--text);
   white-space: nowrap;
-}
-
-/* 例外：材质态下本浮层为半透明毛玻璃（docs/ui/design-language.md §9 #41）。
-   仅限 .st-session-pop；必须同时保留 backdrop-filter（纯半透明会让页面文字透出）。
-   非材质态不命中本规则，回退 .st-popup 的不透明 --pane。 */
-:root:is([data-material='acrylic'], [data-material='mica']) .st-session-pop {
-  background: color-mix(in srgb, var(--pane) 88%, transparent);
-  backdrop-filter: blur(12px) saturate(1.05);
-  -webkit-backdrop-filter: blur(12px) saturate(1.05);
 }
