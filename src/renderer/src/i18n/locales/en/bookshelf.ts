@@ -75,7 +75,6 @@ const bookshelf = {
     ariaLabel: '{{title}}, {{status}}',
     editAria: 'Edit {{title}}',
     deleteAria: 'Delete {{title}}',
-    progressAria: '{{title}} writing progress',
     chapterCount: '{{count}} chapters',
     coverCharFallback: 'B'
   },

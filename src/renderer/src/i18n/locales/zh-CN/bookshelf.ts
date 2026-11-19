@@ -80,7 +80,6 @@ const bookshelf = {
     ariaLabel: '{{title}}，{{status}}',
     editAria: '编辑《{{title}}》',
     deleteAria: '删除《{{title}}》',
-    progressAria: '{{title}} 写作进度',
     chapterCount: '{{count}} 章',
     coverCharFallback: '书'
   },

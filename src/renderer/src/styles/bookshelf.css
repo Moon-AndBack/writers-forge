@@ -390,7 +390,7 @@
 }
 
 /* 卡片正文：高度 = 封面高度的一半（封面 3:4 → 正文 3:2），
-   在固定高度内以 space-between 排布 标题 / 元信息 / 进度 / 标签。 */
+   在固定高度内以 space-between 排布 标题 / 元信息 / 标签。 */
 .book-body {
   flex: none;
   min-height: 0;
@@ -477,11 +477,6 @@
 @media (prefers-reduced-motion: reduce) {
   .book-card,
   .shelf-sort__trigger {
-    transition: none;
-  }
-
-  /* 组件库进度条填充的宽度过渡也一并关闭 */
-  .book-body .wf-progress__bar {
     transition: none;
   }
 }

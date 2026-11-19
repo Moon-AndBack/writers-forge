@@ -5,7 +5,7 @@ import { cn } from '@renderer/lib/cn'
 import { getCachedImage, invalidateCachedImage, setCachedImage } from '@renderer/lib/imageBlobCache'
 import { THUMB_MAX_EDGE, makeThumbFromImage } from '@renderer/lib/imageThumb'
 import { CheckIcon } from '../../components/icons'
-import { Badge, IconButton, Progress, Tag } from '../../components/ui'
+import { Badge, IconButton, Tag } from '../../components/ui'
 import type { BadgeTone } from '../../components/ui'
 import { getCoverGradient } from './bookMeta'
 import { STATUS_META, STATS_PLACEHOLDER, formatBookWords, type Book, type BookStatus } from './data'
@@ -94,7 +94,7 @@ function PencilIcon() {
 
 /**
  * 书籍卡片：封面（封面图或渐变 + 封面字 + 状态胶囊 + 编辑/删除按钮）+
- * 标题 / 笔名·章节·字数 + 进度条 + 分类标签。整卡可点击进入，hover 呈主题色
+ * 标题 / 笔名·章节·字数 + 分类标签。整卡可点击进入，hover 呈主题色
  * 边缘光晕，支持选中态。
  *
  * - 封面：若该书在数据库中存有封面图（blob），经 `books.cover.getDisplay` 载入并显示
@@ -102,8 +102,8 @@ function PencilIcon() {
  *   `imageBlobCache`（`cover:<bookId>`）时复用 Blob、不再 IPC；否则回退「封面字 +
  *   `coverColor` 对应渐变」。`kind='original'`（老封面尚无缩略图）时在 `onLoad` 后按
  *   长边 640 生成缩略图并经 `books.cover.setThumb` 回填，失败静默。
- * - 展示控件收敛到组件库：状态胶囊 `Badge`、编辑 / 删除 `IconButton`、进度
- *   `Progress`、分类 `Tag`；卡片容器因「封面块 + 正文」结构保留自绘 `.book-card`。
+ * - 展示控件收敛到组件库：状态胶囊 `Badge`、编辑 / 删除 `IconButton`、分类 `Tag`；
+ *   卡片容器因「封面块 + 正文」结构保留自绘 `.book-card`。
  */
 export function BookCard({
   book,
@@ -117,7 +117,7 @@ export function BookCard({
   onDelete
 }: BookCardProps) {
   const { t } = useTranslation('bookshelf')
-  // 实时统计未取到：字数 / 章数 / 进度均未知，显示占位符而不是 0。
+  // 实时统计未取到：字数 / 章数未知，显示占位符而不是 0。
   const statsUnknown = book.statsUnavailable === true
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
   // 当前封面 blob 是否为原图（`kind='original'`）：只有原图才在 `onLoad` 后回填缩略图。
@@ -283,16 +283,6 @@ export function BookCard({
           <span className="dot" aria-hidden="true" />
           <span>{statsUnknown ? STATS_PLACEHOLDER : formatBookWords(t, book.words)}</span>
         </div>
-
-        {statsUnknown ? null : (
-          <Progress
-            value={book.progress}
-            max={100}
-            size="md"
-            tone="brand"
-            label={t('card.progressAria', { title: book.title })}
-          />
-        )}
 
         {categoryNames && book.categories.length > 0 ? (
           <div className="book-tags">
