@@ -33,6 +33,8 @@ import PinButton from './shell/statusBarWidgets/PinButton'
 import TypographyControls from './shell/statusBarWidgets/TypographyControls'
 import ZoomControls from './shell/statusBarWidgets/ZoomControls'
 import { TypographyProvider } from './shell/statusBarWidgets/TypographyProvider'
+import WritingSessionStats from './shell/statusBarWidgets/WritingSessionStats'
+import { useGlobalWritingSessionActivity } from './shell/writingSession'
 import { useTitleBarOverlay } from './theme/useTitleBarOverlay'
 import './styles/shell.css'
 import './styles/material.css'
@@ -205,6 +207,9 @@ export default function App({
   // 主题变化时同步系统标题栏 overlay（非 Electron 环境自动跳过）。
   useTitleBarOverlay()
 
+  // 本次程序码字统计的全局活动监听（键鼠 / 滚轮 / 焦点 / 可见性），只记时间戳。
+  useGlobalWritingSessionActivity()
+
   // 首次启动引导门控：读取 settings 期间先渲染极简占位，避免欢迎页 / 主内容闪烁。
   const { status, complete } = useOnboarding()
 
@@ -294,6 +299,8 @@ export default function App({
                                 className={isWriter ? 'is-writer' : undefined}
                                 leading={isWriter ? <StatusBarLeading /> : undefined}
                               >
+                                {/* 本次码字胶囊：书架页与写作页共用，首次码字后才渲染。 */}
+                                <WritingSessionStats />
                                 <StatusBarWidgets />
                               </StatusBar>
                             </div>

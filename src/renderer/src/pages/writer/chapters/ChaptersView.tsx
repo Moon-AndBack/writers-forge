@@ -26,6 +26,7 @@ import { useDocPlaceholder } from '../useDocPlaceholder'
 import { useChapterSearch } from './useChapterSearch'
 import { useChapterSelectionMenu } from './useChapterSelectionMenu'
 import { useChapterDoc } from './useChapterDoc'
+import { useWritingSessionTracker } from './useWritingSessionTracker'
 import { useSyncFlushHandler } from '../../../shell/beforeCloseFlush'
 import { useEntityHover } from '../entities/useEntityHover'
 import ChapterEditorPane from './ChapterEditorPane'
@@ -211,6 +212,9 @@ export default function ChaptersView({
     registerEditor(editor)
     return () => registerEditor(null)
   }, [editor, registerEditor])
+
+  // 本次程序码字统计：只认章节正文的用户输入（切章载入 / AI 回插不计，见 hook 注释）。
+  useWritingSessionTracker(editor)
 
   // 伏笔正文标记：切章时按 chapterId 重拉锚点（埋设点 + 回收点）并写进插件 state（不参与 useEditor 选项）。
   useForeshadowMarks(editor, chapterId, null, resolveForeshadowTargetLabel)

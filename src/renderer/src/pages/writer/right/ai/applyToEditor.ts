@@ -1,5 +1,6 @@
 import type { Editor, JSONContent } from '@tiptap/core'
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { AI_APPLY_META } from '@renderer/shell/writingSession'
 
 /**
  * 章节右栏 AI · 结果回插正文（纯函数，接收 Tiptap editor 实例，无 React）。
@@ -14,7 +15,8 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
  * - 空文本（trim 后无内容）直接返回 false；
  * - 编辑器缺失 / 已销毁 / 定稿只读（`isEditable === false`）时返回 false；
  * - 命令链**不传** `emitUpdate: false`（Tiptap 3 亦无此选项）——必须触发 `update` 事件，
- *   才能让 `useChapterDoc` 的防抖保存落库。
+ *   才能让 `useChapterDoc` 的防抖保存落库；
+ * - 事务统一打 `AI_APPLY_META` 标记：状态栏「本次码字」按决策不计入 AI 插入的字数。
  */
 
 /** 编辑器可用性判定（同时收窄类型）。 */
@@ -99,6 +101,7 @@ export function replaceSelection(
     .chain()
     .focus()
     .setTextSelection({ from: normalizedFrom, to: normalizedTo })
+    .setMeta(AI_APPLY_META, true)
     .insertContent(nodes)
     .run()
 }
@@ -118,5 +121,5 @@ export function insertAfter(editor: Editor | null, text: string, position: numbe
   if (!Number.isInteger(position) || position < 0 || position > size) return false
 
   const target = resolveInsertRange(editor.state.doc, position)
-  return editor.chain().focus().insertContentAt(target, nodes).run()
+  return editor.chain().focus().setMeta(AI_APPLY_META, true).insertContentAt(target, nodes).run()
 }

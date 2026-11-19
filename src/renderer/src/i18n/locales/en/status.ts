@@ -15,7 +15,12 @@ const status = {
   zoomOut: 'Zoom out',
   zoomIn: 'Zoom in',
   pinBar: 'Pin module bar (full height)',
-  unpinBar: 'Unpin module bar (floating)'
+  unpinBar: 'Unpin module bar (floating)',
+  writingSession: {
+    summary: 'Session <b>{{chars}}</b> chars · <b>{{speed}}</b>/hr',
+    charsOnly: 'Session <b>{{chars}}</b> chars',
+    title: 'Net chapter characters written this session; speed excludes idle time'
+  }
 } satisfies ZhCNResources['status']
 
 export default status

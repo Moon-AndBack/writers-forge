@@ -98,7 +98,8 @@ export const VOLUME_START: SeedVolume = {
         seedBulletList([
           '左侧显示书架总书数',
           '右侧显示累计字数、今日写作字数与连续写作天数',
-          '这些数字统计全库，不受当前筛选、搜索与排序影响'
+          '这些数字统计全库，不受当前筛选、搜索与排序影响',
+          '本次码字胶囊在右侧统计之后：写过字才出现，与写作页共用同一个数字'
         ]),
         seedRichParagraph([{ text: '注意', bold: true }]),
         seedBulletList([

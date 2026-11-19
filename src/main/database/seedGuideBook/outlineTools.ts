@@ -185,6 +185,20 @@ export const OUTLINE_TOOLS_GROUPS: readonly SeedOutlineGroup[] = [
         ])
       },
       {
+        title: '本次码字与时速',
+        doc: seedOutlineDoc([
+          seedHeading('要点'),
+          seedParagraph(
+            '状态栏的「本次」胶囊只统计本次程序打开后的章节正文净增字数，首次码字后才出现。'
+          ),
+          seedBulletList([
+            '只算章节正文；大纲、剧情、设定、伏笔、灵感与 AI 回插都不计入。',
+            '时速按活跃时长折算：单次间隔最多 5 秒，停笔超过 5 秒、无操作超过 60 秒或窗口失焦都不累计。',
+            '不足 20 字只显示字数；关闭程序后清零，书架与写作页共用同一个数字。'
+          ])
+        ])
+      },
+      {
         title: '主题与窗口材质不是一回事',
         doc: seedOutlineDoc([
           seedHeading('要点'),
