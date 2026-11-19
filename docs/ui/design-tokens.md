@@ -63,7 +63,7 @@
 | `--fs-display`              | `20px`                                     | 展示档：欢迎标题 / 视口占位                                                             |
 | `--fs-display-lg`           | `26px`                                     | 展示档：文档标题                                                                        |
 | `--r-lg`                    | `8px`                                      | 界面统一圆角（面板 / 卡片 / 浮层 / 控件 / 列表行 / Tag / Badge）                        |
-| `--r-pill`                  | `999px`                                    | 胶囊 / chip / 开关轨道 / 进度条 / 滚动条全圆                                            |
+| `--r-pill`                  | `999px`                                    | 胶囊 / chip（含与 `.wf-tag` 叠加态）/ 开关轨道 / 进度条 / 滚动条全圆                    |
 | `--control-h-sm/md/lg`      | `32px`                                     | 控件高度单档；三值同名仅为兼容旧引用                                                    |
 | `--row-act`                 | `22px`                                     | 行操作按钮与 `.doc-meta` 元信息胶囊共用（§9 #18 / #35）                                 |
 | `--font`                    | Segoe UI Variable / 微软雅黑 / PingFang 栈 | 界面字体（挂在 `body`）                                                                 |
@@ -96,7 +96,7 @@
 | `--chrome-ring`             | `none`                                     | chrome 描边环；材质态展开为 `1px --text 8%`，none 下不产生阴影层                        |
 | `--selection-bg`            | `brand 22%` + transparent                  | 全局 `::selection` 底色，随当前主题 `--brand` 变化                                      |
 
-> CSS 会把 `border-radius` 钳制到 `min(宽, 高) / 2`：≤16px 元素设 8px 后渲染为正圆（16px 复选框 / 分组箭头），18×20 回收站箭头约 89% 半径（近圆），22px Tag / Badge 约 73% 半径。这是两档统一的必然结果，不是刻意设计（详见 [`design-language.md`](./design-language.md) §1.2 / §9 #20）。
+> CSS 会把 `border-radius` 钳制到 `min(宽, 高) / 2`：≤16px 元素设 8px 后渲染为正圆（16px 复选框 / 分组箭头），18×20 回收站箭头约 89% 半径（近圆），22px Tag / Badge 约 73% 半径。这是两档统一的必然结果，不是刻意设计（详见 [`design-language.md`](./design-language.md) §1.2 / §9 #20）。Tag 与胶囊层（`.chip-pill` / `.dossier-card__chip` / `.dossier-card__type`）叠加时圆角固定取 `--r-pill`，由 `chip-pill.css` 的双类规则保证，与加载顺序无关。
 
 分组计数：排版 5、字号 5、圆角 2、控件高度 4、字体 3、动效 8、层级 5、光斑 3、材质 4（`--desk-solid-alpha` / `--pane-surface-alpha` / `--surface-pane-float` / `--surface-pane-float-ring`）、chrome 7、选区 1，共 **47** 条。层级令牌覆盖 970–972 三档（悬停卡 < 浮窗 < 嵌套卡）、1105（主题切换覆盖层）与行内抬升 1；970–972 仅 `entity-highlight.css` / `writer-right-panels.css` 引用，`--z-row-raised` 仅用于行内拖拽；其余层级仍是字面量：60（下拉 / 主题面板）、100 / 101（活动栏）、900（状态栏弹窗）、940（格式工具条）、990（tooltip）、1000（Modal）、1040（Select / Combobox）、1100（Toast），另有 1–20 的局部层叠。目标档位与收敛计划见 `design-language.md` §6.2。注释明确本组光斑仅 light / sage / honey 生效——dark 由 `shell.css` 的 `[data-theme='dark'] .shell` 整体替换为无光斑的斜切色带，**四主题块均不覆写** `--desk-spot-*`。
 

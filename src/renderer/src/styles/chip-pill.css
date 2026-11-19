@@ -64,3 +64,15 @@
 .chip-pill--neutral {
   --chip-base: var(--text);
 }
+
+/* ---------- 与通用 Tag 叠加 ----------
+   通用 Tag（`.wf-tag`，surface.css）默认 `--r-lg`（8）；设定档案与书架等处以
+   `<Tag className="chip-pill …">` 复用 Tag 的结构 + 胶囊配色，此时圆角取胶囊档。
+   `.wf-tag` 与 `.chip-pill` 同为 (0,1,0)，单类规则谁生效取决于 index.css 的加载
+   顺序；本规则用双类 (0,2,0) 固定为 `--r-pill`，顺序无关。同组基类
+   `.dossier-card__chip` / `.dossier-card__type` 挂到 Tag 上时同样按胶囊处理。 */
+.chip-pill.wf-tag,
+.dossier-card__chip.wf-tag,
+.dossier-card__type.wf-tag {
+  border-radius: var(--r-pill);
+}

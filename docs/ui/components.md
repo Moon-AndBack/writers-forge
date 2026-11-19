@@ -107,7 +107,7 @@ import '../../styles/components/button.css'
 | -------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------- |
 | `button.css`         | 203  | Button                                                                                                                      |
 | `icon-button.css`    | 97   | IconButton                                                                                                                  |
-| `surface.css`        | 468  | Card / Tag / Badge / Progress（首行 `@import './modal.css'`；另含已移除 Avatar / Divider 的残留规则）                       |
+| `surface.css`        | 471  | Card / Tag / Badge / Progress（首行 `@import './modal.css'`；另含已移除 Avatar / Divider 的残留规则）                       |
 | `modal.css`          | 97   | Modal（经 `surface.css` 转发引入）                                                                                          |
 | `overlay.css`        | 290  | Dropdown（另含已移除 Drawer 的残留规则）                                                                                    |
 | `form.css`           | 463  | Input / Textarea / Switch / Select / Combobox（首行 `@import './form-select.css'`；另含已移除 Checkbox / Radio 的残留规则） |
@@ -869,6 +869,10 @@ Esc 关闭、Tab 关闭；点击外部关闭；下方空间不足自动上翻。
 
 **关键类名**：`.wf-tag`、`.wf-tag--neutral/brand/ok/warn/danger`、`.wf-tag__label`、
 `.wf-tag__close`。
+
+**圆角**：Tag 默认 `--r-lg`（8）；与胶囊层同节点叠加（`className="chip-pill …"`，同组基类含
+`.dossier-card__chip` / `.dossier-card__type`）时一律呈 `--r-pill`（999）。该叠加态由
+`chip-pill.css` 的双类规则固定，不依赖样式加载顺序；不得再另造第二套圆角覆盖。
 
 **键盘与无障碍**：标签本体是 `<span>`，不可聚焦；关闭按钮是原生 `<button>`，Tab 可达，
 点击时 `stopPropagation`（避免冒泡触发外层行点击）。`action` 内若放交互控件需自行保证其语义。

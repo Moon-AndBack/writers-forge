@@ -46,6 +46,8 @@
   | 界面档 | `--r-lg`（8px）     | 面板 / 卡片 / 浮层 / 控件与按钮 / 列表行 / Tag / Badge / 22px 及以下微控件全部界面元素 |
   | 胶囊档 | `--r-pill`（999px） | 胶囊 / chip / 开关轨道 / 进度条 / 滚动条等全圆                                         |
 
+  胶囊层与通用 Tag 叠加时（`<Tag className="chip-pill …">`，同组基类含 `.dossier-card__chip` / `.dossier-card__type`），圆角一律取胶囊档 `--r-pill`；该规则由 `chip-pill.css` 的双类选择器 (0,2,0) 保证，与 `surface.css` 的加载先后无关。单独使用的 Tag 仍为 `--r-lg`。
+
   CSS 会把 `border-radius` 钳制到 `min(宽, 高) / 2`。16px 元素设 8px 即达上限，渲染为正圆（16px 复选框、16px 分组箭头）；18×20 回收站箭头约 89% 半径（近圆）；22px Tag / Badge 约 73% 半径。这是两档统一的必然结果，不是刻意设计（§9 #20）。
 
   同心圆角：内圆角 = 外圆角 − 内衬。分段控件 `.wf-seg` 为 8 / 5 / 6（sm 档 8 / 6 / 5），`.mini-seg` 为 8 / 6。

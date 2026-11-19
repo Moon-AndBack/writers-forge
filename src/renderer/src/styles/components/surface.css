@@ -190,7 +190,10 @@
 }
 
 /* ---------- Tag 标签 ----------
-   原型：.field-chip（可关闭）/ .book-tag / .list-tag / .mood-chip / .scene-tag。 */
+   原型：.field-chip（可关闭）/ .book-tag / .list-tag / .mood-chip / .scene-tag。
+   默认圆角 `--r-lg`（8）。需要胶囊形时与 `.chip-pill`（或 `.dossier-card__chip` /
+   `.dossier-card__type`）叠加：叠加态的 `--r-pill` 由 chip-pill.css 的双类规则
+   (0,2,0) 固定，与两个文件的加载顺序无关。 */
 .wf-tag {
   display: inline-flex;
   align-items: center;
