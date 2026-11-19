@@ -6,7 +6,7 @@ import { plainTextToDocJson } from '../../../../../shared/richTextDoc'
 import { EntityReadonlyRichText } from '../entities/EntityReadonlyRichText'
 import { HoverCard } from '../entities/HoverCard'
 import { useEntityHover } from '../entities/useEntityHover'
-import { plotSceneTime, plotSceneTitle, type PlotSceneRow } from '../plot/plotTree'
+import { plotEraLabels, plotSceneTime, plotSceneTitle, type PlotSceneRow } from '../plot/plotTree'
 import { usePlotSceneContent, type PlotSceneContent } from '../plot/usePlotSceneContent'
 import TimelineOriginPanel from '../timeline/TimelineOriginPanel'
 import type { TimelineOriginPatch } from '../timeline/useTimelineWorkspace'
@@ -37,12 +37,7 @@ function TimelineSceneDetail({
       <EmptyState compact title={t('editor.emptySelect')} description={tTimeline('readonlyNote')} />
     )
   }
-  const eraLabels = {
-    bc: t('timeEra.bc'),
-    zero: t('timeEra.zero'),
-    ad: t('timeEra.ad'),
-    yearUnit: t('timeYearUnit')
-  }
+  const eraLabels = plotEraLabels(t)
   // 正文以块级 JSON 为准；老数据 `descriptionJson` 为空（null / ''）时按派生纯文本兜底，
   // 转换复用共享纯函数（§9），避免在组件里重复实现。
   const bodyJson =

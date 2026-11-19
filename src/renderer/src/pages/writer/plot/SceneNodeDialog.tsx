@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, FormField, Input, Modal, Select } from '../../../components/ui'
+import { plotEraLabels } from './plotTree'
 
 /** 节点弹窗提交值：时间三字段（纪元 / 年份 / 描述）+ 标题。 */
 export interface SceneNodeDialogInput {
@@ -45,6 +46,7 @@ export default function SceneNodeDialog({
 }: SceneNodeDialogProps) {
   const { t } = useTranslation('plot')
   const { t: tCommon } = useTranslation('common')
+  const eraLabels = plotEraLabels(t)
   const [timeEra, setTimeEra] = useState(initial?.timeEra ?? '')
   const [timeYearText, setTimeYearText] = useState(
     initial?.timeYear === null || initial?.timeYear === undefined
@@ -122,9 +124,9 @@ export default function SceneNodeDialog({
               ariaLabel={t('editor.fieldTimeEra')}
               options={[
                 { value: '', label: t('editor.eraUnset') },
-                { value: 'bc', label: t('timeEra.bc') },
-                { value: 'zero', label: t('timeEra.zero') },
-                { value: 'ad', label: t('timeEra.ad') }
+                { value: 'bc', label: eraLabels.bc },
+                { value: 'zero', label: eraLabels.zero },
+                { value: 'ad', label: eraLabels.ad }
               ]}
             />
             <Input

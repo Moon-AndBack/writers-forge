@@ -15,6 +15,7 @@ import { SceneCard, type EntityHoverControl } from './SceneCard'
 import {
   getPlotLineColorValue,
   normalizePlotLineColor,
+  plotEraLabels,
   plotSceneTime,
   type CreatePlotLineOptions,
   type CreatePlotSceneInput,
@@ -126,15 +127,7 @@ export default function PlotTimeline({
   const timelineStyle = (lineColor ? { '--line-color': lineColor } : undefined) as
     CSSProperties | undefined
   // 结构化时间纪元标签（`plotSceneTime` 派生每卡时间文案用）。
-  const eraLabels = useMemo<PlotEraLabels>(
-    () => ({
-      bc: t('timeEra.bc'),
-      zero: t('timeEra.zero'),
-      ad: t('timeEra.ad'),
-      yearUnit: t('timeYearUnit')
-    }),
-    [t]
-  )
+  const eraLabels = useMemo<PlotEraLabels>(() => plotEraLabels(t), [t])
 
   // 弹窗三字段提交：落库（页面层自动选中新线），关弹窗由 Dialog 内部处理。
   // 时间线尚未加载（activeTimelineId 为空）时不落库：否则会归入可能不存在的 `default`，

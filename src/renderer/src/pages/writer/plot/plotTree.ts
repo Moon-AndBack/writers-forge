@@ -17,6 +17,7 @@
  * （见 `usePlotBodyEntities`），故本模块无 `characters` 字段 / 解析函数。
  */
 
+import type { TFunction } from 'i18next'
 import { PLOT_LINE_COLORS, PLOT_TIME_ERAS } from '../../../../../shared/plot'
 
 /** 剧情线行（镜像主进程 `PlotLineRow`）。`deletedAt` 非 null 表示已软删除；
@@ -147,6 +148,19 @@ export interface PlotEraLabels {
   ad: string
   /** 年份单位（如 zh-CN「年」；en 为空串）。 */
   yearUnit: string
+}
+
+/**
+ * 纪元标签构造器：四个展示文案统一经 `plot` ns 取用，消费方一次拿到 `PlotEraLabels`，
+ * 无需各自重复拼装同一组 key（文案真源仍为 `plot` ns）。
+ */
+export function plotEraLabels(t: TFunction<'plot'>): PlotEraLabels {
+  return {
+    bc: t('timeEra.bc'),
+    zero: t('timeEra.zero'),
+    ad: t('timeEra.ad'),
+    yearUnit: t('timeYearUnit')
+  }
 }
 
 /**

@@ -8,6 +8,7 @@ import { useEntityHover } from '../entities/useEntityHover'
 import { SceneCard, type EntityHoverControl } from '../plot/SceneCard'
 import {
   groupScenesByYear,
+  plotEraLabels,
   plotLineLabel,
   plotSceneTime,
   plotSceneTitle,
@@ -82,15 +83,7 @@ export function PlotFilterPanel({
   const { t: tPlot } = useTranslation('plot')
   const { t: tTimeline } = useTranslation('timeline')
 
-  const eraLabels = useMemo<PlotEraLabels>(
-    () => ({
-      bc: tPlot('timeEra.bc'),
-      zero: tPlot('timeEra.zero'),
-      ad: tPlot('timeEra.ad'),
-      yearUnit: tPlot('timeYearUnit')
-    }),
-    [tPlot]
-  )
+  const eraLabels = useMemo<PlotEraLabels>(() => plotEraLabels(tPlot), [tPlot])
 
   // 用户手动选择优先；未选择时跟随当前选中时间线 / 剧情线（派生，不做 effect 同步）。
   const [timelineChoice, setTimelineChoice] = useState<string | null>(null)

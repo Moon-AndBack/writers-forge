@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FormField, Input, Select } from '../../../components/ui'
 import type { CharacterAgeAnchor } from '../../../../../preload/types/worldEntity'
+import { plotEraLabels } from '../plot/plotTree'
 import {
   DEFAULT_TIMELINE_ID,
   parseTimelineList,
@@ -131,15 +132,16 @@ export default function CharacterAgeFields({
     [timelines, tTimeline]
   )
 
-  const eraOptions = useMemo(
-    () => [
+  // 「未设置」项属本域文案（`dossier` ns）；三个纪元名统一取共享构造器（`plot` ns）。
+  const eraOptions = useMemo(() => {
+    const eraLabels = plotEraLabels(tPlot)
+    return [
       { value: '', label: t('detail.characterAge.eraUnset') },
-      { value: 'bc', label: tPlot('timeEra.bc') },
-      { value: 'zero', label: tPlot('timeEra.zero') },
-      { value: 'ad', label: tPlot('timeEra.ad') }
-    ],
-    [t, tPlot]
-  )
+      { value: 'bc', label: eraLabels.bc },
+      { value: 'zero', label: eraLabels.zero },
+      { value: 'ad', label: eraLabels.ad }
+    ]
+  }, [t, tPlot])
 
   const previewAnchor = anchorFromRow(selectedId, activeRow)
   const birthYear = previewAnchor ? birthYearFromAnchor(previewAnchor) : null

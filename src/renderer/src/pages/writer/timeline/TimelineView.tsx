@@ -15,6 +15,7 @@ import {
 } from './timelineOrigin'
 import {
   groupScenesByYear,
+  plotEraLabels,
   plotYearLabel,
   type PlotLineRow,
   type PlotSceneRow
@@ -178,12 +179,7 @@ export default function TimelineView({
   const layoutKey = useSceneContentWidth(timelineRef, true)
   // 场景实体胶囊：整条时间线一次批量匹配（revision + matchMany），按场景 id 建 Map。
   const sceneEntities = useSceneEntityMatches(bookId ?? '', filteredScenes, layoutKey > 0)
-  const eraLabels = {
-    bc: tPlot('timeEra.bc'),
-    zero: tPlot('timeEra.zero'),
-    ad: tPlot('timeEra.ad'),
-    yearUnit: tPlot('timeYearUnit')
-  }
+  const eraLabels = plotEraLabels(tPlot)
 
   return (
     <>
