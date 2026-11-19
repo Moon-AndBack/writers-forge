@@ -127,20 +127,25 @@ export function streakDays(): number {
 /**
  * 全部书的真实统计（**批量单次查询**，键为 `bookId`）。
  *
- * 性能：一次 `GROUP BY chapters` 同时取章数 / 定稿数 / 字数，**不 join `paragraphs`**。
+ * 性能：一次 `GROUP BY` 同时取章数 / 定稿数 / 字数，**不 join `paragraphs`**。
  * 字数读 `chapters.word_count`（章节保存时由 `saveParagraphs` 同事务增量维护，口径见
- * `wordCount.ts`），避免把全库正文读进主进程内存逐字符统计；无章的书籍不出现在结果中，
- * 由调用方按缺省 0 处理。
+ * `wordCount.ts`），避免把全库正文读进主进程内存逐字符统计。
+ *
+ * **完整映射**：以 `books` 左连 `chapters`，无章的书也返回 0 值条目。因此调用方看到
+ * 「缺项」只可能是统计未取到（IPC 失败 / 尚未返回），而不是「这本书没有章节」；
+ * 书架据此把缺项显示为未知占位，而非 0。实时统计是字数 / 章数 / 进度的唯一真源。
  */
 export function bookStatsAll(): Record<string, BookStats> {
   const db = getDb()
 
   const rows = db
     .prepare(
-      `SELECT book_id AS bookId, COUNT(*) AS chapters,
-              SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS done,
-              SUM(word_count) AS words
-       FROM chapters WHERE deleted_at IS NULL GROUP BY book_id`
+      `SELECT b.id AS bookId, COUNT(c.id) AS chapters,
+              SUM(CASE WHEN c.status = 'done' THEN 1 ELSE 0 END) AS done,
+              SUM(c.word_count) AS words
+       FROM books b
+       LEFT JOIN chapters c ON c.book_id = b.id AND c.deleted_at IS NULL
+       GROUP BY b.id`
     )
     .all() as BookAggRow[]
 

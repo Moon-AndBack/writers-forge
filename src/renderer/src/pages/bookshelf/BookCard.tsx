@@ -8,7 +8,7 @@ import { CheckIcon } from '../../components/icons'
 import { Badge, IconButton, Progress, Tag } from '../../components/ui'
 import type { BadgeTone } from '../../components/ui'
 import { getCoverGradient } from './bookMeta'
-import { STATUS_META, formatBookWords, type Book, type BookStatus } from './data'
+import { STATUS_META, STATS_PLACEHOLDER, formatBookWords, type Book, type BookStatus } from './data'
 
 export interface BookCardProps {
   /** 书籍数据 */
@@ -117,6 +117,8 @@ export function BookCard({
   onDelete
 }: BookCardProps) {
   const { t } = useTranslation('bookshelf')
+  // 实时统计未取到：字数 / 章数 / 进度均未知，显示占位符而不是 0。
+  const statsUnknown = book.statsUnavailable === true
   const [coverUrl, setCoverUrl] = useState<string | null>(null)
   // 当前封面 blob 是否为原图（`kind='original'`）：只有原图才在 `onLoad` 后回填缩略图。
   const [coverNeedsThumb, setCoverNeedsThumb] = useState(false)
@@ -275,18 +277,22 @@ export function BookCard({
         <div className="book-meta">
           <span>{penName || t('defaultAuthor')}</span>
           <span className="dot" aria-hidden="true" />
-          <span>{t('card.chapterCount', { count: book.chapters })}</span>
+          <span>
+            {statsUnknown ? STATS_PLACEHOLDER : t('card.chapterCount', { count: book.chapters })}
+          </span>
           <span className="dot" aria-hidden="true" />
-          <span>{formatBookWords(t, book.words)}</span>
+          <span>{statsUnknown ? STATS_PLACEHOLDER : formatBookWords(t, book.words)}</span>
         </div>
 
-        <Progress
-          value={book.progress}
-          max={100}
-          size="md"
-          tone="brand"
-          label={t('card.progressAria', { title: book.title })}
-        />
+        {statsUnknown ? null : (
+          <Progress
+            value={book.progress}
+            max={100}
+            size="md"
+            tone="brand"
+            label={t('card.progressAria', { title: book.title })}
+          />
+        )}
 
         {categoryNames && book.categories.length > 0 ? (
           <div className="book-tags">

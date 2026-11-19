@@ -55,8 +55,14 @@ export interface BookRow {
   channel: BookChannel | null
   /** 篇幅（长篇 / 中篇 / 短篇）；null = 未设置。 */
   lengthType: BookLength | null
+  /**
+   * @deprecated 历史冗余列：仅建书 / 编辑时写入，正文保存与章节增删**不会**更新。
+   * 书架以实时统计（`stats.bookStatsAll`）为唯一真源；新代码不得读取本字段。
+   */
   words: number
+  /** @deprecated 见 `words`：历史冗余列，正文保存不会更新。 */
   chapters: number
+  /** @deprecated 见 `words`：历史冗余列，正文保存不会更新。 */
   progress: number
   coverChar: string
   coverColor: string
@@ -73,14 +79,22 @@ export interface CreateBookInput {
   status?: BookStatus
   channel?: BookChannel | null
   lengthType?: BookLength | null
+  /** @deprecated 历史冗余字段：不再由 UI 写入，仅保留旧调用方兼容。 */
   words?: number
+  /** @deprecated 见 `words`。 */
   chapters?: number
+  /** @deprecated 见 `words`。 */
   progress?: number
   coverChar?: string
   coverColor?: string
 }
 
-/** 更新书籍补丁：仅允许可编辑字段，id / 时间戳由本模块维护。 */
+/**
+ * 更新书籍补丁：仅允许可编辑字段，id / 时间戳由本模块维护。
+ *
+ * `words` / `chapters` / `progress` 为历史冗余字段，保留只为旧调用方入参兼容：
+ * 书架展示不读取，正文保存也不经由本补丁更新。
+ */
 export type UpdateBookPatch = Partial<
   Pick<
     BookRow,

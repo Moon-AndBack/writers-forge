@@ -2,10 +2,11 @@
  * 书籍页（书架视图）展示数据与纯函数。
  *
  * 说明：
- * - `Book` **即**主进程 `BookRow`（`src/main/database/books.ts`）：经 `import type`
+ * - `Book` **以**主进程 `BookRow` 为基础（`src/main/database/books.ts`）：经 `import type`
  *   直接复用（`import type` 编译期擦除，不产生 `require`、不污染 renderer bundle；
  *   与 `chapterTree.ts` / `outlineTree.ts` 及 preload `types/database.d.ts` 同口径，
- *   §9 单一真源，消除「双份维护」漂移面）。`api.books.list()` 的返回值可直接赋给 `Book[]`。
+ *   §9 单一真源，消除「双份维护」漂移面），另加渲染层专用的统计可用性标记。
+ *   `api.books.list()` 的返回值可直接赋给 `Book[]`。
  * - 过滤 / 排序均为无副作用纯函数，便于组件层保持受控与可测试。
  * - `FALLBACK_BOOKS`：仅在纯浏览器预览（无 `window.api.books`）时兜底的样例，
  *   与主进程种子数据（b1–b5）保持一致；接入数据库后正常路径不再使用，
@@ -20,8 +21,18 @@ import type { BookChannel, BookLength, BookRow, BookStatus } from '../../../../m
 /** 书籍领域类型（单一真源：主进程 BookRow 与其状态六态）。 */
 export type { BookChannel, BookLength, BookRow, BookStatus }
 
-/** 渲染层领域别名：与主进程 `BookRow` 全同构（保留既有 `Book` 引用点零改动）。 */
-export type Book = BookRow
+/**
+ * 书架展示用书籍：主进程 `BookRow` + 仅渲染层使用的统计可用性标记。
+ *
+ * `statsUnavailable` 为 true 表示这次实时统计没有该书的数据（首读尚未返回 / 读取失败），
+ * 字数 / 章数 / 进度**未知**，卡片显示占位符；它与「统计成功且该书确实为 0」严格区分。
+ */
+export interface Book extends BookRow {
+  statsUnavailable?: boolean
+}
+
+/** 实时统计不可用时的展示占位符（与「0 字」区分；标点无需翻译）。 */
+export const STATS_PLACEHOLDER = '—'
 
 /**
  * 状态展示文案键（i18n `bookshelf` ns）；消费者 `t(meta.labelKey)`。
@@ -68,14 +79,31 @@ export interface BookStats {
 }
 
 /**
- * 用真实统计覆盖书籍列表的字数 / 章节数 / 进度（返回新数组，不修改入参）。
- * 统计表缺该书（如无章）时回退 0，避免展示种子书硬编码的旧值。
+ * 用**实时统计**覆盖书籍列表的字数 / 章节数 / 进度（返回新数组，不修改入参）。
+ *
+ * **实时统计（`stats.bookStatsAll`）是唯一真源**：不再回退 `books` 表里的
+ * `words` / `chapters` / `progress` 冗余列——这三列只在建书 / 编辑时写入，正文保存与
+ * 章节增删都不会更新，值可能长期陈旧。
+ *
+ * 统计映射缺该书时视为**未知**并置 `statsUnavailable`（卡片显示 `—`），而不是 0：
+ * `bookStatsAll` 以 `books LEFT JOIN chapters` 返回完整映射，无章的书也有 0 值条目，
+ * 所以缺项只可能来自统计未取到（首读未返回 / IPC 失败）。若此前已成功取到统计，
+ * 调用方会保留旧映射，继续显示上次的值。
  */
 export function mergeBookStats(books: readonly Book[], stats: Record<string, BookStats>): Book[] {
   return books.map((book) => {
     const stat = stats[book.id]
-    if (!stat) return { ...book, words: 0, chapters: 0, progress: 0 }
-    return { ...book, words: stat.words, chapters: stat.chapters, progress: stat.progress }
+    if (!stat) {
+      // 数值归零仅是防御性兜底；消费者必须以 `statsUnavailable` 判定并显示占位。
+      return { ...book, words: 0, chapters: 0, progress: 0, statsUnavailable: true }
+    }
+    return {
+      ...book,
+      words: stat.words,
+      chapters: stat.chapters,
+      progress: stat.progress,
+      statsUnavailable: false
+    }
   })
 }
 
@@ -219,14 +247,26 @@ export function filterBooks(books: readonly Book[], filter: ShelfFilter, query: 
   })
 }
 
+/**
+ * 统计维度排序：未知统计（实时数据未取到）一律排在末尾，避免把占位当成 0 参与排序。
+ * 两边都未知时视为相等，保持原有相对顺序。
+ */
+function compareByStat(a: Book, b: Book, pick: (book: Book) => number): number {
+  const aUnknown = a.statsUnavailable === true
+  const bUnknown = b.statsUnavailable === true
+  if (aUnknown !== bUnknown) return aUnknown ? 1 : -1
+  if (aUnknown) return 0
+  return pick(b) - pick(a)
+}
+
 /** 按指定方式排序（返回新数组，不修改入参）。 */
 export function sortBooks(books: readonly Book[], sort: ShelfSort): Book[] {
   const result = [...books]
   switch (sort) {
     case 'words':
-      return result.sort((a, b) => b.words - a.words)
+      return result.sort((a, b) => compareByStat(a, b, (book) => book.words))
     case 'chapters':
-      return result.sort((a, b) => b.chapters - a.chapters)
+      return result.sort((a, b) => compareByStat(a, b, (book) => book.chapters))
     case 'title':
       return result.sort((a, b) => a.title.localeCompare(b.title, 'zh-Hans-CN'))
     case 'recent':
