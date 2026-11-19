@@ -15,6 +15,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLogger } from '@renderer/lib/log'
 import type { WriterModule } from '../../../shell/activityBarModules'
+import { useDraftSaveBridge } from '../../../shell/useDraftSaveBridge'
 import { useUnsavedGuard } from '../../../shell/useUnsavedGuard'
 import { useInspirationFilters } from './inspirationFilterContext'
 import { filterInspirationRows } from './inspirationFilterMatch'
@@ -71,7 +72,10 @@ export function useInspirationBundle(
   const [dirty, setDirty] = useState(false)
   const dirtyRef = useRef(false)
   // 保存入口：右栏表单挂载时写入（切换确认「保存」/ 关闭前 flush 据此落库）。
-  const saveRef = useRef<(() => void | Promise<boolean>) | null>(null)
+  const { saveRef, save } = useDraftSaveBridge({
+    scope: 'inspiration',
+    failMessage: '保存灵感草稿失败'
+  })
   // 草稿重置键：放弃时递增，右栏表单以它为 key 重挂、草稿回退到行值。
   const [draftResetKey, setDraftResetKey] = useState(0)
   // 正文编辑器聚焦态（右栏编辑器上报；仅供标题栏工具栏按态显隐，不参与守卫判定）。
@@ -145,21 +149,6 @@ export function useInspirationBundle(
   const reportDirty = useCallback((next: boolean): void => {
     dirtyRef.current = next
     setDirty(next)
-  }, [])
-
-  /** 无条件落库：无改动也应成功；无保存入口（表单未挂载）按失败处理，不假报成功。 */
-  const save = useCallback(async (): Promise<boolean> => {
-    const saveNow = saveRef.current
-    if (!saveNow) return false
-    try {
-      const result = saveNow()
-      // 表单无改动时 `saveNow` 直接返回 undefined（无写入）：视为成功。
-      if (result === undefined) return true
-      return (await result) !== false
-    } catch (error) {
-      log.warn('保存灵感草稿失败', error)
-      return false
-    }
   }, [])
 
   /** 放弃当前草稿：先清脏，再递增重置键让右栏表单回退到行值。 */

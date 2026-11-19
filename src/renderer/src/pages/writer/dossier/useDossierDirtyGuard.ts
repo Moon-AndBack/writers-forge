@@ -4,20 +4,18 @@
  * 右栏只改本地草稿，点保存才落库；切换选中有脏则弹两态确认（`guardSwitch` /
  * `resolveSwitch`），切模块 / 换书时右栏卸载前自动保存兜底。
  *
- * 挂起 / 两态结算的时序统一交给通用 `shell/useUnsavedGuard`，本 hook 只做域适配
- * （`saveRef` → 落库函数、脏态上报）并保持原有对外成员名，调用方零改动。
+ * 挂起 / 两态结算的时序统一交给通用 `shell/useUnsavedGuard`，保存入口桥接交给
+ * `shell/useDraftSaveBridge`，本 hook 只做域适配（脏态上报、放弃草稿、卸载兜底）
+ * 并保持原有对外成员名，调用方零改动。
  *
- * `saveRef` 为**原样透出**的 ref 对象：右栏表单挂载时直接写 `.current`，
- * 此处不得包装 / 转换，否则调用方写入的不是同一个 ref。
+ * `saveRef` 由共享桥**原样透出**：右栏表单挂载时直接写 `.current`，
+ * 不得包装 / 转换，否则表单写入的不是同一个 ref。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
-import { createLogger } from '@renderer/lib/log'
+import { useDraftSaveBridge } from '../../../shell/useDraftSaveBridge'
 import { useUnsavedGuard } from '../../../shell/useUnsavedGuard'
 import type { DossierModule } from './dossierTree'
-
-/** 设定档案装配日志（转发至主进程落盘）。 */
-const log = createLogger('dossier')
 
 export interface DossierDirtyGuard {
   /** 当前是否有未保存改动（右栏保存按钮 / 切换守卫共用）。 */
@@ -55,26 +53,14 @@ export function useDossierDirtyGuard(
   const [dirty, setDirty] = useState(false)
   const dirtyRef = useRef(false)
   // 保存入口：右栏表单挂载时写入（切换确认「保存」/ 切模块兜底据此落库当前草稿）。
-  const saveRef = useRef<(() => void | Promise<boolean>) | null>(null)
+  const { saveRef, save } = useDraftSaveBridge({
+    scope: 'dossier',
+    failMessage: '保存设定档案草稿失败'
+  })
 
   const reportDirty = useCallback((next: boolean): void => {
     dirtyRef.current = next
     setDirty(next)
-  }, [])
-
-  /** 无条件落库：无改动也应成功；无保存入口（表单未挂载）按失败处理，不假报成功。 */
-  const save = useCallback(async (): Promise<boolean> => {
-    const saveNow = saveRef.current
-    if (!saveNow) return false
-    try {
-      const result = saveNow()
-      // 表单无改动时 `saveNow` 直接返回 undefined（无写入）：视为成功。
-      if (result === undefined) return true
-      return (await result) !== false
-    } catch (error) {
-      log.warn('保存设定档案草稿失败', error)
-      return false
-    }
   }, [])
 
   /** 放弃当前草稿：先清脏，后续切模块的清理 effect 才不会二次静默保存。 */

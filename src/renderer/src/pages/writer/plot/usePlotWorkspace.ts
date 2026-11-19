@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { RefObject } from 'react'
 import { createLogger } from '@renderer/lib/log'
 import {
@@ -10,6 +10,7 @@ import {
 } from './plotTree'
 import { usePlotTree } from './usePlotTree'
 import type { UpdatePlotLinePatch, UpdatePlotScenePatch } from './plotTree'
+import { useDraftSaveBridge } from '../../../shell/useDraftSaveBridge'
 import { useUnsavedGuard } from '../../../shell/useUnsavedGuard'
 
 /** 剧情页装配动作日志（无线 + 缝可辨：无可用线时记 warn）。 */
@@ -143,7 +144,10 @@ export function usePlotWorkspace(bookId: string, activeTimelineId?: string | nul
   // 正文编辑器聚焦态（右栏编辑器上报；仅供标题栏工具栏按态显隐，不参与守卫判定）。
   const [editing, setEditing] = useState(false)
   // 保存入口：右栏表单挂载时写入（切换确认「保存」/ 关闭前 flush 据此落库当前草稿）。
-  const saveRef = useRef<(() => void | Promise<boolean>) | null>(null)
+  const { saveRef, save } = useDraftSaveBridge({
+    scope: 'plot',
+    failMessage: '保存剧情正文草稿失败'
+  })
   // 草稿重置键：放弃时递增，右栏 `PlotEditor` 以它为 key 重挂、草稿回退到场景行值。
   const [draftResetKey, setDraftResetKey] = useState(0)
 
@@ -153,21 +157,6 @@ export function usePlotWorkspace(bookId: string, activeTimelineId?: string | nul
 
   const reportEditing = useCallback((next: boolean): void => {
     setEditing(next)
-  }, [])
-
-  /** 无条件落库：无改动也应成功；无保存入口（表单未挂载）按失败处理，不假报成功。 */
-  const save = useCallback(async (): Promise<boolean> => {
-    const saveNow = saveRef.current
-    if (!saveNow) return false
-    try {
-      const result = saveNow()
-      // 表单无改动时 `saveNow` 直接返回 undefined（无写入）：视为成功。
-      if (result === undefined) return true
-      return (await result) !== false
-    } catch (error) {
-      log.warn('保存剧情正文草稿失败', error)
-      return false
-    }
   }, [])
 
   /**
