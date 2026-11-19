@@ -2,7 +2,7 @@ import { seedBulletList, seedHeading, seedOutlineDoc, seedParagraph } from '../s
 import type { SeedOutlineGroup } from './outline'
 
 /**
- * 教学书大纲域 · 伏笔与灵感 + AI 助手 + 界面与设置（16 条）。
+ * 教学书大纲域 · 伏笔与灵感 + AI 助手 + 界面与设置（17 条）。
  *
  * 大纲条目是功能速查：只讲规则与边界，流程细节见同书章节正文。
  * 维护约定见 `./outline.ts` 与 AGENTS §7.5。
@@ -193,8 +193,23 @@ export const OUTLINE_TOOLS_GROUPS: readonly SeedOutlineGroup[] = [
           ),
           seedBulletList([
             '只算章节正文；大纲、剧情、设定、伏笔、灵感与 AI 回插都不计入。',
+            '粘贴与拖拽插入不计入；剪切与删除一样回退，显示不低于 0。',
             '时速按活跃时长折算：单次间隔最多 5 秒，停笔超过 5 秒、无操作超过 60 秒或窗口失焦都不累计。',
             '不足 20 字只显示字数；关闭程序后清零，书架与写作页共用同一个数字。'
+          ])
+        ])
+      },
+      {
+        title: '本次码字与详情',
+        doc: seedOutlineDoc([
+          seedHeading('要点'),
+          seedParagraph('胶囊可展开详情：四项读数固定在状态栏上方，锁定后能拖到窗口内任意位置。'),
+          seedBulletList([
+            '悬停约 260ms 展开、移出约 120ms 收起；点击转粘住，点外部或 Esc 关闭。',
+            '四行：本次码字 / 打字速度 / 码字时间 / 空闲时间；空闲时间 = 首次码字至今减去码字时间。',
+            '右上角锁图标锁定常驻：移出、点外部、Esc 都不关闭，只能点锁图标解锁。',
+            '锁定后拖标题区（横线以上）可移动，界外位置会被拉回；解锁带过渡复位。',
+            '材质开启时该浮层半透明 + 毛玻璃，其它浮层仍不透明。'
           ])
         ])
       },
